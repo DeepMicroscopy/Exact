@@ -1,8 +1,8 @@
 export interface ImageSet {
   id: number;
   name: string;
-  location: string;
-  description: string;
+  location?: string;
+  description?: string;
   time: string;
   public: boolean;
   publicCollaboration: boolean;
@@ -13,9 +13,9 @@ export interface ImageSet {
   permissions: ImageSetPermissions;
   tags: string[];
   images: number[];       // Reference to Image
-  mainAnnotationType: number;    // Reference to AnnotationType
-  team: number;       // Reference to Team
-  creator: number;    // Reference to User
+  mainAnnotationType?: number;    // Reference to AnnotationType
+  team?: number;       // Reference to Team
+  creator?: number;    // Reference to User
 }
 
 

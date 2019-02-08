@@ -4,7 +4,7 @@ export interface Export {
   annotationCount: number;
   url: string;
   deprecated: boolean;
-  format: number;   // Reference to ExportFormat
+  format?: number;   // Reference to ExportFormat
   imageSet: number;   // Reference to ImageSet
-  creator: number;    // Reference to User
+  creator?: number;    // Reference to User
 }

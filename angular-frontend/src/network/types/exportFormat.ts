@@ -4,7 +4,7 @@ export interface ExportFormat {
   lastChangeTime: string;
   public: boolean;
   baseFormat: string;
-  imageFormat: string;
+  imageFormat?: string;
   annotationFormat: string;
   vectorFormat: string;
   notInImageFormat: string;
