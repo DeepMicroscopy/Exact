@@ -1,4 +1,5 @@
 export const environment = {
   production: true,
-  sessionStoragePrefix: 'imagetagger'
+  sessionStoragePrefix: 'imagetagger',
+    localStoragePrefix: 'imagetagger'
 };

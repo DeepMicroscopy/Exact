@@ -3,8 +3,9 @@
 // The list of file replacements can be found in `angular.json`.
 
 export const environment = {
-  production: false,
-  sessionStoragePrefix: 'imagetagger'
+    production: false,
+    sessionStoragePrefix: 'imagetagger',
+    localStoragePrefix: 'imagetagger'
 };
 
 /*
