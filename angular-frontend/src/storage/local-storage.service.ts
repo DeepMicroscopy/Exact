@@ -17,6 +17,7 @@ export class LocalStorageService {
     if (localStorage.getItem(this.convertKey(key)) != null) {
       return JSON.parse(localStorage.getItem(this.convertKey(key))) as T;
     }
+    return null;
   }
 
   public setItem(key: string, item: object) {

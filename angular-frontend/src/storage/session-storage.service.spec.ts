@@ -7,6 +7,9 @@ describe('SessionStorageService', () => {
 
     beforeEach(() => {
         TestBed.configureTestingModule({});
+    });
+
+    afterEach(() => {
         sessionStorage.clear();
     });
 
@@ -15,7 +18,7 @@ describe('SessionStorageService', () => {
         expect(service).toBeTruthy();
     });
 
-    it('should save an item', () => {
+    it('should set an item', () => {
         const service: SessionStorageService = TestBed.get(SessionStorageService);
 
         const testKey = 'testItem';
@@ -33,6 +36,38 @@ describe('SessionStorageService', () => {
         sessionStorage.setItem(environment.sessionStoragePrefix + testKey, JSON.stringify(testItem));
 
         expect(service.getItem<typeof testItem>(testKey)).not.toBeNull();
+        expect(service.getItem('nullKey')).toBeNull();
+    });
+
+    it('should clear the storage', () => {
+        const service: SessionStorageService = TestBed.get(SessionStorageService);
+
+        const testKey = 'testItem';
+        const testItem = {'key1': false, 'key2': 'value2'};
+        sessionStorage.setItem(environment.sessionStoragePrefix + testKey, JSON.stringify(testItem));
+        service.clear();
+
+        expect(sessionStorage.length).toBe(0);
+    });
+
+    it('should delete an item', () => {
+        const service: SessionStorageService = TestBed.get(SessionStorageService);
+
+        const testKey = 'testItem';
+        const testItem = {'key1': false, 'key2': 'value2'};
+        sessionStorage.setItem(environment.sessionStoragePrefix + testKey, JSON.stringify(testItem));
+        service.removeItem(testKey);
+
+        expect(sessionStorage.length).toBe(0);
     });
 
 });
+
+
+export class MockSessionStorageService extends SessionStorageService {
+    constructor() {
+        super();
+        spyOn(this, 'getItem').and.callThrough();
+        spyOn(this, 'setItem').and.callThrough();
+    }
+}
