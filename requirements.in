@@ -1,5 +1,7 @@
+coreapi
 Django>=2.0,<2.1
 djangorestframework
+djangorestframework-camel-case
 django-widget-tweaks
 fasteners
 Pillow

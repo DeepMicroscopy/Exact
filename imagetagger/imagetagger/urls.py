@@ -16,7 +16,9 @@ Including another URLconf
 from django.conf.urls import url, include
 from django.contrib import admin
 from django.shortcuts import render
+from django.urls import path
 from registration.backends.hmac.views import RegistrationView
+from rest_framework.documentation import include_docs_urls
 
 from .users.forms import UserRegistrationForm
 
@@ -32,6 +34,8 @@ urlpatterns = [
     url(r'^users/', include('imagetagger.users.urls')),
     url(r'^tagger_messages/', include('imagetagger.tagger_messages.urls')),
     url(r'^tools/', include('imagetagger.tools.urls')),
+    url(r'^api/', include('imagetagger.api.urls')),
+    path('docs/', include_docs_urls(title='Documentation', authentication_classes=[], permission_classes=[])),
 ]
 
 
