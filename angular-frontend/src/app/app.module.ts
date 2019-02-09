@@ -3,14 +3,20 @@ import { NgModule } from '@angular/core';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
+import { NetworkModule } from '../network/network.module';
+import { NavbarComponent } from './components/navbar/navbar.component';
+import {StorageModule} from '../storage/storage.module';
 
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent,
+    NavbarComponent
   ],
   imports: [
     BrowserModule,
-    AppRoutingModule
+    AppRoutingModule,
+    NetworkModule,
+    StorageModule
   ],
   providers: [],
   bootstrap: [AppComponent]
