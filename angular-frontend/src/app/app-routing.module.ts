@@ -4,9 +4,11 @@ import {PageNotFoundComponent} from './components/page-not-found/page-not-found.
 
 const routes: Routes = [
     {
-        path: '**',
-        component: PageNotFoundComponent
-    }
+        path: 'images/',
+        loadChildren: 'src/app-images/images.module#ImagesModule'
+    },
+
+    {path: '*', component: PageNotFoundComponent}
 ];
 
 @NgModule({
