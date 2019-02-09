@@ -1,8 +1,11 @@
-export interface User {
-  id: number;
-  username: string;
-  teams: number[];   // References
-  points: number;
+import {Team} from './team';
+import {ImageSet} from './imageSet';
 
-  pinnedSets: number[];    // Reference to ImageSets
+export interface User<T extends 'simple' | 'resolved'> {
+    id: number;
+    username: string;
+    teams: T extends 'simple' ? number[] : Team[];
+    points: number;
+
+    pinnedSets: T extends 'simple' ? number[] : ImageSet[];
 }

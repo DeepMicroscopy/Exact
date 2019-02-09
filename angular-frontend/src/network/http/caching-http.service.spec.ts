@@ -118,3 +118,16 @@ class MockHttpHandler implements HttpHandler {
     }
 
 }
+
+
+export class MockCachingHttpClient extends CachingHttpClient {
+    public responses: { [url: string]: any; } = {};
+
+    constructor() {
+        super(null, null, null);
+        spyOn(this, 'getCached').and.callFake((url, headers?, cachingBackend?) => {
+            console.log(`Using fake http result for ${url} (${this.responses[url]})`);
+            return of(this.responses[url]);
+        });
+    }
+}
