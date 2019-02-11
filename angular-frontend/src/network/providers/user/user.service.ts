@@ -14,11 +14,7 @@ export class UserService {
     constructor(private http: CachingHttpClient) {
     }
 
-    public list(): Observable<User<'simple'>[]> {
-        return this.http.getCached(this.url);
-    }
-
-    public get(id: number | 'me'): Observable<User<'simple'>> {
+    public get(id: number | 'me'): Observable<User<'resolved'>> {
         return this.http.getCached(`${this.url}${id}/`);
     }
 

@@ -6,7 +6,7 @@ import {MockCachingHttpClient} from '../../http/caching-http.service.spec';
 import {User} from '../../types/user';
 
 describe('UserService', () => {
-    const testUsers: User<'simple'>[] = [{
+    const testUsers: User<any>[] = [{
         id: 0,
         username: 'testUser-0',
         points: 42,
@@ -25,19 +25,7 @@ describe('UserService', () => {
         expect(service).toBeTruthy();
     });
 
-    it('should return correct list() result', (done) => {
-        const service: UserService = TestBed.get(UserService);
-        const httpClient: MockCachingHttpClient = TestBed.get(CachingHttpClient);
-
-        httpClient.responses[service.url] = testUsers;
-
-        service.list().subscribe(result => {
-            expect(result).toBe(testUsers);
-            done();
-        });
-    });
-
-    it('should return correct simple get() result', (done) => {
+    it('should return correct get() result', (done) => {
         const service: UserService = TestBed.get(UserService);
         const httpClient: MockCachingHttpClient = TestBed.get(CachingHttpClient);
 

@@ -1,16 +1,17 @@
-export interface Team {
-  id: number;
-  name: string;
-  members: number[];   // References
-  admins: number[];    // References
-  website: string;
+import {User} from './user';
 
-  permissions: TeamPermissions;
+export interface Team<T extends 'simple' | 'resolved'> {
+    id: number;
+    name: string;
+    members: T extends 'resolved' ? User<'simple'>[] : number[];
+    admins: T extends 'resolved' ? User<'simple'>[] : number[];
+    website: string;
+    permissions: TeamPermissions;
 }
 
 
 export interface TeamPermissions {
-  createSet: boolean;
-  userManagement: boolean;
-  manageExportFormats: boolean;
+    createSet: boolean;
+    userManagement: boolean;
+    manageExportFormats: boolean;
 }
