@@ -20,7 +20,7 @@ export class LocalStorageService {
     return null;
   }
 
-  public setItem(key: string, item: object) {
+  public setItem(key: string, item: any) {
     localStorage.setItem(this.convertKey(key), JSON.stringify(item));
   }
 

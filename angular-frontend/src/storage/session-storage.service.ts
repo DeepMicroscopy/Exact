@@ -20,7 +20,7 @@ export class SessionStorageService {
         return null;
     }
 
-    public setItem(key: string, item: object) {
+    public setItem(key: string, item: any) {
         sessionStorage.setItem(this.convertKey(key), JSON.stringify(item));
     }
 
