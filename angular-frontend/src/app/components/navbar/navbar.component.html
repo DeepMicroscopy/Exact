@@ -17,17 +17,17 @@
             <li class="nav-item"><a class="nav-link" routerLink="/">Explore</a> <!-- TODO Link to "Explore" route --></li>
             <li class="nav-item"><a class="nav-link" routerLink="/">Messages</a> <!-- TODO Link to "Messages" route --></li>
             <li class="nav-item"><a class="nav-link" routerLink="/">Tools</a> <!-- TODO Link to "Tools" route --></li>
-            <li class="nav-item dropdown">
+            <li *ngIf="authService.isLoggedIn()" class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="" role="button" data-toggle="dropdown">My Teams</a>
                 <div class="dropdown-menu">
                     <a class="dropdown-item" routerLink="">my team 0</a> <!-- Bind to my teams with *ngFor -->
                 </div>
             </li>
-            <li class="nav-item dropdown">
+            <li *ngIf="authService.isLoggedIn()" class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="" role="button" data-toggle="dropdown">my username</a> <!-- TODO Bind to my username -->
                 <div class="dropdown-menu">
                     <a class="dropdown-item" routerLink="/">Profile</a>
-                    <a class="dropdown-item" routerLink="/">Logout</a>
+                    <a class="dropdown-item" href="#" (click)="authService.logout()">Logout</a>
                     <a class="dropdown-item" routerLink="/">Change Password</a>
                 </div>
             </li>
