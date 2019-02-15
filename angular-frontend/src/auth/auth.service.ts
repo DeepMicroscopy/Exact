@@ -4,6 +4,7 @@ import {Observable, of} from 'rxjs';
 import {HttpClient} from '@angular/common/http';
 import {environment} from '../environments/environment';
 import {catchError, map} from 'rxjs/operators';
+import {Router} from '@angular/router';
 
 @Injectable({
     providedIn: 'root'
@@ -11,10 +12,11 @@ import {catchError, map} from 'rxjs/operators';
 export class AuthService {
 
     public url = environment.apiUrl + 'auth/';
+    public redirectUrl = '/';
 
     private authToken: string = null;
 
-    constructor(private storage: LocalStorageService, private http: HttpClient) {
+    constructor(private storage: LocalStorageService, private http: HttpClient, private router: Router) {
         this.authToken = this.storage.getItem('authToken');
     }
 
@@ -39,6 +41,8 @@ export class AuthService {
                     if (remember) {
                         this.storage.setItem('authToken', this.authToken);
                     }
+                    this.router.navigate([this.redirectUrl]);
+                    this.redirectUrl = '/';
                     return true;
                 }
                 return false;

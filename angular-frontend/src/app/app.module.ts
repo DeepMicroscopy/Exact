@@ -7,6 +7,7 @@ import {NetworkModule} from '../network/network.module';
 import {NavbarComponent} from './components/navbar/navbar.component';
 import {StorageModule} from '../storage/storage.module';
 import { PageNotFoundComponent } from './components/page-not-found/page-not-found.component';
+import { AuthModule } from '../auth/auth.module';
 
 @NgModule({
     declarations: [
@@ -18,7 +19,8 @@ import { PageNotFoundComponent } from './components/page-not-found/page-not-foun
         BrowserModule,
         AppRoutingModule,
         NetworkModule,
-        StorageModule
+        StorageModule,
+        AuthModule
     ],
     providers: [],
     bootstrap: [AppComponent]
