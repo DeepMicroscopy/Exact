@@ -10,29 +10,29 @@ import {Observable, of} from 'rxjs';
 
 
 describe('CachingHttpClient', () => {
-    let httpHandler: MockHttpHandler;
-    let localStorage: LocalStorageService;
-    let sessionStorage: SessionStorageService;
     let testUrl: string;
 
     beforeEach(() => {
-        TestBed.configureTestingModule({});
+        TestBed.configureTestingModule({
+            providers: [
+                {provide: HttpHandler, useClass: MockHttpHandler},
+                {provide: LocalStorageService, useClass: MockLocalStorageService},
+                {provide: SessionStorageService, useClass: MockSessionStorageService}
+            ]
+        });
 
         testUrl = `http://testdomain/${(Math.floor(Math.random() * 999) + 1)}/`;
-        httpHandler = new MockHttpHandler((Math.floor(Math.random() * 999) + 1).toString());
-        localStorage = new MockLocalStorageService();
-        sessionStorage = new MockSessionStorageService();
     });
 
     it('should be created', () => {
-        const service: CachingHttpClient = new CachingHttpClient(httpHandler, localStorage, sessionStorage);
+        const service = TestBed.get(CachingHttpClient);
         expect(service).toBeTruthy();
     });
 
     it('should choose the correct storage backend', () => {
-        // Even if no caching is used, the service should check in it's storage if there's and old cached version.
-
-        const service: CachingHttpClient = new CachingHttpClient(httpHandler, localStorage, sessionStorage);
+        const service = TestBed.get(CachingHttpClient);
+        const localStorage: MockLocalStorageService = TestBed.get(LocalStorageService);
+        const sessionStorage: MockSessionStorageService = TestBed.get(SessionStorageService);
 
         service.getCached('', null, CachingBackend.localStorage);
         expect(localStorage.getItem).toHaveBeenCalled();
@@ -44,39 +44,54 @@ describe('CachingHttpClient', () => {
     });
 
     it('should return a cached value if there is a fresh one', (done) => {
-        const service: CachingHttpClient = new CachingHttpClient(httpHandler, localStorage, sessionStorage);
+        const service: CachingHttpClient = TestBed.get(CachingHttpClient);
+        const sessionStorage: MockSessionStorageService = TestBed.get(SessionStorageService);
+        const httpHandler: MockHttpHandler = TestBed.get(HttpHandler);
 
         const cacheValue: CacheValue<number> = {
             value: (Math.floor(Math.random() * 999) + 1),
             maxAge: Math.floor(Date.now() / 1000) + 1000,
         };
         sessionStorage.setItem(testUrl, cacheValue);
+
         service.getCached<number>(testUrl).subscribe(result => {
-            expect(result).toBe(cacheValue.value, `MockHttp-value is ${httpHandler.responseBody}`);
+            expect(result).toBe(cacheValue.value);
+            expect(httpHandler.handle).not.toHaveBeenCalled();
             done();
         });
     });
 
     it('should run a network request if the cached value has expired', (done) => {
-        const service: CachingHttpClient = new CachingHttpClient(httpHandler, localStorage, sessionStorage);
+        const service: CachingHttpClient = TestBed.get(CachingHttpClient);
+        const sessionStorage: MockSessionStorageService = TestBed.get(SessionStorageService);
+        const httpHandler: MockHttpHandler = TestBed.get(HttpHandler);
 
         const cacheValue: CacheValue<number> = {
             value: (Math.floor(Math.random() * 999) + 1),
             maxAge: -1,
         };
         sessionStorage.setItem(testUrl, cacheValue);
+
+        httpHandler.responses['GET'][testUrl] = {
+            body: 'abc123-foobar'
+        };
+
         service.getCached<number>(testUrl).subscribe(result => {
-            expect(result).toBe(httpHandler.responseBody, `MockHttp-value is ${httpHandler.responseBody}`);
+            expect(result).toBe(httpHandler.responses['GET'][testUrl].body);
             expect(httpHandler.handle).toHaveBeenCalled();
             done();
         });
     });
 
     it('should handle the Cache-Control: \'no-cache\' directive correctly', (done) => {
-        httpHandler = new MockHttpHandler(httpHandler.responseBody, 200, new HttpHeaders({
-            'Cache-Control': 'no-cache'
-        }));
-        const service: CachingHttpClient = new CachingHttpClient(httpHandler, localStorage, sessionStorage);
+        const service: CachingHttpClient = TestBed.get(CachingHttpClient);
+        const sessionStorage: MockSessionStorageService = TestBed.get(SessionStorageService);
+        const httpHandler: MockHttpHandler = TestBed.get(HttpHandler);
+
+        httpHandler.responses['GET'][testUrl] = {
+            body: 'abc123-foobar',
+            headers: new HttpHeaders({'Cache-Control': 'no-cache'})
+        };
 
         service.getCached(testUrl).subscribe(_ => {
             expect(sessionStorage.getItem(testUrl)).toBeNull();
@@ -85,39 +100,23 @@ describe('CachingHttpClient', () => {
     });
 
     it('should handle the Cache-Control: \'max-age=...\' directive correctly', (done) => {
-        const maxAge = Math.floor(Math.random() * 999) + 1000;
-        httpHandler = new MockHttpHandler(httpHandler.responseBody, 200, new HttpHeaders({
-            'Cache-Control': `max-age=${maxAge}`
-        }));
-        const service: CachingHttpClient = new CachingHttpClient(httpHandler, localStorage, sessionStorage);
+        const service: CachingHttpClient = TestBed.get(CachingHttpClient);
+        const sessionStorage: MockSessionStorageService = TestBed.get(SessionStorageService);
+        const httpHandler: MockHttpHandler = TestBed.get(HttpHandler);
+
+        httpHandler.responses['GET'][testUrl] = {
+            body: 'abc123-foobar',
+            headers: new HttpHeaders({'Cache-Control': 'max-age=42000'})
+        };
 
         service.getCached(testUrl).subscribe(_ => {
             const now = Math.floor(Date.now() / 1000);
             expect(sessionStorage.getItem(testUrl)).not.toBeNull();
-            expect(sessionStorage.getItem<CacheValue<number>>(testUrl).maxAge).toBeCloseTo(now + maxAge, 200);
+            expect(sessionStorage.getItem<CacheValue<number>>(testUrl).maxAge).toBeCloseTo(now + 42000, 200);
             done();
         });
     });
 });
-
-
-class MockHttpHandler implements HttpHandler {
-
-    constructor(public responseBody: any, private statusCode = 200, private responseHeaders: HttpHeaders = new HttpHeaders({})) {
-        spyOn(this, 'handle').and.callThrough();
-    }
-
-    handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
-        return of(new HttpResponse({
-            url: req.url,
-            status: this.statusCode,
-            statusText: '',      // We don't need this for testing
-            headers: this.responseHeaders,
-            body: this.responseBody
-        }));
-    }
-
-}
 
 
 export class MockCachingHttpClient extends CachingHttpClient {
@@ -130,4 +129,37 @@ export class MockCachingHttpClient extends CachingHttpClient {
             return of(this.responses[url]);
         });
     }
+}
+
+export class MockHttpHandler implements HttpHandler {
+    public responses: {
+        [method: string]: {
+            [url: string]: {
+                body: any;
+                headers?: HttpHeaders;
+                status?: number;
+                statusText?: string;
+                url?: string
+            }
+        }
+    } = {};
+
+    constructor() {
+        this.responses = {
+            'GET': {},
+            'POST': {},
+            'PUT': {},
+            'DELETE': {}
+        };
+
+        spyOn(this, 'handle').and.callThrough();
+    }
+
+    handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
+        const mockResponse = this.responses[req.method][req.url];
+        mockResponse.url = req.url;
+        console.log(`Using fake http result for ${req.method}:${req.url} (${mockResponse.body})`);
+        return of(new HttpResponse(mockResponse));
+    }
+
 }
