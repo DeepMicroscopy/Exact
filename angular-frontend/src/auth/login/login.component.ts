@@ -20,9 +20,7 @@ export class LoginComponent implements OnInit {
 
     protected submit() {
         if (this.username !== '' && this.password !== '') {
-            this.authService.login(this.username, this.password, this.remember).subscribe(result => {
-                console.log(result);
-            });
+            this.authService.login(this.username, this.password, this.remember).subscribe(() => {});
         }
     }
 
