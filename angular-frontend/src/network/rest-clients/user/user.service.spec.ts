@@ -1,8 +1,8 @@
 import {TestBed} from '@angular/core/testing';
 
 import {UserService} from './user.service';
-import {HttpCachingInterceptor} from '../../http/caching-http.service';
-import {MockCachingHttpClient} from '../../http/caching-http.service.spec';
+import {HttpCachingInterceptor} from '../../interceptors/caching-http.service';
+import {MockCachingHttpClient} from '../../interceptors/caching-http.service.spec';
 import {User} from '../../types/user';
 
 describe('UserService', () => {

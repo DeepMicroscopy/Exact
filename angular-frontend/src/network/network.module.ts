@@ -2,7 +2,7 @@ import {NgModule} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {HTTP_INTERCEPTORS, HttpClientModule} from '@angular/common/http';
 import {StorageModule} from '../storage/storage.module';
-import {HttpCachingInterceptor} from './http/caching-http.service';
+import {HttpCachingInterceptor} from './interceptors/caching-http.service';
 
 
 const httpInterceptorProviders = [

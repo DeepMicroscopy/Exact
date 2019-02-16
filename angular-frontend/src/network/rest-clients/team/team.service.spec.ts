@@ -1,8 +1,8 @@
 import {TestBed} from '@angular/core/testing';
 
 import {TeamService} from './team.service';
-import {HttpCachingInterceptor} from '../../http/caching-http.service';
-import {MockCachingHttpClient} from '../../http/caching-http.service.spec';
+import {HttpCachingInterceptor} from '../../interceptors/caching-http.service';
+import {MockCachingHttpClient} from '../../interceptors/caching-http.service.spec';
 import {Team} from '../../types/team';
 
 describe('TeamService', () => {
