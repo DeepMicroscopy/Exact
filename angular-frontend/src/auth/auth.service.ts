@@ -14,7 +14,7 @@ export class AuthService {
     public url = environment.apiUrl + 'auth/';
     public redirectUrl = '/';
 
-    private authToken: string = null;
+    public authToken: string = null;
 
     constructor(private storage: LocalStorageService, private http: HttpClient, private router: Router) {
         this.authToken = this.storage.getItem('authToken');

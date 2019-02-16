@@ -4,7 +4,7 @@ import {AuthService} from './auth.service';
 import {LocalStorageService} from '../storage/local-storage.service';
 import {MockLocalStorageService} from '../storage/local-storage.service.spec';
 import {HttpClient, HttpHandler} from '@angular/common/http';
-import {MockCachingHttpClient, MockHttpHandler} from '../network/http/caching-http.service.spec';
+import {MockHttpHandler} from '../network/interceptors/caching-http.service.spec';
 import {environment} from '../environments/environment';
 
 describe('AuthService', () => {
