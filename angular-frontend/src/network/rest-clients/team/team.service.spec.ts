@@ -1,7 +1,7 @@
 import {TestBed} from '@angular/core/testing';
 
 import {TeamService} from './team.service';
-import {CachingHttpClient} from '../../http/caching-http.service';
+import {HttpCachingInterceptor} from '../../http/caching-http.service';
 import {MockCachingHttpClient} from '../../http/caching-http.service.spec';
 import {Team} from '../../types/team';
 
@@ -21,7 +21,7 @@ describe('TeamService', () => {
 
     beforeEach(() => TestBed.configureTestingModule({
         providers: [
-            {provide: CachingHttpClient, useClass: MockCachingHttpClient}
+            {provide: HttpCachingInterceptor, useClass: MockCachingHttpClient}
         ]
     }));
 
@@ -32,7 +32,7 @@ describe('TeamService', () => {
 
     it('should return correct get() result', (done) => {
         const service: TeamService = TestBed.get(TeamService);
-        const httpClient: MockCachingHttpClient = TestBed.get(CachingHttpClient);
+        const httpClient: MockCachingHttpClient = TestBed.get(HttpCachingInterceptor);
 
         httpClient.responses[`${service.url}${testTeams[0].id}/`] = testTeams[0];
 
