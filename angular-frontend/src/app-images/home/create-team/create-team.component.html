@@ -1,0 +1,12 @@
+<div class="card">
+    <h5 class="card-header">Create new Team</h5>
+    <div class="card-body">
+        <form [formGroup]="createForm" (ngSubmit)="onSubmit()">
+            <div class="form-group">
+                <label for="inp-name">New Team's name</label>
+                <input class="form-control" id="inp-name" type="text" required placeholder="New Team's name" formControlName="name">
+            </div>
+            <button class="btn btn-primary" type="submit" [disabled]="!createForm.valid">Create</button>
+        </form>
+    </div>
+</div>
