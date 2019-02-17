@@ -4,6 +4,7 @@ import {PageNotFoundComponent} from './components/page-not-found/page-not-found.
 import {AuthGuard} from '../auth/auth.guard';
 import {LoginComponent} from '../auth/login/login.component';
 
+
 const loginOnlyRoutes: Routes = [
     {path: '', pathMatch: 'full', redirectTo: '/images'},
 
@@ -13,6 +14,7 @@ const loginOnlyRoutes: Routes = [
         loadChildren: 'src/app-images/images.module#ImagesModule'
     }
 ];
+
 
 const routes: Routes = [
 

@@ -20,11 +20,11 @@
             <li *ngIf="authService.isLoggedIn()" class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="" role="button" data-toggle="dropdown">My Teams</a>
                 <div class="dropdown-menu">
-                    <a class="dropdown-item" routerLink="">my team 0</a> <!-- Bind to my teams with *ngFor -->
+                    <a *ngFor="let team of (user$ | async)?.teams">{{team.name}}</a>
                 </div>
             </li>
             <li *ngIf="authService.isLoggedIn()" class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="" role="button" data-toggle="dropdown">my username</a> <!-- TODO Bind to my username -->
+                <a class="nav-link dropdown-toggle" href="" role="button" data-toggle="dropdown">{{(user$ | async)?.username}}</a>
                 <div class="dropdown-menu">
                     <a class="dropdown-item" routerLink="/">Profile</a>
                     <a class="dropdown-item" href="#" (click)="authService.logout()">Logout</a>
