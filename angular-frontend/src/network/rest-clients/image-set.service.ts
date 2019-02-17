@@ -18,4 +18,9 @@ export class ImageSetService {
         return this.http.get<ImageSet[]>(this.url);
     }
 
+    public read(id: number): Observable<ImageSet> {
+        const url = `${this.url}${id}/`;
+        return this.http.get<ImageSet>(url);
+    }
+
 }

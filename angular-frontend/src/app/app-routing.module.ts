@@ -27,7 +27,8 @@ const routes: Routes = [
 
     {path: 'login', component: LoginComponent},
 
-    {path: '*', component: PageNotFoundComponent}
+    {path: '*', component: PageNotFoundComponent},
+    {path: '404', component: PageNotFoundComponent}
 ];
 
 @NgModule({

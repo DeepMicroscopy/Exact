@@ -1,3 +1,64 @@
-<p>
-  imageset works!
-</p>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col col-6">
+            <div class="card">
+                <h5 class="card-header">Information about {{imageSet.name}}</h5>
+                <div class="card-body">
+                    <table class="table table-striped table-sm">
+                        <tbody>
+                        <tr>
+                            <td>Name</td>
+                            <td>{{imageSet.name}}</td>
+                        </tr>
+                        <tr>
+                            <td>Team</td>
+                            <td>{{imageSet.team}}</td> <!-- Figure out how to resolve team -->
+                        </tr>
+                        <tr>
+                            <td>Tags</td>
+                            <td *ngIf="!imageSet.tags">No tags</td>
+                            <td *ngIf="imageSet.tags">
+                                <span *ngFor="let tag of imageSet.tags" class="badge">{{tag}} </span>
+                            </td> <!-- TODO Link to explore with tag as search -->
+                        </tr>
+                        <tr>
+                            <td>Location</td>
+                            <td>{{imageSet.location}}</td>
+                        </tr>
+                        <tr>
+                            <td>Description</td>
+                            <td>{{imageSet.description}}</td>
+                        </tr>
+                        <tr>
+                            <td>Creator</td>
+                            <td>{{imageSet.creator}}</td> <!-- TODO Figure out how to resolve user -->
+                        </tr>
+                        <tr>
+                            <td>Image Count</td>
+                            <td>{{imageSet.images.length}}</td>
+                        </tr>
+                        <tr>
+                            <td>Annotation Count</td>
+                            <td>NYI</td> <!-- TODO Count annotations -->
+                        </tr>
+                        <tr>
+                            <td>Download</td>
+                            <ul>
+                                <li><a routerLink="./">Download zip</a></li>
+                                <!-- TODO Figure out how to download zips -->
+                                <li>
+                                <span>Use <a routerLink="./">Imagetagger Download Script</a> to download all images
+                                to your current directory:</span><br>
+                                    <code class="m-3">
+                                        ./imagetagger_dl_script.py {{imageSet.id}}
+                                    </code>
+                                </li>
+                            </ul>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

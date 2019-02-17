@@ -9,7 +9,6 @@ export interface ImageSet {
   imageLock: boolean;
   priority: number;
   zipState: number;
-  imageCount: number;
   permissions: ImageSetPermissions;
   tags: string[];
   images: number[];       // Reference to Image
