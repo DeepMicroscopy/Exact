@@ -18,7 +18,8 @@
             <h1 class="display-4">No pinned sets</h1>
             <p class="lead">
                 You don't have any pinned sets yet.<br>
-                You can also not yet pin any sets so that they appear here... Sad :( <!-- TODO Reference way to pin imagesets -->
+                You can also not yet pin any sets so that they appear here... Sad :(
+                <!-- TODO Reference way to pin imagesets -->
             </p>
         </div>
     </div>
@@ -35,7 +36,8 @@
 
     <div *ngIf="(visibleSets$ | async)?.length > 0" class="card-body">
         <ul class="list-group">
-            <a *ngFor="let set of visibleSets$ | async" class="list-group-item list-group-item-action" href="">
+            <a *ngFor="let set of visibleSets$ | async" class="list-group-item list-group-item-action"
+               [routerLink]="'../imagesets/' + set.id">
                 {{set.name}}
             </a>
         </ul>
