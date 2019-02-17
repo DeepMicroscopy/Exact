@@ -10,7 +10,7 @@ const loginOnlyRoutes: Routes = [
 
     {
         path: 'images',
-        pathMatch: 'full',
+        pathMatch: 'prefix',
         loadChildren: 'src/app-images/images.module#ImagesModule'
     }
 ];

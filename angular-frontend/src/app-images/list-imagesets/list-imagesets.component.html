@@ -1,0 +1,21 @@
+<div class="card">
+    <div class="card-header">
+        <h5>Imagesets</h5>
+        <ul class="nav nav-tabs card-header-tabs">
+            <li class="nav-item">
+                <a [class]="'nav-link' + ((isNavActive('pinned') | async) ? ' active': '')"
+                   routerLink="../pinned">Pinned Sets</a>
+            </li>
+        </ul>
+    </div>
+
+    <div *ngIf="(isNavActive('pinned') | async) && (pinnedSets$ | async)?.length == 0" class="card-body">
+        <div class="container">
+            <h1 class="display-4">No pinned sets</h1>
+            <p class="lead">
+                You don't have any pinned sets yet.<br>
+                You can also not yet pin any sets so that they appear here... Sad :(
+            </p>
+        </div>
+    </div>
+</div>
