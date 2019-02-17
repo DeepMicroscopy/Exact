@@ -20,6 +20,14 @@ export class CreateTeamComponent implements OnInit {
     }
 
     protected onSubmit() {
+        const name = this.createForm.value.name as string;
+        this.teamService.create(name).subscribe(success => {
+            if (success) {
+                alert('Team was successfully created'); // TODO Reroute to newly created teams page
+            } else {
+                alert('That didn\'t work');
+            }
+        });
     }
 
 }
