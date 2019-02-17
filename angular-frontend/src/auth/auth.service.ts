@@ -3,7 +3,7 @@ import {LocalStorageService} from '../storage/local-storage.service';
 import {Observable, of} from 'rxjs';
 import {HttpClient} from '@angular/common/http';
 import {environment} from '../environments/environment';
-import {catchError, map} from 'rxjs/operators';
+import {catchError, map, take, tap} from 'rxjs/operators';
 import {Router} from '@angular/router';
 
 @Injectable({
@@ -41,13 +41,17 @@ export class AuthService {
                     if (remember) {
                         this.storage.setItem('authToken', this.authToken);
                     }
-                    this.router.navigate([this.redirectUrl]);
-                    this.redirectUrl = '/';
                     return true;
                 }
                 return false;
             }),
-            catchError(() => of(false))
+            catchError(() => of(false)),
+            tap(success => {
+                if (success) {
+                    this.router.navigate([this.redirectUrl]);
+                    this.redirectUrl = '/';
+                }
+            })
         );
     }
 

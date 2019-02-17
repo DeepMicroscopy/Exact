@@ -1,5 +1,6 @@
 import {Component, OnInit} from '@angular/core';
 import {AuthService} from '../auth.service';
+import {FormControl, FormGroup} from '@angular/forms';
 
 @Component({
     selector: 'app-login',
@@ -8,9 +9,11 @@ import {AuthService} from '../auth.service';
 })
 export class LoginComponent implements OnInit {
 
-    protected username = '';
-    protected password = '';
-    protected remember = true;
+    protected loginForm = new FormGroup({
+        username: new FormControl(''),
+        password: new FormControl(''),
+        remember: new FormControl(true)
+    });
 
     constructor(private authService: AuthService) {
     }
@@ -18,10 +21,9 @@ export class LoginComponent implements OnInit {
     ngOnInit() {
     }
 
-    protected submit() {
-        if (this.username !== '' && this.password !== '') {
-            this.authService.login(this.username, this.password, this.remember).subscribe(() => {});
-        }
+    protected onSubmit() {
+        const state = this.loginForm.value;
+        this.authService.login(state.username, state.password, state.remember).subscribe();
     }
 
 }

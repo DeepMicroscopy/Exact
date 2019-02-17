@@ -9,23 +9,23 @@
                         You need to login to access this part of Imagetagger
                     </h6>
 
-                    <form>
+                    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
                         <div class="form-group">
                             <label for="inp-username">Username</label>
                             <input type="text" class="form-control" id="inp-username" placeholder="Enter your Username"
-                                   name="username" [(ngModel)]="username">
+                                   formControlName="username" required>
                         </div>
                         <div class="form-group">
                             <label>Password</label>
                             <input type="password" class="form-control" id="inp-password" placeholder="Password"
-                                   name="password" [(ngModel)]="password">
+                                   formControlName="password" required>
                         </div>
                         <div class="form-group form-check float-right">
                             <input type="checkbox" class="form-check-input" id="inp-remember" name="remember"
-                                   [(ngModel)]="remember">
+                                   formControlName="remember" required>
                             <label class="form-check-label" for="inp-remember">Remember me</label>
                         </div>
-                        <button class="btn btn-primary" (click)="submit()">Login</button>
+                        <button class="btn btn-primary" [disabled]="!loginForm.valid">Login</button>
                     </form>
                 </div>
 
