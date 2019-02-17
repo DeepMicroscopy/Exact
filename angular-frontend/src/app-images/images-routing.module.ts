@@ -1,10 +1,11 @@
 import {NgModule} from '@angular/core';
 import {Routes, RouterModule} from '@angular/router';
-import {ImagesComponent} from './images.component';
+import {HomeComponent} from './home/home.component';
 
 const routes: Routes = [
     {path: '', pathMatch: 'full', redirectTo: 'pinned'},
-    {path: ':visibleSet', pathMatch: 'full', component: ImagesComponent}
+    {path: ':visibleSet', pathMatch: 'full', component: HomeComponent},
+    {path: 'imagesets', pathMatch: 'full', redirectTo: 'pinned'},
 ];
 
 @NgModule({

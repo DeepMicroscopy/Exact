@@ -6,10 +6,14 @@
                 <a [class]="'nav-link' + ((isNavActive('pinned') | async) ? ' active': '')"
                    routerLink="../pinned">Pinned Sets</a>
             </li>
+            <li *ngFor="let team of (user$ | async)?.teams">
+                <a [class]="'nav-link ' + ((isNavActive(team.id) | async) ? ' active' : '')"
+                   [routerLink]="'../' + team.id">{{team.name}}'s Sets</a>
+            </li>
         </ul>
     </div>
 
-    <div *ngIf="(isNavActive('pinned') | async) && (pinnedSets$ | async)?.length == 0" class="card-body">
+    <div *ngIf="(isNavActive('pinned') | async) && (visibleSets$ | async)?.length == 0" class="card-body">
         <div class="container">
             <h1 class="display-4">No pinned sets</h1>
             <p class="lead">
@@ -17,5 +21,13 @@
                 You can also not yet pin any sets so that they appear here... Sad :(
             </p>
         </div>
+    </div>
+
+    <div class="card-body">
+        <ul class="list-group">
+            <a *ngFor="let set of visibleSets$ | async" class="list-group-item list-group-item-action" href="">
+                {{set.name}}
+            </a>
+        </ul>
     </div>
 </div>

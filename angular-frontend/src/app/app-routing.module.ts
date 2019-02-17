@@ -6,7 +6,7 @@ import {LoginComponent} from '../auth/login/login.component';
 
 
 const loginOnlyRoutes: Routes = [
-    {path: '', pathMatch: 'full', redirectTo: '/images'},
+    {path: '', pathMatch: 'full', redirectTo: '/images/pinned'},
 
     {
         path: 'images',
