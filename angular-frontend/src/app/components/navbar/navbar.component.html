@@ -20,7 +20,7 @@
             <li *ngIf="authService.isLoggedIn()" class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="" role="button" data-toggle="dropdown">My Teams</a>
                 <div class="dropdown-menu">
-                    <a *ngFor="let team of (user$ | async)?.teams">{{team.name}}</a>
+                    <a *ngFor="let team of (user$ | async)?.teams">{{team.name}}</a> <!-- TODO Link to team description page -->
                 </div>
             </li>
             <li *ngIf="authService.isLoggedIn()" class="nav-item dropdown">
