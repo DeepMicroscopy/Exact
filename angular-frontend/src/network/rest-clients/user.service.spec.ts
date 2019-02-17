@@ -1,9 +1,9 @@
 import {TestBed} from '@angular/core/testing';
-
 import {UserService} from './user.service';
-import {HttpCachingInterceptor} from '../../interceptors/caching-http.service';
-import {MockCachingHttpClient} from '../../interceptors/caching-http.service.spec';
-import {User} from '../../types/user';
+import {User} from '../types/user';
+import {HttpHandler} from '@angular/common/http';
+import {MockHttpHandler} from '../interceptors/caching-http.service.spec';
+
 
 describe('UserService', () => {
     const testUsers: User<any>[] = [{
@@ -16,7 +16,7 @@ describe('UserService', () => {
 
     beforeEach(() => TestBed.configureTestingModule({
         providers: [
-            {provide: HttpCachingInterceptor, useClass: MockCachingHttpClient}
+            {provide: HttpHandler, useClass: MockHttpHandler}
         ]
     }));
 
@@ -27,9 +27,11 @@ describe('UserService', () => {
 
     it('should return correct get() result', (done) => {
         const service: UserService = TestBed.get(UserService);
-        const httpClient: MockCachingHttpClient = TestBed.get(HttpCachingInterceptor);
+        const httpHandler: MockHttpHandler = TestBed.get(HttpHandler);
 
-        httpClient.responses[`${service.url}${testUsers[0].id}/`] = testUsers[0];
+        httpHandler.responses['GET'][`${service.url}${testUsers[0].id}/`] = {
+            body: testUsers[0]
+        };
 
         service.get(testUsers[0].id).subscribe(result => {
             expect(result).toBe(testUsers[0]);

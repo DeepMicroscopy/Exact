@@ -1,9 +1,9 @@
 import {TestBed} from '@angular/core/testing';
 
 import {TeamService} from './team.service';
-import {HttpCachingInterceptor} from '../../interceptors/caching-http.service';
-import {MockCachingHttpClient} from '../../interceptors/caching-http.service.spec';
-import {Team} from '../../types/team';
+import {Team} from '../types/team';
+import {HttpClient, HttpHandler} from '@angular/common/http';
+import {MockHttpHandler} from '../interceptors/caching-http.service.spec';
 
 describe('TeamService', () => {
     const testTeams: Team<any>[] = [{
@@ -21,7 +21,7 @@ describe('TeamService', () => {
 
     beforeEach(() => TestBed.configureTestingModule({
         providers: [
-            {provide: HttpCachingInterceptor, useClass: MockCachingHttpClient}
+            {provide: HttpClient, useClass: MockHttpHandler}
         ]
     }));
 
@@ -32,9 +32,11 @@ describe('TeamService', () => {
 
     it('should return correct get() result', (done) => {
         const service: TeamService = TestBed.get(TeamService);
-        const httpClient: MockCachingHttpClient = TestBed.get(HttpCachingInterceptor);
+        const httpHandler: MockHttpHandler = TestBed.get(HttpHandler);
 
-        httpClient.responses[`${service.url}${testTeams[0].id}/`] = testTeams[0];
+        httpHandler.responses['GET'][`${service.url}${testTeams[0].id}/`] = {
+            body: testTeams[0]
+        };
 
         service.get(testTeams[0].id).subscribe(result => {
             expect(result).toBe(testTeams[0]);
