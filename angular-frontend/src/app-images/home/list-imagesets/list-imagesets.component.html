@@ -18,12 +18,22 @@
             <h1 class="display-4">No pinned sets</h1>
             <p class="lead">
                 You don't have any pinned sets yet.<br>
-                You can also not yet pin any sets so that they appear here... Sad :(
+                You can also not yet pin any sets so that they appear here... Sad :( <!-- TODO Reference way to pin imagesets -->
             </p>
         </div>
     </div>
 
-    <div class="card-body">
+    <div *ngIf="!(isNavActive('pinned') | async) && (visibleSets$ | async)?.length == 0" class="card-body">
+        <div class="container">
+            <h1 class="display-4">No Imagesets</h1>
+            <p class="lead">
+                This Team does not have any Imagesets yet.<br>
+                You also cannot yet create new imagesets... Sad :( <!-- TODO Reference way to create imagesets -->
+            </p>
+        </div>
+    </div>
+
+    <div *ngIf="(visibleSets$ | async)?.length > 0" class="card-body">
         <ul class="list-group">
             <a *ngFor="let set of visibleSets$ | async" class="list-group-item list-group-item-action" href="">
                 {{set.name}}
