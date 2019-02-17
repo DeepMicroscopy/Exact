@@ -24,12 +24,12 @@
         </div>
     </div>
 
-    <div *ngIf="!(isNavActive('pinned') | async) && (visibleSets$ | async)?.length == 0" class="card-body">
+    <div *ngIf="!(isNavActive('pinned') | async) && (visibleSets$ | async)?.length === 0" class="card-body">
         <div class="container">
             <h1 class="display-4">No Imagesets</h1>
             <p class="lead">
                 This Team does not have any Imagesets yet.<br>
-                You also cannot yet create new imagesets... Sad :( <!-- TODO Reference way to create imagesets -->
+                You can create a new Imageset on the right side of this page via "Create Imageset"
             </p>
         </div>
     </div>
@@ -38,7 +38,7 @@
         <ul class="list-group">
             <a *ngFor="let set of visibleSets$ | async" class="list-group-item list-group-item-action"
                [routerLink]="'../imagesets/' + set.id">
-                {{set.name}}
+                {{set.name}} <span class="text-muted">({{set.images.length}} images)</span>
             </a>
         </ul>
     </div>
