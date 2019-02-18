@@ -15,6 +15,10 @@ export const environment = {
 
 export class RavenErrorHandler implements ErrorHandler {
     handleError(error: any): void {
-        console.error(error.toString());
+        if (error.toString() !== '[object Object]') {
+            console.error(error.toString());
+        } else {
+            console.error(error);
+        }
     }
 }
