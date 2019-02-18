@@ -37,7 +37,7 @@
         <ul class="list-group">
             <a *ngFor="let set of visibleSets$ | async" class="list-group-item list-group-item-action"
                [routerLink]="'../imagesets/' + set.id">
-                {{set.name}} <span class="text-muted">({{set.images.length}} images)</span>
+                {{set.name}} <span class="text-muted">({{set.numberOfImages}} images)</span>
             </a>
         </ul>
     </div>

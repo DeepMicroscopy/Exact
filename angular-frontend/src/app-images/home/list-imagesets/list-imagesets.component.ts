@@ -3,8 +3,8 @@ import {Observable} from 'rxjs';
 import {ImageSetService} from '../../../network/rest-clients/image-set.service';
 import {ImageSet} from '../../../network/types/imageSet';
 import {UserService} from '../../../network/rest-clients/user.service';
-import {map, flatMap} from 'rxjs/operators';
-import {User} from '../../../network/types/user';
+import {map, flatMap, tap} from 'rxjs/operators';
+import {ImagesetInUser, User} from '../../../network/types/user';
 import {ActivatedRoute, Router} from '@angular/router';
 import {TeamService} from '../../../network/rest-clients/team.service';
 
@@ -16,8 +16,8 @@ import {TeamService} from '../../../network/rest-clients/team.service';
 export class ListImagesetsComponent implements OnInit {
 
     private imageSets$: Observable<ImageSet[]>;
-    private pinnedSets$: Observable<ImageSet[]>;
-    protected visibleSets$: Observable<ImageSet[]>;
+    private pinnedSets$: Observable<ImagesetInUser[]>;
+    protected visibleSets$: Observable<ImagesetInUser[]>;
     protected user$: Observable<User<'resolved'>>;
 
     constructor(protected imageSetService: ImageSetService, protected userService: UserService, protected teamService: TeamService,
@@ -29,8 +29,8 @@ export class ListImagesetsComponent implements OnInit {
         this.user$ = this.userService.get('me');
 
         // Define pinnedSets$ as those sets of imageSets$ which's id is included in the users pinnedSets array
-        this.pinnedSets$ = this.imageSets$.pipe(
-            map(sets => sets.filter(set => set.isPinned))
+        this.pinnedSets$ = this.user$.pipe(
+            map(user => user.pinnedSets)
         );
 
         // Define visibleSets$ to be selected by route-parameter and if that parameter is an ID, filter imageSets$ to only include sets
@@ -38,12 +38,13 @@ export class ListImagesetsComponent implements OnInit {
         this.visibleSets$ = this.activeRoute.paramMap.pipe(
             flatMap(params => {
                 const selection = params.get('visibleSet');
+
                 if (selection === 'pinned') {
                     return this.pinnedSets$;
                 } else {
                     return this.imageSets$.pipe(
                         map(sets => sets.filter(i => i.team.id.toString() === selection))
-                    );
+                    ) as Observable<ImagesetInUser[]>;
                 }
             })
         );
