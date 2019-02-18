@@ -21,7 +21,6 @@ export class ImagesetComponent implements OnInit {
         this.route.data.subscribe((data: { imageSetData: ImagesetData }) => {
             this.imageSet = data.imageSetData.set;
             this.creator = data.imageSetData.creator;
-            console.log(this.creator);
         });
     }
 
