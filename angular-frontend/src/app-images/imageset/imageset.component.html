@@ -4,7 +4,10 @@
             <div class="card">
                 <h5 class="card-header">Images</h5>
                 <div class="card-body">
-
+                    <div class="list-group">
+                        <a *ngFor="let image of imageSet.images" class="list-group-item"
+                           [routerLink]="'./image/' + image.id">{{image.name}}</a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -12,7 +15,8 @@
         <div class="col col-6">
             <div class="card">
                 <h5 class="card-header">Information about {{imageSet.name}}
-                    <button [class]="'float-right btn btn-' + (   imageSet.isPinned ? '' : 'outline-') + 'primary'" (click)="togglePin()">
+                    <button [class]="'float-right btn btn-' + (   imageSet.isPinned ? '' : 'outline-') + 'primary'"
+                            (click)="togglePin()">
                         <i class="fa fa-thumb-tack"></i>
                     </button>
                 </h5>
