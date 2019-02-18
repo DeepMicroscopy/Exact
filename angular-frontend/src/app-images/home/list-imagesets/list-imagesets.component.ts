@@ -29,12 +29,8 @@ export class ListImagesetsComponent implements OnInit {
         this.user$ = this.userService.get('me');
 
         // Define pinnedSets$ as those sets of imageSets$ which's id is included in the users pinnedSets array
-        this.pinnedSets$ = combineLatest(this.user$, this.imageSets$).pipe(
-            map(result => {
-                const user: User<'resolved'> = result[0];
-                const imageSets: ImageSet[] = result[1];
-                return imageSets.filter(i => user.pinnedSets.includes(i));
-            })
+        this.pinnedSets$ = this.imageSets$.pipe(
+            map(sets => sets.filter(set => set.isPinned))
         );
 
         // Define visibleSets$ to be selected by route-parameter and if that parameter is an ID, filter imageSets$ to only include sets
@@ -46,7 +42,7 @@ export class ListImagesetsComponent implements OnInit {
                     return this.pinnedSets$;
                 } else {
                     return this.imageSets$.pipe(
-                        map(sets => sets.filter(i => i.team.toString() === selection))
+                        map(sets => sets.filter(i => i.team.id.toString() === selection))
                     );
                 }
             })
