@@ -7,8 +7,9 @@ import {ImagesetResolverService} from './imageset/imageset-resolver.service';
 const routes: Routes = [
     {path: '', pathMatch: 'full', redirectTo: 'pinned'},
     {path: 'imagesets', pathMatch: 'full', redirectTo: 'pinned'},
+    {path: ':visibleSet', pathMatch: 'full', component: HomeComponent},
     {
-        path: 'imagesets/:id', pathMatch: 'full', component: ImagesetComponent, resolve: {
+        path: 'imagesets/:imagesetId', pathMatch: 'full', component: ImagesetComponent, resolve: {
             imageSetData: ImagesetResolverService
         }
     },

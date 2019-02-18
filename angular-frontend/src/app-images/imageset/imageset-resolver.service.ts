@@ -34,7 +34,7 @@ export class ImagesetResolverService implements Resolve<ImagesetData> {
     }
 
     private resolveImageset(paramMap: ParamMap): Observable<ImageSet> {
-        const id = paramMap.get('id');
+        const id = paramMap.get('imagesetId');
         if (+id) {
             return this.imageSetService.read(+id).pipe(
                 tap(result => {
