@@ -1,1 +1,46 @@
+<div class="container-fluid">
+    <div class="row">
+        <div class="col col-3">
+            <!-- List of images on left side -->
+            <app-list-images [imageset]="imageset"></app-list-images>
+        </div>
 
+        <div class="col col-6">
+            <!-- Annotation window in center of screen -->
+            <div class="card">
+                <h5 class="card-header">Annotate {{image.name}}</h5>
+                <div class="card-body"></div>
+            </div>
+        </div>
+
+        <div class="col col-3">
+            <!-- AnnotationType controls -->
+            <div class="card">
+                <div class="card-body">
+                    <form [formGroup]="annotationConfig">
+                        <div class="form-group">
+                            <label for="inp-annotationType">Select an Annotation Type</label>
+                            <select id="inp-annotationType" class="form-control" formControlName="annotationType">
+                                <option *ngFor="let at of annotationTypes">{{at.name}}</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group form-check">
+                            <input class="form-check-input" id="inp-notInImage" type="checkbox"
+                                   formControlName="notInImage">
+                            <label class="form-check-label" for="inp-notInImage">Not in Image</label>
+                        </div>
+
+                        <div class="form-group form-check">
+                            <input class="form-check-input" id="inp-blurred" type="checkbox" formControlName="blurred">
+                            <label class="form-check-label" for="inp-blurred">Blurred</label>
+                        </div>
+                    </form>
+                    <div class="alert alert-danger">At some point there will be a bounding box which can be moved with
+                        i j k l
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

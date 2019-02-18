@@ -3,4 +3,5 @@ export interface Image {
   name: string;
   width: number;
   height: number;
+  url: string;
 }
