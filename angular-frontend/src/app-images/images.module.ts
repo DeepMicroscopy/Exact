@@ -8,6 +8,7 @@ import {ImagesetComponent} from './imageset/imageset.component';
 import {CreateTeamComponent} from './home/create-team/create-team.component';
 import {ReactiveFormsModule} from '@angular/forms';
 import { ImageComponent } from './image/image.component';
+import { ListImagesComponent } from './list-images/list-images.component';
 
 @NgModule({
     declarations: [
@@ -15,7 +16,8 @@ import { ImageComponent } from './image/image.component';
         HomeComponent,
         ImagesetComponent,
         CreateTeamComponent,
-        ImageComponent
+        ImageComponent,
+        ListImagesComponent
     ],
     imports: [
         CommonModule,

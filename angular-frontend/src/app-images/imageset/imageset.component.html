@@ -1,15 +1,7 @@
 <div class="container-fluid">
     <div class="row">
         <div class="col col-3">
-            <div class="card">
-                <h5 class="card-header">Images</h5>
-                <div class="card-body">
-                    <div class="list-group">
-                        <a *ngFor="let image of imageSet.images" class="list-group-item"
-                           [routerLink]="'./image/' + image.id">{{image.name}}</a>
-                    </div>
-                </div>
-            </div>
+            <app-list-images [imageset]="imageSet"></app-list-images>
         </div>
 
         <div class="col col-6">
