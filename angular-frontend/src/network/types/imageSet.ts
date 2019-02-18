@@ -13,7 +13,7 @@ export interface ImageSet {
     tags: string[];
     isPinned: boolean;
     numberOfImages: number;
-    images: number[];       // Reference to Image
+    images: ImageInImageset[];       // Reference to Image
     mainAnnotationType?: number;    // Reference to AnnotationType
     team?: TeamInImageset;       // Reference to Team
     creator?: UserInImageset;    // Reference to User
@@ -41,6 +41,12 @@ export interface TeamInImageset {
 
 
 export interface UserInImageset {
+    id: number;
+    name: string;
+}
+
+
+export interface ImageInImageset {
     id: number;
     name: string;
 }

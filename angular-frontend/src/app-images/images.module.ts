@@ -7,13 +7,15 @@ import {HomeComponent} from './home/home.component';
 import {ImagesetComponent} from './imageset/imageset.component';
 import {CreateTeamComponent} from './home/create-team/create-team.component';
 import {ReactiveFormsModule} from '@angular/forms';
+import { ImageComponent } from './image/image.component';
 
 @NgModule({
     declarations: [
         ListImagesetsComponent,
         HomeComponent,
         ImagesetComponent,
-        CreateTeamComponent
+        CreateTeamComponent,
+        ImageComponent
     ],
     imports: [
         CommonModule,

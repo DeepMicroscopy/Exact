@@ -3,6 +3,8 @@ import {Routes, RouterModule} from '@angular/router';
 import {HomeComponent} from './home/home.component';
 import {ImagesetComponent} from './imageset/imageset.component';
 import {ImagesetResolverService} from './imageset/imageset-resolver.service';
+import {ImageComponent} from './image/image.component';
+import {ImageResolverService} from './image/image-resolver.service';
 
 const routes: Routes = [
     {path: '', pathMatch: 'full', redirectTo: 'pinned'},
@@ -10,10 +12,15 @@ const routes: Routes = [
     {path: ':visibleSet', pathMatch: 'full', component: HomeComponent},
     {
         path: 'imagesets/:imagesetId', pathMatch: 'full', component: ImagesetComponent, resolve: {
-            imageSetData: ImagesetResolverService
+            imageSetData: ImagesetResolverService,
         }
     },
-    {path: ':visibleSet', pathMatch: 'full', component: HomeComponent},
+    {
+        path: 'imagesets/:imagesetId/image/:imageId', pathMatch: 'full', component: ImageComponent, resolve: {
+            imageSetData: ImagesetResolverService,
+            imageData: ImageResolverService,
+        }
+    }
 ];
 
 @NgModule({
