@@ -18,7 +18,7 @@ const routes: Routes = [
     {
         path: 'imagesets/:imagesetId/image/:imageId', pathMatch: 'full', component: ImageComponent, resolve: {
             imageSetData: ImagesetResolverService,
-            imageData: ImageResolverService,
+            imagesData: ImageResolverService,
         }
     }
 ];

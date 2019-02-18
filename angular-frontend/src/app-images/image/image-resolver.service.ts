@@ -6,7 +6,7 @@ import {ImagesService} from '../../network/rest-clients/images.service';
 import {catchError, flatMap, map, tap} from 'rxjs/operators';
 
 
-export interface ImageData {
+export interface ImagesData {
     image: Image;
 }
 
@@ -14,19 +14,19 @@ export interface ImageData {
 @Injectable({
     providedIn: 'root'
 })
-export class ImageResolverService implements Resolve<ImageData> {
+export class ImageResolverService implements Resolve<ImagesData> {
 
     constructor(private imagesService: ImagesService, private router: Router) {
     }
 
-    resolve(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<ImageData> {
+    resolve(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<ImagesData> {
         const id = route.paramMap.get('imageId');
         if (+id) {
             return this.imagesService.read(+id).pipe(
                 map(value => {
                     return {
                         image: value
-                    } as ImageData;
+                    } as ImagesData;
                 }),
                 catchError(flatMap(value => {
                     this.router.navigate(['/404']);
