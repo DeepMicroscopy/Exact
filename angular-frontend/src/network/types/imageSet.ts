@@ -14,7 +14,7 @@ export interface ImageSet {
   images: number[];       // Reference to Image
   mainAnnotationType?: number;    // Reference to AnnotationType
   team?: number;       // Reference to Team
-  creator?: number;    // Reference to User
+  creator?: {id: number, name: string};    // Reference to User
 }
 
 

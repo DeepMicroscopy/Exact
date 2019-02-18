@@ -2,7 +2,6 @@ import {Component, OnInit} from '@angular/core';
 import {ActivatedRoute} from '@angular/router';
 import {ImageSet} from '../../network/types/imageSet';
 import {ImagesetData} from './imageset-resolver.service';
-import {User} from '../../network/types/user';
 
 @Component({
     selector: 'app-imageset',
@@ -12,7 +11,6 @@ import {User} from '../../network/types/user';
 export class ImagesetComponent implements OnInit {
 
     protected imageSet: ImageSet;
-    protected creator: User<'resolved'>;
 
     constructor(private route: ActivatedRoute) {
     }
@@ -20,7 +18,6 @@ export class ImagesetComponent implements OnInit {
     ngOnInit() {
         this.route.data.subscribe((data: { imageSetData: ImagesetData }) => {
             this.imageSet = data.imageSetData.set;
-            this.creator = data.imageSetData.creator;
         });
     }
 
