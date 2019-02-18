@@ -1,6 +1,7 @@
 import {Component, OnInit} from '@angular/core';
 import {ActivatedRoute} from '@angular/router';
 import {ImageSet} from '../../network/types/imageSet';
+import {ImagesetData} from './imageset-resolver.service';
 
 @Component({
     selector: 'app-imageset',
@@ -15,8 +16,8 @@ export class ImagesetComponent implements OnInit {
     }
 
     ngOnInit() {
-        this.route.data.subscribe((data: { imageSet: ImageSet }) => {
-            this.imageSet = data.imageSet;
+        this.route.data.subscribe((data: { imageSetData: ImagesetData }) => {
+            this.imageSet = data.imageSetData.set;
         });
     }
 

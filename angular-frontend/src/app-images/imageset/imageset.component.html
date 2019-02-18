@@ -1,5 +1,14 @@
 <div class="container-fluid">
     <div class="row">
+        <div class="col col-3">
+            <div class="card">
+                <h5 class="card-header">Images</h5>
+                <div class="card-body">
+
+                </div>
+            </div>
+        </div>
+
         <div class="col col-6">
             <div class="card">
                 <h5 class="card-header">Information about {{imageSet.name}}</h5>
@@ -43,20 +52,40 @@
                         </tr>
                         <tr>
                             <td>Download</td>
-                            <ul>
-                                <li><a routerLink="./">Download zip</a></li>
-                                <!-- TODO Figure out how to download zips -->
-                                <li>
+                            <td>
+                                <ul>
+                                    <li><a routerLink="./">Download zip</a></li>
+                                    <!-- TODO Figure out how to download zips -->
+                                    <li>
                                 <span>Use <a routerLink="./">Imagetagger Download Script</a> to download all images
                                 to your current directory:</span><br>
-                                    <code class="m-3">
-                                        ./imagetagger_dl_script.py {{imageSet.id}}
-                                    </code>
-                                </li>
-                            </ul>
+                                        <code class="m-3">
+                                            ./imagetagger_dl_script.py {{imageSet.id}}
+                                        </code>
+                                    </li>
+                                </ul>
+                            </td>
                         </tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col col-3">
+            <div class="card">
+                <h5 class="card-header">Annotation Management</h5>
+                <div class="card-body">
+                    <div class="alert alert-danger">This is not yet implemented</div>
+                    <!-- TODO Implement "Annotate whole set" -->
+                </div>
+            </div>
+            <div class="my-2"></div>
+            <div class="card">
+                <h5 class="card-header">Export Tags to file</h5>
+                <div class="card-body">
+                    <div class="alert alert-danger">This is not yet implemented</div>
+                    <!-- TODO Implement "Export tags to file" -->
                 </div>
             </div>
         </div>

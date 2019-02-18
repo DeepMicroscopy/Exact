@@ -9,7 +9,7 @@ const routes: Routes = [
     {path: 'imagesets', pathMatch: 'full', redirectTo: 'pinned'},
     {
         path: 'imagesets/:id', pathMatch: 'full', component: ImagesetComponent, resolve: {
-            imageSet: ImagesetResolverService
+            imageSetData: ImagesetResolverService
         }
     },
     {path: ':visibleSet', pathMatch: 'full', component: HomeComponent},
