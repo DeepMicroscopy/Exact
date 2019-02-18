@@ -23,4 +23,14 @@ export class ImageSetService {
         return this.http.get<ImageSet>(url);
     }
 
+    public pin(id: number) {
+        const url = `${this.url}${id}/pin/`;
+        return this.http.put(url, null);
+    }
+
+    public unpin(id: number) {
+        const url = `${this.url}${id}/pin/`;
+        return this.http.delete(url);
+    }
+
 }

@@ -11,9 +11,10 @@ export interface ImageSet {
   zipState: number;
   permissions: ImageSetPermissions;
   tags: string[];
+  isPinned: boolean;
   images: number[];       // Reference to Image
   mainAnnotationType?: number;    // Reference to AnnotationType
-  team?: number;       // Reference to Team
+  team?: {id: number, name: string};       // Reference to Team
   creator?: {id: number, name: string};    // Reference to User
 }
 
