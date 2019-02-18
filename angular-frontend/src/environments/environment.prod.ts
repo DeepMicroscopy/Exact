@@ -3,7 +3,8 @@ import {ErrorHandler} from '@angular/core';
 
 export const environment = {
     production: true,
-    apiUrl: '',     // TODO Configure production API Url
+    apiUrl: '',     // TODO Configure production API Url,
+    mediaUrl: '',
     sessionStoragePrefix: 'imagetagger',
     localStoragePrefix: 'imagetagger'
 };

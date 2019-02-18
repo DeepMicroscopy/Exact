@@ -6,6 +6,7 @@ import {ImageSet} from '../../network/types/imageSet';
 import {Image} from '../../network/types/image';
 import {FormControl, FormGroup} from '@angular/forms';
 import {AnnotationType} from '../../network/types/annotationType';
+import {environment} from '../../environments/environment';
 
 @Component({
     selector: 'app-image',
@@ -14,6 +15,7 @@ import {AnnotationType} from '../../network/types/annotationType';
 })
 export class ImageComponent implements OnInit {
 
+    protected mediaUrl = environment.mediaUrl;
     protected imageset: ImageSet;
     protected image: Image;
     protected annotationTypes: AnnotationType[];
