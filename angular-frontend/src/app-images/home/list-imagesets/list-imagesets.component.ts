@@ -1,9 +1,9 @@
 import {Component, OnInit} from '@angular/core';
-import {combineLatest, Observable} from 'rxjs';
+import {Observable} from 'rxjs';
 import {ImageSetService} from '../../../network/rest-clients/image-set.service';
 import {ImageSet} from '../../../network/types/imageSet';
 import {UserService} from '../../../network/rest-clients/user.service';
-import {map, flatMap, filter, tap} from 'rxjs/operators';
+import {map, flatMap} from 'rxjs/operators';
 import {User} from '../../../network/types/user';
 import {ActivatedRoute, Router} from '@angular/router';
 import {TeamService} from '../../../network/rest-clients/team.service';
