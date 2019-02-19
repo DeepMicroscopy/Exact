@@ -20,11 +20,13 @@ export class ImageComponent implements OnInit {
     protected image: Image;
     protected annotationTypes: AnnotationType[];
 
-    protected annotationConfig = new FormGroup({
+    protected annotationConfigForm = new FormGroup({
         annotationType: new FormControl(),
         notInImage: new FormControl(false),
         blurred: new FormControl(false)
     });
+
+    protected keepAnnotationForNextImage = new FormControl(true);
 
     constructor(private route: ActivatedRoute) {
     }

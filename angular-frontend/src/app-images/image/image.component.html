@@ -11,7 +11,7 @@
                 <h5 class="card-header">Annotate {{image.name}}</h5>
                 <img class="card-img" [src]="mediaUrl + image.url">
                 <div class="card-body">
-
+                    <h5 class="card-title">Annotations</h5>
                 </div>
             </div>
         </div>
@@ -20,7 +20,7 @@
             <!-- AnnotationType controls -->
             <div class="card">
                 <div class="card-body">
-                    <form [formGroup]="annotationConfig">
+                    <form [formGroup]="annotationConfigForm">
                         <div class="form-group">
                             <label for="inp-annotationType">Select an Annotation Type</label>
                             <select id="inp-annotationType" class="form-control" formControlName="annotationType">
@@ -41,6 +41,36 @@
                     </form>
                     <div class="alert alert-danger">At some point there will be a bounding box which can be moved with
                         i j k l
+                    </div>
+                </div>
+            </div>
+            <div class="my-2"></div>
+            <!-- Navigation buttons -->
+            <div class="card">
+                <div class="card-body">
+                    <div>
+                        <div class="form-group form-check">
+                            <input class="form-check-input" id="inp-keepSelection" type="checkbox"
+                                   [formControl]="keepAnnotationForNextImage">
+                            <label class="form-check-label" for="inp-keepSelection">
+                                Keep Selection for next Image
+                            </label>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="row">
+                                <button class="btn btn-outline-secondary col mx-3 my-1">Reset</button>
+                                <button class="btn btn-outline-success col mx-3 my-1">Save</button>
+                            </div>
+                            <div class="row">
+                                <button class="btn btn-outline-secondary col mx-3 my-1">Back</button>
+                                <button class="btn btn-outline-secondary col mx-3 my-1">Next</button>
+                            </div>
+                            <div class="row">
+                                <button class="btn btn-outline-success col mx-3 my-1">Back and Save</button>
+                                <button class="btn btn-outline-success col mx-3 my-1">Next and Save</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
