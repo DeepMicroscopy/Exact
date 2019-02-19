@@ -21,10 +21,10 @@ const routes: Routes = [
         }
     },
     {
-        path: 'imagesets/:imagesetId/image/:imageId', pathMatch: 'full', component: ImageComponent, resolve: {
+        path: 'imagesets/:imagesetId/image/:imageId', pathMatch: 'full', component: ImageComponent, runGuardsAndResolvers: 'always', resolve: {
             imageSetData: ImagesetResolverService,
             imagesData: ImageResolverService,
-        }
+        },
     }
 ];
 

@@ -12,6 +12,16 @@
                 <img class="card-img" [src]="mediaUrl + image.url">
                 <div class="card-body">
                     <h5 class="card-title">Annotations</h5>
+                    <div *ngFor="let annotation of image.annotations">
+                        <div class="dropdown-divider"></div>
+                        <span>{{findAnnotationType(annotation.annotationType).name}}
+                            {{annotation.blurred ? '(blurred)' : ''}}
+                            {{annotation.concealed ? '(concealed)' : ''}}
+                        </span>
+                        <button class="btn btn-danger float-right" (click)="actDeleteAnnotation(annotation.id)">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -27,16 +37,19 @@
                                 <option *ngFor="let at of annotationTypes">{{at.name}}</option>
                             </select>
                         </div>
-
                         <div class="form-group form-check">
                             <input class="form-check-input" id="inp-notInImage" type="checkbox"
                                    formControlName="notInImage">
                             <label class="form-check-label" for="inp-notInImage">Not in Image</label>
                         </div>
-
                         <div class="form-group form-check">
                             <input class="form-check-input" id="inp-blurred" type="checkbox" formControlName="blurred">
                             <label class="form-check-label" for="inp-blurred">Blurred</label>
+                        </div>
+                        <div class="form-group form-check">
+                            <input class="form-check-input" id="inp-concealed" type="checkbox"
+                                   formControlName="concealed">
+                            <label class="form-check-label" for="inp-concealed">Concealed</label>
                         </div>
                     </form>
                     <div class="alert alert-danger">At some point there will be a bounding box which can be moved with
@@ -44,6 +57,7 @@
                     </div>
                 </div>
             </div>
+
             <div class="my-2"></div>
             <!-- Navigation buttons -->
             <div class="card">
@@ -56,7 +70,6 @@
                                 Keep Selection for next Image
                             </label>
                         </div>
-
                         <div class="form-group">
                             <div class="row">
                                 <button class="btn btn-outline-secondary col mx-3 my-1">Reset</button>
