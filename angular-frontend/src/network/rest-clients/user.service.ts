@@ -14,8 +14,8 @@ export class UserService {
     constructor(private http: HttpClient) {
     }
 
-    public get(id: number | 'me'): Observable<User<'resolved'>> {
-        return this.http.get<User<'resolved'>>(`${this.url}${id}/`);
+    public get(id: number | 'me'): Observable<User> {
+        return this.http.get<User>(`${this.url}${id}/`);
     }
 
 }

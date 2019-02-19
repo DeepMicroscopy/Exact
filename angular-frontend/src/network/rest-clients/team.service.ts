@@ -15,13 +15,13 @@ export class TeamService {
     constructor(private http: HttpClient) {
     }
 
-    public list(): Observable<Team<'simple'>[]> {
-        return this.http.get<Team<'simple'>[]>(this.url);
+    public list(): Observable<Team[]> {
+        return this.http.get<Team[]>(this.url);
     }
 
-    public get(id: number): Observable<Team<'resolved'>> {
+    public get(id: number): Observable<Team> {
         const url = `${this.url}${id}/`;
-        return this.http.get<Team<'resolved'>>(url);
+        return this.http.get<Team>(url);
     }
 
     public create(name: string): Observable<boolean> {

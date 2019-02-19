@@ -11,18 +11,13 @@ import {Observable} from 'rxjs';
 })
 export class NavbarComponent implements OnInit {
 
-    protected user$: Observable<User<'resolved'>>;
+    protected user$: Observable<User>;
 
     constructor(protected userService: UserService, protected authService: AuthService) {
     }
 
     ngOnInit() {
         this.user$ = this.userService.get('me');
-    }
-
-    test(x: any): boolean {
-        console.log(x);
-        return false;
     }
 
 }

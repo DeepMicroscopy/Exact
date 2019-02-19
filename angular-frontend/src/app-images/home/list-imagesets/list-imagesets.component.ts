@@ -18,7 +18,7 @@ export class ListImagesetsComponent implements OnInit {
     private imageSets$: Observable<ImageSet[]>;
     private pinnedSets$: Observable<ImagesetInUser[]>;
     protected visibleSets$: Observable<ImagesetInUser[]>;
-    protected user$: Observable<User<'resolved'>>;
+    protected user$: Observable<User>;
 
     constructor(protected imageSetService: ImageSetService, protected userService: UserService, protected teamService: TeamService,
                 protected router: Router, protected activeRoute: ActivatedRoute) {

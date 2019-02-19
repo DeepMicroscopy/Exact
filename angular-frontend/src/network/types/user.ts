@@ -1,7 +1,7 @@
-export interface User<T extends 'simple' | 'resolved'> {
+export interface User {
     id: number;
     username: string;
-    teams: T extends 'simple' ? number[] : TeamInUser[];
+    teams: number[];
     points: number;
     pinnedSets: ImagesetInUser[];
 }
