@@ -1,7 +1,7 @@
 export interface User {
     id: number;
     username: string;
-    teams: number[];
+    teams: TeamInUser[];
     points: number;
     pinnedSets: ImagesetInUser[];
 }

@@ -5,11 +5,16 @@ import {ImagesetComponent} from './imageset/imageset.component';
 import {ImagesetResolverService} from './imageset/imageset-resolver.service';
 import {ImageComponent} from './image/image.component';
 import {ImageResolverService} from './image/image-resolver.service';
+import {HomeResolverService} from './home/home-resolver.service';
 
 const routes: Routes = [
     {path: '', pathMatch: 'full', redirectTo: 'pinned'},
     {path: 'imagesets', pathMatch: 'full', redirectTo: 'pinned'},
-    {path: ':visibleSet', pathMatch: 'full', component: HomeComponent},
+    {
+        path: ':visibleSet', pathMatch: 'full', component: HomeComponent, resolve: {
+            homeData: HomeResolverService
+        }
+    },
     {
         path: 'imagesets/:imagesetId', pathMatch: 'full', component: ImagesetComponent, resolve: {
             imageSetData: ImagesetResolverService,

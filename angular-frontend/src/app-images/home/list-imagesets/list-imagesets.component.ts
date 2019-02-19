@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, Input, OnInit} from '@angular/core';
 import {Observable} from 'rxjs';
 import {ImageSetService} from '../../../network/rest-clients/image-set.service';
 import {ImageSet} from '../../../network/types/imageSet';
@@ -6,7 +6,6 @@ import {UserService} from '../../../network/rest-clients/user.service';
 import {map, flatMap, tap} from 'rxjs/operators';
 import {ImagesetInUser, User} from '../../../network/types/user';
 import {ActivatedRoute, Router} from '@angular/router';
-import {TeamService} from '../../../network/rest-clients/team.service';
 
 @Component({
     selector: 'app-list-imagesets',
@@ -15,36 +14,25 @@ import {TeamService} from '../../../network/rest-clients/team.service';
 })
 export class ListImagesetsComponent implements OnInit {
 
-    private imageSets$: Observable<ImageSet[]>;
-    private pinnedSets$: Observable<ImagesetInUser[]>;
-    protected visibleSets$: Observable<ImagesetInUser[]>;
-    protected user$: Observable<User>;
+    @Input() imagesets: ImageSet[];
+    @Input() user: User;
 
-    constructor(protected imageSetService: ImageSetService, protected userService: UserService, protected teamService: TeamService,
-                protected router: Router, protected activeRoute: ActivatedRoute) {
+    protected visibleSets$: Observable<ImagesetInUser[]>;
+
+    constructor(protected router: Router, protected activeRoute: ActivatedRoute) {
     }
 
     ngOnInit() {
-        this.imageSets$ = this.imageSetService.list();
-        this.user$ = this.userService.get('me');
-
-        // Define pinnedSets$ as those sets of imageSets$ which's id is included in the users pinnedSets array
-        this.pinnedSets$ = this.user$.pipe(
-            map(user => user.pinnedSets)
-        );
-
         // Define visibleSets$ to be selected by route-parameter and if that parameter is an ID, filter imageSets$ to only include sets
         // from the ID's corresponding team
         this.visibleSets$ = this.activeRoute.paramMap.pipe(
-            flatMap(params => {
+            map(params => {
                 const selection = params.get('visibleSet');
 
                 if (selection === 'pinned') {
-                    return this.pinnedSets$;
+                    return this.user.pinnedSets;
                 } else {
-                    return this.imageSets$.pipe(
-                        map(sets => sets.filter(i => i.team.id.toString() === selection))
-                    ) as Observable<ImagesetInUser[]>;
+                    return this.imagesets.filter(i => i.team.id.toString() === selection);
                 }
             })
         );
@@ -56,7 +44,7 @@ export class ListImagesetsComponent implements OnInit {
         }
 
         return this.activeRoute.paramMap.pipe(
-            map(params => params.get('visibleSet') === navSection)
+            map(params => params.get('visibleSet') === navSection),
         );
     }
 
