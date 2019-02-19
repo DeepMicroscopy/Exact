@@ -3,11 +3,11 @@
         <h5>Imagesets</h5>
         <ul class="nav nav-tabs card-header-tabs">
             <li class="nav-item">
-                <a [class]="'nav-link' + ((isNavActive('pinned') | async) ? ' active': '')"
+                <a class="nav-link" routerLinkActive="active"
                    routerLink="../pinned">Pinned Sets</a>
             </li>
             <li *ngFor="let team of user.teams">
-                <a [class]="'nav-link ' + ((isNavActive(team.id) | async) ? ' active' : '')"
+                <a class="nav-link" routerLinkActive="active"
                    [routerLink]="'../' + team.id">{{team.name}}'s Sets</a>
             </li>
         </ul>
