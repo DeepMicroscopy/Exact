@@ -2,6 +2,6 @@
     <h5 class="card-header">Image List</h5>
     <div class="list-group">
         <a *ngFor="let image of imageset.images" class="list-group-item py-1"
-           [routerLink]="'./image/' + image.id">{{image.name}}</a>
+           [routerLink]="'/images/imagesets/' + imageset.id + '/image/' + image.id">{{image.name}}</a>
     </div>
 </div>
