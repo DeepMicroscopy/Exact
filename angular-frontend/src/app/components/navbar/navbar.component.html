@@ -19,13 +19,13 @@
             <li class="nav-item"><a class="nav-link" routerLink="/">Tools</a> <!-- TODO Link to "Tools" route --></li>
             <li *ngIf="authService.isLoggedIn()" class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="" role="button" data-toggle="dropdown">My Teams</a>
-                <div class="dropdown-menu">
+                <div class="dropdown-menu dropdown-menu-right">
                     <a *ngFor="let team of (user$ | async)?.teams" class="dropdown-item" routerLink="./">{{team.name}}</a> <!-- TODO Link to team description page -->
                 </div>
             </li>
             <li *ngIf="authService.isLoggedIn()" class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="" role="button" data-toggle="dropdown">{{(user$ | async)?.username}}</a>
-                <div class="dropdown-menu">
+                <div class="dropdown-menu dropdown-menu-right">
                     <a class="dropdown-item" routerLink="/">Profile</a>
                     <a class="dropdown-item" href="#" (click)="authService.logout()">Logout</a>
                     <a class="dropdown-item" routerLink="/">Change Password</a>
