@@ -22,7 +22,7 @@ export class ImageComponent implements OnInit {
     protected annotationTypes: AnnotationType[];
 
     protected annotationConfigForm = new FormGroup({
-        annotationType: new FormControl(),
+        annotationType: new FormControl(''),
         notInImage: new FormControl(false),
         blurred: new FormControl(false),
         concealed: new FormControl(false),
@@ -38,14 +38,40 @@ export class ImageComponent implements OnInit {
             this.image = data.imagesData.image;
             this.annotationTypes = data.imagesData.annotationTypes;
             this.imageset = data.imageSetData.set;
+
+            // Set default selected annotationType to the imagesets mainAnnotationType
+            if (this.imageset.mainAnnotationType) {
+                this.annotationConfigForm.patchValue({
+                    annotationType: this.findAnnotationType(this.imageset.mainAnnotationType).name
+                });
+            }
         });
+
+        this.annotationConfigForm.valueChanges.subscribe(console.log);
     }
 
     /**
-     * Find the AnnotationType object based on its id
+     * Find the AnnotationType object based on its fields
+     *
+     * All given parameters must match but those left out are ignored.
      */
-    protected findAnnotationType(id: number): AnnotationType {
-        return this.annotationTypes.find(at => at.id === id);
+    protected findAnnotationType(id?: number, name?: string): AnnotationType {
+        return this.annotationTypes.find(at => {
+            // Return false if no parameter was given at all
+            if (!id && !name) {
+                return false;
+            }
+
+            // Evaluate each given parameter
+            let result = true;
+            if (id) {
+                result = result && at.id === id;
+            }
+            if (name) {
+                result = result && at.name === name;
+            }
+            return result;
+        });
     }
 
     protected actDeleteAnnotation(id: number) {

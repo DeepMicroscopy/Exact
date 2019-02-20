@@ -33,7 +33,11 @@
                     <form [formGroup]="annotationConfigForm">
                         <div class="form-group">
                             <label for="inp-annotationType">Select an Annotation Type</label>
-                            <select id="inp-annotationType" class="form-control" formControlName="annotationType">
+                            <select id="inp-annotationType" class="form-control" formControlName="annotationType"
+                                    [value]="(findAnnotationType(imageset.mainAnnotationType)
+                                    ? findAnnotationType(imageset.mainAnnotationType).name
+                                    : '')">
+                                <option></option>
                                 <option *ngFor="let at of annotationTypes">{{at.name}}</option>
                             </select>
                         </div>
