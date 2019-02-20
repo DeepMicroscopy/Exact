@@ -38,7 +38,7 @@
                             <td>Description</td>
                             <td>{{imageSet.description}}</td>
                         </tr>
-                        <tr>
+                        <tr *ngIf="imageSet.creator">
                             <td>Creator</td>
                             <td>{{imageSet.creator.name}}</td>
                         </tr>
