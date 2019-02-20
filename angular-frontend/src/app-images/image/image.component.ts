@@ -1,5 +1,5 @@
 import {Component, OnInit} from '@angular/core';
-import {ActivatedRoute, Router} from '@angular/router';
+import {ActivatedRoute, ParamMap, Router} from '@angular/router';
 import {ImagesData} from './image-resolver.service';
 import {ImagesetData} from '../imageset/imageset-resolver.service';
 import {ImageSet} from '../../network/types/imageSet';
@@ -8,6 +8,17 @@ import {FormControl, FormGroup} from '@angular/forms';
 import {AnnotationType} from '../../network/types/annotationType';
 import {environment} from '../../environments/environment';
 import {AnnotationService} from '../../network/rest-clients/annotation.service';
+import {combineLatest, Observable, zip} from 'rxjs';
+import {distinct, map} from 'rxjs/operators';
+
+
+export interface AnnotationConfigFormData {
+    annotationType: string;
+    notInImage: boolean;
+    blurred: boolean;
+    concealed: boolean;
+}
+
 
 @Component({
     selector: 'app-image',
@@ -34,20 +45,17 @@ export class ImageComponent implements OnInit {
     }
 
     ngOnInit() {
-        this.route.data.subscribe((data: { imageSetData: ImagesetData, imagesData: ImagesData }) => {
+        combineLatest(
+            this.route.data,
+            this.route.queryParamMap,
+        ).subscribe((values) => {
+            const data = values[0] as { imageSetData: ImagesetData, imagesData: ImagesData };
+            const queryParams = values[1] as ParamMap;
+
             this.image = data.imagesData.image;
             this.annotationTypes = data.imagesData.annotationTypes;
             this.imageset = data.imageSetData.set;
-
-            // Set default selected annotationType to the imagesets mainAnnotationType
-            if (this.imageset.mainAnnotationType) {
-                this.annotationConfigForm.patchValue({
-                    annotationType: this.findAnnotationType(this.imageset.mainAnnotationType).name
-                });
-            }
         });
-
-        this.annotationConfigForm.valueChanges.subscribe(console.log);
     }
 
     /**
@@ -74,12 +82,19 @@ export class ImageComponent implements OnInit {
         });
     }
 
+    /**
+     * Delete the annotation with the provided ID and update `this.image.annotations`.
+     */
     protected actDeleteAnnotation(id: number) {
         this.annotationService.delete(id).subscribe(result => {
             if (result) {
-                this.router.navigate([]);
+                this.image.annotations = this.image.annotations.filter(a => a.id !== id);
             }
         });
+    }
+
+    protected log(x: any) {
+        console.log(x);
     }
 
 }

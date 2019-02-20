@@ -30,32 +30,7 @@
             <!-- AnnotationType controls -->
             <div class="card">
                 <div class="card-body">
-                    <form [formGroup]="annotationConfigForm">
-                        <div class="form-group">
-                            <label for="inp-annotationType">Select an Annotation Type</label>
-                            <select id="inp-annotationType" class="form-control" formControlName="annotationType"
-                                    [value]="(findAnnotationType(imageset.mainAnnotationType)
-                                    ? findAnnotationType(imageset.mainAnnotationType).name
-                                    : '')">
-                                <option></option>
-                                <option *ngFor="let at of annotationTypes">{{at.name}}</option>
-                            </select>
-                        </div>
-                        <div class="form-group form-check">
-                            <input class="form-check-input" id="inp-notInImage" type="checkbox"
-                                   formControlName="notInImage">
-                            <label class="form-check-label" for="inp-notInImage">Not in Image</label>
-                        </div>
-                        <div class="form-group form-check">
-                            <input class="form-check-input" id="inp-blurred" type="checkbox" formControlName="blurred">
-                            <label class="form-check-label" for="inp-blurred">Blurred</label>
-                        </div>
-                        <div class="form-group form-check">
-                            <input class="form-check-input" id="inp-concealed" type="checkbox"
-                                   formControlName="concealed">
-                            <label class="form-check-label" for="inp-concealed">Concealed</label>
-                        </div>
-                    </form>
+                    <app-annotation-type-config (onUpdate)="log($event)"></app-annotation-type-config>
                     <div class="alert alert-danger">At some point there will be a bounding box which can be moved with
                         i j k l
                     </div>

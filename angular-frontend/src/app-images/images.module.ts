@@ -9,6 +9,7 @@ import {CreateTeamComponent} from './home/create-team/create-team.component';
 import {ReactiveFormsModule} from '@angular/forms';
 import { ImageComponent } from './image/image.component';
 import { ListImagesComponent } from './list-images/list-images.component';
+import { AnnotationTypeConfigComponent } from './image/annotation-type-config/annotation-type-config.component';
 
 @NgModule({
     declarations: [
@@ -17,7 +18,8 @@ import { ListImagesComponent } from './list-images/list-images.component';
         ImagesetComponent,
         CreateTeamComponent,
         ImageComponent,
-        ListImagesComponent
+        ListImagesComponent,
+        AnnotationTypeConfigComponent
     ],
     imports: [
         CommonModule,
