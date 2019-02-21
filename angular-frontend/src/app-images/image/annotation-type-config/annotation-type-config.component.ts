@@ -38,6 +38,14 @@ export class AnnotationTypeConfigComponent implements OnInit {
     }
 
     ngOnInit() {
+        // Send out an update whenever the form changes to a valid value
+        this.form.valueChanges.pipe(
+            filter(() => this.form.valid)
+        ).subscribe((update: AnnotationConfigData) => {
+            this.onUpdate.emit(update);
+        });
+
+        // Setup form and other data
         combineLatest(
             this.route.data,
             this.route.queryParamMap
@@ -49,12 +57,6 @@ export class AnnotationTypeConfigComponent implements OnInit {
             this.imageset = data.imageSetData.set;
 
             this.setupAnnotationType(queryParams);
-        });
-
-        this.form.valueChanges.pipe(
-            filter(() => this.form.valid)
-        ).subscribe((update: AnnotationConfigData) => {
-            this.onUpdate.emit(update);
         });
     }
 
