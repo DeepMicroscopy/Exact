@@ -22,7 +22,7 @@ export interface AnnotationConfigData {
 })
 export class AnnotationTypeConfigComponent implements OnInit {
 
-    @Output() onUpdate: EventEmitter<AnnotationConfigData> = new EventEmitter();
+    @Output() update: EventEmitter<AnnotationConfigData> = new EventEmitter(true);
 
     protected annotationTypes: AnnotationType[];
     protected imageset: ImageSet;
@@ -38,11 +38,12 @@ export class AnnotationTypeConfigComponent implements OnInit {
     }
 
     ngOnInit() {
+        console.log('onChanges');
         // Send out an update whenever the form changes to a valid value
         this.form.valueChanges.pipe(
             filter(() => this.form.valid)
         ).subscribe((update: AnnotationConfigData) => {
-            this.onUpdate.emit(update);
+            this.update.emit(update);
         });
 
         // Setup form and other data
