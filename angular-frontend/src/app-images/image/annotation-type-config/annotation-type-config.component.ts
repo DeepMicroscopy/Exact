@@ -4,7 +4,7 @@ import {ActivatedRoute, ParamMap, Router} from '@angular/router';
 import {combineLatest} from 'rxjs';
 import {AnnotationType} from '../../../network/types/annotationType';
 import {ImageSet} from '../../../network/types/imageSet';
-import {filter} from 'rxjs/operators';
+import {filter, map} from 'rxjs/operators';
 
 
 export interface AnnotationConfigData {
@@ -12,6 +12,7 @@ export interface AnnotationConfigData {
     notInImage: boolean;
     blurred: boolean;
     concealed: boolean;
+    valid: boolean;
 }
 
 
@@ -41,7 +42,10 @@ export class AnnotationTypeConfigComponent implements OnInit {
         console.log('onChanges');
         // Send out an update whenever the form changes to a valid value
         this.form.valueChanges.pipe(
-            filter(() => this.form.valid)
+            map(update => {
+                update.valid = this.form.valid;
+                return update;
+            })
         ).subscribe((update: AnnotationConfigData) => {
             this.update.emit(update);
         });
