@@ -39,7 +39,6 @@ export class AnnotationTypeConfigComponent implements OnInit {
     }
 
     ngOnInit() {
-        console.log('onChanges');
         // Send out an update whenever the form changes to a valid value
         this.form.valueChanges.pipe(
             map(update => {
