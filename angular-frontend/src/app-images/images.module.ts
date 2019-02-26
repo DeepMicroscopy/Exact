@@ -10,6 +10,7 @@ import {ReactiveFormsModule} from '@angular/forms';
 import { ImageComponent } from './image/image.component';
 import { ListImagesComponent } from './list-images/list-images.component';
 import { AnnotationTypeConfigComponent } from './image/annotation-type-config/annotation-type-config.component';
+import { AnnotatableDirective } from './image/annotatable/annotatable.directive';
 
 @NgModule({
     declarations: [
@@ -19,7 +20,8 @@ import { AnnotationTypeConfigComponent } from './image/annotation-type-config/an
         CreateTeamComponent,
         ImageComponent,
         ListImagesComponent,
-        AnnotationTypeConfigComponent
+        AnnotationTypeConfigComponent,
+        AnnotatableDirective
     ],
     imports: [
         CommonModule,

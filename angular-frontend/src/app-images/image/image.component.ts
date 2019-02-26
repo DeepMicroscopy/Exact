@@ -4,20 +4,12 @@ import {ImagesData} from './image-resolver.service';
 import {ImagesetData} from '../imageset/imageset-resolver.service';
 import {ImageSet} from '../../network/types/imageSet';
 import {Image} from '../../network/types/image';
-import {FormControl, FormGroup} from '@angular/forms';
+import {FormControl} from '@angular/forms';
 import {AnnotationType} from '../../network/types/annotationType';
 import {environment} from '../../environments/environment';
 import {AnnotationService} from '../../network/rest-clients/annotation.service';
-import {combineLatest, Observable, zip} from 'rxjs';
-import {distinct, map} from 'rxjs/operators';
-
-
-export interface AnnotationConfigFormData {
-    annotationType: string;
-    notInImage: boolean;
-    blurred: boolean;
-    concealed: boolean;
-}
+import {combineLatest} from 'rxjs';
+import {AnnotationConfigData} from './annotation-type-config/annotation-type-config.component';
 
 
 @Component({
@@ -32,14 +24,9 @@ export class ImageComponent implements OnInit {
     protected image: Image;
     protected annotationTypes: AnnotationType[];
 
-    protected annotationConfigForm = new FormGroup({
-        annotationType: new FormControl(''),
-        notInImage: new FormControl(false),
-        blurred: new FormControl(false),
-        concealed: new FormControl(false),
-    });
-
     protected keepAnnotationForNextImage = new FormControl(true);
+
+    protected annotationConfigData: AnnotationConfigData;
 
     constructor(private route: ActivatedRoute, private router: Router, private annotationService: AnnotationService) {
     }
@@ -56,6 +43,10 @@ export class ImageComponent implements OnInit {
             this.annotationTypes = data.imagesData.annotationTypes;
             this.imageset = data.imageSetData.set;
         });
+    }
+
+    protected log(x: any) {
+        console.log(x);
     }
 
     /**
@@ -91,10 +82,6 @@ export class ImageComponent implements OnInit {
                 this.image.annotations = this.image.annotations.filter(a => a.id !== id);
             }
         });
-    }
-
-    protected log(x: any) {
-        console.log(x);
     }
 
 }

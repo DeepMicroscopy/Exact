@@ -9,7 +9,14 @@
             <!-- Annotation window in center of screen -->
             <div class="card">
                 <h5 class="card-header">Annotate {{image.name}}</h5>
-                <img class="card-img" [src]="mediaUrl + image.url">
+
+                <div class="image-wrapperd">
+                    <img class="card-img" [src]="mediaUrl + image.url" alt="Image to annotate">
+                    <canvas appAnnotatable [annotationConfig]="annotationConfigData" [imageData]="image">
+                        Unable to load Canvas for {{image.name}}
+                    </canvas>
+                </div>
+
                 <div class="card-body">
                     <h5 class="card-title">Annotations</h5>
                     <div *ngFor="let annotation of image.annotations">
@@ -30,7 +37,7 @@
             <!-- AnnotationType controls -->
             <div class="card">
                 <div class="card-body">
-                    <app-annotation-type-config (onUpdate)="log($event)"></app-annotation-type-config>
+                    <app-annotation-type-config (update)="annotationConfigData = $event"></app-annotation-type-config>
                     <div class="alert alert-danger">At some point there will be a bounding box which can be moved with
                         i j k l
                     </div>
