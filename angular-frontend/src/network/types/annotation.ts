@@ -3,10 +3,14 @@ export interface Annotation {
   concealed: boolean;
   blurred: boolean;
   closed: boolean;
+  notInImage: boolean;
   lastEditTime: string;
-  vector?: object;
+  vector?: AnnotationVector;
   image: number;    // Reference to Image
   annotationType: number;   // Reference to AnnotationType
   creator?: number;    // Reference to User
   lastEditor?: number;   // Reference to User
 }
+
+
+export type AnnotationVector = object;

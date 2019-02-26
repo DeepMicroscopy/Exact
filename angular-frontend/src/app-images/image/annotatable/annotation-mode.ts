@@ -1,11 +1,16 @@
 import {Observable, Subject} from 'rxjs';
 import {AnnotationType} from '../../../network/types/annotationType';
+import {Stack} from 'stack-typescript';
+import {AnnotationVector} from '../../../network/types/annotation';
 
 
 export abstract class AnnotationMode {
 
-    protected click$: Subject<MouseEvent> = new Subject();
-    protected move$: Subject<MouseEvent> = new Subject();
+    protected mouseClicks: Stack<MouseEvent> = new Stack();
+    protected mouseMoves: Stack<MouseEvent> = new Stack();
+    protected mouseDowns: Stack<MouseEvent> = new Stack();
+    protected mouseUps: Stack<MouseEvent> = new Stack();
+    protected mouseLeaves: Stack<MouseEvent> = new Stack();
 
     protected canvas: HTMLCanvasElement;
 
@@ -20,14 +25,24 @@ export abstract class AnnotationMode {
      *
      * @param canvas The HTMLCanvasElement on which events occur
      */
-    abstract handle(canvas: HTMLCanvasElement): Observable<PrematureAnnotation>;
+    public abstract handle(canvas: HTMLCanvasElement): Observable<AnnotationVector>;
 
     /**
      * Reset the current drawing as if nothing was ever drawn at all
      */
-    abstract reset();
+    public abstract reset();
 
-    protected draw_crosshair(event: MouseEvent) {
+    /**
+     * Render the screen anew since events have happened
+     */
+    protected abstract render();
+
+    /**
+     * Draw a crosshair to where the cursor is now
+     *
+     * @param event A MouseEvent which is needed to determine the cursors current position
+     */
+    protected drawCrosshair(event: MouseEvent) {
         const ctx = this.canvas.getContext('2d');
         const bounds = this.canvas.getBoundingClientRect();
         const scaleX = this.canvas.width / bounds.width;
@@ -71,19 +86,41 @@ export abstract class AnnotationMode {
         );
     }
 
+    private shortenStack(stack: Stack<any>, max_length = 10, short_to = 2) {
+        if (stack.size > max_length) {
+            while (stack.size > short_to) {
+                stack.removeTail();
+            }
+        }
+    }
+
     public onClick(event: MouseEvent) {
-        this.click$.next(event);
+        this.mouseClicks.push(event);
+        this.shortenStack(this.mouseClicks);
+        requestAnimationFrame(() => this.render());
     }
 
     public onMouseMove(event: MouseEvent) {
-        this.move$.next(event);
+        this.mouseMoves.push(event);
+        this.shortenStack(this.mouseMoves);
+        requestAnimationFrame(() => this.render());
     }
-}
 
+    public onMouseDown(event: MouseEvent) {
+        this.mouseDowns.push(event);
+        this.shortenStack(this.mouseDowns);
+        requestAnimationFrame(() => this.render());
+    }
 
-export interface PrematureAnnotation {
-    annotationType: AnnotationType;
-    notInImage: boolean;
-    concealed: boolean;
-    blurred: boolean;
+    public onMouseUp(event: MouseEvent) {
+        this.mouseUps.push(event);
+        this.shortenStack(this.mouseUps);
+        requestAnimationFrame(() => this.render());
+    }
+
+    public onMouseLeave(event: MouseEvent) {
+        this.mouseLeaves.push(event);
+        this.shortenStack(this.mouseLeaves);
+        requestAnimationFrame(() => this.render());
+    }
 }

@@ -1,9 +1,20 @@
 import {AfterViewInit, Directive, ElementRef, EventEmitter, HostListener, Input, OnChanges, Output, SimpleChanges} from '@angular/core';
 import {AnnotationConfigData} from '../annotation-type-config/annotation-type-config.component';
 import {Image} from '../../../network/types/image';
-import {AnnotationMode, PrematureAnnotation} from './annotation-mode';
-import {VectorType} from '../../../network/types/annotationType';
+import {AnnotationMode} from './annotation-mode';
+import {AnnotationType, VectorType} from '../../../network/types/annotationType';
 import {BoundingBoxAnnotationMode} from './bounding-box.annotation-mode';
+import {AnnotationVector} from '../../../network/types/annotation';
+
+
+export interface PrematureAnnotation {
+    annotationType: AnnotationType;
+    blurred: boolean;
+    concealed: boolean;
+    notInImage: boolean;
+    image: Image;
+    vector: AnnotationVector;
+}
 
 
 @Directive({
@@ -11,7 +22,7 @@ import {BoundingBoxAnnotationMode} from './bounding-box.annotation-mode';
 })
 export class AnnotatableDirective implements OnChanges, AfterViewInit {
 
-    @Output() currentDrawing: EventEmitter<PrematureAnnotation | null> = new EventEmitter(true);
+    @Output() annotationChange: EventEmitter<PrematureAnnotation> = new EventEmitter(true);
 
     @Input() annotationConfig: AnnotationConfigData;
     @Input() imageData: Image;
@@ -21,15 +32,24 @@ export class AnnotatableDirective implements OnChanges, AfterViewInit {
     constructor(private el: ElementRef) {
     }
 
-    ngOnChanges(changes: SimpleChanges): void {
+    ngOnChanges(changes: SimpleChanges): void { // TODO Push out an update whenever annotationConfig changes
         if (this.annotationConfig && this.imageData) {
             const canvas: HTMLCanvasElement = this.el.nativeElement;
             if (this.mode) {
                 this.mode.reset();
             }
-            this.map_annotation_mode();
+            this.mapAnnotationTypeToMode();
             if (this.mode) {
-                this.mode.handle(canvas).subscribe(value => this.currentDrawing.emit(value));
+                this.mode.handle(canvas).subscribe(value => {
+                    this.annotationChange.emit({
+                        annotationType: this.annotationConfig.annotationType,
+                        image: this.imageData,
+                        blurred: this.annotationConfig.blurred,
+                        concealed: this.annotationConfig.concealed,
+                        notInImage: this.annotationConfig.notInImage,
+                        vector: value
+                    });
+                });
             }
         }
     }
@@ -42,7 +62,10 @@ export class AnnotatableDirective implements OnChanges, AfterViewInit {
         canvas.height = this.imageData.height;
     }
 
-    private map_annotation_mode(): void {
+    /**
+     * Map an AnnotationType to one of the available annotationMode
+     */
+    private mapAnnotationTypeToMode(): void {
         if (this.annotationConfig.annotationType.vectorType === VectorType.boundingBox) {
             this.mode = new BoundingBoxAnnotationMode(this.el.nativeElement);
 
@@ -62,6 +85,28 @@ export class AnnotatableDirective implements OnChanges, AfterViewInit {
     private onDragStart(event) {
         if (this.mode) {
             this.mode.onMouseMove(event);
+        }
+    }
+
+    @HostListener('mouseleave', ['$event'])
+    private onMouseLeave(event) {
+        if (this.mode) {
+            this.mode.reset();
+            this.mode.onMouseLeave(event);
+        }
+    }
+
+    @HostListener('mousedown', ['$event'])
+    private onMouseDown(event) {
+        if (this.mode) {
+            this.mode.onMouseDown(event);
+        }
+    }
+
+    @HostListener('mouseup', ['$event'])
+    private onMouseUp(event) {
+        if (this.mode) {
+            this.mode.onMouseUp(event);
         }
     }
 

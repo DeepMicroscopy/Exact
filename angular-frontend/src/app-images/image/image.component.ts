@@ -10,6 +10,7 @@ import {environment} from '../../environments/environment';
 import {AnnotationService} from '../../network/rest-clients/annotation.service';
 import {combineLatest} from 'rxjs';
 import {AnnotationConfigData} from './annotation-type-config/annotation-type-config.component';
+import {PrematureAnnotation} from './annotatable/annotatable.directive';
 
 
 @Component({
@@ -27,6 +28,8 @@ export class ImageComponent implements OnInit {
     protected keepAnnotationForNextImage = new FormControl(true);
 
     protected annotationConfigData: AnnotationConfigData;
+
+    protected currentPrematureAnnotation: PrematureAnnotation;
 
     constructor(private route: ActivatedRoute, private router: Router, private annotationService: AnnotationService) {
     }
@@ -82,6 +85,10 @@ export class ImageComponent implements OnInit {
                 this.image.annotations = this.image.annotations.filter(a => a.id !== id);
             }
         });
+    }
+
+    protected save() {
+        console.log(this.currentPrematureAnnotation);
     }
 
 }

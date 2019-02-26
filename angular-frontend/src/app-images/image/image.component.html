@@ -12,7 +12,8 @@
 
                 <div class="image-wrapper">
                     <img class="card-img" [src]="mediaUrl + image.url" alt="Image to annotate">
-                    <canvas appAnnotatable [annotationConfig]="annotationConfigData" [imageData]="image">
+                    <canvas appAnnotatable [annotationConfig]="annotationConfigData" [imageData]="image"
+                            (annotationChange)="currentPrematureAnnotation = $event">
                         Unable to load Canvas for {{image.name}}
                     </canvas>
                 </div>
@@ -59,7 +60,7 @@
                         <div class="form-group">
                             <div class="row">
                                 <button class="btn btn-outline-secondary col mx-3 my-1">Reset</button>
-                                <button class="btn btn-outline-success col mx-3 my-1">Save</button>
+                                <button (click)="save()" class="btn btn-outline-success col mx-3 my-1">Save</button>
                             </div>
                             <div class="row">
                                 <button class="btn btn-outline-secondary col mx-3 my-1">Back</button>

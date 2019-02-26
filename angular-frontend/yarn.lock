@@ -4164,6 +4164,11 @@ lie@~3.1.0:
   dependencies:
     immediate "~3.0.5"
 
+linked-list-typescript@^1.0.11:
+  version "1.0.15"
+  resolved "https://registry.yarnpkg.com/linked-list-typescript/-/linked-list-typescript-1.0.15.tgz#faeed93cf9203f102e2158c29edcddda320abe82"
+  integrity sha512-RIyUu9lnJIyIaMe63O7/aFv/T2v3KsMFuXMBbUQCHX+cgtGro86ETDj5ed0a8gQL2+DFjzYYsgVG4I36/cUwgw==
+
 load-json-file@^1.0.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/load-json-file/-/load-json-file-1.1.0.tgz#956905708d58b4bab4c2261b04f59f31c99374c0"
@@ -6621,6 +6626,13 @@ ssri@^6.0.0, ssri@^6.0.1:
   integrity sha512-3Wge10hNcT1Kur4PDFwEieXSCMCJs/7WvSACcrMYrNp+b8kDL1/0wJch5Ni2WrtwEa2IO8OsVfeKIciKCDx/QA==
   dependencies:
     figgy-pudding "^3.5.1"
+
+stack-typescript@^1.0.4:
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/stack-typescript/-/stack-typescript-1.0.4.tgz#185c57ca2e5f40c15266794fbdf43e727e7c80f4"
+  integrity sha512-LAFycOVCWRYP6TDbwXR2XeXTmKjZT+wpdC4GEnBWWYfyTUK7NOassuqVTbUXsEA6CTCgk4FMOkUi+yFS33D1mw==
+  dependencies:
+    linked-list-typescript "^1.0.11"
 
 static-extend@^0.1.1:
   version "0.1.2"
