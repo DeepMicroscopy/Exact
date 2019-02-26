@@ -10,7 +10,7 @@
             <div class="card">
                 <h5 class="card-header">Annotate {{image.name}}</h5>
 
-                <div class="image-wrapperd">
+                <div class="image-wrapper">
                     <img class="card-img" [src]="mediaUrl + image.url" alt="Image to annotate">
                     <canvas appAnnotatable [annotationConfig]="annotationConfigData" [imageData]="image">
                         Unable to load Canvas for {{image.name}}
