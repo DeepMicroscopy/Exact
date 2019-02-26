@@ -8,7 +8,7 @@ import {filter, map} from 'rxjs/operators';
 
 
 export interface AnnotationConfigData {
-    annotationType: string;
+    annotationType: AnnotationType;
     notInImage: boolean;
     blurred: boolean;
     concealed: boolean;
@@ -43,6 +43,10 @@ export class AnnotationTypeConfigComponent implements OnInit {
         this.form.valueChanges.pipe(
             map(update => {
                 update.valid = this.form.valid;
+                return update;
+            }),
+            map(update => {
+                update.annotationType = this.findAnnotationType(null, update.annotationType);
                 return update;
             })
         ).subscribe((update: AnnotationConfigData) => {
