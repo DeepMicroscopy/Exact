@@ -49,8 +49,8 @@ export abstract class AnnotationMode {
         const scaleY = this.canvas.height / bounds.height;
 
         const thickness = 4;
-        const clearingY = 32;
-        const clearingX = 32;
+        const clearingY = 16;
+        const clearingX = 16;
         ctx.fillStyle = '#FF0000';
 
         // From top to mouse
