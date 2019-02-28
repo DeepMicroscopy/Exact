@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, OnInit, ViewChild} from '@angular/core';
 import {ActivatedRoute, ParamMap, Router} from '@angular/router';
 import {ImagesData} from './image-resolver.service';
 import {ImagesetData} from '../imageset/imageset-resolver.service';
@@ -8,11 +8,9 @@ import {FormControl} from '@angular/forms';
 import {AnnotationType} from '../../network/types/annotationType';
 import {environment} from '../../environments/environment';
 import {AnnotationService} from '../../network/rest-clients/annotation.service';
-import {combineLatest} from 'rxjs';
 import {AnnotationConfigData} from './annotation-type-config/annotation-type-config.component';
-import {PrematureAnnotation} from './annotatable/annotatable.directive';
+import {AnnotatableDirective, PrematureAnnotation} from './annotatable/annotatable.directive';
 import {AnnotationVector} from '../../network/types/annotation';
-import {hasOwnProperty} from 'tslint/lib/utils';
 
 
 @Component({
@@ -32,17 +30,14 @@ export class ImageComponent implements OnInit {
     protected annotationConfigData: AnnotationConfigData;
     protected prematureAnnotation: PrematureAnnotation;
 
+    @ViewChild(AnnotatableDirective)
+    protected annotatableDirective: AnnotatableDirective;
+
     constructor(private route: ActivatedRoute, private router: Router, private annotationService: AnnotationService) {
     }
 
     ngOnInit() {
-        combineLatest(
-            this.route.data,
-            this.route.queryParamMap,
-        ).subscribe((values) => {
-            const data = values[0] as { imageSetData: ImagesetData, imagesData: ImagesData };
-            const queryParams = values[1] as ParamMap;
-
+        this.route.data.subscribe((data: { imageSetData: ImagesetData, imagesData: ImagesData }) => {
             this.image = data.imagesData.image;
             this.annotationTypes = data.imagesData.annotationTypes;
             this.imageset = data.imageSetData.set;

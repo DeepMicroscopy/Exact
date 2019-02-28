@@ -62,6 +62,12 @@ export class AnnotatableDirective implements OnChanges, AfterViewInit {
         canvas.height = this.imageData.height;
     }
 
+    public reset() {
+        if (this.mode) {
+            this.mode.reset();
+        }
+    }
+
     /**
      * Map an AnnotationType to one of the available annotationMode
      */

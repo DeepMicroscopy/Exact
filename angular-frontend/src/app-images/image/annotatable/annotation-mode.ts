@@ -28,6 +28,7 @@ export abstract class AnnotationMode {
         this.mouseUps = new Stack();
 
         this.canvas.getContext('2d').clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.result$.next(null);
     }
 
     /**
