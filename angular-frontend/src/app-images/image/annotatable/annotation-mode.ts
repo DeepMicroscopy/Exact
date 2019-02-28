@@ -103,10 +103,9 @@ export abstract class AnnotationMode {
         const result = this.handleEvents();
 
         if (result !== null) {
-
             this.drawPrematureAnnotation(result);
             this.result$.next(result);
-        } else {
+        } else if (this.result$.getValue() !== null) {
             this.drawPrematureAnnotation(this.result$.getValue());
         }
     }
@@ -146,6 +145,9 @@ export abstract class AnnotationMode {
     public onMouseLeave(event: MouseEvent) {
         this.mouseLeaves.push(event);
         this.shortenStack(this.mouseLeaves);
+
+        console.log(this.mouseMoves.size, this.mouseDowns.size, this.mouseUps.size);
+
         requestAnimationFrame(() => this.render());
     }
 }
