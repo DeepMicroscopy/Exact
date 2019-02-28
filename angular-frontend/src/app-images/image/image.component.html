@@ -22,6 +22,18 @@
                 <div class="card-body">
                     <!-- List of annotations -->
                     <h5 class="card-title">Annotations</h5>
+                    <div *ngIf="prematureAnnotation && prematureAnnotation.vector">
+                        <!-- Premature Annotations -->
+                        <div class="dropdown-divider"></div>
+                        <span>
+                            <i>(WIP)</i> {{prematureAnnotation.annotationType.name}}
+                            {{prematureAnnotation.blurred ? '(blurred)' : ''}}
+                            {{prematureAnnotation.concealed ? '(concealed)' : ''}}
+                        </span><br>
+                        <span *ngFor="let point of annotationVectorToIterable(prematureAnnotation.vector)">
+                            {{point.key}}:{{point.value}}
+                        </span>
+                    </div>
                     <div *ngFor="let annotation of image.annotations">
                         <!-- Completed annotations -->
                         <div class="dropdown-divider"></div>
@@ -33,16 +45,6 @@
                         <button class="btn btn-danger float-right" (click)="actDeleteAnnotation(annotation.id)">
                             <i class="fa fa-trash"></i>
                         </button>
-                    </div>
-                    <div *ngIf="prematureAnnotation && prematureAnnotation.vector">
-                        <!-- Premature Annotations -->
-                        <div class="dropdown-divider"></div>
-                        <span>
-                            <i>(WIP)</i> {{prematureAnnotation.annotationType.name}}
-                            {{prematureAnnotation.blurred ? '(blurred)' : ''}}
-                            {{prematureAnnotation.concealed ? '(concealed)' : ''}}
-                        </span><br>
-                        <span *ngFor="let point of annotationVectorToIterable(prematureAnnotation.vector)">{{point.key}}: {{point.value}}</span>
                     </div>
                 </div>
             </div>
