@@ -14,7 +14,6 @@ export class BoundingBoxAnnotationMode extends AnnotationMode {
 
     /** @inheritDoc */
     protected handleEvents(): AnnotationVector | null {
-
         if (this.mouseMoves.size > 0) {
             this.drawCrosshair(this.mouseMoves.top);
         }
@@ -35,10 +34,16 @@ export class BoundingBoxAnnotationMode extends AnnotationMode {
 
     public drawPrematureAnnotation(annotation: BoundingBoxVector) {
         const ctx = this.canvas.getContext('2d');
+        ctx.fillStyle = '#00000060';
 
-        const thickness = 4;
+        ctx.fillRect(0, 0, this.canvas.width, annotation.y1);       // Top
+        ctx.fillRect(0, annotation.y2, this.canvas.width, this.canvas.height - annotation.y2);       // Bottom
+        ctx.fillRect(0, annotation.y1, annotation.x1, annotation.y2 - annotation.y1);        // Left
+        ctx.fillRect(annotation.x2, annotation.y1, this.canvas.width - annotation.x2, annotation.y2 - annotation.y1);     // Right
 
-        ctx.strokeStyle = 'blue';
+        // Draw box
+        ctx.lineWidth = 5;
+        ctx.strokeStyle = '#000000';
         ctx.strokeRect(annotation.x1, annotation.y1, annotation.x2 - annotation.x1, annotation.y2 - annotation.y1);
     }
 
