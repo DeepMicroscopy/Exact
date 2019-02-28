@@ -11,7 +11,6 @@ export abstract class AnnotationMode {
     protected mouseMoves: Stack<MouseEvent> = new Stack();
     protected mouseDowns: Stack<MouseEvent> = new Stack();
     protected mouseUps: Stack<MouseEvent> = new Stack();
-    protected mouseLeaves: Stack<MouseEvent> = new Stack();
 
     protected canvas: HTMLCanvasElement;
 
@@ -27,7 +26,6 @@ export abstract class AnnotationMode {
         this.mouseMoves = new Stack();
         this.mouseDowns = new Stack();
         this.mouseUps = new Stack();
-        this.mouseLeaves = new Stack();
 
         this.canvas.getContext('2d').clearRect(0, 0, this.canvas.width, this.canvas.height);
     }
@@ -143,11 +141,18 @@ export abstract class AnnotationMode {
     }
 
     public onMouseLeave(event: MouseEvent) {
-        this.mouseLeaves.push(event);
-        this.shortenStack(this.mouseLeaves);
+        this.mouseMoves.push(event);
+        requestAnimationFrame(() => this.render());
+    }
 
-        console.log(this.mouseMoves.size, this.mouseDowns.size, this.mouseUps.size);
-
+    public onMouseEnter(event: MouseEvent) {
+        if (event.buttons === 0 && this.mouseDowns.size % 2 === 1) {
+            // If a button has been pressed before but is not anymore, remove the original mouseDown
+            this.mouseDowns.removeHead();
+        } else if (event.buttons === 1 && this.mouseDowns.size % 2 === 0) {
+            // If a button was not pressed but is now, create a mouseDown event at the mouseEnter position
+            this.mouseDowns.push(event);
+        }
         requestAnimationFrame(() => this.render());
     }
 }

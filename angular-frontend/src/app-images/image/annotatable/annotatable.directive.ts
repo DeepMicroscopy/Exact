@@ -91,8 +91,14 @@ export class AnnotatableDirective implements OnChanges, AfterViewInit {
     @HostListener('mouseleave', ['$event'])
     private onMouseLeave(event) {
         if (this.mode) {
-            this.mode.reset();
             this.mode.onMouseLeave(event);
+        }
+    }
+
+    @HostListener('mouseenter', ['$event'])
+    private onMouseEnter(event) {
+        if (this.mode) {
+            this.mode.onMouseEnter(event);
         }
     }
 
