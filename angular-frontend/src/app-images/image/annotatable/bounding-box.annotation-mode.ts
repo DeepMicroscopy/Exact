@@ -1,4 +1,4 @@
-import {AnnotationMode} from './annotation-mode';
+import {AnnotationMode, clamp} from './annotation-mode';
 import {AnnotationVector} from '../../../network/types/annotation';
 
 
@@ -98,11 +98,12 @@ export class BoundingBoxAnnotationMode extends AnnotationMode {
             }
         }
 
+        // noinspection JSSuspiciousNameCombination
         return {
-            x1: top_left.x,
-            y1: top_left.y,
-            x2: bottom_right.x,
-            y2: bottom_right.y
+            x1: clamp(Math.round(top_left.x), 0, this.canvas.width),
+            y1: clamp(Math.round(top_left.y), 0, this.canvas.height),
+            x2: clamp(Math.round(bottom_right.x), 0, this.canvas.width),
+            y2: clamp(Math.round(bottom_right.y), 0, this.canvas.height)
         };
     }
 }
