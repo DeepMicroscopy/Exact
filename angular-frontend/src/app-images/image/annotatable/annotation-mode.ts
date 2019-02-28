@@ -1,10 +1,11 @@
-import {Observable, Subject} from 'rxjs';
-import {AnnotationType} from '../../../network/types/annotationType';
+import {BehaviorSubject, Subject} from 'rxjs';
 import {Stack} from 'stack-typescript';
 import {AnnotationVector} from '../../../network/types/annotation';
 
 
 export abstract class AnnotationMode {
+
+    public result$: BehaviorSubject<AnnotationVector | null> = new BehaviorSubject(null);
 
     protected mouseClicks: Stack<MouseEvent> = new Stack();
     protected mouseMoves: Stack<MouseEvent> = new Stack();
@@ -19,23 +20,22 @@ export abstract class AnnotationMode {
     }
 
     /**
-     * Begin handling of events which happen on the canvas.
-     * How these events are handled is determined by the actual implementation.
-     * Examples include bounding box or polygons
-     *
-     * @param canvas The HTMLCanvasElement on which events occur
-     */
-    public abstract handle(canvas: HTMLCanvasElement): Observable<AnnotationVector>;
-
-    /**
      * Reset the current drawing as if nothing was ever drawn at all
      */
-    public abstract reset();
+    public reset() {
+        this.mouseClicks = new Stack();
+        this.mouseMoves = new Stack();
+        this.mouseDowns = new Stack();
+        this.mouseUps = new Stack();
+        this.mouseLeaves = new Stack();
+
+        this.canvas.getContext('2d').clearRect(0, 0, this.canvas.width, this.canvas.height);
+    }
 
     /**
-     * Render the screen anew since events have happened
+     * Handle new Events and generate a new AnnotationVector from them.
      */
-    protected abstract render();
+    protected abstract handleEvents(): AnnotationVector | null;
 
     /**
      * Draw a crosshair to where the cursor is now
@@ -84,6 +84,31 @@ export abstract class AnnotationMode {
             (event.x - bounds.left) * scaleX - clearingY,
             thickness
         );
+    }
+
+    /**
+     * Draw an annotation that is not yet complete.
+     *
+     * This can be either one which is currently being drawn or one which is just not yet saved.
+     */
+    public abstract drawPrematureAnnotation(annotation: AnnotationVector);
+
+    /**
+     * Method which is supposed to be run in a new AnimationFrame
+     */
+    private render() {
+        // Clear canvas
+        this.canvas.getContext('2d').clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        const result = this.handleEvents();
+
+        if (result !== null) {
+
+            this.drawPrematureAnnotation(result);
+            this.result$.next(result);
+        } else {
+            this.drawPrematureAnnotation(this.result$.getValue());
+        }
     }
 
     private shortenStack(stack: Stack<any>, max_length = 10, short_to = 2) {

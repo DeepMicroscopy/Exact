@@ -11,6 +11,8 @@ import {AnnotationService} from '../../network/rest-clients/annotation.service';
 import {combineLatest} from 'rxjs';
 import {AnnotationConfigData} from './annotation-type-config/annotation-type-config.component';
 import {PrematureAnnotation} from './annotatable/annotatable.directive';
+import {AnnotationVector} from '../../network/types/annotation';
+import {hasOwnProperty} from 'tslint/lib/utils';
 
 
 @Component({
@@ -28,8 +30,7 @@ export class ImageComponent implements OnInit {
     protected keepAnnotationForNextImage = new FormControl(true);
 
     protected annotationConfigData: AnnotationConfigData;
-
-    protected currentPrematureAnnotation: PrematureAnnotation;
+    protected prematureAnnotation: PrematureAnnotation;
 
     constructor(private route: ActivatedRoute, private router: Router, private annotationService: AnnotationService) {
     }
@@ -46,10 +47,6 @@ export class ImageComponent implements OnInit {
             this.annotationTypes = data.imagesData.annotationTypes;
             this.imageset = data.imageSetData.set;
         });
-    }
-
-    protected log(x: any) {
-        console.log(x);
     }
 
     /**
@@ -77,6 +74,21 @@ export class ImageComponent implements OnInit {
     }
 
     /**
+     * Convert an AnnotationVector to an Iterable because *ngFor needs that
+     */
+    protected annotationVectorToIterable(vector: AnnotationVector): {key: string, value: string}[] {
+        const result: {key: string, value: string}[] = [];
+
+        for (const i in vector) {
+            if (vector.hasOwnProperty(i)) {
+                result.push({key: i.toString(), value: vector[i].toString()});
+            }
+        }
+
+        return result;
+    }
+
+    /**
      * Delete the annotation with the provided ID and update `this.image.annotations`.
      */
     protected actDeleteAnnotation(id: number) {
@@ -87,8 +99,11 @@ export class ImageComponent implements OnInit {
         });
     }
 
-    protected save() {
-        console.log(this.currentPrematureAnnotation);
+    /**
+     * Save the current premature-annotation
+     */
+    protected actSave() {
+        console.log('Save pressed');
     }
 
 }

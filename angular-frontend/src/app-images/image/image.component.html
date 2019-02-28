@@ -11,24 +11,38 @@
                 <h5 class="card-header">Annotate {{image.name}}</h5>
 
                 <div class="image-wrapper">
+                    <!-- Canvas with image and actual annotations shown -->
                     <img class="card-img" [src]="mediaUrl + image.url" alt="Image to annotate">
                     <canvas appAnnotatable [annotationConfig]="annotationConfigData" [imageData]="image"
-                            (annotationChange)="currentPrematureAnnotation = $event">
+                            (annotationChange)="prematureAnnotation = $event">
                         Unable to load Canvas for {{image.name}}
                     </canvas>
                 </div>
 
                 <div class="card-body">
+                    <!-- List of annotations -->
                     <h5 class="card-title">Annotations</h5>
                     <div *ngFor="let annotation of image.annotations">
+                        <!-- Completed annotations -->
                         <div class="dropdown-divider"></div>
-                        <span>{{findAnnotationType(annotation.annotationType).name}}
+                        <span>
+                            {{findAnnotationType(annotation.annotationType).name}}
                             {{annotation.blurred ? '(blurred)' : ''}}
                             {{annotation.concealed ? '(concealed)' : ''}}
                         </span>
                         <button class="btn btn-danger float-right" (click)="actDeleteAnnotation(annotation.id)">
                             <i class="fa fa-trash"></i>
                         </button>
+                    </div>
+                    <div *ngIf="prematureAnnotation && prematureAnnotation.vector">
+                        <!-- Premature Annotations -->
+                        <div class="dropdown-divider"></div>
+                        <span>
+                            <i>(WIP)</i> {{prematureAnnotation.annotationType.name}}
+                            {{prematureAnnotation.blurred ? '(blurred)' : ''}}
+                            {{prematureAnnotation.concealed ? '(concealed)' : ''}}
+                        </span><br>
+                        <span *ngFor="let point of annotationVectorToIterable(prematureAnnotation.vector)">{{point.key}}: {{point.value}}</span>
                     </div>
                 </div>
             </div>
@@ -60,7 +74,7 @@
                         <div class="form-group">
                             <div class="row">
                                 <button class="btn btn-outline-secondary col mx-3 my-1">Reset</button>
-                                <button (click)="save()" class="btn btn-outline-success col mx-3 my-1">Save</button>
+                                <button (click)="actSave()" class="btn btn-outline-success col mx-3 my-1">Save</button>
                             </div>
                             <div class="row">
                                 <button class="btn btn-outline-secondary col mx-3 my-1">Back</button>

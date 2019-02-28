@@ -13,7 +13,7 @@ export interface PrematureAnnotation {
     concealed: boolean;
     notInImage: boolean;
     image: Image;
-    vector: AnnotationVector;
+    vector: AnnotationVector | null;
 }
 
 
@@ -34,13 +34,13 @@ export class AnnotatableDirective implements OnChanges, AfterViewInit {
 
     ngOnChanges(changes: SimpleChanges): void { // TODO Push out an update whenever annotationConfig changes
         if (this.annotationConfig && this.imageData) {
-            const canvas: HTMLCanvasElement = this.el.nativeElement;
             if (this.mode) {
+                this.mode.result$.unsubscribe();
                 this.mode.reset();
             }
             this.mapAnnotationTypeToMode();
             if (this.mode) {
-                this.mode.handle(canvas).subscribe(value => {
+                this.mode.result$.subscribe(value => {
                     this.annotationChange.emit({
                         annotationType: this.annotationConfig.annotationType,
                         image: this.imageData,

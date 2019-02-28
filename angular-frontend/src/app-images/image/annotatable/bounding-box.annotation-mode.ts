@@ -1,4 +1,3 @@
-import {Observable, Subject, zip} from 'rxjs';
 import {AnnotationMode} from './annotation-mode';
 import {AnnotationVector} from '../../../network/types/annotation';
 
@@ -13,21 +12,8 @@ export interface BoundingBoxVector extends AnnotationVector {
 
 export class BoundingBoxAnnotationMode extends AnnotationMode {
 
-    private result$: Subject<AnnotationVector> = new Subject();
-
     /** @inheritDoc */
-    handle(): Observable<AnnotationVector> {
-        return this.result$;
-    }
-
-    /** @inheritDoc */
-    reset() {
-        this.canvas.getContext('2d').clearRect(0, 0, this.canvas.width, this.canvas.height);
-    }
-
-    /** @inheritDoc */
-    protected render() {
-        this.reset();
+    protected handleEvents(): AnnotationVector | null {
 
         if (this.mouseMoves.size > 0) {
             this.drawCrosshair(this.mouseMoves.top);
@@ -35,23 +21,19 @@ export class BoundingBoxAnnotationMode extends AnnotationMode {
 
         if (this.mouseDowns.size > 0) {
             if (this.mouseDowns.size !== this.mouseUps.size) {
-                // Draw currently dragged premature annotation
-                const annotation = this.calcPrematureAnnotation(this.mouseDowns.top, this.mouseMoves.top);
-                this.drawPrematureAnnotation(annotation);
-                this.result$.next(annotation);
+                // The premature annotation is currently being drawn
+                return this.calcPrematureAnnotation(this.mouseDowns.top, this.mouseMoves.top);
 
             } else {
-                // An annotation was just finished
-                this.result$.next(this.calcPrematureAnnotation(this.mouseDowns.pop(), this.mouseUps.pop()));
+                // The premature annotation is completely drawn but not yet saved
+                return this.calcPrematureAnnotation(this.mouseDowns.pop(), this.mouseUps.pop());
             }
         }
 
-        if (this.mouseLeaves.size > 0) {
-
-        }
+        return null;
     }
 
-    private drawPrematureAnnotation(annotation: BoundingBoxVector) {
+    public drawPrematureAnnotation(annotation: BoundingBoxVector) {
         const ctx = this.canvas.getContext('2d');
 
         const thickness = 4;
