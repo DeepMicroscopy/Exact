@@ -32,8 +32,10 @@
                             {{prematureAnnotation.blurred ? '(blurred)' : ''}}
                             {{prematureAnnotation.concealed ? '(concealed)' : ''}}
                         </span>
-                        <button class="btn btn-danger float-right" (click)="annotatableDirective.reset()">Reset</button><br>
-                        <span *ngFor="let point of annotationVectorToIterable(prematureAnnotation.vector)">
+                        <button class="btn btn-danger float-right" (click)="annotatableDirective.reset()">Reset</button>
+                        <br>
+                        <span *ngFor="let point of annotationVectorToIterable(prematureAnnotation.vector)"
+                              class="text-muted">
                             {{point.key}}:{{point.value}}
                         </span>
                     </div>
@@ -49,6 +51,10 @@
                         <button class="btn btn-danger float-right" (click)="actDeleteAnnotation(annotation.id)">
                             <i class="fa fa-trash"></i>
                         </button>
+                        <br>
+                        <span *ngFor="let point of annotationVectorToIterable(annotation.vector)" class="text-muted">
+                            {{point.key}}:{{point.value}}
+                        </span>
                     </div>
                 </div>
             </div>
