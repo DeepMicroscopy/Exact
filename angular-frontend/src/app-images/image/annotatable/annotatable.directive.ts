@@ -32,11 +32,13 @@ export class AnnotatableDirective implements OnChanges, AfterViewInit {
     constructor(private el: ElementRef) {
     }
 
-    ngOnChanges(changes: SimpleChanges): void { // TODO Push out an update whenever annotationConfig changes
+    ngOnChanges(changes: SimpleChanges): void {
         if (this.annotationConfig && this.imageData) {
-            if (changes.annotationConfig.previousValue === undefined ||
-                changes.annotationConfig.previousValue.annotationType !== this.annotationConfig.annotationType) {
-                // The annotationType was changed -> setup everything from scratch
+            if (changes.imageData !== undefined ||
+                (changes.annotationConfig !== undefined &&
+                    changes.annotationConfig.previousValue === undefined ||
+                    changes.annotationConfig.previousValue.annotationType !== this.annotationConfig.annotationType)) {
+                // Either imageData or annotationType has changed -> setup everything from scratch
 
                 if (this.mode) {        // reset
                     this.mode.reset();
