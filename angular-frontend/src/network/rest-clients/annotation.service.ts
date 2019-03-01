@@ -1,8 +1,10 @@
 import {Injectable} from '@angular/core';
-import {Observable} from 'rxjs';
+import {Observable, of} from 'rxjs';
 import {HttpClient} from '@angular/common/http';
 import {environment} from '../../environments/environment';
 import {catchError, map} from 'rxjs/operators';
+import {PrematureAnnotation} from '../../app-images/image/annotatable/annotatable.directive';
+import {Annotation} from '../types/annotation';
 
 @Injectable({
     providedIn: 'root'
@@ -20,5 +22,19 @@ export class AnnotationService {
             map(() => true),
             catchError(map(() => false))
         );
+    }
+
+    /**
+     * Create a new Annotation from a premature Annotation
+     */
+    public create(annotation: PrematureAnnotation): Observable<Annotation> {
+        return this.http.post<Annotation>(this.url, {
+            annotationType: annotation.annotationType.id,
+            image: annotation.image.id,
+            notInImage: annotation.notInImage,
+            blurred: annotation.notInImage ? undefined : annotation.blurred,
+            concealed: annotation.notInImage ? undefined : annotation.concealed,
+            vector: annotation.notInImage ? undefined : annotation.vector
+        });
     }
 }

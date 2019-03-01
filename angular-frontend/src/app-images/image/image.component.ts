@@ -98,7 +98,12 @@ export class ImageComponent implements OnInit {
      * Save the current premature-annotation
      */
     protected actSave() {
-        console.log('Save pressed');
+        if (this.prematureAnnotation) {
+            this.annotationService.create(this.prematureAnnotation).subscribe(result => {
+                this.annotatableDirective.reset();
+                this.image.annotations.push(result);
+            });
+        }
     }
 
 }

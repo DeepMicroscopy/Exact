@@ -1,18 +1,19 @@
 export interface Image {
-  id: number;
-  name: string;
-  width: number;
-  height: number;
-  url: string;
-  annotations: AnnotationInImage[]
+    id: number;
+    name: string;
+    width: number;
+    height: number;
+    url: string;
+    annotations: AnnotationInImage[];
 }
 
 
 export interface AnnotationInImage {
-    id:	number;
+    id: number;
     concealed: boolean;
     blurred: boolean;
-    closed:	boolean;
-    vector:	object;
-    annotationType:	number;
+    closed: boolean;
+    notInImage: boolean;
+    annotationType: number;
+    vector?: object;
 }
