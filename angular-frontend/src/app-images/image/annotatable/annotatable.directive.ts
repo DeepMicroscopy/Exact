@@ -22,7 +22,7 @@ export interface PrematureAnnotation {
 })
 export class AnnotatableDirective implements OnChanges, AfterViewInit {
 
-    @Output() annotationChange: EventEmitter<PrematureAnnotation> = new EventEmitter(true);
+    @Output() prematureAnnotationChanges: EventEmitter<PrematureAnnotation> = new EventEmitter(true);
 
     @Input() annotationConfig: AnnotationConfigData;
     @Input() imageData: Image;
@@ -34,29 +34,39 @@ export class AnnotatableDirective implements OnChanges, AfterViewInit {
 
     ngOnChanges(changes: SimpleChanges): void { // TODO Push out an update whenever annotationConfig changes
         if (this.annotationConfig && this.imageData) {
-            // Only do something if we're correctly initialized
-            console.log(changes.annotationConfig);
             if (changes.annotationConfig.previousValue === undefined ||
                 changes.annotationConfig.previousValue.annotationType !== this.annotationConfig.annotationType) {
-                // Only recalculate stuff
+                // The annotationType was changed -> setup everything from scratch
 
-                if (this.mode) {
+                if (this.mode) {        // reset
                     this.mode.reset();
                     this.mode.result$.unsubscribe();
                 }
+
                 this.mapAnnotationTypeToMode();
                 if (this.mode) {
                     this.mode.result$.subscribe(value => {
-                        this.annotationChange.emit({
+                        this.prematureAnnotationChanges.emit({
                             annotationType: this.annotationConfig.annotationType,
-                            image: this.imageData,
-                            blurred: this.annotationConfig.blurred,
                             concealed: this.annotationConfig.concealed,
+                            blurred: this.annotationConfig.blurred,
                             notInImage: this.annotationConfig.notInImage,
-                            vector: value
+                            vector: value,
+                            image: this.imageData
                         });
                     });
                 }
+
+            } else {
+                // It was a small change which can just be pushed
+                this.prematureAnnotationChanges.emit({
+                    annotationType: this.annotationConfig.annotationType,
+                    concealed: this.annotationConfig.concealed,
+                    blurred: this.annotationConfig.blurred,
+                    notInImage: this.annotationConfig.notInImage,
+                    vector: (this.mode ? this.mode.result$.getValue() : null),
+                    image: this.imageData
+                });
             }
         }
     }

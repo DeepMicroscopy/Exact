@@ -16,7 +16,7 @@
                     <canvas appAnnotatable
                             [annotationConfig]="annotationConfigData"
                             [imageData]="image"
-                            (annotationChange)="prematureAnnotation = $event">
+                            (prematureAnnotationChanges)="prematureAnnotation = $event">
                         Unable to load Canvas for {{image.name}}
                     </canvas>
                 </div>
