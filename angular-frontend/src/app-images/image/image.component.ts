@@ -11,6 +11,9 @@ import {AnnotationService} from '../../network/rest-clients/annotation.service';
 import {AnnotationConfigData} from './annotation-type-config/annotation-type-config.component';
 import {AnnotatableDirective, PrematureAnnotation} from './annotatable/annotatable.directive';
 import {AnnotationVector} from '../../network/types/annotation';
+import {CanComponentDeactivate} from '../../app/guards/can-deactivate-component.guard';
+import {Observable} from 'rxjs';
+import {DialogService} from '../../app/services/dialog.service';
 
 
 @Component({
@@ -18,7 +21,7 @@ import {AnnotationVector} from '../../network/types/annotation';
     templateUrl: './image.component.html',
     styleUrls: ['./image.component.scss']
 })
-export class ImageComponent implements OnInit {
+export class ImageComponent implements OnInit, CanComponentDeactivate {
 
     protected mediaUrl = environment.mediaUrl;
     protected imageset: ImageSet;
@@ -33,7 +36,8 @@ export class ImageComponent implements OnInit {
     @ViewChild(AnnotatableDirective)
     protected annotatableDirective: AnnotatableDirective;
 
-    constructor(private route: ActivatedRoute, private router: Router, private annotationService: AnnotationService) {
+    constructor(private route: ActivatedRoute, private router: Router, private annotationService: AnnotationService,
+                private dialog: DialogService) {
     }
 
     ngOnInit() {
@@ -139,5 +143,12 @@ export class ImageComponent implements OnInit {
                 this.image.annotations.push(result);
             });
         }
+    }
+
+    /**
+     * This component can deactivate if no component is currently being drawn
+     */
+    canDeactivate(): Observable<boolean> | boolean {
+        return this.prematureAnnotation !== null ? this.dialog.confirm('You have an unsaved annotation') : true;
     }
 }

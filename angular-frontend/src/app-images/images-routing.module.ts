@@ -1,11 +1,12 @@
 import {NgModule} from '@angular/core';
-import {Routes, RouterModule} from '@angular/router';
+import {RouterModule, Routes} from '@angular/router';
 import {HomeComponent} from './home/home.component';
 import {ImagesetComponent} from './imageset/imageset.component';
 import {ImagesetResolverService} from './imageset/imageset-resolver.service';
 import {ImageComponent} from './image/image.component';
 import {ImageResolverService} from './image/image-resolver.service';
 import {HomeResolverService} from './home/home-resolver.service';
+import {CanDeactivateComponentGuard} from '../app/guards/can-deactivate-component.guard';
 
 const routes: Routes = [
     {path: '', pathMatch: 'full', redirectTo: 'pinned'},
@@ -24,7 +25,7 @@ const routes: Routes = [
         path: 'imagesets/:imagesetId/image/:imageId',
         pathMatch: 'full',
         component: ImageComponent,
-        runGuardsAndResolvers: 'always',
+        canDeactivate: [CanDeactivateComponentGuard],
         resolve: {
             imageSetData: ImagesetResolverService,
             imagesData: ImageResolverService,
