@@ -29,7 +29,7 @@
                         "styles": [
                             "src/styles.scss",
                             "node_modules/bootstrap/dist/css/bootstrap.css",
-                            "node_modules/font-awesome/scss/font-awesome.scss"
+                            "node_modules/@fortawesome/fontawesome-free/css/all.css"
                         ],
                         "scripts": [
                             "node_modules/jquery/dist/jquery.js",
