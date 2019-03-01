@@ -34,22 +34,29 @@ export class AnnotatableDirective implements OnChanges, AfterViewInit {
 
     ngOnChanges(changes: SimpleChanges): void { // TODO Push out an update whenever annotationConfig changes
         if (this.annotationConfig && this.imageData) {
-            if (this.mode) {
-                this.mode.result$.unsubscribe();
-                this.mode.reset();
-            }
-            this.mapAnnotationTypeToMode();
-            if (this.mode) {
-                this.mode.result$.subscribe(value => {
-                    this.annotationChange.emit({
-                        annotationType: this.annotationConfig.annotationType,
-                        image: this.imageData,
-                        blurred: this.annotationConfig.blurred,
-                        concealed: this.annotationConfig.concealed,
-                        notInImage: this.annotationConfig.notInImage,
-                        vector: value
+            // Only do something if we're correctly initialized
+            console.log(changes.annotationConfig);
+            if (changes.annotationConfig.previousValue === undefined ||
+                changes.annotationConfig.previousValue.annotationType !== this.annotationConfig.annotationType) {
+                // Only recalculate stuff
+
+                if (this.mode) {
+                    this.mode.reset();
+                    this.mode.result$.unsubscribe();
+                }
+                this.mapAnnotationTypeToMode();
+                if (this.mode) {
+                    this.mode.result$.subscribe(value => {
+                        this.annotationChange.emit({
+                            annotationType: this.annotationConfig.annotationType,
+                            image: this.imageData,
+                            blurred: this.annotationConfig.blurred,
+                            concealed: this.annotationConfig.concealed,
+                            notInImage: this.annotationConfig.notInImage,
+                            vector: value
+                        });
                     });
-                });
+                }
             }
         }
     }
@@ -76,6 +83,7 @@ export class AnnotatableDirective implements OnChanges, AfterViewInit {
             this.mode = new BoundingBoxAnnotationMode(this.el.nativeElement);
 
         } else {
+            this.mode = null;
             alert(`${this.annotationConfig.annotationType.name} annotation mode is not yet supported`);
         }
     }

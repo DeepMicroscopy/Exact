@@ -1,10 +1,8 @@
 <form [formGroup]="form">
     <div class="form-group">
         <label for="inp-annotationType">Select an Annotation Type</label>
-        <select id="inp-annotationType" class="form-control" formControlName="annotationType"
-                [value]="form.value.annotationType">
-            <option></option>
-            <option *ngFor="let at of annotationTypes">{{at.name}}</option>
+        <select id="inp-annotationType" class="form-control" formControlName="annotationType">
+            <option *ngFor="let at of annotationTypes" [ngValue]="at.name">{{at.name}}</option>
         </select>
     </div>
     <div class="form-group form-check">
