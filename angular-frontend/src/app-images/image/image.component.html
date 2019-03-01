@@ -33,6 +33,7 @@
                             {{prematureAnnotation.concealed ? '(concealed)' : ''}}
                         </span>
                         <button class="btn btn-danger float-right" (click)="annotatableDirective.reset()">Reset</button>
+                        <button class="btn btn-success float-right mx-1" (click)="actSave()">Save</button>
                         <br>
                         <span *ngFor="let point of annotationVectorToIterable(prematureAnnotation.vector)"
                               class="text-muted">
@@ -86,17 +87,26 @@
                         <div class="form-group">
                             <div class="row">
                                 <button (click)="annotatableDirective.reset()"
-                                        class="btn btn-outline-danger col mx-3 my-1">Reset
+                                        class="btn btn-danger col mx-3 my-1"
+                                        [disabled]="prematureAnnotation === null">
+                                    <i class="fa fa-toilet-paper"></i> Reset
                                 </button>
-                                <button (click)="actSave()" class="btn btn-outline-success col mx-3 my-1">Save</button>
+                                <button (click)="actSave()" class="btn btn-success col mx-3 my-1"
+                                        [disabled]="prematureAnnotation === null">
+                                    <i class="fa fa-save"></i> Save
+                                </button>
                             </div>
                             <div class="row">
-                                <button class="btn btn-outline-secondary col mx-3 my-1">Back</button>
-                                <button class="btn btn-outline-secondary col mx-3 my-1">Next</button>
+                                <button class="btn btn-success col mx-3 my-1">Back and Save</button>
+                                <button class="btn btn-success col mx-3 my-1">Next and Save</button>
                             </div>
                             <div class="row">
-                                <button class="btn btn-outline-success col mx-3 my-1">Back and Save</button>
-                                <button class="btn btn-outline-success col mx-3 my-1">Next and Save</button>
+                                <button class="btn btn-outline-secondary col mx-3 my-1"
+                                        [disabled]="getPrevImageUrl() === ''" [routerLink]="getPrevImageUrl()">Back
+                                </button>
+                                <button class="btn btn-outline-secondary col mx-3 my-1"
+                                        [disabled]="getNextImageUrl() === ''" [routerLink]="getNextImageUrl()">Next
+                                </button>
                             </div>
                         </div>
                     </div>

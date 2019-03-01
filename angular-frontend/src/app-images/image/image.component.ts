@@ -1,5 +1,5 @@
 import {Component, OnInit, ViewChild} from '@angular/core';
-import {ActivatedRoute, ParamMap, Router} from '@angular/router';
+import {ActivatedRoute, Router} from '@angular/router';
 import {ImagesData} from './image-resolver.service';
 import {ImagesetData} from '../imageset/imageset-resolver.service';
 import {ImageSet} from '../../network/types/imageSet';
@@ -71,8 +71,8 @@ export class ImageComponent implements OnInit {
     /**
      * Convert an AnnotationVector to an Iterable because *ngFor needs that
      */
-    protected annotationVectorToIterable(vector: AnnotationVector): {key: string, value: string}[] {
-        const result: {key: string, value: string}[] = [];
+    protected annotationVectorToIterable(vector: AnnotationVector): { key: string, value: string }[] {
+        const result: { key: string, value: string }[] = [];
 
         for (const i in vector) {
             if (vector.hasOwnProperty(i)) {
@@ -95,6 +95,41 @@ export class ImageComponent implements OnInit {
     }
 
     /**
+     * Find the index of `this.image` inside `this.imageset.images`
+     *
+     * This special method is needed because the two values are slightly different (with same id) which makes `.indexOf()` unusable
+     */
+    protected indexOfImageInImageset(): number {
+        let index = -1;
+
+        this.imageset.images.find((value, iIndex) => {
+            if (value.id === this.image.id) {
+                index = iIndex;
+                return true;
+            }
+            return false;
+        });
+
+        return index;
+    }
+
+    protected getNextImageUrl(): string {
+        const i = this.indexOfImageInImageset();
+        if (i !== -1 && i + 1 < this.imageset.images.length) {
+            return `../${this.imageset.images[i + 1].id}`;
+        }
+        return '';
+    }
+
+    protected getPrevImageUrl(): string {
+        const i = this.indexOfImageInImageset();
+        if (i !== -1 && i - 1 >= 0) {
+            return `../${this.imageset.images[i - 1].id}`;
+        }
+        return '';
+    }
+
+    /**
      * Save the current premature-annotation
      */
     protected actSave() {
@@ -105,5 +140,4 @@ export class ImageComponent implements OnInit {
             });
         }
     }
-
 }

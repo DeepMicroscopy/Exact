@@ -22,7 +22,7 @@ export interface PrematureAnnotation {
 })
 export class AnnotatableDirective implements OnChanges, AfterViewInit {
 
-    @Output() prematureAnnotationChanges: EventEmitter<PrematureAnnotation> = new EventEmitter(true);
+    @Output() prematureAnnotationChanges: EventEmitter<PrematureAnnotation | null> = new EventEmitter(true);
 
     @Input() annotationConfig: AnnotationConfigData;
     @Input() imageData: Image;
@@ -48,14 +48,18 @@ export class AnnotatableDirective implements OnChanges, AfterViewInit {
                 this.mapAnnotationTypeToMode();
                 if (this.mode) {
                     this.mode.result$.subscribe(value => {
-                        this.prematureAnnotationChanges.emit({
-                            annotationType: this.annotationConfig.annotationType,
-                            concealed: this.annotationConfig.concealed,
-                            blurred: this.annotationConfig.blurred,
-                            notInImage: this.annotationConfig.notInImage,
-                            vector: value,
-                            image: this.imageData
-                        });
+                        if (value) {
+                            this.prematureAnnotationChanges.emit({
+                                annotationType: this.annotationConfig.annotationType,
+                                concealed: this.annotationConfig.concealed,
+                                blurred: this.annotationConfig.blurred,
+                                notInImage: this.annotationConfig.notInImage,
+                                vector: value,
+                                image: this.imageData
+                            });
+                        } else {
+                            this.prematureAnnotationChanges.emit(null);
+                        }
                     });
                 }
 
