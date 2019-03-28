@@ -5,6 +5,7 @@ import {AnnotationMode} from './annotation-mode';
 import {AnnotationType, VectorType} from '../../../network/types/annotationType';
 import {BoundingBoxAnnotationMode} from './bounding-box.annotation-mode';
 import {AnnotationVector} from '../../../network/types/annotation';
+import {PointAnnotationMode} from './point.annotation-mode';
 
 
 export interface PrematureAnnotation {
@@ -97,7 +98,8 @@ export class AnnotatableDirective implements OnChanges, AfterViewInit {
     private mapAnnotationTypeToMode(): void {
         if (this.annotationConfig.annotationType.vectorType === VectorType.boundingBox) {
             this.mode = new BoundingBoxAnnotationMode(this.el.nativeElement);
-
+        } else if (this.annotationConfig.annotationType.vectorType === VectorType.point) {
+            this.mode = new PointAnnotationMode((this.el.nativeElement));
         } else {
             this.mode = null;
             alert(`${this.annotationConfig.annotationType.name} annotation mode is not yet supported`);
