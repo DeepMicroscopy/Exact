@@ -48,10 +48,6 @@ export class BoundingBoxAnnotationMode extends AnnotationMode {
     }
 
     private calcPrematureAnnotation(start: MouseEvent, end: MouseEvent): BoundingBoxVector {
-        const bounds = this.canvas.getBoundingClientRect();
-        const scaleX = this.canvas.width / bounds.width;
-        const scaleY = this.canvas.height / bounds.height;
-
         let top_left: { x: number, y: number };
         let bottom_right: { x: number, y: number };
 
@@ -60,45 +56,45 @@ export class BoundingBoxAnnotationMode extends AnnotationMode {
             if (start.x < end.x) {
                 // Start is top-left, end is bottom-right
                 top_left = {
-                    x: (start.x - bounds.left) * scaleX,
-                    y: (start.y - bounds.top) * scaleY
+                    x: this.scaledX(start),
+                    y: this.scaledY(start)
                 };
                 bottom_right = {
-                    x: (end.x - bounds.left) * scaleX,
-                    y: (end.y - bounds.top) * scaleY
+                    x: this.scaledX(end),
+                    y: this.scaledY(end)
                 };
 
             } else {
                 // Start is top-right, end is bottom-left
                 top_left = {
-                    x: (end.x - bounds.left) * scaleX,
-                    y: (start.y - bounds.top) * scaleY
+                    x: this.scaledX(end),
+                    y: this.scaledY(start)
                 };
                 bottom_right = {
-                    x: (start.x - bounds.left) * scaleX,
-                    y: (end.y - bounds.top) * scaleX
+                    x: this.scaledX(start),
+                    y: this.scaledY(end)
                 };
             }
         } else {
             if (start.x < end.x) {
                 // Start is bottom-left, end ist top-right
                 top_left = {
-                    x: (start.x - bounds.left) * scaleX,
-                    y: (end.y - bounds.top) * scaleY
+                    x: this.scaledX(start),
+                    y: this.scaledY(end)
                 };
                 bottom_right = {
-                    x: (end.x - bounds.left) * scaleX,
-                    y: (start.y - bounds.top) * scaleY
+                    x: this.scaledX(end),
+                    y: this.scaledY(start)
                 };
             } else {
                 // Start is bottom-right, end is top-left
                 top_left = {
-                    x: (end.x - bounds.left) * scaleX,
-                    y: (end.y - bounds.top) * scaleY
+                    x: this.scaledX(end),
+                    y: this.scaledY(end),
                 };
                 bottom_right = {
-                    x: (start.x - bounds.left) * scaleX,
-                    y: (start.y - bounds.top) * scaleY
+                    x: this.scaledX(start),
+                    y: this.scaledY(start)
                 };
             }
         }

@@ -37,21 +37,13 @@ export class PointAnnotationMode extends AnnotationMode {
             this.drawCrosshair(this.mouseMoves.top);
         }
 
-        if (this.mouseDowns.size > 0) {
-            return this.calcAnnotation(this.mouseDowns.top);
+        if (this.mouseClicks.size > 0) {
+            return {
+                x: this.scaledX(this.mouseClicks.top),
+                y: this.scaledY(this.mouseClicks.top)
+            } as PointVector;
         } else {
             return null;
         }
-    }
-
-    protected calcAnnotation(event: MouseEvent): PointVector {
-        const bounds = this.canvas.getBoundingClientRect();
-        const scaleX = this.canvas.width / bounds.width;
-        const scaleY = this.canvas.height / bounds.height;
-
-        return {
-            x: (event.x - bounds.left) * scaleX,
-            y: (event.y - bounds.top) * scaleY
-        };
     }
 }

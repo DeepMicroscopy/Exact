@@ -87,6 +87,22 @@ export abstract class AnnotationMode {
     }
 
     /**
+     * Get an events X coordinate scaled accordingly to the current canvas
+     */
+    protected scaledX(event: MouseEvent): number {
+        const bounds = this.canvas.getBoundingClientRect();
+        return (event.x - bounds.left) * (this.canvas.width / bounds.width);
+    }
+
+    /**
+     * Get an events Y coordinate scaled accordingly to the current canvas
+     */
+    protected scaledY(event: MouseEvent): number {
+        const bounds = this.canvas.getBoundingClientRect();
+        return (event.y - bounds.top) * (this.canvas.height / bounds.height);
+    }
+
+    /**
      * Draw an annotation that is not yet complete.
      *
      * This can be either one which is currently being drawn or one which is just not yet saved.
