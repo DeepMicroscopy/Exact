@@ -34,18 +34,17 @@ export class BoundingBoxAnnotationMode extends AnnotationMode {
 
     /** @inheritDoc */
     public drawPrematureAnnotation(annotation: BoundingBoxVector) {
-        const ctx = this.canvas.getContext('2d');
-        ctx.fillStyle = '#00000060';
+        this.ctx.fillStyle = '#00000060';
 
-        ctx.fillRect(0, 0, this.canvas.width, annotation.y1);       // Top
-        ctx.fillRect(0, annotation.y2, this.canvas.width, this.canvas.height - annotation.y2);       // Bottom
-        ctx.fillRect(0, annotation.y1, annotation.x1, annotation.y2 - annotation.y1);        // Left
-        ctx.fillRect(annotation.x2, annotation.y1, this.canvas.width - annotation.x2, annotation.y2 - annotation.y1);     // Right
+        this.ctx.fillRect(0, 0, this.canvas.width, annotation.y1);       // Top
+        this.ctx.fillRect(0, annotation.y2, this.canvas.width, this.canvas.height - annotation.y2);       // Bottom
+        this.ctx.fillRect(0, annotation.y1, annotation.x1, annotation.y2 - annotation.y1);        // Left
+        this.ctx.fillRect(annotation.x2, annotation.y1, this.canvas.width - annotation.x2, annotation.y2 - annotation.y1);     // Right
 
         // Draw box
-        ctx.lineWidth = 5;
-        ctx.strokeStyle = '#000000';
-        ctx.strokeRect(annotation.x1, annotation.y1, annotation.x2 - annotation.x1, annotation.y2 - annotation.y1);
+        this.ctx.lineWidth = 5;
+        this.ctx.strokeStyle = '#000000';
+        this.ctx.strokeRect(annotation.x1, annotation.y1, annotation.x2 - annotation.x1, annotation.y2 - annotation.y1);
     }
 
     private calcPrematureAnnotation(start: MouseEvent, end: MouseEvent): BoundingBoxVector {

@@ -13,9 +13,11 @@ export abstract class AnnotationMode {
     protected mouseUps: Stack<MouseEvent> = new Stack();
 
     protected canvas: HTMLCanvasElement;
+    protected ctx: CanvasRenderingContext2D;
 
     constructor(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
+        this.ctx = this.canvas.getContext('2d');
     }
 
     /**
@@ -42,7 +44,6 @@ export abstract class AnnotationMode {
      * @param event A MouseEvent which is needed to determine the cursors current position
      */
     protected drawCrosshair(event: MouseEvent) {
-        const ctx = this.canvas.getContext('2d');
         const bounds = this.canvas.getBoundingClientRect();
         const scaleX = this.canvas.width / bounds.width;
         const scaleY = this.canvas.height / bounds.height;
@@ -50,10 +51,10 @@ export abstract class AnnotationMode {
         const thickness = 4;
         const clearingY = 16;
         const clearingX = 16;
-        ctx.fillStyle = '#FF0000';
+        this.ctx.fillStyle = '#FF0000';
 
         // From top to mouse
-        ctx.fillRect(
+        this.ctx.fillRect(
             (event.x - bounds.left) * scaleX,
             0,
             thickness,
@@ -61,7 +62,7 @@ export abstract class AnnotationMode {
         );
 
         // From mouse to right
-        ctx.fillRect(
+        this.ctx.fillRect(
             (event.x - bounds.left) * scaleX + clearingX,
             (event.y - bounds.top) * scaleY,
             this.canvas.width - clearingX - (event.x - bounds.left) * scaleX,
@@ -69,7 +70,7 @@ export abstract class AnnotationMode {
         );
 
         // From mouse to bottom
-        ctx.fillRect(
+        this.ctx.fillRect(
             (event.x - bounds.left) * scaleX,
             (event.y - bounds.top) * scaleY + clearingY,
             thickness,
@@ -77,7 +78,7 @@ export abstract class AnnotationMode {
         );
 
         // From left to mouse
-        ctx.fillRect(
+        this.ctx.fillRect(
             0,
             (event.y - bounds.top) * scaleY,
             (event.x - bounds.left) * scaleX - clearingY,
