@@ -32,6 +32,7 @@ export class BoundingBoxAnnotationMode extends AnnotationMode {
         return null;
     }
 
+    /** @inheritDoc */
     public drawPrematureAnnotation(annotation: BoundingBoxVector) {
         const ctx = this.canvas.getContext('2d');
         ctx.fillStyle = '#00000060';

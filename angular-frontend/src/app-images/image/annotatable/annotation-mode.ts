@@ -1,4 +1,4 @@
-import {BehaviorSubject, Subject} from 'rxjs';
+import {BehaviorSubject} from 'rxjs';
 import {Stack} from 'stack-typescript';
 import {AnnotationVector} from '../../../network/types/annotation';
 
@@ -89,6 +89,8 @@ export abstract class AnnotationMode {
      * Draw an annotation that is not yet complete.
      *
      * This can be either one which is currently being drawn or one which is just not yet saved.
+     *
+     * @param annotation The premature annotation which is supposed get drawn
      */
     public abstract drawPrematureAnnotation(annotation: AnnotationVector);
 
