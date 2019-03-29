@@ -91,7 +91,10 @@ export abstract class AnnotationMode {
      */
     protected scaledX(event: MouseEvent): number {
         const bounds = this.canvas.getBoundingClientRect();
-        return (event.x - bounds.left) * (this.canvas.width / bounds.width);
+
+        let result = (event.x - bounds.left) * (this.canvas.width / bounds.width);
+        result = Math.round(result);
+        return clamp(result, 0, this.canvas.width);
     }
 
     /**
@@ -99,7 +102,10 @@ export abstract class AnnotationMode {
      */
     protected scaledY(event: MouseEvent): number {
         const bounds = this.canvas.getBoundingClientRect();
-        return (event.y - bounds.top) * (this.canvas.height / bounds.height);
+
+        let result = (event.y - bounds.top) * (this.canvas.height / bounds.height);
+        result = Math.round(result);
+        return clamp(result, 0, this.canvas.height);
     }
 
     /**
