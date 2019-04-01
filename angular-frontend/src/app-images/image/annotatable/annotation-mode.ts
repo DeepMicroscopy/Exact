@@ -1,11 +1,13 @@
 import {BehaviorSubject} from 'rxjs';
 import {Stack} from 'stack-typescript';
 import {AnnotationVector} from '../../../network/types/annotation';
+import {AnnotationInImage} from '../../../network/types/image';
 
 
 export abstract class AnnotationMode {
 
     public result$: BehaviorSubject<AnnotationVector | null> = new BehaviorSubject(null);
+    public visibleAnnotations: AnnotationInImage[] = [];
 
     protected mouseClicks: Stack<MouseEvent> = new Stack();
     protected mouseMoves: Stack<MouseEvent> = new Stack();
@@ -118,20 +120,43 @@ export abstract class AnnotationMode {
     public abstract drawPrematureAnnotation(annotation: AnnotationVector);
 
     /**
-     * Method which is supposed to be run in a new AnimationFrame
+     * Draw a completed, existing annotation
+     *
+     * @param annotation The existing annotation
      */
-    private render() {
-        // Clear canvas
-        this.canvas.getContext('2d').clearRect(0, 0, this.canvas.width, this.canvas.height);
+    public abstract drawAnnotation(annotation: AnnotationInImage);
 
+    /**
+     * Method which is supposed to be run in a new AnimationFrame
+     *
+     * @param clearCanvas Whether or not the canvas should be cleared before drawing on int
+     */
+    public render(clearCanvas: boolean = true) {
+        if (clearCanvas) {
+            this.clear();
+        }
+
+        // Draw existing visible annotations
+        for (const a of this.visibleAnnotations) {
+            this.drawAnnotation(a);
+        }
+
+        // Try to get a premature annotation from happened events and,
+        // then draw and publish that premature annotation
         const result = this.handleEvents();
-
         if (result !== null) {
             this.drawPrematureAnnotation(result);
             this.result$.next(result);
         } else if (this.result$.getValue() !== null) {
             this.drawPrematureAnnotation(this.result$.getValue());
         }
+    }
+
+    /**
+     * Clear the whole canvas of any drawings
+     */
+    public clear() {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     }
 
     private shortenStack(stack: Stack<any>, max_length = 10, short_to = 2) {
@@ -145,30 +170,30 @@ export abstract class AnnotationMode {
     public onClick(event: MouseEvent) {
         this.mouseClicks.push(event);
         this.shortenStack(this.mouseClicks);
-        requestAnimationFrame(() => this.render());
+        this.render();
     }
 
     public onMouseMove(event: MouseEvent) {
         this.mouseMoves.push(event);
         this.shortenStack(this.mouseMoves);
-        requestAnimationFrame(() => this.render());
+        this.render();
     }
 
     public onMouseDown(event: MouseEvent) {
         this.mouseDowns.push(event);
         this.shortenStack(this.mouseDowns);
-        requestAnimationFrame(() => this.render());
+        this.render();
     }
 
     public onMouseUp(event: MouseEvent) {
         this.mouseUps.push(event);
         this.shortenStack(this.mouseUps);
-        requestAnimationFrame(() => this.render());
+        this.render();
     }
 
     public onMouseLeave(event: MouseEvent) {
         this.mouseMoves.push(event);
-        requestAnimationFrame(() => this.render());
+        this.render();
     }
 
     public onMouseEnter(event: MouseEvent) {
@@ -179,7 +204,7 @@ export abstract class AnnotationMode {
             // If a button was not pressed but is now, create a mouseDown event at the mouseEnter position
             this.mouseDowns.push(event);
         }
-        requestAnimationFrame(() => this.render());
+        this.render();
     }
 }
 

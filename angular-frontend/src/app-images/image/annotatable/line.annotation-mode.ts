@@ -1,5 +1,6 @@
 import {AnnotationVector} from '../../../network/types/annotation';
 import {AnnotationMode} from './annotation-mode';
+import {AnnotationInImage} from '../../../network/types/image';
 
 export interface LineVector extends AnnotationVector {
     x1: number;
@@ -19,6 +20,11 @@ export class LineAnnotationMode extends AnnotationMode {
         this.ctx.strokeStyle = '#000000';
         this.ctx.stroke();
         this.ctx.closePath();
+    }
+
+    /** @inheritDoc */
+    drawAnnotation(annotation: AnnotationInImage) {
+        this.drawPrematureAnnotation(annotation.vector as LineVector);
     }
 
     /** @inheritDoc */

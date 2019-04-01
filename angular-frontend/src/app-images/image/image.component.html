@@ -16,6 +16,8 @@
                     <canvas appAnnotatable
                             [annotationConfig]="annotationConfigData"
                             [imageData]="image"
+                            [visibleAnnotations]="visibleAnnotations"
+                            [annotationTypes]="annotationTypes"
                             (prematureAnnotationChanges)="prematureAnnotation = $event">
                         Unable to load Canvas for {{image.name}}
                     </canvas>
@@ -23,7 +25,10 @@
 
                 <div class="card-body">
                     <!-- List of annotations -->
-                    <h5 class="card-title">Annotations</h5>
+                    <div class="card-title">
+                        <span class="h5">Annotations</span>
+                    </div>
+
                     <div *ngIf="prematureAnnotation && prematureAnnotation.vector">
                         <!-- Premature Annotations -->
                         <div class="dropdown-divider"></div>
@@ -51,6 +56,14 @@
                         </span>
                         <button class="btn btn-danger float-right" (click)="actDeleteAnnotation(annotation.id)">
                             <i class="fa fa-trash"></i>
+                        </button>
+                        <button class="btn float-right mx-2"
+                                [class.btn-secondary]="visibleAnnotations.includes(annotation)"
+                                [class.btn-outline-secondary]="!visibleAnnotations.includes(annotation)"
+                                (click)="actToggleVisibility(annotation)">
+                            <i class="fa"
+                               [class.fa-eye]="visibleAnnotations.includes(annotation)"
+                               [class.fa-eye-slash]="!visibleAnnotations.includes(annotation)"></i>
                         </button>
                         <br>
                         <span *ngFor="let point of annotationVectorToIterable(annotation.vector)" class="text-muted">
@@ -88,11 +101,13 @@
                             <div class="row">
                                 <button (click)="annotatableDirective.reset()"
                                         class="btn btn-danger col mx-3 my-1"
-                                        [disabled]="prematureAnnotation === null">
+                                        [disabled]="prematureAnnotation === undefined ||
+                                        prematureAnnotation === null || prematureAnnotation.vector === null">
                                     <i class="fa fa-toilet-paper"></i> Reset
                                 </button>
                                 <button (click)="actSave()" class="btn btn-success col mx-3 my-1"
-                                        [disabled]="prematureAnnotation === null">
+                                        [disabled]="prematureAnnotation === undefined ||
+                                        prematureAnnotation === null || prematureAnnotation.vector === null">
                                     <i class="fa fa-save"></i> Save
                                 </button>
                             </div>

@@ -1,5 +1,6 @@
 import {AnnotationMode, clamp} from './annotation-mode';
 import {AnnotationVector} from '../../../network/types/annotation';
+import {AnnotationInImage} from '../../../network/types/image';
 
 
 export interface BoundingBoxVector extends AnnotationVector {
@@ -45,6 +46,11 @@ export class BoundingBoxAnnotationMode extends AnnotationMode {
         this.ctx.lineWidth = 5;
         this.ctx.strokeStyle = '#000000';
         this.ctx.strokeRect(annotation.x1, annotation.y1, annotation.x2 - annotation.x1, annotation.y2 - annotation.y1);
+    }
+
+    /** @inheritDoc */
+    drawAnnotation(annotation: AnnotationInImage) {
+        this.drawPrematureAnnotation(annotation.vector as BoundingBoxVector);
     }
 
     private calcPrematureAnnotation(start: MouseEvent, end: MouseEvent): BoundingBoxVector {

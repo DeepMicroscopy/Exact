@@ -1,5 +1,6 @@
 import {AnnotationMode} from './annotation-mode';
 import {AnnotationVector} from '../../../network/types/annotation';
+import {AnnotationInImage} from '../../../network/types/image';
 
 
 export interface PointVector extends AnnotationVector {
@@ -29,6 +30,11 @@ export class PointAnnotationMode extends AnnotationMode {
         this.ctx.strokeStyle = style;
         this.ctx.stroke();
         this.ctx.closePath();
+    }
+
+    /** @inheritDoc */
+    drawAnnotation(annotation: AnnotationInImage) {
+        this.drawPrematureAnnotation(annotation.vector as PointVector);
     }
 
     /** @inheritDoc */

@@ -3,7 +3,7 @@ import {ActivatedRoute, Router} from '@angular/router';
 import {ImagesData} from './image-resolver.service';
 import {ImagesetData} from '../imageset/imageset-resolver.service';
 import {ImageSet} from '../../network/types/imageSet';
-import {Image} from '../../network/types/image';
+import {AnnotationInImage, Image} from '../../network/types/image';
 import {FormControl} from '@angular/forms';
 import {AnnotationType} from '../../network/types/annotationType';
 import {environment} from '../../environments/environment';
@@ -29,6 +29,7 @@ export class ImageComponent implements OnInit, CanComponentDeactivate {
     protected annotationTypes: AnnotationType[];
 
     protected keepAnnotationForNextImage = new FormControl(true);
+    protected visibleAnnotations: AnnotationInImage[] = [];
 
     protected annotationConfigData: AnnotationConfigData;
     protected prematureAnnotation: PrematureAnnotation;
@@ -142,6 +143,17 @@ export class ImageComponent implements OnInit, CanComponentDeactivate {
                 this.annotatableDirective.reset();
                 this.image.annotations.push(result);
             });
+        }
+    }
+
+    /**
+     * Toggle the visibility of an existing annotation
+     */
+    protected actToggleVisibility(annotation: AnnotationInImage) {
+        if (this.visibleAnnotations.includes(annotation)) {
+            this.visibleAnnotations = this.visibleAnnotations.filter(a => a.id !== annotation.id);
+        } else {
+            this.visibleAnnotations = this.visibleAnnotations.concat([annotation]);
         }
     }
 
