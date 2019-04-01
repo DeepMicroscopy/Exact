@@ -95,6 +95,7 @@ export class ImageComponent implements OnInit, CanComponentDeactivate {
         this.annotationService.delete(id).subscribe(result => {
             if (result) {
                 this.image.annotations = this.image.annotations.filter(a => a.id !== id);
+                this.visibleAnnotations = this.visibleAnnotations.filter(a => a.id !== id);
             }
         });
     }
