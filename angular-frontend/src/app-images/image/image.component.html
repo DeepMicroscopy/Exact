@@ -37,8 +37,12 @@
                             {{prematureAnnotation.blurred ? '(blurred)' : ''}}
                             {{prematureAnnotation.concealed ? '(concealed)' : ''}}
                         </span>
-                        <button class="btn btn-danger float-right" (click)="annotatableDirective.reset()">Reset</button>
-                        <button class="btn btn-success float-right mx-1" (click)="actSave()">Save</button>
+                        <button class="btn btn-danger float-right" (click)="annotatableDirective.reset()">
+                            <i class="fa fa-toilet-paper"></i> Reset
+                        </button>
+                        <button class="btn btn-success float-right mx-1" (click)="actSave()">
+                            <i class="fa fa-save"></i> Save
+                        </button>
                         <br>
                         <span *ngFor="let point of annotationVectorToIterable(prematureAnnotation.vector)"
                               class="text-muted">
@@ -99,16 +103,16 @@
                         </div>
                         <div class="form-group">
                             <div class="row">
+                                <button (click)="actSave()" class="btn btn-success col mx-3 my-1"
+                                        [disabled]="prematureAnnotation === undefined ||
+                                        prematureAnnotation === null || prematureAnnotation.vector === null">
+                                    <i class="fa fa-save"></i> Save
+                                </button>
                                 <button (click)="annotatableDirective.reset()"
                                         class="btn btn-danger col mx-3 my-1"
                                         [disabled]="prematureAnnotation === undefined ||
                                         prematureAnnotation === null || prematureAnnotation.vector === null">
                                     <i class="fa fa-toilet-paper"></i> Reset
-                                </button>
-                                <button (click)="actSave()" class="btn btn-success col mx-3 my-1"
-                                        [disabled]="prematureAnnotation === undefined ||
-                                        prematureAnnotation === null || prematureAnnotation.vector === null">
-                                    <i class="fa fa-save"></i> Save
                                 </button>
                             </div>
                             <div class="row">
