@@ -46,6 +46,7 @@ export class ImageComponent implements OnInit, CanComponentDeactivate {
             this.image = data.imagesData.image;
             this.annotationTypes = data.imagesData.annotationTypes;
             this.imageset = data.imageSetData.set;
+            this.visibleAnnotations = [];
         });
     }
 
@@ -162,6 +163,8 @@ export class ImageComponent implements OnInit, CanComponentDeactivate {
      * This component can deactivate if no component is currently being drawn
      */
     canDeactivate(): Observable<boolean> | boolean {
-        return this.prematureAnnotation !== null ? this.dialog.confirm('You have an unsaved annotation') : true;
+        return this.prematureAnnotation !== null && this.prematureAnnotation.vector !== null
+            ? this.dialog.confirm('You have an unsaved annotation')
+            : true;
     }
 }
