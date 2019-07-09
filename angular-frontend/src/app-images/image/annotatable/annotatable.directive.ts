@@ -37,7 +37,7 @@ export class AnnotatableDirective implements OnChanges, AfterViewInit {
     constructor(private el: ElementRef) {
     }
 
-    ngOnChanges(changes: SimpleChanges): void {
+    ngOnChanges(changes: SimpleChanges): void { // TODO Rework this method to be better understandable
         if (this.annotationConfig && this.imageData) {
             if (changes.imageData !== undefined ||
                 (changes.annotationConfig !== undefined &&
@@ -177,7 +177,7 @@ export class AnnotatableDirective implements OnChanges, AfterViewInit {
 
     @HostListener('click', ['$event'])
     private onClick(event) {
-        if (this.mode) {
+        if (!this.annotationConfig.notInImage && this.mode) {
             this.mode.onClick(event);
 
             // Draw existing annotations for all other modes
@@ -191,7 +191,7 @@ export class AnnotatableDirective implements OnChanges, AfterViewInit {
 
     @HostListener('mousemove', ['$event'])
     private onDragStart(event) {
-        if (this.mode) {
+        if (!this.annotationConfig.notInImage && this.mode) {
             this.mode.onMouseMove(event);
 
             // Draw existing annotations for all other modes
@@ -205,7 +205,7 @@ export class AnnotatableDirective implements OnChanges, AfterViewInit {
 
     @HostListener('mouseleave', ['$event'])
     private onMouseLeave(event) {
-        if (this.mode) {
+        if (!this.annotationConfig.notInImage && this.mode) {
             this.mode.onMouseLeave(event);
 
             // Draw existing annotations for all other modes
@@ -219,7 +219,7 @@ export class AnnotatableDirective implements OnChanges, AfterViewInit {
 
     @HostListener('mouseenter', ['$event'])
     private onMouseEnter(event) {
-        if (this.mode) {
+        if (!this.annotationConfig.notInImage && this.mode) {
             this.mode.onMouseEnter(event);
 
             // Draw existing annotations for all other modes
@@ -233,7 +233,7 @@ export class AnnotatableDirective implements OnChanges, AfterViewInit {
 
     @HostListener('mousedown', ['$event'])
     private onMouseDown(event) {
-        if (this.mode) {
+        if (!this.annotationConfig.notInImage && this.mode) {
             this.mode.onMouseDown(event);
 
             // Draw existing annotations for all other modes
@@ -247,7 +247,7 @@ export class AnnotatableDirective implements OnChanges, AfterViewInit {
 
     @HostListener('mouseup', ['$event'])
     private onMouseUp(event) {
-        if (this.mode) {
+        if (!this.annotationConfig.notInImage && this.mode) {
             this.mode.onMouseUp(event);
 
             // Draw existing annotations for all other modes
