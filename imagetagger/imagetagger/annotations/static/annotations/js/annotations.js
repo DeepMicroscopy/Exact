@@ -17,8 +17,8 @@ globals = {
   mouseDownY: undefined,
   currentAnnotations: undefined,
   allAnnotations: undefined,
-  stdColor: '#CC4444',
-  mutColor: '#CC0000'
+  //stdColor: '#CC4444',
+  mutColor: '#00FF00'
 };
 
 /**
@@ -78,14 +78,30 @@ function calculateImageScale() {
   }
 
   function setTool() {
-    let selected_annotation = $('#annotation_type_id').children(':selected').data();
-    let vector_type = selected_annotation.vectorType;
-    let node_count = selected_annotation.nodeCount;
-    let annotationTypeId = parseInt($('#annotation_type_id').children(':selected').val());
+
+    let vector_type = -1;
+    let node_count = 0;
+    let annotationTypeId = 0;
+    let selected_annotation = null;
+
+    if ($('#annotation_type_id').children().length > 0) {
+        let selected_annotation = $('#annotation_type_id').children(':selected').data();
+        vector_type = selected_annotation.vectorType;
+        node_count = selected_annotation.nodeCount;
+        annotationTypeId = parseInt($('#annotation_type_id').children(':selected').val());
+    }
+
     if (tool && tool.annotationTypeId === annotationTypeId) {
       // Tool does not have to change
       return;
     }
+
+    if (typeof globals.editedAnnotationsId != "undefined")
+    {
+      anno = globals.allAnnotations.find(function (e) { return e.id == globals.editedAnnotationsId})
+      updateAnnotation(anno)
+    }
+
     if (tool) {
       tool.resetSelection();
       tool.cancelSelection();
@@ -143,10 +159,87 @@ function calculateImageScale() {
           unsetHighlightColor: function() {}
         };
     }
-    if (globals.currentAnnotations) {
-      tool.drawExistingAnnotations(globals.currentAnnotations);
+    if (globals.allAnnotations) {
+      tool.drawExistingAnnotations(globals.allAnnotations, globals.currentAnnotations);
     }
     console.log("Using tool " + tool.constructor.name);
+  }
+
+  function updateAnnotation(annotation){
+
+    var annotationTypeId = parseInt($('#annotation_type_id').val());
+
+    action = 'update';
+    var reload_list = true;
+
+    let blurred = $('#blurred').is(':checked');
+    let concealed = $('#concealed').is(':checked');
+
+    var data = {
+      annotation_type_id: annotationTypeId,
+      image_id: gImageId,
+      vector: annotation.vector,
+      concealed: concealed,
+      blurred: blurred,
+      annotation_id: annotation.id
+    };
+
+    var editing = true;
+
+    $.ajax(API_ANNOTATIONS_BASE_URL + 'annotation/' + action + '/', {
+      type: 'POST',
+      headers: gHeaders,
+      dataType: 'json',
+      data: JSON.stringify(data),
+      success: function(data, textStatus, jqXHR) {
+        if (jqXHR.status === 200) {
+          if (editing) {
+            if (data.detail === 'similar annotation exists.') {
+              displayFeedback($('#feedback_annotation_exists_deleted'));
+              $('#annotation_edit_button_' + globals.editedAnnotationsId).parent().parent(
+                ).fadeOut().remove();
+            } else {
+              displayFeedback($('#feedback_annotation_updated'));
+              displayExistingAnnotations(data.annotations);
+              if (reload_list === true) {
+                  loadImageList();
+              }
+              tool.drawExistingAnnotations(globals.allAnnotations, globals.currentAnnotations);
+            }
+          } else {
+            displayFeedback($('#feedback_annotation_exists'));
+          }
+        } else if (jqXHR.status === 201) {
+          displayFeedback($('#feedback_annotation_created'));
+          displayExistingAnnotations(data.annotations);
+          if (reload_list === true) {
+              loadImageList();
+            }
+        }
+        // update current annotations
+        globals.allAnnotations = data.annotations;
+        globals.currentAnnotations = globals.allAnnotations.filter(function(e) {
+          return e.annotation_type.id === gAnnotationType;
+        });
+        gAnnotationCache[gImageId] = globals.allAnnotations;
+
+        tool.drawExistingAnnotations(globals.allAnnotations, globals.currentAnnotations);
+
+        globals.editedAnnotationsId = undefined;
+        $('.annotation').removeClass('alert-info');
+        globals.editActiveContainer.addClass('hidden');
+        tool.resetSelection(true);
+
+        if (typeof(successCallback) === "function") {
+          successCallback();
+        }
+        $('.annotate_button').prop('disabled', false);
+      },
+      error: function() {
+        $('.annotate_button').prop('disabled', false);
+        displayFeedback($('#feedback_connection_error'));
+      }
+    });
   }
 
   /**
@@ -164,6 +257,16 @@ function calculateImageScale() {
     }
 
     var annotationTypeId = parseInt($('#annotation_type_id').val());
+    if (annotationTypeId == -1){
+      if (typeof(successCallback) === "function") {
+        successCallback();
+        return;
+      }
+
+      displayFeedback($('#feedback_annotation_type_missing'));
+      return;
+    }
+
     var vector = null;
 
     if (isNaN(annotationTypeId)) {
@@ -195,8 +298,10 @@ function calculateImageScale() {
     let vector_type = selected_annotation.vectorType;
     let node_count = selected_annotation.nodeCount;
     if (!validate_vector(vector, vector_type, node_count)) {
-      displayFeedback($('#feedback_annotation_invalid'));
-      return;
+        if (typeof(successCallback) === "function") {
+          successCallback();
+          return;
+        }
     }
 
     if (markForRestore === true) {
@@ -241,7 +346,7 @@ function calculateImageScale() {
               if (reload_list === true) {
                   loadImageList();
               }
-              tool.drawExistingAnnotations(globals.currentAnnotations);
+              tool.drawExistingAnnotations(globals.allAnnotations, globals.currentAnnotations);
             }
           } else {
             displayFeedback($('#feedback_annotation_exists'));
@@ -260,7 +365,7 @@ function calculateImageScale() {
         });
         gAnnotationCache[gImageId] = globals.allAnnotations;
 
-        tool.drawExistingAnnotations(globals.currentAnnotations);
+        tool.drawExistingAnnotations(globals.allAnnotations, globals.currentAnnotations);
 
         globals.editedAnnotationsId = undefined;
         $('.annotation').removeClass('alert-info');
@@ -297,17 +402,22 @@ function calculateImageScale() {
     // TODO: empty the options?
     let annotationTypeFilterSelect = $('#filter_annotation_type');
     let annotationTypeToolSelect = $('#annotation_type_id');
+
     $.each(annotationTypeList, function (key, annotationType) {
+
+
       annotationTypeToolSelect.append($('<option/>', {
-        name: annotationType.name,
-        value: annotationType.id,
-        html: annotationType.name + ' (' + (key + 1) + ')',
-        id: 'annotation_type_' + (key + 1),
-        'data-vector-type': annotationType.vector_type,
-        'data-node-count': annotationType.node_count,
-        'data-blurred': annotationType.enable_blurred,
-        'data-concealed': annotationType.enable_concealed,
+          name: annotationType.name,
+          value: annotationType.id,
+          style: "background-color: " + annotationType.color_code,
+          html: annotationType.name + ' (' + (key) + ')',
+          id: 'annotation_type_' + (key),
+          'data-vector-type': annotationType.vector_type,
+          'data-node-count': annotationType.node_count,
+          'data-blurred': annotationType.enable_blurred,
+          'data-concealed': annotationType.enable_concealed,
       }));
+
       annotationTypeFilterSelect.append($('<option/>', {
         name: annotationType.name,
         value: annotationType.id,
@@ -353,7 +463,7 @@ function calculateImageScale() {
         });
         gAnnotationCache[gImageId] = globals.allAnnotations;
         // redraw the annotations
-        tool.drawExistingAnnotations(globals.currentAnnotations);
+        tool.drawExistingAnnotations(globals.allAnnotations, globals.currentAnnotations);
         displayExistingAnnotations(globals.allAnnotations);
         displayFeedback($('#feedback_annotation_deleted'));
         globals.editedAnnotationsId = undefined;
@@ -794,7 +904,7 @@ function calculateImageScale() {
   function handleShowAnnotationsToggle(event) {
     globals.drawAnnotations = $('#draw_annotations').is(':checked');
     if (globals.drawAnnotations) {
-      tool.drawExistingAnnotations(globals.currentAnnotations);
+      tool.drawExistingAnnotations(globals.allAnnotations, globals.currentAnnotations);
     } else {
       tool.clear();
     }
@@ -849,7 +959,7 @@ function calculateImageScale() {
   function handleResize() {
     tool.cancelSelection();
     calculateImageScale();
-    tool.drawExistingAnnotations(globals.currentAnnotations);
+    tool.drawExistingAnnotations(globals.allAnnotations, globals.currentAnnotations);
   }
 
   /**
@@ -912,7 +1022,7 @@ function calculateImageScale() {
       });
       loading.addClass('hidden');
       displayExistingAnnotations(globals.allAnnotations);
-      tool.drawExistingAnnotations(globals.currentAnnotations);
+      tool.drawExistingAnnotations(globals.allAnnotations, globals.currentAnnotations);
 
       if (globals.restoreSelection !== undefined) {
         tool.restoreSelection();
@@ -932,6 +1042,8 @@ function calculateImageScale() {
     } else {
       handleNewAnnotations();
     }
+
+    loadImageList();
   }
 
   /**
@@ -941,7 +1053,8 @@ function calculateImageScale() {
     let filterElem = $('#filter_annotation_type');
     let filter = filterElem.val();
     let params = {
-      image_set_id: gImageSetId
+      image_set_id: gImageSetId,
+      filter_annotation_type_id: filter
     };
 
     // select the corresponding annotation type for the label tool
@@ -1137,9 +1250,9 @@ function calculateImageScale() {
    */
 
   function handleAnnotationTypeChange() {
-    gAnnotationType = parseInt($('#annotation_type_id').val());
+    AnnotationType = parseInt($('#annotation_type_id').val());
     globals.currentAnnotations = globals.allAnnotations.filter(function(e) {
-      return e.annotation_type.id === gAnnotationType;
+      return e.annotation_type.id === AnnotationType;
     });
     setupCBCheckboxes();
     setTool();
@@ -1186,6 +1299,9 @@ function calculateImageScale() {
   }
 
   function selectAnnotationType(annotationTypeNumber) {
+    if (typeof annotationTypeNumber == "undefined")
+      return
+
     var annotationTypeId = '#annotation_type_' + annotationTypeNumber;
     var option = $(annotationTypeId);
     if(option.length) {
@@ -1280,12 +1396,80 @@ function calculateImageScale() {
     });
     $('#next_button').click(function(event) {
       event.preventDefault();
-      createAnnotation(undefined, function() {
-        loadAdjacentImage(1);
-      }, true, true);
       if (tool instanceof BoundingBoxes) {
           tool.cancelSelection();
       }
+
+      if(globals.allAnnotations.length == 0) {
+
+        var annotationTypeId = parseInt($('#annotation_type_id').val());
+        var action = 'create';
+        var data = {
+          annotation_type_id: annotationTypeId,
+          image_id: gImageId,
+          vector: null,
+          concealed: false,
+          blurred: false
+        };
+
+        $.ajax(API_ANNOTATIONS_BASE_URL + 'annotation/' + action + '/', {
+          type: 'POST',
+          headers: gHeaders,
+          dataType: 'json',
+          data: JSON.stringify(data),
+          success: function (data) {
+            displayFeedback($('#feedback_verify_successful'));
+
+            let data_val = {
+              annotation_id: data.annotations["0"].id,
+              state: 'accept',
+            };
+
+            // update current annotations
+            $.ajax(API_ANNOTATIONS_BASE_URL + 'annotation/verify/', {
+              type: 'POST',
+              headers: gHeaders,
+              dataType: 'json',
+              data: JSON.stringify(data_val),
+              success: function (data) {
+                displayFeedback($('#feedback_verify_successful'));
+                loadImageList();
+              },
+              error: function () {
+                displayFeedback($('#feedback_connection_error'));
+              }
+            })
+          },
+          error: function () {
+            displayFeedback($('#feedback_connection_error'));
+          }
+        })
+      }
+
+      for (i = 0; i < globals.allAnnotations.length; i++) {
+        let anno = globals.allAnnotations[i];
+
+        let data = {
+          annotation_id: anno.id,
+          state: 'accept',
+        };
+
+        $.ajax(API_ANNOTATIONS_BASE_URL + 'annotation/verify/', {
+          type: 'POST',
+          headers: gHeaders,
+          dataType: 'json',
+          data: JSON.stringify(data),
+          success: function (data) {
+            displayFeedback($('#feedback_verify_successful'));
+          },
+          error: function () {
+            displayFeedback($('#feedback_connection_error'));
+          }
+        })
+      }
+
+      loadImageList();
+      loadAdjacentImage(1);
     });
     $('.js_feedback').mouseover(function() {
       $(this).addClass('hidden');
@@ -1359,7 +1543,7 @@ function calculateImageScale() {
           tool.moveSelectionLeft();
           break;
         case 48: //0
-          selectAnnotationType(10);
+          selectAnnotationType(0);
           break;
         case 49: //1
           selectAnnotationType(1);

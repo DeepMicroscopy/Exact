@@ -77,7 +77,8 @@
           <div class="panel-body">
             <div class="input-group">
             <select id="filter_annotation_type" class="form-control">
-              <option value="" class="bold">{% trans 'Filter for missing annotations' %}</option>
+                <option value="Unverified" name="Unverified" class="bold">{% trans 'Show unverified' %}</option>
+                <option value="Verified" name="Verified" class="bold">{% trans 'Show Verified' %}</option>
             </select>
             <span class="input-group-btn">
               <button class="btn btn-primary" id="filter_update_btn"><span class="glyphicon glyphicon-refresh"></span></button>
@@ -111,6 +112,7 @@
                 <div id="boundingBoxes"></div>
             </div>
             <hr color="silver" width="100%">
+
             <p>
               <u>Annotations:</u>
             </p>
@@ -145,6 +147,7 @@
             </div>
             <div id="no_annotations" class="alert alert-warning{% if image_annotations %} hidden{% endif %}">{% trans 'No annotations found.' %}</div>
             <div id="annotations_loading" class="alert alert-info hidden">{% trans 'Loading ...' %}</div>
+
         </div>
         <div class="col-md-3">
             <div class="panel panel-default">
@@ -155,32 +158,40 @@
                     <form id="annotation_form" action="{% url 'annotations:annotate' selected_image.id %}{% if filtered is not None %}?selected_annotation_type={{ filtered }}{% endif %}" enctype="multipart/form-data" method="post">
                         {% csrf_token %}
                         <input type="hidden" name="image_id" value="{{ selected_image.id }}">
+
+                        <table style="width:100%">
+                            <tr>
+                                <th>Label</th>
+                                <th>Key</th>
+                                <th>Count</th>
+                                <th>Color</th>
+                            </tr>
+
+                            {% for annotation_type in annotation_types %}
+                                 <tr>
+                                    <th>{{annotation_type.name}}</th>
+                                    <th>{{ forloop.counter0 }}</th>
+                                    <th>{{ annotation_type.node_count }}</th>
+                                    <th  style="background-color: {{ annotation_type.color_code }}"></th>
+                                 </tr>
+                            {% endfor %}
+                        </table>
+
                         <p>
                           <select id="annotation_type_id" name="selected_annotation_type" class="form-control">
-                            <option value="-1">{% trans 'Annotation Type' %}</option>
+                            <!--<option value="-1">{% trans 'Annotation Type' %}</option> -->
                           </select>
                         </p>
+
                         <p>
                           <input type='checkbox' id='draw_annotations' name="draw_annotations" checked>
-                          <label for='draw_annotations'>Draw annotations of selected type</label>
+                          <label for='draw_annotations'>Draw annotations</label>
                         </p>
+                    
                         {% if 'annotate' in imageset_perms %}
                             <p>
-                              <input type='checkbox' id='keep_selection' name="keep_selection" checked>
-                              <label for='keep_selection'>Keep selection for next image</label>
-                            </p>
-                            <hr>
-                            <p>
-                              <input type='checkbox' name='not_in_image' id='not_in_image'>
-                              <label for='not_in_image'>Not in the image (g)</label>
-                            </p>
-                            <p id='concealed_p'>
-                              <input type='checkbox' id='concealed' name="concealed">
-                              <label for='concealed'>concealed (c)</label>
-                            </p>
-                            <p id='blurred_p'>
-                              <input type='checkbox' id='blurred' name="blurred">
-                              <label for='blurred'>blurred (b)</label>
+                              <input type='checkbox' name='not_in_image' id='not_in_image' style="display:none;">
+                              <label for='not_in_image' style="display:none;">Not in the image (g)</label>
                             </p>
                         <p data-toggle="tooltip" data-placement="right" title="Same layout as the arrow keys. Increasing the bounding box size is possible with shift+i/l . Decreasing is possible with shift+j/k .">The bounding box can be moved<b> and resized</b> with <b>i j k l</b> <span class="glyphicon glyphicon-question-sign"></span></p>
                             <div class="row" id="coordinate_table">
@@ -217,26 +228,21 @@
                               </div>
                               <div class="col-sm-12"><p></p></div>
                               <div class="col-md-6">
-                                <button type="button" class="annotate_button btn btn-default btn-block" id="last_button">
-                                    <span class="glyphicon glyphicon-menu-left" aria-hidden="true"></span>
-                                    <span class="glyphicon glyphicon-floppy-save" aria-hidden="true"></span>Last (a)
-                                </button>
-                              </div>
-                              <div class="col-md-6">
                                 <button type="button" class="annotate_button btn btn-default btn-block" id="back_button">
                                     <span class="glyphicon glyphicon-menu-left" aria-hidden="true"></span>Back (s)
                                 </button>
                               </div>
-                              <div class="col-sm-12"><p></p></div>
                               <div class="col-md-6">
                                 <button type="button" class="annotate_button btn btn-default btn-block" id="skip_button">
                                     <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span>Skip (d)
                                 </button>
                               </div>
-                              <div class="col-md-6">
+                              <!--<div class="col-sm-12"><p></p></div>-->
+                              <div class="col-sm-12">
+                                <p></p>
                                 <button type="button" class="annotate_button btn btn-default btn-block" id="next_button">
                                     <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span>
-                                    <span class="glyphicon glyphicon-floppy-save" aria-hidden="true"></span>Next (f)
+                                    <span class="glyphicon glyphicon-floppy-save" aria-hidden="true"></span>Verify & Next (f)
                                 </button>
                               </div>
                             {% else %}

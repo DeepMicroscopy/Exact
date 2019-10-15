@@ -596,7 +596,7 @@ def create_annotation(request) -> Response:
         )
 
         # Automatically verify for owner
-        annotation.verify(request.user, True)
+        annotation.verify(request.user, False)
 
     serializer = AnnotationSerializer(
         annotation.image.annotations.filter(annotation_type__active=True).select_related()

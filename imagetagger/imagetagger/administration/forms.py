@@ -13,6 +13,7 @@ class AnnotationTypeCreationForm(forms.ModelForm):
             'vector_type',
             'enable_concealed',
             'enable_blurred',
+            'color_code'
         ]
 
 

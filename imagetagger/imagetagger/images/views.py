@@ -43,6 +43,30 @@ import imghdr
 from datetime import date, timedelta
 
 
+def get_verified_ids(request, imageset):
+    images = Image.objects.filter(image_set=imageset).order_by('name')
+    annotations = Annotation.objects.filter(image__in=images,
+                                            annotation_type__active=True).select_related()
+
+    verified = Verification.objects.filter(user=request.user, annotation__in=annotations, verified=True)
+    verified_image_ids = list(set([very.annotation.image_id for very in verified]))
+
+    return verified_image_ids
+
+
+def get_unverified_ids(request, imageset):
+    images = Image.objects.filter(image_set=imageset).order_by('name')
+    annotations = Annotation.objects.filter(image__in=images,
+                                            annotation_type__active=True).select_related()
+
+    unverified = Verification.objects.filter(user=request.user, annotation__in=annotations, verified=False)
+    unverified_image_ids = list(set([very.annotation.image_id for very in unverified]))
+
+    images_with_annos = list(set([anno.image_id for anno in annotations]))
+    images_without_annos = [img.id for img in images if img.id not in images_with_annos]
+
+    return unverified_image_ids + images_without_annos
+
 @login_required
 def explore_imageset(request):
     imagesets = ImageSet.objects.select_related('team').order_by(
@@ -189,9 +213,7 @@ def upload_image(request, imageset_id):
                 'unsupported': False,
                 'zip': False,
             }
-            magic_number = f.read(4)
-            f.seek(0)  # reset file cursor to the beginning of the file
-            if magic_number == b'PK\x03\x04':  # ZIP file magic number
+            if ".zip" in f.name: # f.peek(4) == b'PK\x03\x04':  # ZIP file magic number
                 error['zip'] = True
                 zipname = ''.join(random.choice(string.ascii_uppercase +
                                                 string.ascii_lowercase +
@@ -398,6 +420,13 @@ def view_imageset(request, image_set_id):
         return redirect(reverse('images:index'))
     # images the imageset contains
     images = Image.objects.filter(image_set=imageset).order_by('name')
+    annotations = Annotation.objects.filter(image__in=images,
+                                            annotation_type__active=True).select_related()
+
+    ids = get_unverified_ids(request, imageset)
+
+    images = images.filter(id__in=ids).order_by('name')
+
     # the saved exports of the imageset
     exports = Export.objects.filter(image_set=image_set_id).order_by('-id')[:5]
     filtered = False
@@ -422,6 +451,7 @@ def view_imageset(request, image_set_id):
     imageset_edit_form.fields['main_annotation_type'].queryset = AnnotationType.objects.filter(active=True)
     return render(request, 'images/imageset.html', {
         'images': images,
+        'image_count': images.count(),
         'annotationcount': annotations.count(),
         'imageset': imageset,
         'annotationtypes': annotation_types,
@@ -436,7 +466,10 @@ def view_imageset(request, image_set_id):
         'label_upload_form': LabelUploadForm(),
         'upload_notice': settings.UPLOAD_NOTICE,
         'enable_zip_download': settings.ENABLE_ZIP_DOWNLOAD,
+        'user': request.user
     })
+
+
 
 
 @login_required
@@ -735,7 +768,7 @@ def load_image_set(request) -> Response:
 
     serializer = ImageSetSerializer(image_set)
     serialized_image_set = serializer.data
-    if filter_annotation_type_id:
+    if type(filter_annotation_type_id) is int:
         filter_annotation_type = get_object_or_404(
             AnnotationType, pk=filter_annotation_type_id)
         # TODO: find a cleaner solution to filter related field set wihtin ImageSet serializer
@@ -743,6 +776,18 @@ def load_image_set(request) -> Response:
             image_set.images.exclude(
                 annotations__annotation_type=filter_annotation_type).order_by(
                 'name'), many=True).data
+    elif type(filter_annotation_type_id) is str:
+        if filter_annotation_type_id == "Unverified":
+            ids = get_unverified_ids(request, image_set)
+            serialized_image_set['images'] = ImageSerializer(
+                image_set.images.filter(id__in=ids).order_by(
+                'name'), many=True).data
+        else:
+            ids = get_verified_ids(request, image_set)
+            serialized_image_set['images'] = ImageSerializer(
+                image_set.images.filter(id__in=ids).order_by(
+                'name'), many=True).data
+
     else:
         # TODO: find a cleaner solution to order related field set wihtin ImageSet serializer
         serialized_image_set['images'] = ImageSerializer(
