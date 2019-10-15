@@ -81,26 +81,37 @@
                     {% endif %}
                     {% if image_sets %}
                         <h3>My imagesets</h3>
-                        <ul>
+                        <ol>
                             {% for imageset in image_sets %}
                                 <li>
-                                    {% if not imageset.public %}
-                                        <span class="glyphicon glyphicon-lock"></span>
-                                    {% endif %}
-                                    <a href="{% url 'users:team' imageset.team.id %}">{{imageset.team.name}}</a>/<a href="{% url 'images:view_imageset' imageset.id%}">{{ imageset.name }}</a>
-                                    ({{ imageset.image_count }} images) {{ imageset.prio_symbol | safe }}
-                                    {% for tag in imageset.set_tags.all %}
-                                        <a href="{% url 'images:explore_imageset' %}?tags={{ tag.name }}, " class="label label-info">{{ tag.name }}</a>
-                                    {% endfor %}
+                                    <div id="image_col">
+                                        {% if not imageset.public %}
+                                            <span class="glyphicon glyphicon-lock"></span>
+                                        {% endif %}
+
+                                        <a href="{% url 'images:view_imageset' imageset.id%}">{{ imageset.name }}</a>
+                                        ({{ imageset.image_count }} images) {{ imageset.prio_symbol | safe }}
+
+                                        {% for tag in imageset.set_tags.all %}
+                                            <a href="{% url 'images:explore_imageset' %}?tags={{ tag.name }}, " class="label label-info">{{ tag.name }}</a>
+                                        {% endfor %}
+
+                                        {% for image in imageset.images.all|slice:":1" %}
+                                            <img id="image" src="{% url 'images:view_image' image.id %}" alt="Picture {{image.name}} not found!"
+                                                             style="float:right; width:128px;height:128px;"
+                                                             data-imageid="{{ image.id }}"></br>
+                                        {% endfor %}
+
+
+                                    </div>
                                 </li>
                             {% endfor %}
-                        </ul>
+                        </ol>
                     {% endif %}
-                    Additional public imagesets, not belonging to any of your teams, can be found in the <a
-                        href="{% url 'images:explore_imageset' %}">explore view</a> .
                 </div>
             </div>
         </div>
+        {% if user.is_superuser %}
         <div class="col-md-4">
             <div class="row">
                 <div class="col-md-12">
@@ -241,7 +252,6 @@
                 </div>
             </div>
             {% endif %}
-            {% if userteams %}
             <div class="row">
                 <div class="col-md-12">
                     <div class="panel panel-default">
@@ -285,7 +295,6 @@
                     </div>
                 </div>
             </div>
-            {% endif %}
             <div class="row">
                 <div class="col-md-12">
                     <div class="panel panel-default">
@@ -378,6 +387,7 @@
                 </div>
             </div>
         </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

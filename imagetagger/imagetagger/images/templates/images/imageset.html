@@ -145,7 +145,7 @@
             {% if images %}
                 <div class="panel panel-default">
                     <div class="panel-heading">
-                        <h2 class="panel-title">Images</h2>
+                        <h2 class="panel-title">Images to label and verify</h2>
                     </div>
                     <div class="panel-body">
                         <ul>
@@ -175,7 +175,7 @@
                                     <td>Name</td>
                                     <td>{{imageset.name}}</td>
                                 </tr>
-                                {% if imageset.team %}
+                                {% if imageset.team and user.is_superuser %}
                                     <tr>
                                         <td>Team</td>
                                         <td><a href="{% url 'users:team' imageset.team.id %}">{{imageset.team.name}}</a></td>
@@ -187,15 +187,17 @@
                                             {% for tag in imageset.set_tags.all %}<a href="{% url 'images:explore_imageset' %}?tags={{ tag.name }}" class="label label-info">{{ tag.name }}</a>&#8203;{% endfor %}
                                         </td>
                                     </tr>
-                                <tr>
-                                    <td>Location</td>
-                                    <td>{{imageset.location}}</td>
-                                </tr>
+                                {% if user.is_superuser %}
+                                    <tr>
+                                        <td>Location</td>
+                                        <td>{{imageset.location}}</td>
+                                    </tr>
+                                {% endif %}
                                 <tr>
                                     <td>Description</td>
                                     <td>{{imageset.description}}</td>
                                 </tr>
-                                {% if imageset.creator %}
+                                {% if imageset.creator and user.is_superuser  %}
                                 <tr>
                                     <td>Creator</td>
                                     <td>{{imageset.creator.username}}</td>
@@ -204,6 +206,10 @@
                                 <tr>
                                     <td>Image count</td>
                                     <td>{{imageset.image_count}}</td>
+                                </tr>
+                                <tr>
+                                    <td>Images to verify</td>
+                                    <td>{{image_count}}</td>
                                 </tr>
                                 <tr>
                                     <td>Annotation count</td>
@@ -218,7 +224,7 @@
                                         </ul>
                                     </td>
                                 </tr>
-                                {% if imageset.images.count > 0 %}
+                                {% if imageset.images.count > 0 and user.is_superuser %}
                                 <tr>
                                     <td>Download</td>
                                     <td>
@@ -246,7 +252,7 @@
                     </div>
                 </div>
             </div>
-            {% if "edit_set" in imageset_perms %}
+            {% if "edit_set" in imageset_perms and user.is_superuser %}
             <div class="row">
                 <div class="panel panel-default">
                     <div class="panel-heading">
@@ -447,7 +453,7 @@
             {% endif %}
         </div>
         <div class="col-md-3">
-            {%  if "annotate" in imageset_perms %}
+            {%  if "annotate" in imageset_perms and is_superuser%}
                 {% if first_annotation or "edit_set" in imageset_perms and all_annotation_types%}
                     <div class="panel panel-default">
                         <div class="panel-heading">

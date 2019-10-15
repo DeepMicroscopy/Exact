@@ -14,10 +14,9 @@ class BoundingBoxes {
     }
   }
 
-  drawExistingAnnotations(annotations, color) {
+  drawExistingAnnotations(annotations, current_annotations) {
     this.clear();
     calculateImageScale();
-    color = color || globals.stdColor;
 
     if (annotations.length === 0 || !globals.drawAnnotations) {
       return;
@@ -29,12 +28,16 @@ class BoundingBoxes {
     for (var a in annotations) {
 
       var annotation = annotations[a];
-      if (annotation.annotation_type.id !== this.annotationTypeId) {
-        continue;
-      }
+      //if (annotation.annotation_type.id !== this.annotationTypeId) {
+      //  continue;
+      //}
       if (annotation.vector === null) {
         continue;
       }
+
+      let border_size = 2;
+      if (current_annotations.find(function(element) {return element.id == annotation.id;}))
+        border_size = 4
 
       var boundingBox = document.createElement('div');
       boundingBox.setAttribute('class', 'boundingBox');
@@ -45,7 +48,7 @@ class BoundingBoxes {
         'left': annotation.vector.x1 / globals.imageScaleWidth + parseFloat($('img#image').parent().css('padding-left')),
         'width': (annotation.vector.x2 - annotation.vector.x1) / globals.imageScaleWidth,
         'height': (annotation.vector.y2 - annotation.vector.y1) / globals.imageScaleHeight,
-        'border': '2px solid ' + color
+        'border': border_size + 'px solid ' + annotation.annotation_type.color_code
       });
 
       boundingBoxes.appendChild(boundingBox);
@@ -62,7 +65,7 @@ class BoundingBoxes {
     }
     if (highlightBox) {
       $(highlightBox).css({
-        'border': '3px solid ' + globals.mutColor
+        //'border': '3px solid ' + globals.mutColor
       });
     }
   }
@@ -77,7 +80,7 @@ class BoundingBoxes {
     }
     if (highlightBox) {
       $(highlightBox).css({
-        'border': '2px solid ' + globals.stdColor
+        //'border': '2px solid ' + globals.stdColor
       });
     }
   }
@@ -357,7 +360,22 @@ class BoundingBoxes {
   }
 
   handleMouseDown(event) { }
-  handleMouseUp(event) { }
+  handleMouseUp(event) {
+    if (typeof globals.editedAnnotationsId == "undefined")
+      return;
+
+    //let anno = globals.allAnnotations.find(function (e) { return e.id == globals.editedAnnotationsId});
+
+    var left = Math.round($('#x1Field').val() / globals.imageScaleWidth);
+    var right = Math.round($('#x2Field').val() / globals.imageScaleWidth);
+    var top = Math.round($('#y1Field').val() / globals.imageScaleHeight);
+    var bottom = Math.round($('#y2Field').val() / globals.imageScaleHeight);
+
+    // check if we clicked inside that annotation
+    if ((globals.mouseUpX >= left && globals.mouseUpX <= right && globals.mouseUpY >= top && globals.mouseUpY <= bottom) == false) {
+        this.resetSelection(true);
+    }
+  }
   handleEscape() { this.resetSelection(true); }
 
   handleMouseClick(event) {
@@ -367,11 +385,11 @@ class BoundingBoxes {
     // array with all matching annotations
     var matchingAnnotations = [];
 
-    for (var a in globals.currentAnnotations) {
-      var annotation = globals.currentAnnotations[a];
-      if (annotation.annotation_type.id !== annotationType) {
-        continue;
-      }
+    for (var a in globals.allAnnotations) {
+      var annotation = globals.allAnnotations[a];
+      //if (annotation.annotation_type.id !== annotationType) {
+      //  continue;
+      //}
       if (annotation.vector === null)
         continue;
 

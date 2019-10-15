@@ -408,6 +408,7 @@ class AnnotationType(models.Model):
     node_count = models.IntegerField(default=0)
     enable_concealed = models.BooleanField(default=True)
     enable_blurred = models.BooleanField(default=True)
+    color_code = models.CharField(default="#CC4444", max_length=7, unique=False)
 
     def __str__(self):
         if self.active:
