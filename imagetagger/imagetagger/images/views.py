@@ -437,7 +437,7 @@ def view_imageset(request, image_set_id):
         images = images.exclude(
             annotations__annotation_type_id=request.POST.get("selected_annotation_type"))
     # a list of annotation types used in the imageset
-    all_annotation_types = AnnotationType.objects.filter(active=True)
+    all_annotation_types = AnnotationType.objects.filter(active=True, name__in=[tag.name for tag in imageset.set_tags.all()])
     annotations = Annotation.objects.filter(
         image__in=images,
         annotation_type__active=True).order_by("id")
@@ -663,12 +663,12 @@ def label_upload(request, imageset_id):
                             annotation._blurred = blurred
                             annotation._concealed = concealed
                             annotation.save()
-                            if verify:
-                                verification = Verification()
-                                verification.user = request.user
-                                verification.annotation = annotation
-                                verification.verified = True
-                                verification.save()
+
+                            verification = Verification()
+                            verification.user = request.user
+                            verification.annotation = annotation
+                            verification.verified = verify
+                            verification.save()
                         else:
                             similar_count += 1
                             report_list.append(

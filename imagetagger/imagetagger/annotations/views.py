@@ -35,7 +35,8 @@ def annotate(request, image_id):
     imageset_perms = selected_image.image_set.get_perms(request.user)
     if 'read' in imageset_perms:
         set_images = selected_image.image_set.images.all().order_by('name')
-        annotation_types = AnnotationType.objects.filter(active=True)  # for the dropdown option
+        annotation_types = AnnotationType.objects.filter(active=True,
+                                                         name__in=[tag.name for tag in selected_image.image_set.set_tags.all()])  # for the dropdown option
         imageset_lock = selected_image.image_set.image_lock
         return render(request, 'annotations/annotate.html', {
             'selected_image': selected_image,
@@ -668,7 +669,16 @@ def load_set_annotations(request) -> Response:
 @api_view(['GET'])
 def load_annotation_types(request) -> Response:
 
-    annotation_types = AnnotationType.objects.filter(active=True)
+    annotation_types = None
+    if 'imageset_id' in request.query_params:
+        imageset_id = int(request.query_params['imageset_id'])
+        imageset = get_object_or_404(ImageSet, pk=imageset_id)
+        annotation_types = AnnotationType.objects.filter(active=True,
+                                                         name__in=[tag.name for tag in imageset.set_tags.all()])
+    else:
+        annotation_types = AnnotationType.objects.filter(active=True)
+
+
     serializer = AnnotationTypeSerializer(
         annotation_types,
         many=True,

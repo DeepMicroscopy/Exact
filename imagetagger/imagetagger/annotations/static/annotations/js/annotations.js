@@ -384,8 +384,12 @@ function calculateImageScale() {
     });
   }
 
-  function loadAnnotationTypeList() {
-    $.ajax(API_ANNOTATIONS_BASE_URL + 'annotation/loadannotationtypes/', {
+  function loadAnnotationTypeList(imageSetId) {
+    let params = {
+      imageset_id: imageSetId
+    };
+
+    $.ajax(API_ANNOTATIONS_BASE_URL + 'annotation/loadannotationtypes/?' + $.param(params), {
       type: 'GET',
       headers: gHeaders,
       dataType: 'json',
@@ -1336,7 +1340,7 @@ function calculateImageScale() {
       "X-CSRFTOKEN": gCsrfToken
     };
     gImageList = getImageList();
-    loadAnnotationTypeList();
+    loadAnnotationTypeList(gImageSetId);
     preloadImages();
     preloadAnnotations();
     scrollImageList();
