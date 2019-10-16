@@ -209,7 +209,11 @@
                                 </tr>
                                 <tr>
                                     <td>Images to verify</td>
-                                    <td>{{image_count}}</td>
+                                    {% if image_count > 0  %}
+                                        <td>{{image_count}}</td>
+                                    {% else %}
+                                        <td bgcolor="#00b300"> Done, Thank you  </td>
+                                    {% endif %}
                                 </tr>
                                 <tr>
                                     <td>Annotation count</td>
