@@ -48,7 +48,7 @@ def get_verified_ids(request, imageset):
     annotations = Annotation.objects.filter(image__in=images,
                                             annotation_type__active=True).select_related()
 
-    verified = Verification.objects.filter(user=request.user, annotation__in=annotations, verified=True)
+    verified = Verification.objects.filter(annotation__in=annotations, verified=True)
     verified_image_ids = list(set([very.annotation.image_id for very in verified]))
 
     return verified_image_ids
@@ -59,7 +59,7 @@ def get_unverified_ids(request, imageset):
     annotations = Annotation.objects.filter(image__in=images,
                                             annotation_type__active=True).select_related()
 
-    unverified = Verification.objects.filter(user=request.user, annotation__in=annotations, verified=False)
+    unverified = Verification.objects.filter(annotation__in=annotations, verified=False)
     unverified_image_ids = list(set([very.annotation.image_id for very in unverified]))
 
     images_with_annos = list(set([anno.image_id for anno in annotations]))
