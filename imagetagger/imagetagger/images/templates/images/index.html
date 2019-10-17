@@ -80,12 +80,12 @@
                         </ul>
                     {% endif %}
                     {% if image_sets %}
-                        <h3>My imagesets</h3>
                         <table style="width:100%">
                             <tr>
                                 <th>Dataset</th>
                                 <th>Tags</th>
                                 <th>Example Image</th>
+                                <th></th>
                             </tr>
 
                             {% for imageset in image_sets %}
@@ -115,6 +115,12 @@
                                             {% endfor %}
                                         </th>
 
+                                        <th>
+                                            <form style="padding-left: 10px">
+                                                <input type="button" value="Start labeln"
+                                                       onclick="window.location.href='{% url 'images:view_imageset' imageset.id%}'" />
+                                            </form>
+                                        </th>
 
                                     </div>
                                 </tr>
