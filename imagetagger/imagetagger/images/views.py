@@ -31,6 +31,7 @@ from .forms import LabelUploadForm
 from imagetagger.annotations.models import Annotation, Export, ExportFormat, \
     AnnotationType, Verification
 from imagetagger.tagger_messages.models import Message, TeamMessage, GlobalMessage
+from util.convert_slides import DeepZoomStaticTiler
 
 import os
 import shutil
@@ -41,6 +42,7 @@ import hashlib
 import json
 import imghdr
 from datetime import date, timedelta
+from pathlib import Path
 
 
 def get_verified_ids(request, imageset):
@@ -281,6 +283,7 @@ def upload_image(request, imageset_id):
                         error['directories'] = True
                 if duplicat_count > 0:
                     error['duplicates'] = duplicat_count
+            #if ".svs" in f.name:
             else:
                 # creates a checksum for image
                 fchecksum = hashlib.sha512()
@@ -290,34 +293,47 @@ def upload_image(request, imageset_id):
                 # tests for duplicats in  imageset
                 if Image.objects.filter(checksum=fchecksum, image_set=imageset)\
                         .count() == 0:
+
                     fname = f.name.split('.')
                     fname = ('_'.join(fname[:-1]) + '_' +
                              ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits)
                                      for _ in range(6)) + '.' + fname[-1])
+
                     image = Image(
                         name=f.name,
                         image_set=imageset,
                         filename=fname,
                         checksum=fchecksum)
+
+                    slidepath = image.path()
+                    basename = str(Path(image.path()))
+                    format = "png"
+                    tile_size = 512
+                    overlap = 1
+                    limit_bounds = True
+                    quality = 90
+                    workers = 4
+                    with_viewer = None
+
                     with open(image.path(), 'wb') as out:
                         for chunk in f.chunks():
                             out.write(chunk)
-                    shutil.chown(image.path(), group=settings.UPLOAD_FS_GROUP)
-                    if imghdr.what(image.path()) in settings.IMAGE_EXTENSION:
-                        try:
-                            with PIL_Image.open(image.path()) as image_file:
-                                width, height = image_file.size
-                            image.height = height
-                            image.width = width
-                            image.save()
-                        except (OSError, IOError):
-                            error['damaged'] = True
-                            os.remove(image.path())
-                    else:
-                        error['unsupported'] = True
+
+                    try:
+                        slicer = DeepZoomStaticTiler(slidepath, basename, format,
+                            tile_size, overlap, limit_bounds, quality,
+                            workers, with_viewer)
+                        slicer.run()
+
+                        image.filename += ".dzi"
+                        image.width, image.height = slicer._slide.level_dimensions[0]
+                        image.save()
+                    except (OSError, IOError):
+                        error['damaged'] = True
                         os.remove(image.path())
                 else:
                     error['exists'] = True
+
             errormessage = ''
             if error['zip']:
                 errors = list()
@@ -379,6 +395,33 @@ def view_image(request, image_id):
         return HttpResponseForbidden()
 
     file_path = os.path.join(settings.IMAGE_PATH, image.path())
+
+    if settings.USE_NGINX_IMAGE_PROVISION:
+        response = HttpResponse(content_type='image')
+        response['X-Accel-Redirect'] = "/ngx_static_dn/{}".format(image.relative_path())
+    else:
+        file_path = os.path.join(settings.IMAGE_PATH, image.path())
+        response =  FileResponse(open(file_path, 'rb'), content_type="image")
+
+    response["Content-Length"] = os.path.getsize(file_path)
+    return response
+
+@login_required
+def view_image_tile(request, tile_path):
+    """
+    This view is to authenticate direct access to the images via nginx auth_request directive
+
+    it will return forbidden on if the user is not authenticated
+    """
+
+    image_id = int(tile_path.split("_")[0])
+    image = get_object_or_404(Image, id=image_id)
+    if not image.image_set.has_perm('read', request.user):
+        return HttpResponseForbidden()
+
+    file_path = os.path.join(settings.IMAGE_PATH,
+                             image.path().replace(".dzi","_files"),
+                             str(tile_path[tile_path.find('/')+1:]))
 
     if settings.USE_NGINX_IMAGE_PROVISION:
         response = HttpResponse(content_type='image')

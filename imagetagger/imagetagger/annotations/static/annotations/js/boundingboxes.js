@@ -1,7 +1,7 @@
 // JS file for bounding box internals
 
 class BoundingBoxes {
-  constructor(annotationTypeId, noSelection) {
+  constructor(annotationTypeId, noSelection, hEl) {
     this.initialized = false;
     this.selection = undefined;
     this.vector_type = 1;
@@ -12,18 +12,20 @@ class BoundingBoxes {
     if (!noSelection) {
       this.initSelection();
     }
+
+    this.hEl = hEl;
   }
 
   drawExistingAnnotations(annotations, current_annotations) {
     this.clear();
-    calculateImageScale();
+    // calculateImageScale();
 
     if (annotations.length === 0 || !globals.drawAnnotations) {
       return;
     }
 
-    // clear all boxes
-    var boundingBoxes = document.getElementById('boundingBoxes');
+    //var boundingBoxes = document.getElementById('boundingBoxes');
+    this.hEl.removeAllElements();
 
     for (var a in annotations) {
 
@@ -44,14 +46,19 @@ class BoundingBoxes {
       boundingBox.setAttribute('id', 'boundingBox' + annotation.id);
       $(boundingBox).data('annotationid', annotation.id);
       $(boundingBox).css({
-        'top': annotation.vector.y1 / globals.imageScaleHeight,
-        'left': annotation.vector.x1 / globals.imageScaleWidth + parseFloat($('img#image').parent().css('padding-left')),
-        'width': (annotation.vector.x2 - annotation.vector.x1) / globals.imageScaleWidth,
-        'height': (annotation.vector.y2 - annotation.vector.y1) / globals.imageScaleHeight,
         'border': border_size + 'px solid ' + annotation.annotation_type.color_code
       });
 
-      boundingBoxes.appendChild(boundingBox);
+      this.hEl.addElement({
+        id: 'boundingBox' + annotation.id,
+        element: boundingBox,
+        x: annotation.vector.x1,
+        y: annotation.vector.y1,
+        width: annotation.vector.x2 - annotation.vector.x1,
+        height: annotation.vector.y2 - annotation.vector.y1
+      })
+
+      //boundingBoxes.appendChild(boundingBox);
     }
   }
 
@@ -86,6 +93,7 @@ class BoundingBoxes {
   }
 
   clear() {
+    return;
     var boundingBoxes = document.getElementById('boundingBoxes');
 
     while (boundingBoxes.firstChild) {
@@ -97,6 +105,8 @@ class BoundingBoxes {
    * Initialize the selection.
    */
   initSelection() {
+    return;
+
     this.initialized = true;
 
     this.selection = globals.image.imgAreaSelect({
@@ -114,6 +124,7 @@ class BoundingBoxes {
    * Reload the selection.
    */
   reloadSelection(annotationId, annotationData) {
+    return;
     this.setHighlightColor(annotationId);
     this.selection = globals.image.imgAreaSelect({
       instance: true,

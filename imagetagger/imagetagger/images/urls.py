@@ -9,6 +9,7 @@ urlpatterns = [
     url(r'^image/setfree/(\d+)/$', views.set_free, name='setfree_imageset'),
     url(r'^image/upload/(\d+)/$', views.upload_image, name='upload_image'),
     url(r'^image/(\d+)/$', views.view_image, name='view_image'),
+    url(r'^image/(\d+_\D+/\d+/\d+_\d+.(?:png|jpg))/$', views.view_image_tile, name='view_image_tile'),
     url(r'^imagelist/(\d+)/$', views.list_images, name='list_images'),
     url(r'^imageset/(\d+)/label-upload/$', views.label_upload, name='label_upload'),
     url(r'^imageset/create/$', views.create_imageset, name='create_imageset'),

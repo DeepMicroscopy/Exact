@@ -27,8 +27,9 @@
 {% endblock additional_annotation_css %}
 
 {% block additional_annotation_js %}
+<script type="text/javascript" src="{% static 'annotations/js/openseadragon.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/boundingboxes.js' %}"></script>
-<script type="text/javascript" src="{% static 'annotations/js/canvas.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/OpenSeadragonHTMLelements.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/annotations.js' %}"></script>
 {% endblock additional_annotation_js %}
 {% block bodyblock %}
@@ -107,9 +108,9 @@
 
         <div class="col-md-6">
             <div id="image_col">
-                <img id="image" src="{% url 'images:view_image' selected_image.id %}" alt="Picture {{selected_image.name}} not found!" data-imageid="{{ selected_image.id }}"></br>
-                <canvas id="image_canvas" class="hidden">Unable to load canvas for picture {{selected_image.name}}!</canvas>
-                <div id="boundingBoxes"></div>
+
+                <div id="openseadragon1" style="width: 800px; height: 600px;"></div>
+                <!-- <div id="boundingBoxes"></div> -->
             </div>
             <hr color="silver" width="100%">
 
