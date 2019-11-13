@@ -1,5 +1,11 @@
 {% extends 'base/base.html' %}
+{% load static %}
 {% load widget_tweaks %}
+
+{% block additional_annotation_js %}
+<script type="text/javascript" src="{% static 'annotations/js/openseadragon.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/OpenSeadragonHTMLelements.js' %}"></script>
+{% endblock additional_annotation_js %}
 
 {% block bodyblock %}
 <div class="container-fluid">
@@ -109,9 +115,21 @@
 
                                         <th>
                                             {% for image in imageset.images.all|slice:":1" %}
-                                                <img id="image" src="{% url 'images:view_image' image.id %}" alt="Picture {{image.name}} not found!"
-                                                                 style="float:right; width:128px;height:128px;"
-                                                                 data-imageid="{{ image.id }}"></br>
+
+                                                    <div id="example-xmlhttprequest-for-dzi-{{ imageset.id }}"
+                                                         class="openseadragon">
+                                                        <script type="text/javascript">
+                                                            OpenSeadragon({
+                                                                id:            "example-xmlhttprequest-for-dzi-{{ imageset.id }}",
+                                                                prefixUrl:     "../../static/images/",
+                                                                tileSource: {% url 'images:view_image' image.id %}
+                                                            });
+                                                        </script>
+                                                        <noscript>
+                                                            <p>OpenSeadragon is not available unless JavaScript is enabled.</p>
+                                                        </noscript>
+                                                    </div>
+
                                             {% endfor %}
                                         </th>
 

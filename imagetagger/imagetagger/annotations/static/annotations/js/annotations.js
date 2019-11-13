@@ -61,6 +61,11 @@ function calculateImageScale() {
   // save the current annotations of the image, so we can draw and hide the
 
   var tool;
+  var viewer = OpenSeadragon({
+      id: "openseadragon1",
+      prefixUrl: '../../static/images/',
+      showNavigator: true
+  });
 
   function shorten(string, length) {
     let threshold = length || 30;
@@ -117,7 +122,7 @@ function calculateImageScale() {
           $('#x' + i + 'Box').remove();
           $('#y' + i + 'Box').remove();
         }
-        tool = new BoundingBoxes(annotationTypeId);
+        tool = new BoundingBoxes(annotationTypeId, true, viewer.HTMLelements());
         $('#image_canvas').addClass('hidden');
         $('.hair').removeClass('hidden');
         $('#image').css('cursor', 'none');
@@ -584,6 +589,8 @@ function calculateImageScale() {
    */
 
   function handleMouseClick(e) {
+    return;
+
     if (e && (e.target.id === 'image' || e.target.id === 'image_canvas')) {
       var position = globals.image.offset();
       globals.mouseClickX = Math.round((e.pageX - position.left));
@@ -637,31 +644,18 @@ function calculateImageScale() {
       return;
     }
 
-    if (gImageCache[imageId] === undefined) {
-      // image is not available in cache. Load it.
-      loadImageToCache(imageId);
-    }
-
-    // image is in cache.
-    var currentImage = globals.image;
-    var newImage = gImageCache[imageId];
-
-    currentImage.attr('id', '');
-    newImage.attr('id', 'image');
     gImageId = imageId;
-    preloadImages();
     preloadAnnotations();
 
-    currentImage.replaceWith(newImage);
-    globals.image = newImage;
-    calculateImageScale();
     tool.initSelection();
     tool.resetSelection();
 
-    if (currentImage.data('imageid') !== undefined) {
-      // add previous image to cache
-      gImageCache[currentImage.data('imageid')] = currentImage;
-    }
+    viewer.open({tileSource: window.location.origin+"/images/image/"+imageId});
+    //viewer.open({tileSource: {
+          //type: 'image',
+          //url:  window.location.origin+"/images/image/"+imageId,
+          //buildPyramid: false
+    //    }});
   }
 
   /**
@@ -920,6 +914,7 @@ function calculateImageScale() {
    * @param event
    */
   function handleSelection(event) {
+    return;
     calculateImageScale();
     var cH = $('#crosshair-h'), cV = $('#crosshair-v');
     var position = globals.image.offset();
@@ -961,6 +956,7 @@ function calculateImageScale() {
    * @param event
    */
   function handleResize() {
+    return;
     tool.cancelSelection();
     calculateImageScale();
     tool.drawExistingAnnotations(globals.allAnnotations, globals.currentAnnotations);
@@ -1089,31 +1085,6 @@ function calculateImageScale() {
   }
 
   /**
-   * Load an image to the cache if it is not in it already.
-   *
-   * @param imageId
-   */
-  function loadImageToCache(imageId) {
-    imageId = parseInt(imageId);
-
-    if (gImageList.indexOf(imageId) === -1) {
-      console.log(
-        'skiping request to load image ' + imageId +
-        ' as it is not in current image list.');
-      return;
-    }
-
-    if (gImageCache[imageId] !== undefined) {
-      // already cached
-      return;
-    }
-
-    gImageCache[imageId] = $('<img>');
-    gImageCache[imageId].data('imageid', imageId).attr(
-      'src', '/images/image/' + imageId + '/');
-  }
-
-  /**
    * Load the annotations of an image to the cache if they are not in it already.
    *
    * @param imageId
@@ -1176,36 +1147,7 @@ function calculateImageScale() {
     loadAnnotateView(gImageList[imageIndex]);
   }
 
-  /**
-   * Preload next and previous images to cache.
-   */
-  function preloadImages() {
-    var keepImages = [];
-    for (var imageId = gImageId - PRELOAD_BACKWARD;
-         imageId <= gImageId + PRELOAD_FORWARD;
-         imageId++) {
-      keepImages.push(imageId);
-      loadImageToCache(imageId);
-    }
-    pruneImageCache(keepImages);
-  }
-
-  /**
-   * Delete all images from cache except for those in Array keep
-   *
-   * @param keep Array of the image ids which should be kept in the cache.
-   */
-  function pruneImageCache(keep) {
-    for (var imageId in gImageCache) {
-      imageId = parseInt(imageId);
-      if (gImageCache[imageId] !== undefined && keep.indexOf(imageId) === -1) {
-        delete gImageCache[imageId];
-      }
-    }
-  }
-
-
-  /**
+    /**
    * Delete all images from cache except for those in Array keep
    *
    * @param keep Array of the image ids which should be kept in the cache.
@@ -1263,6 +1205,8 @@ function calculateImageScale() {
   }
 
   function handleMouseDown(event) {
+    return;
+
     if (!$('#draw_annotations').is(':checked'))
       return;
 
@@ -1281,6 +1225,8 @@ function calculateImageScale() {
   }
 
   function handleMouseUp(event) {
+    return;
+
     if (!$('#draw_annotations').is(':checked'))
       return;
 
@@ -1341,7 +1287,6 @@ function calculateImageScale() {
     };
     gImageList = getImageList();
     loadAnnotationTypeList(gImageSetId);
-    preloadImages();
     preloadAnnotations();
     scrollImageList();
 
