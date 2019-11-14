@@ -12,6 +12,7 @@ from django.http import HttpResponseForbidden, HttpResponse, HttpResponseBadRequ
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.response import TemplateResponse
 from django.utils.translation import ugettext_lazy as _
+from django.core.cache import cache
 from json import JSONDecodeError
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import ParseError
@@ -31,7 +32,7 @@ from .forms import LabelUploadForm
 from imagetagger.annotations.models import Annotation, Export, ExportFormat, \
     AnnotationType, Verification
 from imagetagger.tagger_messages.models import Message, TeamMessage, GlobalMessage
-from util.convert_slides import DeepZoomStaticTiler
+from util.slide_server import SlideCache, SlideFile, PILBytesIO
 
 import os
 import shutil
@@ -43,7 +44,14 @@ import json
 import imghdr
 from datetime import date, timedelta
 from pathlib import Path
+import re
+from multiprocessing.pool import ThreadPool
+import subprocess
+from openslide import OpenSlide
 
+# TODO: Add to cache
+image_cache = SlideCache(cache_size=10)
+tp = ThreadPool(1)
 
 def get_verified_ids(request, imageset):
     images = Image.objects.filter(image_set=imageset).order_by('name')
@@ -293,44 +301,56 @@ def upload_image(request, imageset_id):
                 # tests for duplicats in  imageset
                 if Image.objects.filter(checksum=fchecksum, image_set=imageset)\
                         .count() == 0:
+                    ext = f.name.split('.')[-1]
 
-                    fname = f.name.split('.')
-                    fname = ('_'.join(fname[:-1]) + '_' +
-                             ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits)
-                                     for _ in range(6)) + '.' + fname[-1])
+                    if any(f.name.lower().endswith(ext) for ext in settings.IMAGE_EXTENSION):
+                        fname = f.name.replace(ext, "tiff")
 
-                    image = Image(
-                        name=f.name,
-                        image_set=imageset,
-                        filename=fname,
-                        checksum=fchecksum)
+                        image = Image(
+                            name=f.name,
+                            image_set=imageset,
+                            filename=fname,
+                            checksum=fchecksum)
 
-                    slidepath = image.path()
-                    basename = str(Path(image.path()))
-                    format = "png"
-                    tile_size = 512
-                    overlap = 1
-                    limit_bounds = True
-                    quality = 90
-                    workers = 4
-                    with_viewer = None
+                        with open(image.path().replace("tiff", ext), 'wb') as out:
+                            for chunk in f.chunks():
+                                out.write(chunk)
 
-                    with open(image.path(), 'wb') as out:
-                        for chunk in f.chunks():
-                            out.write(chunk)
+                        shutil.chown(image.path().replace("tiff", ext), group=settings.UPLOAD_FS_GROUP)
 
-                    try:
-                        slicer = DeepZoomStaticTiler(slidepath, basename, format,
-                            tile_size, overlap, limit_bounds, quality,
-                            workers, with_viewer)
-                        slicer.run()
+                        # TODO: Time intensive use multiprocessing
+                        os.system(
+                            'convert {0} -define tiff:tile-geometry=254x254 ptif:{1}'.format(image.path().replace("tiff", ext), image.path()))
+                        shutil.chown(image.path(), group=settings.UPLOAD_FS_GROUP)
 
-                        image.filename += ".dzi"
-                        image.width, image.height = slicer._slide.level_dimensions[0]
-                        image.save()
-                    except (OSError, IOError):
-                        error['damaged'] = True
-                        os.remove(image.path())
+                        try:
+                            osr = OpenSlide(image.path())
+                            image.width, image.height = osr.level_dimensions[0]
+                            image.save()
+                        except:
+                            error['unsupported'] = True
+                            os.remove(image.path())
+                    else:
+
+                        image = Image(
+                            name=f.name,
+                            image_set=imageset,
+                            filename=f.name,
+                            checksum=fchecksum)
+
+                        with open(image.path(), 'wb') as out:
+                            for chunk in f.chunks():
+                                out.write(chunk)
+
+                        shutil.chown(image.path(), group=settings.UPLOAD_FS_GROUP)
+
+                        try:
+                            osr = OpenSlide(image.path())
+                            image.width, image.height = osr.level_dimensions[0]
+                            image.save()
+                        except:
+                            error['unsupported'] = True
+                            os.remove(image.path())
                 else:
                     error['exists'] = True
 
@@ -394,17 +414,40 @@ def view_image(request, image_id):
     if not image.image_set.has_perm('read', request.user):
         return HttpResponseForbidden()
 
+    #image_cache = cache.get('SlideCache')
+    #if image_cache is None:
+    #    image_cache = SlideCache(cache_size=10)
+    #    cache.set('SlideCache', image_cache)
+    #image_cache = SlideCache(cache_size=10)
+
     file_path = os.path.join(settings.IMAGE_PATH, image.path())
+    slide = image_cache.get(file_path)
 
-    if settings.USE_NGINX_IMAGE_PROVISION:
-        response = HttpResponse(content_type='image')
-        response['X-Accel-Redirect'] = "/ngx_static_dn/{}".format(image.relative_path())
-    else:
-        file_path = os.path.join(settings.IMAGE_PATH, image.path())
-        response =  FileResponse(open(file_path, 'rb'), content_type="image")
-
-    response["Content-Length"] = os.path.getsize(file_path)
+    response = HttpResponse(slide.get_dzi("jpeg"), content_type='application/xml')
     return response
+
+@login_required
+def view_thumbnail(request, image_id):
+    """
+    This view is to authenticate direct access to the images via nginx auth_request directive
+
+    it will return forbidden on if the user is not authenticated
+    """
+    image = get_object_or_404(Image, id=image_id)
+    if not image.image_set.has_perm('read', request.user):
+        return HttpResponseForbidden()
+
+    file_path = os.path.join(settings.IMAGE_PATH, image.path())
+    slide = image_cache.get(file_path)
+
+    tile = slide._osr.get_thumbnail((128,128))
+
+    buf = PILBytesIO()
+    tile.save(buf, 'jpeg', quality=90)
+    response = HttpResponse(buf.getvalue(), content_type='image/%s' % format)
+
+    return response
+
 
 @login_required
 def view_image_tile(request, tile_path):
@@ -413,23 +456,27 @@ def view_image_tile(request, tile_path):
 
     it will return forbidden on if the user is not authenticated
     """
+    results = re.search("((\d+)_(\D+)/(\d+)/(\d+)_(\d+).(png|jpeg))", tile_path)
+    image_id = int(results.group(2))
+    level = int(results.group(4))
+    col = int(results.group(5))
+    row = int(results.group(6))
+    format = results.group(7)
 
-    image_id = int(tile_path.split("_")[0])
     image = get_object_or_404(Image, id=image_id)
     if not image.image_set.has_perm('read', request.user):
         return HttpResponseForbidden()
 
-    file_path = os.path.join(settings.IMAGE_PATH,
-                             image.path().replace(".dzi","_files"),
-                             str(tile_path[tile_path.find('/')+1:]))
+    file_path = os.path.join(settings.IMAGE_PATH, image.path())
+    slide = image_cache.get(file_path)
 
-    if settings.USE_NGINX_IMAGE_PROVISION:
-        response = HttpResponse(content_type='image')
-        response['X-Accel-Redirect'] = "/ngx_static_dn/{}".format(image.relative_path())
-    else:
-        response =  FileResponse(open(file_path, 'rb'), content_type="image")
 
-    response["Content-Length"] = os.path.getsize(file_path)
+    tile = slide.get_tile(level, (col, row))
+
+    buf = PILBytesIO()
+    tile.save(buf, format, quality=90)
+    response = HttpResponse(buf.getvalue(), content_type='image/%s' % format)
+
     return response
 
 @login_required

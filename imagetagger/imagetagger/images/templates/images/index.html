@@ -116,19 +116,9 @@
                                         <th>
                                             {% for image in imageset.images.all|slice:":1" %}
 
-                                                    <div id="example-xmlhttprequest-for-dzi-{{ imageset.id }}"
-                                                         class="openseadragon">
-                                                        <script type="text/javascript">
-                                                            OpenSeadragon({
-                                                                id:            "example-xmlhttprequest-for-dzi-{{ imageset.id }}",
-                                                                prefixUrl:     "../../static/images/",
-                                                                tileSource: {% url 'images:view_image' image.id %}
-                                                            });
-                                                        </script>
-                                                        <noscript>
-                                                            <p>OpenSeadragon is not available unless JavaScript is enabled.</p>
-                                                        </noscript>
-                                                    </div>
+                                                    <img id="image" src="{% url 'images:view_thumbnail' image.id %}" alt="Thumbnail {{image.name}} not found!"
+                                                        style="float:right; width:128px;height:128px;"
+                                                        data-imageid="{{ image.id }}"></br>
 
                                             {% endfor %}
                                         </th>
