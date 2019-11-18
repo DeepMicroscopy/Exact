@@ -528,13 +528,14 @@ def api_delete_annotation(request) -> Response:
             'detail': 'permission for deleting annotations in this image set missing.',
         }, status=HTTP_403_FORBIDDEN)
 
-    image = annotation.image
+    #image = annotation.image
     annotation.delete()
+    annotation.id = annotation_id
 
     serializer = AnnotationSerializer(
-        image.annotations.select_related().filter(annotation_type__active=True).order_by('annotation_type__name'),
+        annotation, #image.annotations.select_related().filter(annotation_type__active=True).order_by('annotation_type__name'),
         context={'request': request, },
-        many=True)
+        many=False)
     return Response({
         'annotations': serializer.data,
     }, status=HTTP_200_OK)
@@ -599,13 +600,13 @@ def create_annotation(request) -> Response:
         # Automatically verify for owner
         annotation.verify(request.user, False)
 
+    #.image.annotations.filter(annotation_type__active=True).select_related().order_by('annotation_type__name')
     serializer = AnnotationSerializer(
-        annotation.image.annotations.filter(annotation_type__active=True).select_related()
-        .order_by('annotation_type__name'),
+        annotation,
         context={
             'request': request,
         },
-        many=True)
+        many=False)
     return Response({
         'annotations': serializer.data,
     }, status=HTTP_201_CREATED)
