@@ -25,7 +25,7 @@ div.panel-heading {
 }
 
 #image_list, #annotation_list {
-  height: 600px;
+  max-height : 400px;
   overflow-y: scroll;
 }
 
