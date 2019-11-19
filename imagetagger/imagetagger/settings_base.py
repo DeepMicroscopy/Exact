@@ -115,7 +115,7 @@ USE_L10N = True
 
 USE_TZ = True
 
-PROBLEMS_URL = 'https://github.com/bit-bots/imagetagger/issues'
+PROBLEMS_URL = 'https://github.com/ChristianMarzahl/imagetagger/issues'
 PROBLEMS_TEXT = ''
 
 LOGIN_URL = '/user/login/'
