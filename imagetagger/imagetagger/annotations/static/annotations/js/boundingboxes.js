@@ -22,6 +22,11 @@ class BoundingBoxes {
             return;
         }
 
+        // remove annotation in update case
+        if (update_view){
+            this.removeAnnotation(annotation.id)
+        }
+
         let border_size = 2;
         var boundingBox = document.createElement('div');
         boundingBox.setAttribute('class', 'boundingBox');

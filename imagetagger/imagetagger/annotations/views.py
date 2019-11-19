@@ -808,31 +808,16 @@ def update_annotation(request) -> Response:
 
     if not annotation_type.validate_vector(vector):
         serializer = AnnotationSerializer(
-            annotation.image.annotations.filter(annotation_type__active=True).select_related()
-            .order_by('annotation_type__name'),
+            annotation,
             context={
                 'request': request,
             },
-            many=True)
+            many=False)
         return Response({
             'annotations': serializer.data,
             'detail': 'the vector is invalid.',
         }, status=HTTP_400_BAD_REQUEST)
 
-    if Annotation.similar_annotations(
-            vector, annotation.image, annotation_type, exclude={annotation.id}):
-        annotation.delete()
-        serializer = AnnotationSerializer(
-            annotation.image.annotations.filter(annotation_type__active=True).select_related()
-            .order_by('annotation_type__name'),
-            context={
-                'request': request,
-            },
-            many=True)
-        return Response({
-            'annotations': serializer.data,
-            'detail': 'similar annotation exists.',
-        })
 
     with transaction.atomic():
         annotation.annotation_type = annotation_type
@@ -847,13 +832,11 @@ def update_annotation(request) -> Response:
         annotation.verify(request.user, True)
 
     serializer = AnnotationSerializer(
-        annotation.image.annotations.filter(annotation_type__active=True).select_related()
-        .filter(annotation_type__active=True)
-        .order_by('annotation_type__name'),
+        annotation,
         context={
             'request': request,
         },
-        many=True)
+        many=False)
     return Response({
         'annotations': serializer.data,
     }, status=HTTP_200_OK)
