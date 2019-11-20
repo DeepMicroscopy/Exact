@@ -280,13 +280,15 @@
                         <button id="cancel_edit_button" class="btn btn-danger">{% trans 'Cancel' %}</button>
                     </div>
 
-                    <div id="no_annotations"
-                             class="alert alert-warning{% if image_annotations %} hidden{% endif %}">{% trans 'No annotations found.' %}</div>
-                    <div id="annotations_loading" class="alert alert-info hidden">{% trans 'Loading Annotations ...' %}</div>
+
+                    <div class="col-md" id="openseadragon1" style="width: 100%; height: 100%;"/>
 
                     <hr color="silver" width="100%">
+                    <div id="no_annotations"
+                             class="alert alert-warning{% if image_annotations %} hidden{% endif %}">{% trans 'No annotations found.' %}</div>
+                    <div id="annotations_loading" class="alert alert-info hidden"> <p> {% trans 'Loading Annotations ...' %} </p> </div>
 
-                    <div class="col-md" id="openseadragon1" style="margin: 10px; width: 1024px; height: 1024px;"/>
+
                 </td>
             </tr>
         </table>

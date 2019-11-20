@@ -55,27 +55,16 @@ tp = ThreadPool(1)
 
 def get_verified_ids(request, imageset):
     images = Image.objects.filter(image_set=imageset).order_by('name')
-    annotations = Annotation.objects.filter(image__in=images,
-                                            annotation_type__active=True).select_related()
-
-    verified = Verification.objects.filter(annotation__in=annotations, verified=True)
-    verified_image_ids = list(set([very.annotation.image_id for very in verified]))
-
-    return verified_image_ids
+    return images.filter(annotations__annotation_type__active=True, annotations__verifications__verified=True).distinct()
 
 
 def get_unverified_ids(request, imageset):
     images = Image.objects.filter(image_set=imageset).order_by('name')
-    annotations = Annotation.objects.filter(image__in=images,
-                                            annotation_type__active=True).select_related()
+    unverified = images.filter(annotations__annotation_type__active=True, annotations__verifications__verified=False).distinct()
+    unannotated = images.annotate(annotation_count=Count('annotations')).filter(annotation_count__exact=0).distinct()
 
-    unverified = Verification.objects.filter(annotation__in=annotations, verified=False)
-    unverified_image_ids = list(set([very.annotation.image_id for very in unverified]))
-
-    images_with_annos = list(set([anno.image_id for anno in annotations]))
-    images_without_annos = [img.id for img in images if img.id not in images_with_annos]
-
-    return unverified_image_ids + images_without_annos
+    # TODO_ Convert to single query
+    return Image.objects.filter(id__in = [a.id for a in unverified] + [a.id for a in unannotated]) #Q(unverified) | Q(unannotated)
 
 @login_required
 def explore_imageset(request):
@@ -509,13 +498,7 @@ def view_imageset(request, image_set_id):
         messages.warning(request, 'you do not have the permission to access this imageset')
         return redirect(reverse('images:index'))
     # images the imageset contains
-    images = Image.objects.filter(image_set=imageset).order_by('name')
-    annotations = Annotation.objects.filter(image__in=images,
-                                            annotation_type__active=True).select_related()
-
-    ids = get_unverified_ids(request, imageset)
-
-    images = images.filter(id__in=ids).order_by('name')
+    images = get_unverified_ids(request, imageset)
 
     # the saved exports of the imageset
     exports = Export.objects.filter(image_set=image_set_id).order_by('-id')[:5]
