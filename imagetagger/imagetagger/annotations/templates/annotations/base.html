@@ -17,8 +17,6 @@
 {% endblock additional_js %}
 
 {% block selectorblock %}
-    <div id="crosshair-h" class="hair"></div>
-    <div id="crosshair-v" class="hair"></div>
-    <span id="mousepos" >(0,0)</span>
+
 {% endblock %}
 {% block navblock %} <li><a href="{% url 'images:view_imageset' selected_image.image_set_id %}">{{ selected_image.image_set.name }}</a></li> {% endblock %}
