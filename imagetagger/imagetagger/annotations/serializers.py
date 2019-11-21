@@ -16,7 +16,9 @@ class AnnotationTypeSerializer(ModelSerializer):
             'node_count',
             'enable_concealed',
             'enable_blurred',
-            'color_code'
+            'color_code',
+            'default_width',
+            'default_height'
         )
 
 

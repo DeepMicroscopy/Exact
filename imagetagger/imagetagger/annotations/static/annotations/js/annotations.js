@@ -3,6 +3,7 @@ globals = {
     editActiveContainer: {},
     drawAnnotations: true,
     allAnnotations: undefined,
+    mousePosition: undefined
 };
 
 
@@ -57,6 +58,19 @@ globals = {
         // OpenSeadragon configuration options when the viewer is created
         // from DZI XML.
         //viewer.source.minLevel = 8;
+
+        var tracker = new OpenSeadragon.MouseTracker({
+            element: viewer.container,
+            moveHandler: function(event) {
+               globals.mousePosition = event.position;
+            }
+        });
+    });
+
+    viewer.addHandler('canvas-key', function (e) {
+        if ($(e.originalEvent)[0].key == 0){
+            e.originalEvent.preventDefault();
+        }
     });
 
     /*
@@ -64,6 +78,10 @@ globals = {
      */
     viewer.addHandler("selection", function (data) {
         createAnnotation(undefined, undefined, reload_list=false, data);
+    });
+
+    viewer.addHandler('canvas-click', function(event) {
+
     });
 
     /*
@@ -100,13 +118,14 @@ globals = {
         let vector_type = -1;
         let node_count = 0;
         let annotationTypeId = 0;
-        let selected_annotation = null;
 
         if ($('#annotation_type_id').children().length > 0) {
             let selected_annotation = $('#annotation_type_id').children(':selected').data();
-            vector_type = selected_annotation.vectorType;
-            node_count = selected_annotation.nodeCount;
-            annotationTypeId = parseInt($('#annotation_type_id').children(':selected').val());
+            if (selected_annotation !== undefined){
+                vector_type = selected_annotation.vectorType;
+                node_count = selected_annotation.nodeCount;
+                annotationTypeId = parseInt($('#annotation_type_id').children(':selected').val());
+            }
         }
 
         if (tool && tool.vector_type === vector_type) {
@@ -132,6 +151,14 @@ globals = {
             case 2: // Point, fallthrough
             case 3: // Line, fallthrough
             case 5: // Polygon
+                break;
+            case 6: // fixed size Bounding Box
+                    // Remove unnecessary number fields
+                for (let i = 3; $('#x' + i + 'Field').length; i++) {
+                    $('#x' + i + 'Box').remove();
+                    $('#y' + i + 'Box').remove();
+                }
+                tool = new BoundingBoxes(annotationTypeId, true, viewer);
                 break;
             default:
                 // Dummytool
@@ -345,6 +372,8 @@ globals = {
                 'data-vector-type': annotationType.vector_type,
                 'data-node-count': annotationType.node_count,
                 'data-blurred': annotationType.enable_blurred,
+                'data-default_width': annotationType.default_width,
+                'data-default_height': annotationType.default_height,
                 'data-concealed': annotationType.enable_concealed,
             }));
 
@@ -410,6 +439,13 @@ globals = {
      */
 
     function handleMouseClick(e) {
+
+        let selected_annotation = undefined;
+
+        if ($('#annotation_type_id').children().length > 0) {
+            selected_annotation = $('#annotation_type_id').children(':selected').data();
+        }
+
         // no element
         if (e.target instanceof HTMLCanvasElement
             && globals.editedAnnotationsId !== undefined
@@ -417,18 +453,39 @@ globals = {
             globals.editedAnnotationsId = undefined;
 
             tool.resetSelection(true);
-        } else if ($(e.toElement).data().hasOwnProperty('annotationid')) {
-            if (viewer.selectionInstance.isSelecting){
-                let id = $(e.toElement).data().annotationid;
-                globals.editedAnnotationsId = id;
-
-                annotation = globals.allAnnotations.filter(function (d) {
-                    return d.id === id;
-                })[0];
-                editAnnotation(e, annotation);
-
-                viewer.selectionInstance.initRect(annotation)
+        } else if (viewer.selectionInstance.isSelecting &&
+                $(e.toElement).data().hasOwnProperty('annotationid')) {
+            // if the user jumps from one annotation to the next
+            // cancel fist annotation
+            if (globals.editedAnnotationsId !== undefined &&
+                $(e.toElement).data().annotationid !== globals.editedAnnotationsId) {
+                tool.resetSelection(true);
             }
+            let id = $(e.toElement).data().annotationid;
+            globals.editedAnnotationsId = id;
+
+            annotation = globals.allAnnotations.filter(function (d) {
+                return d.id === id;
+            })[0];
+            editAnnotation(e, annotation);
+
+            viewer.selectionInstance.initRect(annotation)
+        } else if (e.target instanceof HTMLCanvasElement &&
+                viewer.selectionInstance.isSelecting &&
+                globals.editedAnnotationsId === undefined &&
+                selected_annotation !== undefined &&
+                selected_annotation.vectorType === 6){
+
+            // Convert pixel to viewport coordinates
+            var viewportPoint = viewer.viewport.pointFromPixel(globals.mousePosition);
+
+            // Convert from viewport coordinates to image coordinates.
+            var imagePoint = viewer.viewport.viewportToImageCoordinates(viewportPoint);
+
+            let data = new OpenSeadragon.Rect(imagePoint.x - (selected_annotation.default_width / 2),
+                imagePoint.y - (selected_annotation.default_height / 2),
+                selected_annotation.default_width, selected_annotation.default_height)
+            createAnnotation(undefined, undefined, true, data);
         }
     }
 
@@ -1033,9 +1090,7 @@ globals = {
         });
         $('#last_button').click(function (event) {
             event.preventDefault();
-            createAnnotation(undefined, function () {
-                loadAdjacentImage(-1);
-            }, true, true);
+            loadAdjacentImage(-1);
         });
         $('#back_button').click(function (event) {
             event.preventDefault();
@@ -1155,6 +1210,7 @@ globals = {
         $(document).on('mouseup.annotation_edit', handleMouseUp);
 
         $(document).keydown(function (event) {
+            console.log("Key " + event.keyCode);
             switch (event.keyCode) {
                 case 16: // Shift
                     gShiftDown = true;
@@ -1212,12 +1268,43 @@ globals = {
                 case 57: //9
                     selectAnnotationType(9);
                     break;
-                case 99: //c
+                case 96: //0
+                    selectAnnotationType(0);
+                    break;
+                case 97: //1
+                    selectAnnotationType(1);
+                    break;
+                case 98: //2
+                    selectAnnotationType(2);
+                    break;
+                case 99: //3
+                    selectAnnotationType(3);
+                    break;
+                case 100: //4
+                    selectAnnotationType(4);
+                    break;
+                case 101: //5
+                    selectAnnotationType(5);
+                    break;
+                case 102: //6
+                    selectAnnotationType(6);
+                    break;
+                case 103: //7
+                    selectAnnotationType(7);
+                    break;
+                case 104: //8
+                    selectAnnotationType(8);
+                    break;
+                case 105: //9
+                    selectAnnotationType(9);
                     break;
             }
         });
         $(document).keyup(function (event) {
             switch (event.keyCode) {
+                case 13: //'enter'
+                    $('#save_button').click();
+                    break;
                 case 16: // Shift
                     gShiftDown = false;
                     break;
