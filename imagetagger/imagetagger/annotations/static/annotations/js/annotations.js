@@ -63,8 +63,15 @@ globals = {
        confirm selection
      */
     viewer.addHandler("selection", function (data) {
-
         createAnnotation(undefined, undefined, reload_list=false, data);
+    });
+
+    /*
+       cancel selection
+     */
+    viewer.addHandler("selection_cancel", function (data) {
+        //viewer.selectionInstance.cancel();
+        tool.resetSelection(false);
     });
 
 
@@ -102,16 +109,9 @@ globals = {
             annotationTypeId = parseInt($('#annotation_type_id').children(':selected').val());
         }
 
-        if (tool && tool.annotationTypeId === annotationTypeId) {
+        if (tool && tool.vector_type === vector_type) {
             // Tool does not have to change
             return;
-        }
-
-        if (typeof globals.editedAnnotationsId != "undefined") {
-            anno = globals.allAnnotations.find(function (e) {
-                return e.id == globals.editedAnnotationsId
-            })
-            createAnnotation(undefined, undefined, reload_list = False, undefined);
         }
 
         if (tool) {
@@ -300,6 +300,8 @@ globals = {
 
                 globals.editedAnnotationsId = data.annotations.id;
                 editAnnotation(undefined, data.annotations);
+
+                tool.resetSelection(true);
             },
             error: function () {
                 $('.annotate_button').prop('disabled', false);
@@ -899,6 +901,10 @@ globals = {
     function handleAnnotationTypeChange() {
         AnnotationType = parseInt($('#annotation_type_id').val());
         setTool();
+
+        if (viewer.selectionInstance.isSelecting) {
+            viewer.selectionInstance.confirm();
+        }
     }
 
     function handleMouseDown(event) {
@@ -1023,7 +1029,6 @@ globals = {
             viewer.selectionInstance.confirm();
         });
         $('#reset_button').click(function () {
-            viewer.selectionInstance.cancel();
             tool.resetSelection(true);
         });
         $('#last_button').click(function (event) {

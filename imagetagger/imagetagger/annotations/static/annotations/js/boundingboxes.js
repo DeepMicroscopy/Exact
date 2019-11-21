@@ -115,6 +115,11 @@ class BoundingBoxes {
         globals.editActiveContainer.addClass('hidden');
         $('#coordinate_table').hide();
         $('#annotation_buttons').hide();
+
+        if (abortEdit){
+            this.viewer.selectionInstance.cancel();
+        }
+
     }
 
     /**
