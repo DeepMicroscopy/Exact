@@ -309,7 +309,7 @@ def upload_image(request, imageset_id):
 
                         # TODO: Time intensive use multiprocessing
                         os.system(
-                            'convert {0} -define tiff:tile-geometry=254x254 ptif:{1}'.format(image.path().replace("tiff", ext), image.path()))
+                            'convert "{0}" -define tiff:tile-geometry=254x254 ptif:"{1}"'.format(image.path().replace("tiff", ext), image.path()))
                         shutil.chown(image.path(), group=settings.UPLOAD_FS_GROUP)
 
                         try:

@@ -77,7 +77,7 @@
     },
     removeElementById: function(id) {
       const e = this.getElementById(id)
-      if (e !== null) {
+      if (e !== undefined) {
         this.viewer.canvas.removeChild(e.element)
         this.elements.splice(this.elements.indexOf(e), 1)
       }
