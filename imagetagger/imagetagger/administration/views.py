@@ -61,6 +61,8 @@ def edit_annotation_type(request, annotation_type_id):
             selected_annotation_type.active = 'active' in request.POST.keys()
             selected_annotation_type.enable_concealed = 'enable_concealed' in request.POST.keys()
             selected_annotation_type.enable_blurred = 'enable_blurred' in request.POST.keys()
+            selected_annotation_type.default_width = request.POST['default_width']
+            selected_annotation_type.default_height = request.POST['default_height']
             selected_annotation_type.save()
 
             messages.success(request, _('The annotation type was edited successfully.'))

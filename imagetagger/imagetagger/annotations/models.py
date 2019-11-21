@@ -400,6 +400,7 @@ class AnnotationType(models.Model):
         LINE = 3
         MULTI_LINE = 4
         POLYGON = 5
+        FIXED_SIZE_BOUNDING_BOX = 6
 
     name = models.CharField(max_length=20, unique=True)
     active = models.BooleanField(default=True)
@@ -409,6 +410,8 @@ class AnnotationType(models.Model):
     enable_concealed = models.BooleanField(default=True)
     enable_blurred = models.BooleanField(default=True)
     color_code = models.CharField(default="#CC4444", max_length=7, unique=False)
+    default_width = models.IntegerField(default=50, unique=False)
+    default_height = models.IntegerField(default=50, unique=False)
 
     def __str__(self):
         if self.active:
@@ -428,6 +431,8 @@ class AnnotationType(models.Model):
             return 'Polygon'
         if vector_type is AnnotationType.VECTOR_TYPE.MULTI_LINE:
             return 'Multi Line'
+        if vector_type is AnnotationType.VECTOR_TYPE.FIXED_SIZE_BOUNDING_BOX:
+            return 'Fixed Size Bounding Box'
 
     def validate_vector(self, vector: Union[dict, None]) -> bool:
         """
@@ -455,6 +460,8 @@ class AnnotationType(models.Model):
             return self._validate_polygon(vector)
         if self.vector_type == AnnotationType.VECTOR_TYPE.MULTI_LINE:
             return self._validate_multi_line(vector)
+        if self.vector_type == AnnotationType.VECTOR_TYPE.FIXED_SIZE_BOUNDING_BOX:
+            return self._validate_bounding_box(vector)
 
         # No valid vector type given.
         return False
