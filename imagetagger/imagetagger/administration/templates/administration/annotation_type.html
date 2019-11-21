@@ -77,6 +77,23 @@
                                 </tr>
                                 <tr>
                                     <td>
+                                        <label for="id_name">{{ edit_form.default_width.label }}</label>
+                                    </td>
+                                    <td>
+                                        {% render_field edit_form.default_width class+='form-control' %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <label for="id_name">{{ edit_form.default_height.label }}</label>
+                                    </td>
+                                    <td>
+                                        {% render_field edit_form.default_height class+='form-control' %}
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>
                                     </td>
                                     <td align="right">
                                         <input class="btn btn-primary right" type="submit" value="Save">
@@ -175,15 +192,44 @@
                                         <option value="3" >Line</option>
                                         <option value="4" >Multiline</option>
                                         <option value="5" >Polygon</option>
+                                        <option value="6" >Fixed Size Bounding Box</option>
                                     </select>
                                 </td>
                             </tr>
                             <tr>
                                 <td>
-                                    <label for="id_node_count">{{ create_form.node_count.label }} <span data-toggle="tooltip" data-placement="right" title="The number of nodes in a polygon. 0 allows an arbitrary node count. This has no effect on other vector types." class="glyphicon glyphicon-question-sign"></span></label>
+                                    <label for="id_node_count">{{ create_form.node_count.label }}
+                                        <span data-toggle="tooltip" data-placement="right"
+                                              title="The number of nodes in a polygon. 0 allows an arbitrary node count. This has no effect on other vector types."
+                                              class="glyphicon glyphicon-question-sign"></span>
+                                    </label>
                                 </td>
                                 <td>
                                     {% render_field create_form.node_count class+='form-control' %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <label for="id_name">{{ create_form.default_width.label }}
+                                        <span data-toggle="tooltip" data-placement="right"
+                                                  title="The default width for fixed size Bounding Box. This has no effect on other vector types."
+                                                  class="glyphicon glyphicon-question-sign"></span>
+                                    </label>
+                                </td>
+                                <td>
+                                    {% render_field create_form.default_width class+='form-control' %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <label for="id_name">{{ create_form.default_height.label }}
+                                        <span data-toggle="tooltip" data-placement="right"
+                                                  title="The default height for fixed size Bounding Box. This has no effect on other vector types."
+                                                  class="glyphicon glyphicon-question-sign"></span>
+                                    </label>
+                                </td>
+                                <td>
+                                    {% render_field create_form.default_height class+='form-control' %}
                                 </td>
                             </tr>
                             <tr>

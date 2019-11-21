@@ -12,7 +12,9 @@ class AnnotationTypeCreationForm(forms.ModelForm):
             'node_count',
             'vector_type',
             'enable_concealed',
-            'enable_blurred'
+            'enable_blurred',
+            'default_width',
+            'default_height'
         ]
 
 
@@ -24,4 +26,6 @@ class AnnotationTypeEditForm(forms.ModelForm):
             'active',
             'enable_concealed',
             'enable_blurred',
+            'default_width',
+            'default_height'
         ]
