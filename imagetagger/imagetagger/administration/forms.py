@@ -14,7 +14,8 @@ class AnnotationTypeCreationForm(forms.ModelForm):
             'enable_concealed',
             'enable_blurred',
             'default_width',
-            'default_height'
+            'default_height',
+            'color_code'
         ]
 
 
@@ -27,5 +28,6 @@ class AnnotationTypeEditForm(forms.ModelForm):
             'enable_concealed',
             'enable_blurred',
             'default_width',
-            'default_height'
+            'default_height',
+            'color_code'
         ]

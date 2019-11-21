@@ -69,6 +69,28 @@
                                 </tr>
                                 <tr>
                                     <td>
+                                        <label for="id_color_code">{{ edit_form.color_code.label }}</label>
+                                    </td>
+                                    <td>
+                                        <select name="{{ edit_form.color_code.name }}">
+                                            <option style='color: #FF0000' value="#FF0000" >Red</option>
+                                            <option style='color: #00FFFF' value="#00FFFF" >Cyan</option>
+                                            <option style='color: #0000FF' value="#0000FF" >Blue</option>
+                                            <option style='color: #0000A0' value="#0000A0" >DarkBlue</option>
+                                            <option style='color: #ADD8E6' value="#ADD8E6" >LightBlue</option>
+                                            <option style='color: #800080' value="#800080" >Purple</option>
+                                            <option style='color: #FFFF00' value="#FFFF00" >Yellow</option>
+                                            <option style='color: #00FF00' value="#00FF00" >Lime</option>
+                                            <option style='color: #FF00FF' value="#FF00FF" >Magenta</option>
+                                            <option style='color: #FFA500' value="#FFA500" >Orange</option>
+                                            <option style='color: #A52A2A' value="#A52A2A" >Brown </option>
+                                            <option style='color: #008000' value="#008000" >Green </option>
+                                            <option style='color: #808000' value="#808000" >Olive</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
                                         <b>Node count</b>
                                     </td>
                                     <td>
@@ -196,6 +218,29 @@
                                     </select>
                                 </td>
                             </tr>
+                            <tr>
+                                <td>
+                                    <label for="id_color_code">{{ create_form.color_code.label }}</label>
+                                </td>
+                                <td>
+                                    <select name="{{ create_form.color_code.name }}">
+                                        <option style='color: #FF0000' value="#FF0000" selected>Red</option>
+                                        <option style='color: #00FFFF' value="#00FFFF" >Cyan</option>
+                                        <option style='color: #0000FF' value="#0000FF" >Blue</option>
+                                        <option style='color: #0000A0' value="#0000A0" >DarkBlue</option>
+                                        <option style='color: #ADD8E6' value="#ADD8E6" >LightBlue</option>
+                                        <option style='color: #800080' value="#800080" >Purple</option>
+                                        <option style='color: #FFFF00' value="#FFFF00" >Yellow</option>
+                                        <option style='color: #00FF00' value="#00FF00" >Lime</option>
+                                        <option style='color: #FF00FF' value="#FF00FF" >Magenta</option>
+                                        <option style='color: #FFA500' value="#FFA500" >Orange</option>
+                                        <option style='color: #A52A2A' value="#A52A2A" >Brown </option>
+                                        <option style='color: #008000' value="#008000" >Green </option>
+                                        <option style='color: #808000' value="#808000" > Olive</option>
+                                    </select>
+                                </td>
+                            </tr>
+
                             <tr>
                                 <td>
                                     <label for="id_node_count">{{ create_form.node_count.label }}
