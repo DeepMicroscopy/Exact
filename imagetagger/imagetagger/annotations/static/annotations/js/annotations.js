@@ -1330,6 +1330,9 @@ globals = {
         });
         $(document).keyup(function (event) {
             switch (event.keyCode) {
+                case 8: //'DEL'
+                    handleDelete(event);
+                    break;
                 case 13: //'enter'
                     $('#save_button').click();
                     break;
