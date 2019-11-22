@@ -131,7 +131,13 @@
                                     <tr>
                                         <th>Label</th>
                                         <th>Key</th>
-                                        <th>Count</th>
+                                        <th>
+                                            <label data-toggle="tooltip" data-placement="right"
+                                                      title="( Number of annotations / Number of validated annotations )">
+                                                Count
+
+                                            </label>
+                                        </th>
                                         <th>Color</th>
                                     </tr>
 
@@ -139,7 +145,7 @@
                                         <tr>
                                             <th>{{ annotation_type.name }}</th>
                                             <th>{{ forloop.counter0 }}</th>
-                                            <th>{{ annotation_type.node_count }}</th>
+                                            <th id={{ annotation_type.name }}_{{ annotation_type.id }}>{{ annotation_type.node_count }}</th>
                                             <th style="background-color: {{ annotation_type.color_code }}"></th>
                                         </tr>
                                     {% endfor %}

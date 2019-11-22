@@ -783,6 +783,8 @@ def load_annotation(request) -> Response:
     }, status=HTTP_200_OK)
 
 
+
+
 @login_required
 @api_view(['POST'])
 def update_annotation(request) -> Response:
