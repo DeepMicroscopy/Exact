@@ -329,6 +329,8 @@ globals = {
                 editAnnotation(undefined, data.annotations);
 
                 tool.resetSelection(true);
+
+                loadStatistics(gImageId);
             },
             error: function () {
                 $('.annotate_button').prop('disabled', false);
@@ -424,6 +426,7 @@ globals = {
                 globals.editedAnnotationsId = undefined;
 
                 tool.resetSelection(true);
+                loadStatistics(gImageId);
             },
             error: function () {
                 $('.annotate_button').prop('disabled', false);
