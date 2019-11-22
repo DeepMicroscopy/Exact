@@ -11,6 +11,7 @@ urlpatterns = [
     url(r'^image/(\d+)/$', views.view_image, name='view_image'),
     url(r'^image/view_thumbnail(\d+)/$', views.view_thumbnail, name='view_thumbnail'),
     url(r'^image/(\d+_\D+/\d+/\d+_\d+.(?:png|jpeg))/$', views.view_image_tile, name='view_image_tile'),
+    url(r'^api/image/statistics/$', views.image_statistics, name='image_statistics'),
     url(r'^imagelist/(\d+)/$', views.list_images, name='list_images'),
     url(r'^imageset/(\d+)/label-upload/$', views.label_upload, name='label_upload'),
     url(r'^imageset/create/$', views.create_imageset, name='create_imageset'),

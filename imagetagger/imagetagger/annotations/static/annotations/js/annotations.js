@@ -729,6 +729,29 @@ globals = {
     function handleSelection(event) {
     }
 
+    function loadStatistics(imageId) {
+        let data = {
+            image_id: imageId
+        };
+
+        // update current annotations
+        $.ajax(API_IMAGES_BASE_URL + 'image/statistics/', {
+                type: 'GET',
+                headers: gHeaders,
+                dataType: 'json',
+                data: data,
+                success: function (data) {
+                    for (anno_type of data.statistics) {
+                        document.getElementById(anno_type.name+'_'+anno_type.id).innerHTML =
+                            anno_type.count + ' / ' + anno_type.verified_count;
+                    }
+                },
+                error: function () {
+
+                }
+        });
+    }
+
     /**
      * Load the annotation view for another image.
      *
@@ -747,6 +770,7 @@ globals = {
             return;
         }
 
+
         var noAnnotations = $('#no_annotations');
         var notInImage = $('#not_in_image');
         var existingAnnotations = $('#existing_annotations');
@@ -757,6 +781,7 @@ globals = {
         loading.removeClass('hidden');
         $('#annotation_type_id').val(gAnnotationType);
 
+        loadStatistics(imageId);
         displayImage(imageId);
 
         $('#coordinate_table').hide();

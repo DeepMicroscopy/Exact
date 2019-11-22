@@ -543,7 +543,33 @@ def view_imageset(request, image_set_id):
     })
 
 
+@login_required
+@api_view(['GET'])
+def image_statistics(request) -> Response:
+    try:
+        image_id = int(request.query_params['image_id'])
+    except (KeyError, TypeError, ValueError):
+        raise ParseError
 
+    image = get_object_or_404(Image, pk=image_id)
+
+    if not image.image_set.has_perm('read', request.user):
+        return Response({
+            'detail': 'permission for reading this image set missing.',
+        }, status=HTTP_403_FORBIDDEN)
+
+    annotation_types = AnnotationType.objects.filter(annotation__image=image, active=True).distinct()\
+        .annotate(count=Count('annotation'),
+                  in_image_count=Count('annotation', filter=Q(annotation__vector__isnull=False)),
+                  verified_count=Count('annotation', filter=Q(annotation__verifications__verified=True)),
+                  unverified_count=Count('annotation', filter=Q(annotation__verifications__verified=False)),
+                  not_in_image_count=Count('annotation', filter=Q(annotation__vector__isnull=True)))
+
+    data = [t for t in annotation_types.values()]
+
+    return Response({
+        'statistics': data,
+    }, status=HTTP_200_OK)
 
 @login_required
 def create_imageset(request):
