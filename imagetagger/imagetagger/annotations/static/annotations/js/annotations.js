@@ -93,11 +93,36 @@ globals = {
     });
 
 
-    selection = viewer.selection({
+    viewer.selection({
         allowRotation: false,
         restrictToImage: true,
         //showConfirmDenyButtons: false
     });
+
+    viewer.guides({
+        allowRotation: false,        // Make it possible to rotate the guidelines (by double clicking them)
+        horizontalGuideButton: null, // Element for horizontal guideline button
+        verticalGuideButton: null,   // Element for vertical guideline button
+        prefixUrl: '../../static/images/',
+        removeOnClose: true,        // Remove guidelines when viewer closes
+        useSessionStorage: false,    // Save guidelines in sessionStorage
+        navImages: {
+            guideHorizontal: {
+                REST: 'guidehorizontal_rest.png',
+                GROUP: 'guidehorizontal_grouphover.png',
+                HOVER: 'guidehorizontal_hover.png',
+                DOWN: 'guidehorizontal_pressed.png'
+            },
+            guideVertical: {
+                REST: 'guidevertical_rest.png',
+                GROUP: 'guidevertical_grouphover.png',
+                HOVER: 'guidevertical_hover.png',
+                DOWN: 'guidevertical_pressed.png'
+            }
+        }
+    });
+
+
 
     function shorten(string, length) {
         let threshold = length || 30;

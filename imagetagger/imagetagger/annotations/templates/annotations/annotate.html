@@ -4,6 +4,7 @@
 
 {% block additional_annotation_css %}
     <link rel="stylesheet" type="text/css" href="{% static 'annotations/css/bounding_boxes.css' %}"/>
+    <link rel="stylesheet" type="text/css" href="{% static 'annotations/css/openseadragon-guides.css' %}"/>
     <style>
         {% if not "delete_annotation" in imageset_perms %}
             .annotation_delete_button {
@@ -30,6 +31,7 @@
 
 {% block additional_annotation_js %}
     <script type="text/javascript" src="https://openseadragon.github.io/openseadragon/openseadragon.min.js"></script>
+    <script type="text/javascript" src="https://rawgit.com/picturae/OpenSeadragonGuides/master/dist/openseadragon-guides.js"></script>
     <script type="text/javascript" src="{% static 'annotations/js/boundingboxes.js' %}"></script>
 
     <script type="text/javascript" src="{% static 'annotations/js/selection.js' %}"></script>
