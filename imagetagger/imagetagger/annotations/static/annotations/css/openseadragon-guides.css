@@ -1,0 +1,41 @@
+.osd-guide {
+  z-index: 0;
+  cursor: pointer;
+  pointer-events: none;
+}
+
+.osd-guide-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  transform-origin: center;
+  pointer-events: auto;
+}
+
+.osd-guide-horizontal {
+  position: absolute;
+  left: 50% !important;
+  height: 2px !important;
+  width: 150% !important;
+  cursor: row-resize;
+  transform: translateX(-50%);
+}
+
+.osd-guide-horizontal .osd-guide-line {
+  border-top: 2px solid #FFA500 ;
+}
+
+.osd-guide-vertical {
+  position: absolute;
+  top: 50% !important;
+  height: 150% !important;
+  width: 2px !important;
+  cursor: col-resize;
+  transform: translateY(-50%);
+}
+
+.osd-guide-vertical .osd-guide-line {
+  border-left: 2px solid #FFA500 ;
+}
