@@ -1,33 +1,23 @@
-# ImageTagger
+# Exact
 
 This is a collaborative online tool for labeling image data.
 
-If you are participating in RoboCup, you should not install your own instance but rather use the one provided by the Hamburg Bit-Bots (https://imagetagger.bit-bots.de). This enables you to use already labeled images from other teams and to share your own.
-
-For a short overview of the functions please have a look at the following poster: https://robocup.informatik.uni-hamburg.de/wp-content/uploads/2017/11/imagetagger-poster.pdf
 
 ## Features
 
 * team creation
-* image sets
-* bounding box, polygon, line and point labeling
-* imageset download
+* upload image sets in the multiple formats like: [whole slide image (WSI) formats](https://openslide.org/api/python/) or .png, .jpg, .jepg, .bmp etc. 
+* bounding box
 * export format creation
 * label export
 * image preloading for labeling and verification
 * label verification
 * upload of existing labels
-* tools exchange
-
-
-## Planned Features
-
-* collections of filtered images from multiple imagesets
-* image metadata (e.g. robot pose, camera parameters)
+* WSI [viewer](https://openseadragon.github.io/) 
 
 ## Reference
 
-This paper describes the Bit-Bots Imagetagger more in depth. Please cite if you use this tool in your research:
+This paper describes the Bit-Bots Imagetagger we build on in depth. Please cite if you use this tool in your research:
 
 FIEDLER, Niklas, et al. [ImageTagger: An Open Source Online Platform for Collaborative Image Labeling.](https://robocup.informatik.uni-hamburg.de/wp-content/uploads/2018/11/imagetagger_paper.pdf) In: RoboCup 2018: Robot World Cup XXII. Springer, 2018.
 
