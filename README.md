@@ -2,6 +2,8 @@
 
 This is a collaborative online tool for labeling image data.
 
+![ScreenShot](./doc/ExactBeispiel.png "Example annotation of a complete WSI")
+
 
 ## Features
 
@@ -171,5 +173,7 @@ The ImageTagger relies on the following plugins, libraries and frameworks:
 - [jQuery-File-Upload](https://github.com/blueimp/jQuery-File-Upload)
 - [Pillow](https://github.com/python-pillow/Pillow)
 - [PostgreSQL](https://www.postgresql.org/)
+- [OpenSlide](https://openslide.org/)
+- [OpenSeadragon](https://openseadragon.github.io//)
 
 We are grateful to the maintainers and contributors of the respective projects.
