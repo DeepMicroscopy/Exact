@@ -34,6 +34,10 @@ from imagetagger.annotations.models import Annotation, Export, ExportFormat, \
 from imagetagger.tagger_messages.models import Message, TeamMessage, GlobalMessage
 from util.slide_server import SlideCache, SlideFile, PILBytesIO
 
+
+from plugins.pluginFinder import PluginFinder
+from plugins.ExactServerPlugin import UpdatePolicy, ViewPolicy, NavigationViewOverlayStatus
+
 import os
 import shutil
 import string
@@ -42,7 +46,7 @@ import zipfile
 import hashlib
 import json
 import imghdr
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from pathlib import Path
 import re
 from multiprocessing.pool import ThreadPool
@@ -51,7 +55,8 @@ from openslide import OpenSlide
 
 # TODO: Add to cache
 image_cache = SlideCache(cache_size=10)
-tp = ThreadPool(1)
+plugin_finder = PluginFinder(image_cache)
+
 
 def get_verified_ids(request, imageset):
     images = Image.objects.filter(image_set=imageset).order_by('name')
@@ -437,6 +442,66 @@ def view_thumbnail(request, image_id):
 
     return response
 
+
+@login_required
+@api_view(['GET'])
+def navigator_overlay_status(request) -> Response:
+    try:
+        image_id = int(request.query_params['image_id'])
+    except (KeyError, TypeError, ValueError):
+        raise ParseError
+
+    image = get_object_or_404(Image, id=image_id)
+    if not image.image_set.has_perm('read', request.user):
+        return HttpResponseForbidden()
+
+    # replace with databse call to imageset.product
+    for plugin in plugin_finder.filter_plugins(product_name="EIPH", navigation_view_policy=ViewPolicy.RGB_IMAGE):
+        status = plugin.instance.getNavigationViewOverlayStatus(image)
+        if status == NavigationViewOverlayStatus.ERROR:
+            return Response({}, status=HTTP_204_NO_CONTENT)
+        elif status == NavigationViewOverlayStatus.NEEDS_UPDATE:
+            plugin.instance.updateNavigationViewOverlay(image)
+            return Response({}, status=HTTP_200_OK)
+        else:
+            return Response({}, status=HTTP_200_OK)
+
+    return Response({}, status=HTTP_204_NO_CONTENT)
+
+
+
+@login_required
+def view_image_navigator_overlay_tile(request, tile_path):
+    """
+    This view is to authenticate direct access to the images via nginx auth_request directive
+
+    it will return forbidden on if the user is not authenticated
+    """
+    results = re.search("((\d+)_(\D+)/(\d+)/(\d+)_(\d+).(png|jpeg))", tile_path)
+    image_id = int(results.group(2))
+    level = int(results.group(4))
+    col = int(results.group(5))
+    row = int(results.group(6))
+    format = results.group(7)
+
+    image = get_object_or_404(Image, id=image_id)
+    if not image.image_set.has_perm('read', request.user):
+        return HttpResponseForbidden()
+
+    file_path = os.path.join(settings.IMAGE_PATH, image.path())
+    slide = image_cache.get(file_path)
+
+    tile = slide.get_tile(level, (col, row))
+
+    # replace with databse call to imageset.product
+    for plugin in plugin_finder.filter_plugins(product_name="EIPH", navigation_view_policy=ViewPolicy.RGB_IMAGE):
+        tile = plugin.instance.getNavigationViewOverlay(image)
+
+    buf = PILBytesIO()
+    tile.save(buf, format, quality=90)
+    response = HttpResponse(buf.getvalue(), content_type='image/%s' % format)
+
+    return response
 
 @login_required
 def view_image_tile(request, tile_path):

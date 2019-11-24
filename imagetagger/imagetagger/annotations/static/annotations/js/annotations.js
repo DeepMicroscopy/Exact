@@ -65,6 +65,41 @@ globals = {
                globals.mousePosition = event.position;
             }
         });
+
+        // Check if navigator overlay exists or is supported
+        $.ajax(API_IMAGES_BASE_URL + 'image/navigator_overlay_status/', {
+                type: 'GET',
+                headers: gHeaders,
+                dataType: 'json',
+                data: { image_id: gImageId },
+                success: function (data, textStatus, jqXHR) {
+                    // Navigator overlay exists and can be set
+                    if (jqXHR.status === 200) {
+                        var navigator_overlay = {
+                            Image: {
+                                xmlns: "http://schemas.microsoft.com/deepzoom/2008",
+                                Url: window.location.origin + "/images/image/" + gImageId + "_navigator_overlay/",
+                                Format: "jpeg",
+                                Overlap: "2",
+                                TileSize: "256",
+                                Size: {
+                                    Width: viewer.world.getItemAt(0).getContentSize().x,
+                                    Height: viewer.world.getItemAt(0).getContentSize().y
+                                }
+                            }
+                        };
+
+                        var tiledImage = viewer.world.getItemAt(0);
+                        viewer.navigator.addTiledImage({
+                            tileSource: navigator_overlay,
+                            originalTiledImage: tiledImage
+                        });
+                    }
+                },
+                error: function () {
+
+                }
+        });
     });
 
     viewer.addHandler('canvas-key', function (e) {
