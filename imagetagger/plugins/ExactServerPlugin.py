@@ -4,19 +4,21 @@ from util.slide_server import SlideCache
 from imagetagger.images.models import Image
 
 
-class UpdatePolicy(Enum):
-    UPDATE_ON_SCROLL_CHANGE = 0,
-    UPDATE_ON_SLIDE_CHANGE = 1
+class UpdatePolicy(str, Enum):
+    UPDATE_ON_SCROLL_CHANGE = "UPDATE_ON_SCROLL_CHANGE",
+    UPDATE_ON_SLIDE_CHANGE = "UPDATE_ON_SLIDE_CHANGE"
 
 
-class ViewPolicy(Enum):
-    RGB_IMAGE = 1,
-    NO_OVERLAY = 2,
+class ViewPolicy(str, Enum):
+    RGB_IMAGE = "RGB_IMAGE",
+    NO_OVERLAY = "NO_OVERLAY",
 
-class NavigationViewOverlayStatus(Enum):
-    NEEDS_UPDATE = 0,
-    UP_TO_DATE = 2,
-    ERROR = 3
+
+class NavigationViewOverlayStatus(str, Enum):
+    NEEDS_UPDATE = "NEEDS_UPDATE",
+    UP_TO_DATE = "UP_TO_DATE",
+    ERROR = "ERROR"
+
 
 class ExactServerPlugin:
     _productName = None
@@ -43,6 +45,14 @@ class ExactServerPlugin:
 
     def updateNavigationViewOverlay(self, image: Image):
         raise NotImplementedError("To be implemented")
+
+
+    def getStatisticsUpdatePolicy(self):
+        return UpdatePolicy.UPDATE_ON_SLIDE_CHANGE
+
+    def getPluginStatisticsElements(self, image: Image, option ={}):
+        raise NotImplementedError("To be implemented")
+
 
     @property
     def productName(self):

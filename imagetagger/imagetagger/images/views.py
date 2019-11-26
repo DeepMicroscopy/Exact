@@ -445,6 +445,33 @@ def view_thumbnail(request, image_id):
 
 @login_required
 @api_view(['GET'])
+def image_plugins(request) -> Response:
+    try:
+        result = json.loads(request.query_params.get('values'))
+        image_id = int(result['image_id'])
+        options = result['options']
+    except (KeyError, TypeError, ValueError):
+        raise ParseError
+
+    image = get_object_or_404(Image, pk=image_id)
+
+    if not image.image_set.has_perm('read', request.user):
+        return Response({
+            'detail': 'permission for reading this image set missing.',
+        }, status=HTTP_403_FORBIDDEN)
+
+    plugins = []
+    for plugin in plugin_finder.filter_plugins(product_name="EIPH"):
+        plugins.append(plugin.instance.getPluginStatisticsElements(image, options))
+
+
+    return Response({
+        'plugins': plugins,
+    }, status=HTTP_200_OK)
+
+
+@login_required
+@api_view(['GET'])
 def navigator_overlay_status(request) -> Response:
     try:
         image_id = int(request.query_params['image_id'])
@@ -457,6 +484,7 @@ def navigator_overlay_status(request) -> Response:
 
     # replace with databse call to imageset.product
     for plugin in plugin_finder.filter_plugins(product_name="EIPH", navigation_view_policy=ViewPolicy.RGB_IMAGE):
+
         status = plugin.instance.getNavigationViewOverlayStatus(image)
         if status == NavigationViewOverlayStatus.ERROR:
             return Response({}, status=HTTP_204_NO_CONTENT)
@@ -579,14 +607,16 @@ def view_imageset(request, image_set_id):
     annotations = Annotation.objects.filter(
         image__in=images,
         annotation_type__active=True).order_by("id")
-    annotation_types = AnnotationType.objects.filter(annotation__image__image_set=imageset, active=True).distinct()\
+    annotation_types = AnnotationType.objects.filter(annotation__image__image_set=imageset, active=True)\
+        .distinct().order_by('name')\
         .annotate(count=Count('annotation'),
                   in_image_count=Count('annotation', filter=Q(annotation__vector__isnull=False)),
                   not_in_image_count=Count('annotation', filter=Q(annotation__vector__isnull=True)))
     first_annotation = annotations.first()
     user_teams = Team.objects.filter(members=request.user)
     imageset_edit_form = ImageSetEditForm(instance=imageset)
-    imageset_edit_form.fields['main_annotation_type'].queryset = AnnotationType.objects.filter(active=True)
+    imageset_edit_form.fields['main_annotation_type'].queryset = AnnotationType.objects\
+        .filter(active=True).order_by('name')
     return render(request, 'images/imageset.html', {
         'images': images,
         'image_count': images.count(),
@@ -623,7 +653,8 @@ def image_statistics(request) -> Response:
             'detail': 'permission for reading this image set missing.',
         }, status=HTTP_403_FORBIDDEN)
 
-    annotation_types = AnnotationType.objects.filter(annotation__image=image, active=True).distinct()\
+    annotation_types = AnnotationType.objects.filter(annotation__image=image, active=True)\
+        .distinct().order_by('name')\
         .annotate(count=Count('annotation'),
                   in_image_count=Count('annotation', filter=Q(annotation__vector__isnull=False)),
                   verified_count=Count('annotation', filter=Q(annotation__verifications__verified=True)),

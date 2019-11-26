@@ -1,0 +1,39 @@
+<table style="width: 100%">
+    <tr>
+        <th>Label</th>
+        <th>Key</th>
+        <th>
+            <label data-toggle="tooltip" data-placement="right"
+                   title="( Number of annotations / Number of validated annotations )">
+                Count
+
+            </label>
+        </th>
+        <th>Color</th>
+    </tr>
+
+    {% for annotation_type in annotation_types %}
+        <tr>
+            <th>{{ annotation_type.name }}</th>
+            <th>{{ forloop.counter0 }}</th>
+            <th>{{ annotation_type.count }}</th>
+            <th style="background-color: {{ annotation_type.color_code }}"></th>
+        </tr>
+    {% endfor %}
+</table>
+
+<table style="width: 100%">
+    <tr>
+        <th>
+            Method
+        </th>
+        <th> Score</th>
+    </tr>
+
+    <tr>
+        <th>
+            <a href="https://www.ncbi.nlm.nih.gov/pubmed/12041658">Doucet et al.</a>
+        </th>
+        <th>{{ doucet_score }}</th>
+    </tr>
+</table>
