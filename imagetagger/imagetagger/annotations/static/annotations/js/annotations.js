@@ -1172,6 +1172,22 @@ globals = {
         handleAnnotationTypeChange();
     }
 
+    function handleResize() {
+        var image_node = document.getElementById('openseadragon1');
+        var footer_node  = document.getElementById('footer_id');
+
+        var image_rect = image_node.getBoundingClientRect();
+        var footer_rect = footer_node.getBoundingClientRect();
+
+        var height = window.innerHeight - (3 * footer_rect.height); //footer_rect.y - image_rect.y;
+        var width = footer_rect.right - 45 - image_rect.left;
+
+        image_node.style.height = height+ 'px';
+        image_node.style.width = width+ 'px';
+
+        console.log("handleResize")
+    }
+
 
     $(function () {
         let get_params = decodeURIComponent(window.location.search.substring(1)).split('&');
@@ -1203,6 +1219,7 @@ globals = {
         // it from window (this should wait for all external sources including images)
         $(window).on('load', function () {
             initTool();
+            handleResize();
         }());
 
         $('.annotation_value').on('input', function () {
@@ -1345,6 +1362,7 @@ globals = {
             $(this).addClass('hidden');
         });
         $('.annotate_image_link').click(function (event) {
+            return;
             event.preventDefault();
             loadAnnotateView($(this).data('imageid'));
         });
@@ -1358,6 +1376,7 @@ globals = {
             });
         });
         $('.annotation_delete_button').each(function (key, elem) {
+            return;
             elem = $(elem);
             elem.click(function (event) {
                 deleteAnnotation(event, parseInt(elem.data('annotationid')));
@@ -1365,6 +1384,8 @@ globals = {
         });
 
         $(document).on('mousemove touchmove', handleSelection);
+        $(window).on('resize', handleResize);
+
         window.onpopstate = function (event) {
             if (event.state !== undefined && event.state !== null && event.state.imageId !== undefined) {
                 loadAnnotateView(event.state.imageId, true);

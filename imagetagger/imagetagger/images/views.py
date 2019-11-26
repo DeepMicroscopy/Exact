@@ -461,8 +461,9 @@ def image_plugins(request) -> Response:
         }, status=HTTP_403_FORBIDDEN)
 
     plugins = []
-    for plugin in plugin_finder.filter_plugins(product_name="EIPH"):
-        plugins.append(plugin.instance.getPluginStatisticsElements(image, options))
+    if "EIPH" in image.image_set.name: #TODO: Replace with call to image_set plugins
+        for plugin in plugin_finder.filter_plugins(product_name="EIPH"):
+            plugins.append(plugin.instance.getPluginStatisticsElements(image, options))
 
 
     return Response({
@@ -483,16 +484,17 @@ def navigator_overlay_status(request) -> Response:
         return HttpResponseForbidden()
 
     # replace with databse call to imageset.product
-    for plugin in plugin_finder.filter_plugins(product_name="EIPH", navigation_view_policy=ViewPolicy.RGB_IMAGE):
+    if "EIPH" in image.image_set.name:  # TODO: Replace with call to image_set plugins
+        for plugin in plugin_finder.filter_plugins(product_name="EIPH", navigation_view_policy=ViewPolicy.RGB_IMAGE):
 
-        status = plugin.instance.getNavigationViewOverlayStatus(image)
-        if status == NavigationViewOverlayStatus.ERROR:
-            return Response({}, status=HTTP_204_NO_CONTENT)
-        elif status == NavigationViewOverlayStatus.NEEDS_UPDATE:
-            plugin.instance.updateNavigationViewOverlay(image)
-            return Response({}, status=HTTP_200_OK)
-        else:
-            return Response({}, status=HTTP_200_OK)
+            status = plugin.instance.getNavigationViewOverlayStatus(image)
+            if status == NavigationViewOverlayStatus.ERROR:
+                return Response({}, status=HTTP_204_NO_CONTENT)
+            elif status == NavigationViewOverlayStatus.NEEDS_UPDATE:
+                plugin.instance.updateNavigationViewOverlay(image)
+                return Response({}, status=HTTP_200_OK)
+            else:
+                return Response({}, status=HTTP_200_OK)
 
     return Response({}, status=HTTP_204_NO_CONTENT)
 
@@ -522,8 +524,9 @@ def view_image_navigator_overlay_tile(request, tile_path):
     tile = slide.get_tile(level, (col, row))
 
     # replace with databse call to imageset.product
-    for plugin in plugin_finder.filter_plugins(product_name="EIPH", navigation_view_policy=ViewPolicy.RGB_IMAGE):
-        tile = plugin.instance.getNavigationViewOverlay(image)
+    if "EIPH" in image.image_set.name:  # TODO: Replace with call to image_set plugins
+        for plugin in plugin_finder.filter_plugins(product_name="EIPH", navigation_view_policy=ViewPolicy.RGB_IMAGE):
+            tile = plugin.instance.getNavigationViewOverlay(image)
 
     buf = PILBytesIO()
     tile.save(buf, format, quality=90)
