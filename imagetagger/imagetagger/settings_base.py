@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'widget_tweaks',
     'friendlytagloader',
+    'plugins'
 ]
 
 MIDDLEWARE = [
@@ -56,6 +57,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'imagetagger.urls'
+
 
 TEMPLATES = [
     {

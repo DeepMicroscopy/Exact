@@ -61,61 +61,69 @@ globals = {
 
         var tracker = new OpenSeadragon.MouseTracker({
             element: viewer.container,
-            moveHandler: function(event) {
-               globals.mousePosition = event.position;
+            moveHandler: function (event) {
+                globals.mousePosition = event.position;
             }
         });
 
         // Check if navigator overlay exists or is supported
         $.ajax(API_IMAGES_BASE_URL + 'image/navigator_overlay_status/', {
-                type: 'GET',
-                headers: gHeaders,
-                dataType: 'json',
-                data: { image_id: gImageId },
-                success: function (data, textStatus, jqXHR) {
-                    // Navigator overlay exists and can be set
-                    if (jqXHR.status === 200) {
-                        var navigator_overlay = {
-                            Image: {
-                                xmlns: "http://schemas.microsoft.com/deepzoom/2008",
-                                Url: window.location.origin + "/images/image/" + gImageId + "_navigator_overlay/",
-                                Format: "jpeg",
-                                Overlap: "2",
-                                TileSize: "256",
-                                Size: {
-                                    Width: viewer.world.getItemAt(0).getContentSize().x,
-                                    Height: viewer.world.getItemAt(0).getContentSize().y
-                                }
+            type: 'GET',
+            headers: gHeaders,
+            dataType: 'json',
+            data: {image_id: gImageId},
+            success: function (data, textStatus, jqXHR) {
+                // Navigator overlay exists and can be set
+                if (jqXHR.status === 200) {
+                    var navigator_overlay = {
+                        Image: {
+                            xmlns: "http://schemas.microsoft.com/deepzoom/2008",
+                            Url: window.location.origin + "/images/image/" + gImageId + "_navigator_overlay/",
+                            Format: "jpeg",
+                            Overlap: "2",
+                            TileSize: "256",
+                            Size: {
+                                Width: viewer.world.getItemAt(0).getContentSize().x,
+                                Height: viewer.world.getItemAt(0).getContentSize().y
                             }
-                        };
+                        }
+                    };
 
-                        var tiledImage = viewer.world.getItemAt(0);
-                        viewer.navigator.addTiledImage({
-                            tileSource: navigator_overlay,
-                            originalTiledImage: tiledImage
-                        });
-                    }
-                },
-                error: function () {
-
+                    var tiledImage = viewer.world.getItemAt(0);
+                    viewer.navigator.addTiledImage({
+                        tileSource: navigator_overlay,
+                        originalTiledImage: tiledImage
+                    });
                 }
+            },
+            error: function () {
+
+            }
         });
     });
 
     viewer.addHandler('canvas-key', function (e) {
-        if ($(e.originalEvent)[0].key == 0){
+        if ($(e.originalEvent)[0].key == 0) {
             e.originalEvent.preventDefault();
         }
+    });
+
+
+    /*
+       User navigation interaction on the image finished
+     */
+    viewer.addHandler('animation-finish', function (e) {
+        updatePlugins(gImageId);
     });
 
     /*
        confirm selection
      */
     viewer.addHandler("selection", function (data) {
-        createAnnotation(undefined, undefined, reload_list=false, data);
+        createAnnotation(undefined, undefined, reload_list = false, data);
     });
 
-    viewer.addHandler('canvas-click', function(event) {
+    viewer.addHandler('canvas-click', function (event) {
 
     });
 
@@ -158,7 +166,6 @@ globals = {
     });
 
 
-
     function shorten(string, length) {
         let threshold = length || 30;
         if (string.length < threshold) {
@@ -181,7 +188,7 @@ globals = {
 
         if ($('#annotation_type_id').children().length > 0) {
             let selected_annotation = $('#annotation_type_id').children(':selected').data();
-            if (selected_annotation !== undefined){
+            if (selected_annotation !== undefined) {
                 vector_type = selected_annotation.vectorType;
                 node_count = selected_annotation.nodeCount;
                 annotationTypeId = parseInt($('#annotation_type_id').children(':selected').val());
@@ -199,7 +206,7 @@ globals = {
         $('#feedback_multiline_information').addClass('hidden');
         switch (vector_type) {
             case 1: // Bounding Box
-                    // Remove unnecessary number fields
+                // Remove unnecessary number fields
                 for (let i = 3; $('#x' + i + 'Field').length; i++) {
                     $('#x' + i + 'Box').remove();
                     $('#y' + i + 'Box').remove();
@@ -213,7 +220,7 @@ globals = {
             case 5: // Polygon
                 break;
             case 6: // fixed size Bounding Box
-                    // Remove unnecessary number fields
+                // Remove unnecessary number fields
                 for (let i = 3; $('#x' + i + 'Field').length; i++) {
                     $('#x' + i + 'Box').remove();
                     $('#y' + i + 'Box').remove();
@@ -478,7 +485,7 @@ globals = {
             dataType: 'json',
             success: function (data) {
                 tool.removeAnnotation(data.annotations.id);
-                globals.allAnnotations = globals.allAnnotations.filter(function(value, index, arr){
+                globals.allAnnotations = globals.allAnnotations.filter(function (value, index, arr) {
                     return value.id !== data.annotations.id;
                 });
                 gAnnotationCache[gImageId] = globals.allAnnotations;
@@ -517,7 +524,7 @@ globals = {
 
             tool.resetSelection(true);
         } else if (viewer.selectionInstance.isSelecting &&
-                $(e.toElement).data().hasOwnProperty('annotationid')) {
+            $(e.toElement).data().hasOwnProperty('annotationid')) {
             // if the user jumps from one annotation to the next
             // cancel fist annotation
             if (globals.editedAnnotationsId !== undefined &&
@@ -534,10 +541,10 @@ globals = {
 
             viewer.selectionInstance.initRect(annotation)
         } else if (e.target instanceof HTMLCanvasElement &&
-                viewer.selectionInstance.isSelecting &&
-                globals.editedAnnotationsId === undefined &&
-                selected_annotation !== undefined &&
-                selected_annotation.vectorType === 6){
+            viewer.selectionInstance.isSelecting &&
+            globals.editedAnnotationsId === undefined &&
+            selected_annotation !== undefined &&
+            selected_annotation.vectorType === 6) {
 
             // Convert pixel to viewport coordinates
             var viewportPoint = viewer.viewport.pointFromPixel(globals.mousePosition);
@@ -723,7 +730,7 @@ globals = {
             case 3: // Line
                 return vector.x1 !== vector.x2 || vector.y1 !== vector.y2 && len === 4;
             case 4: // Multiline
-                    // a multiline should have at least two points
+                // a multiline should have at least two points
                 if (len < 4) {
                     return false;
                 }
@@ -792,27 +799,99 @@ globals = {
     function handleSelection(event) {
     }
 
+    function updatePlugins(imageId) {
+
+        var bounds = viewer.viewport.getBounds(true);
+        var imageRect = viewer.viewport.viewportToImageRectangle(bounds);
+
+        let data = {
+            image_id: imageId,
+            options: {
+                min_x: imageRect.x,
+                min_y: imageRect.y,
+                max_x: imageRect.x + imageRect.width,
+                max_y: imageRect.y + imageRect.height
+            }
+
+        };
+
+        // update Plugins
+        $.ajax(API_IMAGES_BASE_URL + 'image/plugins/', {
+            type: 'GET',
+            headers: gHeaders,
+            dataType: 'json',
+            data: {'values': JSON.stringify(data)},
+            success: function (data) {
+                var el = document.getElementById('statistics_tabs');
+
+                for (plugin of data.plugins) {
+                    var tab_name = plugin.id;
+
+                    if (document.getElementById(tab_name + "_tab") === null){
+
+                        var node = document.createElement("li");
+                        node.setAttribute('class', 'nav-item');
+
+                        var tab_name = plugin.id;
+                        var link = document.createElement("a");
+                        link.setAttribute('class', 'nav-link');
+                        link.setAttribute('id', tab_name + "_tab");
+                        link.setAttribute('data-toggle', 'tab');
+                        link.setAttribute('href', '#' + tab_name);
+                        link.textContent = tab_name;
+
+                        node.appendChild(link);
+                        el.appendChild(node);
+                    }
+                }
+
+                var el_content = document.getElementById('statistics_tabs_content');
+
+                for (plugin of data.plugins) {
+                    var tab_name = plugin.id;
+
+                    var node = document.getElementById(tab_name);
+                    if (node === null) {
+                        var node = document.createElement("div");
+                        node.setAttribute('class', 'tab-pane fade');
+                        node.setAttribute('id', tab_name);
+
+                        node.innerHTML = plugin.content;
+                        el_content.appendChild(node);
+                    } else {
+                        node.innerHTML = plugin.content;
+                    }
+                }
+            },
+            error: function () {
+            }
+        });
+
+    }
+
     function loadStatistics(imageId) {
         let data = {
             image_id: imageId
         };
 
-        // update current annotations
+        // update statistics
         $.ajax(API_IMAGES_BASE_URL + 'image/statistics/', {
-                type: 'GET',
-                headers: gHeaders,
-                dataType: 'json',
-                data: data,
-                success: function (data) {
-                    for (anno_type of data.statistics) {
-                        document.getElementById(anno_type.name+'_'+anno_type.id).innerHTML =
-                            anno_type.count + ' / ' + anno_type.verified_count;
-                    }
-                },
-                error: function () {
-
+            type: 'GET',
+            headers: gHeaders,
+            dataType: 'json',
+            data: data,
+            success: function (data) {
+                for (anno_type of data.statistics) {
+                    document.getElementById(anno_type.name + '_' + anno_type.id).innerHTML =
+                        anno_type.count + ' / ' + anno_type.verified_count;
                 }
+            },
+            error: function () {
+
+            }
         });
+
+        updatePlugins(imageId);
     }
 
     /**

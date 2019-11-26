@@ -121,37 +121,45 @@
                         </div>
                         <div class="panel-body">
                             <form id="annotation_form" action="
-
-
-
                                     {% url 'annotations:annotate' selected_image.id %}{% if filtered is not None %}?selected_annotation_type={{ filtered }}{% endif %}"
                                   enctype="multipart/form-data" method="post">
                                 {% csrf_token %}
                                 <input type="hidden" name="image_id" value="{{ selected_image.id }}">
 
-                                <table style="width:100%">
-                                    <tr>
-                                        <th>Label</th>
-                                        <th>Key</th>
-                                        <th>
-                                            <label data-toggle="tooltip" data-placement="right"
-                                                      title="( Number of annotations / Number of validated annotations )">
-                                                Count
+                                <ul class="nav nav-tabs" id="statistics_tabs" role="tablist">
+                                    <li class="nav-item">
+                                        <a class="nav-link active" id="default_statistics_tab" data-toggle="tab"
+                                           href="#home" role="tab" aria-controls="home">Statistics</a>
+                                    </li>
+                                </ul>
 
-                                            </label>
-                                        </th>
-                                        <th>Color</th>
-                                    </tr>
+                                <div class="tab-content" id="statistics_tabs_content">
+                                    <div class="tab-pane fade in active" id="home" >
+                                        <table style="width: 100%">
+                                            <tr>
+                                                <th>Label</th>
+                                                <th>Key</th>
+                                                <th>
+                                                    <label data-toggle="tooltip" data-placement="right"
+                                                              title="( Number of annotations / Number of validated annotations )">
+                                                        Count
 
-                                    {% for annotation_type in annotation_types %}
-                                        <tr>
-                                            <th>{{ annotation_type.name }}</th>
-                                            <th>{{ forloop.counter0 }}</th>
-                                            <th id={{ annotation_type.name }}_{{ annotation_type.id }}>{{ annotation_type.node_count }}</th>
-                                            <th style="background-color: {{ annotation_type.color_code }}"></th>
-                                        </tr>
-                                    {% endfor %}
-                                </table>
+                                                    </label>
+                                                </th>
+                                                <th>Color</th>
+                                            </tr>
+
+                                            {% for annotation_type in annotation_types %}
+                                                <tr>
+                                                    <th>{{ annotation_type.name }}</th>
+                                                    <th>{{ forloop.counter0 }}</th>
+                                                    <th id={{ annotation_type.name }}_{{ annotation_type.id }}>{{ annotation_type.node_count }}</th>
+                                                    <th style="background-color: {{ annotation_type.color_code }}"></th>
+                                                </tr>
+                                            {% endfor %}
+                                        </table>
+                                    </div>
+                                </div>
 
                                 <p>
                                     <select id="annotation_type_id" name="selected_annotation_type"
