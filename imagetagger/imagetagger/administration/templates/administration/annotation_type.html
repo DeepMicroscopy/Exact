@@ -72,10 +72,10 @@
 
                                 <tr>
                                     <td>
-                                        <label for="id_color_code" id="cb_color"> {{ edit_form.color_code.label }}</label>
+                                        <label for="id_color_code"> {{ edit_form.color_code.label }}</label>
                                     </td>
                                     <td>
-                                        <select name="{{ edit_form.color_code.name }}">
+                                        <select name="{{ edit_form.color_code.name }}" id="cb_color">
                                             <option style='color: #FF0000' value="#FF0000" >Red</option>
                                             <option style='color: #00FFFF' value="#00FFFF" >Cyan</option>
                                             <option style='color: #0000FF' value="#0000FF" >Blue</option>
