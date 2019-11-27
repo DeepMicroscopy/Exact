@@ -131,7 +131,7 @@ class Plugin(ExactServerPlugin):
                                                          annotation__vector__y1__gte=y_min,
                                                          annotation__vector__x2__lte=x_max,
                                                          annotation__vector__y2__lte=y_max)\
-            .distinct().order_by('name') \
+            .distinct().order_by('sort_order') \
             .annotate(count=Count('annotation'))
 
         doucet_score = 0
