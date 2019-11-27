@@ -412,6 +412,7 @@ class AnnotationType(models.Model):
     color_code = models.CharField(default="#CC4444", max_length=7, unique=False)
     default_width = models.IntegerField(default=50, unique=False)
     default_height = models.IntegerField(default=50, unique=False)
+    sort_order = models.IntegerField(default=0, unique=False)
 
     def __str__(self):
         if self.active:
