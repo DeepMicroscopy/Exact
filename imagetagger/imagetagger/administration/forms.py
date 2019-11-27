@@ -15,7 +15,8 @@ class AnnotationTypeCreationForm(forms.ModelForm):
             'enable_blurred',
             'default_width',
             'default_height',
-            'color_code'
+            'color_code',
+            'sort_order'
         ]
 
 
@@ -29,5 +30,9 @@ class AnnotationTypeEditForm(forms.ModelForm):
             'enable_blurred',
             'default_width',
             'default_height',
-            'color_code'
+            'color_code',
+            'sort_order'
         ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
