@@ -14,7 +14,9 @@ class BoundingBoxes {
         }
 
         this.viewer = viewer;
-        this.hEl = viewer.HTMLelements();
+        this.overlay = this.viewer.paperjsOverlay();
+        //this.hEl = viewer.HTMLelements();
+
     }
 
     drawAnnotation(annotation, update_view = false) {
@@ -27,6 +29,11 @@ class BoundingBoxes {
             this.removeAnnotation(annotation.id)
         }
 
+        var rect = new paper.Path.Rectangle(annotation.vector.x1, annotation.vector.y1,
+            annotation.vector.x2 - annotation.vector.x1, annotation.vector.y2 - annotation.vector.y1);
+        rect.fillColor = 'red'
+
+        /*
         let border_size = 2;
         var boundingBox = document.createElement('div');
         boundingBox.setAttribute('class', 'boundingBox');
@@ -45,7 +52,7 @@ class BoundingBoxes {
 
         if (update_view) {
             this.updateView()
-        }
+        }*/
     }
 
 
@@ -54,7 +61,7 @@ class BoundingBoxes {
             return;
         }
 
-        this.hEl.removeAllElements();
+        //this.hEl.removeAllElements();
 
         for (var a in annotations) {
 
@@ -68,7 +75,10 @@ class BoundingBoxes {
 
             this.drawAnnotation(annotation)
         }
-        this.updateView();
+
+        this.overlay.resize();
+        this.overlay.resizecanvas();
+        //this.updateView();
     }
 
     removeAnnotation(annotationid) {
