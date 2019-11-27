@@ -3,6 +3,8 @@
 
 
 {% block bodyblock %}
+
+
 <div class="container-fluid">
     <div class="row">
         <div class="col-md-12">
@@ -21,7 +23,7 @@
             <div class="col-md-5">
                 <div class="panel panel-default">
                     <div class="panel-heading">
-                        <h3 class="panel-title">Edit "{{ annotation_type.name }}"</h3>
+                        <h3 class="panel-title" id="edit_id">Edit "{{ annotation_type.name }}"</h3>
                     </div>
                     <table class="table table-striped">
                         <tbody>
@@ -67,9 +69,10 @@
                                         {{ vector_type_name }}
                                     </td>
                                 </tr>
+
                                 <tr>
                                     <td>
-                                        <label for="id_color_code">{{ edit_form.color_code.label }}</label>
+                                        <label for="id_color_code"> {{ edit_form.color_code.label }}</label>
                                     </td>
                                     <td>
                                         <select name="{{ edit_form.color_code.name }}">
@@ -89,6 +92,11 @@
                                         </select>
                                     </td>
                                 </tr>
+
+                                <script>
+                                    document.getElementById('cb_color').value="{{ edit_form.color_code.value }}";
+                                </script>
+
                                 <tr>
                                     <td>
                                         <b>Node count</b>
@@ -113,7 +121,14 @@
                                         {% render_field edit_form.default_height class+='form-control' %}
                                     </td>
                                 </tr>
-
+                                <tr>
+                                    <td>
+                                        <label for="id_name">{{ edit_form.sort_order.label }}</label>
+                                    </td>
+                                    <td>
+                                        {% render_field edit_form.sort_order class+='form-control' %}
+                                    </td>
+                                </tr>
                                 <tr>
                                     <td>
                                     </td>
@@ -275,6 +290,15 @@
                                 </td>
                                 <td>
                                     {% render_field create_form.default_height class+='form-control' %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <label for="id_name">{{ create_form.sort_order.label }}
+                                    </label>
+                                </td>
+                                <td>
+                                    {% render_field create_form.sort_order class+='form-control' %}
                                 </td>
                             </tr>
                             <tr>
