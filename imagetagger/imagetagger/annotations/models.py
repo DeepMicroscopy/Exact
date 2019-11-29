@@ -484,7 +484,7 @@ class AnnotationType(models.Model):
         )
 
     def _validate_point(self, vector: dict) -> bool:
-        return 'x1' in vector and 'y1' in vector and len(vector.keys()) is 2
+        return 'x1' in vector and 'y1' in vector and len(vector.keys()) is 4
 
     def _validate_polygon(self, vector: dict) -> bool:
         if len(vector) < 6:

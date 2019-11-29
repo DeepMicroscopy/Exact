@@ -9,6 +9,8 @@ class ImageSerializer(ModelSerializer):
         fields = (
             'id',
             'name',
+            'height',
+            'width'
         )
 
 
