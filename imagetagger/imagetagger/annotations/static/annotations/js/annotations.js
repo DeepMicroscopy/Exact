@@ -3,7 +3,8 @@ globals = {
     editActiveContainer: {},
     drawAnnotations: true,
     allAnnotations: undefined,
-    mousePosition: undefined
+    mousePosition: undefined,
+    isSelecting: false
 };
 
 
@@ -27,6 +28,7 @@ globals = {
     var gImageList;
     let gAnnotationType = -1;
     let gAnnotationCache = {};
+    let gImageSizes = {};
 
     var gShiftDown;
 
@@ -52,6 +54,13 @@ globals = {
     });
     viewer.gestureSettingsMouse.clickToZoom = false;
 
+
+    viewer.selection({
+        allowRotation: false,
+        restrictToImage: true,
+        //showConfirmDenyButtons: false
+    });
+
     viewer.addHandler("open", function () {
         // To improve load times, ignore the lowest-resolution Deep Zoom
         // levels.  This is a hack: we can't configure the minLevel via
@@ -75,6 +84,7 @@ globals = {
             success: function (data, textStatus, jqXHR) {
                 // Navigator overlay exists and can be set
                 if (jqXHR.status === 200) {
+
                     var navigator_overlay = {
                         Image: {
                             xmlns: "http://schemas.microsoft.com/deepzoom/2008",
@@ -83,8 +93,8 @@ globals = {
                             Overlap: "2",
                             TileSize: "256",
                             Size: {
-                                Width: viewer.world.getItemAt(0).getContentSize().x,
-                                Height: viewer.world.getItemAt(0).getContentSize().y
+                                Width: gImageSizes[gImageId]['width'],
+                                Height: gImageSizes[gImageId]['height'],
                             }
                         }
                     };
@@ -119,12 +129,100 @@ globals = {
     /*
        confirm selection
      */
-    viewer.addHandler("selection", function (data) {
-        createAnnotation(undefined, undefined, reload_list = false, data);
+    viewer.addHandler("selection_onDragEnd", function (event) {
+
+        if (globals.editedAnnotationsId !== undefined) {
+            var annotation = globals.allAnnotations.filter(function (d) {
+                return d.id === globals.editedAnnotationsId;
+            })[0];
+
+            annotation.vector = tool.getHitAnnotationVector();
+        }
     });
 
-    viewer.addHandler('canvas-click', function (event) {
+    viewer.addHandler('selection_onDrag', function (event) {
 
+        if (globals.editedAnnotationsId !== undefined) {
+
+            tool.handleMouseDrag(event);
+        }
+    });
+
+    viewer.addHandler('selection_toggle', function (event) {
+
+        if (event.enabled === false) {
+            tool.resetSelection(true);
+        }
+
+    });
+
+    viewer.addHandler('selection_onPress', function (event) {
+
+        let selected_annotation = undefined;
+
+        if ($('#annotation_type_id').children().length > 0) {
+            selected_annotation = $('#annotation_type_id').children(':selected').data();
+        }
+
+        // no element
+        if (globals.editedAnnotationsId !== undefined
+            && !viewer.selectionInstance.isSelecting) {
+            globals.editedAnnotationsId = undefined;
+
+            tool.resetSelection(true);
+        } else if (viewer.selectionInstance.isSelecting) {
+
+            // Convert pixel to viewport coordinates
+            var viewportPoint = viewer.viewport.pointFromPixel(globals.mousePosition);
+
+            // Convert from viewport coordinates to image coordinates.
+            var imagePoint = viewer.viewport.viewportToImageCoordinates(viewportPoint);
+
+            var id = tool.hitTest(imagePoint);
+
+            // check if annotation was hit
+            if (id !== undefined){
+                // if the user jumps from one annotation to the next
+                // cancel and save fist annotation
+                if (globals.editedAnnotationsId !== undefined &&
+                    id !== globals.editedAnnotationsId) {
+
+                    var annotation = globals.allAnnotations.filter(function (d) {
+                        return d.id === id;
+                    })[0];
+
+                    createAnnotation(annotation);
+
+                    tool.resetSelection(true);
+                }
+                tool.handleMousePress(event);
+
+                globals.editedAnnotationsId = id;
+
+                var annotation = globals.allAnnotations.filter(function (d) {
+                    return d.id === id;
+                })[0];
+                editAnnotation(undefined, annotation);
+
+
+            } else if(globals.editedAnnotationsId === undefined &&
+                selected_annotation !== undefined &&
+                selected_annotation.vectorType === 6) {
+
+                // create fixes size anno
+
+
+            } else if (globals.editedAnnotationsId !== undefined &&
+                id === undefined) {
+
+                var annotation = globals.allAnnotations.filter(function (d) {
+                    return d.id === globals.editedAnnotationsId;
+                })[0];
+
+                createAnnotation(annotation);
+                tool.resetSelection(true);
+            }
+        }
     });
 
     /*
@@ -133,13 +231,6 @@ globals = {
     viewer.addHandler("selection_cancel", function (data) {
         //viewer.selectionInstance.cancel();
         tool.resetSelection(false);
-    });
-
-
-    viewer.selection({
-        allowRotation: false,
-        restrictToImage: true,
-        //showConfirmDenyButtons: false
     });
 
     viewer.guides({
@@ -166,6 +257,8 @@ globals = {
     });
 
 
+
+
     function shorten(string, length) {
         let threshold = length || 30;
         if (string.length < threshold) {
@@ -182,20 +275,7 @@ globals = {
 
     function setTool() {
 
-        let vector_type = -1;
-        let node_count = 0;
-        let annotationTypeId = 0;
-
-        if ($('#annotation_type_id').children().length > 0) {
-            let selected_annotation = $('#annotation_type_id').children(':selected').data();
-            if (selected_annotation !== undefined) {
-                vector_type = selected_annotation.vectorType;
-                node_count = selected_annotation.nodeCount;
-                annotationTypeId = parseInt($('#annotation_type_id').children(':selected').val());
-            }
-        }
-
-        if (tool && tool.vector_type === vector_type) {
+        if (tool && tool.getImageId() === gImageId) {
             // Tool does not have to change
             return;
         }
@@ -203,81 +283,13 @@ globals = {
         if (tool) {
             delete tool;
         }
-        $('#feedback_multiline_information').addClass('hidden');
-        switch (vector_type) {
-            case 1: // Bounding Box
-                // Remove unnecessary number fields
-                for (let i = 3; $('#x' + i + 'Field').length; i++) {
-                    $('#x' + i + 'Box').remove();
-                    $('#y' + i + 'Box').remove();
-                }
-                tool = new BoundingBoxes(annotationTypeId, true, viewer);
-                break;
-            case 4: // Multiline, fallthrough
-                $('#feedback_multiline_information').removeClass('hidden');
-            case 2: // Point, fallthrough
-            case 3: // Line, fallthrough
-            case 5: // Polygon
-                break;
-            case 6: // fixed size Bounding Box
-                // Remove unnecessary number fields
-                for (let i = 3; $('#x' + i + 'Field').length; i++) {
-                    $('#x' + i + 'Box').remove();
-                    $('#y' + i + 'Box').remove();
-                }
-                tool = new BoundingBoxes(annotationTypeId, true, viewer);
-                break;
-            default:
-                // Dummytool
-                tool = {
-                    initSelection: function () {
-                    },
-                    resetSelection: function () {
-                    },
-                    restoreSelection: function () {
-                    },
-                    cancelSelection: function () {
-                    },
-                    reset: function () {
-                    },
-                    drawExistingAnnotations: function () {
-                    },
-                    handleEscape: function () {
-                    },
-                    handleMousemove: function () {
-                    },
-                    handleMouseDown: function () {
-                    },
-                    handleMouseUp: function () {
-                    },
-                    handleMouseClick: function () {
-                    },
-                    moveSelectionLeft: function () {
-                    },
-                    moveSelectionRight: function () {
-                    },
-                    moveSelectionUp: function () {
-                    },
-                    moveSelectionDown: function () {
-                    },
-                    decreaseSelectionSizeFromRight: function () {
-                    },
-                    decreaseSelectionSizeFromTop: function () {
-                    },
-                    increaseSelectionSizeRight: function () {
-                    },
-                    increaseSelectionSizeUp: function () {
-                    },
-                    setHighlightColor: function () {
-                    },
-                    unsetHighlightColor: function () {
-                    }
-                };
-        }
+
+        tool = new BoundingBoxes(viewer, gImageId, gImageSizes[gImageId]);
+
         if (globals.allAnnotations) {
             tool.drawExistingAnnotations(globals.allAnnotations);
         }
-        console.log("Using tool " + tool.constructor.name);
+        console.log("Created tool for " + tool.getImageId());
     }
 
 
@@ -289,59 +301,19 @@ globals = {
      * @param successCallback a function to be executed on success
      * @param markForRestore
      */
-    function createAnnotation(event, successCallback, reload_list, data) {
+    function createAnnotation(annotation) {
 
         var annotationTypeId = parseInt($('#annotation_type_id').val());
-        if (annotationTypeId == -1) {
-            if (typeof(successCallback) === "function") {
-                successCallback();
-                return;
-            }
+        if (annotationTypeId == -1 || isNaN(annotationTypeId || annotation === undefined)) {
             displayFeedback($('#feedback_annotation_type_missing'));
             return;
-        }
-
-        var vector = null;
-
-        if (isNaN(annotationTypeId)) {
-            displayFeedback($('#feedback_annotation_type_missing'));
-            return;
-        }
-
-        let blurred = $('#blurred').is(':checked');
-        let concealed = $('#concealed').is(':checked');
-        if (!$('#not_in_image').is(':checked')) {
-            vector = {};
-            if (data instanceof OpenSeadragon.Rect) {
-                vector["x1"] = data.x;
-                vector["x2"] = data.x + data.width;
-                vector["y1"] = data.y;
-                vector["y2"] = data.y + data.height;
-            } else {
-                for (let i = 1; $('#x' + i + 'Field').length; i++) {
-                    vector["x" + i] = parseInt($('#x' + i + 'Field').val());
-                    vector["y" + i] = parseInt($('#y' + i + 'Field').val());
-                }
-            }
-        }
-
-        let selected_annotation = $('#annotation_type_id').children(':selected').data();
-        let vector_type = selected_annotation.vectorType;
-        let node_count = selected_annotation.nodeCount;
-        if (!validate_vector(vector, vector_type, node_count)) {
-            if (typeof(successCallback) === "function") {
-                successCallback();
-                return;
-            }
         }
 
         var action = 'create';
         var data = {
             annotation_type_id: annotationTypeId,
             image_id: gImageId,
-            vector: vector,
-            concealed: concealed,
-            blurred: blurred
+            vector: annotation.vector
         };
         var editing = false;
         if (globals.editedAnnotationsId !== undefined) {
@@ -369,10 +341,6 @@ globals = {
                     displayFeedback($('#feedback_annotation_created'));
                 }
 
-                if (reload_list === true) {
-                    loadImageList();
-                }
-
                 // update current annotations
                 const index = globals.allAnnotations.findIndex((elem) => elem.id === data.annotations.id);
                 if (index === -1) {
@@ -382,20 +350,6 @@ globals = {
                 }
 
                 gAnnotationCache[gImageId] = globals.allAnnotations;
-
-                tool.drawAnnotation(data.annotations, update_view = true);
-                $('.annotation').removeClass('alert-info');
-                globals.editActiveContainer.addClass('hidden');
-
-                if (typeof(successCallback) === "function") {
-                    successCallback();
-                }
-                $('.annotate_button').prop('disabled', false);
-
-                globals.editedAnnotationsId = data.annotations.id;
-                editAnnotation(undefined, data.annotations);
-
-                tool.resetSelection(true);
 
                 loadStatistics(gImageId);
             },
@@ -510,53 +464,7 @@ globals = {
 
     function handleMouseClick(e) {
 
-        let selected_annotation = undefined;
 
-        if ($('#annotation_type_id').children().length > 0) {
-            selected_annotation = $('#annotation_type_id').children(':selected').data();
-        }
-
-        // no element
-        if (e.target instanceof HTMLCanvasElement
-            && globals.editedAnnotationsId !== undefined
-            && !viewer.selectionInstance.isSelecting) {
-            globals.editedAnnotationsId = undefined;
-
-            tool.resetSelection(true);
-        } else if (viewer.selectionInstance.isSelecting &&
-            $(e.toElement).data().hasOwnProperty('annotationid')) {
-            // if the user jumps from one annotation to the next
-            // cancel fist annotation
-            if (globals.editedAnnotationsId !== undefined &&
-                $(e.toElement).data().annotationid !== globals.editedAnnotationsId) {
-                tool.resetSelection(true);
-            }
-            let id = $(e.toElement).data().annotationid;
-            globals.editedAnnotationsId = id;
-
-            annotation = globals.allAnnotations.filter(function (d) {
-                return d.id === id;
-            })[0];
-            editAnnotation(e, annotation);
-
-            viewer.selectionInstance.initRect(annotation)
-        } else if (e.target instanceof HTMLCanvasElement &&
-            viewer.selectionInstance.isSelecting &&
-            globals.editedAnnotationsId === undefined &&
-            selected_annotation !== undefined &&
-            selected_annotation.vectorType === 6) {
-
-            // Convert pixel to viewport coordinates
-            var viewportPoint = viewer.viewport.pointFromPixel(globals.mousePosition);
-
-            // Convert from viewport coordinates to image coordinates.
-            var imagePoint = viewer.viewport.viewportToImageCoordinates(viewportPoint);
-
-            let data = new OpenSeadragon.Rect(imagePoint.x - (selected_annotation.default_width / 2),
-                imagePoint.y - (selected_annotation.default_height / 2),
-                selected_annotation.default_width, selected_annotation.default_height)
-            createAnnotation(undefined, undefined, true, data);
-        }
     }
 
     /**
@@ -575,7 +483,7 @@ globals = {
         }
 
         gImageId = imageId;
-        preloadAnnotations();
+        preloadAnnotations(imageId, gImageList);
 
         viewer.open({tileSource: window.location.origin + "/images/image/" + imageId});
     }
@@ -659,39 +567,14 @@ globals = {
         globals.editedAnnotationsId = annotation.id;
         globals.editActiveContainer.removeClass('hidden');
 
-        if (event !== undefined) {
-            // triggered using an event handler
-            event.preventDefault();
-        }
-        $('.js_feedback').stop().addClass('hidden');
-        var params = {
-            annotation_id: annotation.id
-        };
 
-        var annotationData = annotation.vector;
-        if (annotationData === undefined) {
-            annotationData = annotationElem.data('escapedvector');
-        }
+        $('.js_feedback').stop().addClass('hidden');
 
         // highlight currently edited annotation
         $('.annotation').removeClass('alert-info');
 
-        var notInImage = $('#not_in_image');
-        if (annotationData === null) {
-            // not in image
-            notInImage.prop('checked', true).change();
-            return;
-        }
-
         $('#annotation_type_id').val(annotationTypeId);
-
-        notInImage.prop('checked', false).change();
-
-
-        tool.reloadSelection(annotation.id, annotationData);
-        $('#concealed').prop('checked', annotation.concealed).change();
-        $('#blurred').prop('checked', annotation.blurred).change();
-
+        $('#annotation_buttons').show();
     }
 
     /**
@@ -1043,7 +926,7 @@ globals = {
             success: function (data) {
                 // save the current annotations to the cache
                 gAnnotationCache[imageId] = data.annotations;
-                console.log("Saving annotations for", imageId);
+                console.log("Chaching annotations for", imageId);
             },
             error: function () {
                 console.log("Unable to load annotations for image" + imageId);
@@ -1089,15 +972,18 @@ globals = {
     }
 
     /**
+     * TODO: Intelligenter machen mit Bildern aus SET!!!
      * Preload next and previous annotations to cache.
      */
-    function preloadAnnotations() {
+    function preloadAnnotations(imageId, imageIds) {
         var keepAnnotations = [];
-        for (var imageId = gImageId - PRELOAD_BACKWARD;
-             imageId <= gImageId + PRELOAD_FORWARD;
-             imageId++) {
-            keepAnnotations.push(imageId);
-            loadAnnotationsToCache(imageId);
+
+        var currentIndex = imageIds.indexOf(imageId);
+        var startIndex = Math.max(currentIndex - PRELOAD_BACKWARD, 0);
+        var endIndex = Math.min(currentIndex + PRELOAD_FORWARD, imageIds.length);
+        for (var i = startIndex; i < endIndex; i++){
+            keepAnnotations.push(imageIds[i]);
+            loadAnnotationsToCache(imageIds[i]);
         }
         pruneAnnotationCache(keepAnnotations);
     }
@@ -1124,10 +1010,9 @@ globals = {
 
     function handleAnnotationTypeChange() {
         AnnotationType = parseInt($('#annotation_type_id').val());
-        setTool();
 
         if (viewer.selectionInstance.isSelecting) {
-            viewer.selectionInstance.confirm();
+            // TODO: Save annotation
         }
     }
 
@@ -1184,8 +1069,6 @@ globals = {
 
         image_node.style.height = height+ 'px';
         image_node.style.width = width+ 'px';
-
-        console.log("handleResize")
     }
 
 
@@ -1211,19 +1094,33 @@ globals = {
             "X-CSRFTOKEN": gCsrfToken
         };
         gImageList = getImageList();
+        preloadAnnotations(gImageId, gImageList);
         loadAnnotationTypeList(gImageSetId);
-        preloadAnnotations();
         scrollImageList();
+
+
+        params = {image_set_id: gImageSetId};
+        $.ajax(API_IMAGES_BASE_URL + 'imageset/load/?' + $.param(params), {
+            type: 'GET',
+            headers: gHeaders,
+            dataType: 'json',
+            success: function (data, textStatus, jqXHR) {
+                data.image_set.images.forEach(x => gImageSizes[x.id] = {"width":x.width, "height": x.height });
+
+                initTool();
+            },
+            error: function () {
+            }
+        });
 
         // W3C standards do not define the load event on images, we therefore need to use
         // it from window (this should wait for all external sources including images)
         $(window).on('load', function () {
-            initTool();
             handleResize();
         }());
 
         $('.annotation_value').on('input', function () {
-            tool.reloadSelection();
+
         });
         $('#not_in_image').on('change', handleNotInImageToggle);
         handleNotInImageToggle();
@@ -1267,7 +1164,7 @@ globals = {
             })
         });
         $('#save_button').click(function () {
-            viewer.selectionInstance.confirm();
+            //viewer.selectionInstance.confirm();
         });
         $('#reset_button').click(function () {
             tool.resetSelection(true);

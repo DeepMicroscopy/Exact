@@ -793,8 +793,8 @@ def update_annotation(request) -> Response:
         image_id = int(request.data['image_id'])
         annotation_type_id = int(request.data['annotation_type_id'])
         vector = request.data['vector']
-        blurred = request.data['blurred']
-        concealed = request.data['concealed']
+        blurred = request.data.get('blurred', False)
+        concealed = request.data.get('concealed', False)
     except (KeyError, TypeError, ValueError):
         raise ParseError
 
