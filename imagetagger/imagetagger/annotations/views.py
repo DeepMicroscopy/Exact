@@ -566,7 +566,7 @@ def create_annotation(request) -> Response:
     if not annotation_type.validate_vector(vector):
         serializer = AnnotationSerializer(
             image.annotations.filter(annotation_type__active=True).select_related()
-            .order_by('annotation_type__name'),
+            .order_by('annotation_type__sort_order'),
             context={
                 'request': request,
             },
@@ -579,7 +579,7 @@ def create_annotation(request) -> Response:
     if Annotation.similar_annotations(vector, image, annotation_type):
         serializer = AnnotationSerializer(
             image.annotations.filter(annotation_type__active=True).select_related()
-            .order_by('annotation_type__name'),
+            .order_by('annotation_type__sort_order'),
             context={
                 'request': request,
             },
@@ -658,7 +658,7 @@ def load_set_annotations(request) -> Response:
         }, status=HTTP_403_FORBIDDEN)
 
     serializer = AnnotationSerializer(
-        annotations.select_related().order_by('image__name', 'annotation_type__name'),
+        annotations.select_related().order_by('image__name', 'annotation_type__sort_order'),
         many=True,
         context={'request': request},
     )
