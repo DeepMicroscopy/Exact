@@ -26,9 +26,11 @@ globals = {
     var gImageId;
     var gImageSetId;
     var gImageList;
-    let gAnnotationType = -1;
+    var gAnnotationType = -1;
+    var gAnnotationTypes = {}
     let gAnnotationCache = {};
     let gImageSizes = {};
+
 
     var gShiftDown;
 
@@ -158,10 +160,17 @@ globals = {
 
     viewer.addHandler('selection_onPress', function (event) {
 
-        let selected_annotation = undefined;
+        let selected_annotation_type = undefined;
 
         if ($('#annotation_type_id').children().length > 0) {
-            selected_annotation = $('#annotation_type_id').children(':selected').data();
+            selected_annotation_type = $('#annotation_type_id').children(':selected').data();
+            if (selected_annotation_type === undefined) {
+                displayFeedback($('#feedback_annotation_type_missing'));
+                return;
+            } else {
+                selected_annotation_type = gAnnotationTypes[$('#annotation_type_id').children(':selected').val()]
+            }
+
         }
 
         // no element
@@ -173,7 +182,7 @@ globals = {
         } else if (viewer.selectionInstance.isSelecting) {
 
             // Convert pixel to viewport coordinates
-            var viewportPoint = viewer.viewport.pointFromPixel(globals.mousePosition);
+            var viewportPoint = viewer.viewport.pointFromPixel(event.position);
 
             // Convert from viewport coordinates to image coordinates.
             var imagePoint = viewer.viewport.viewportToImageCoordinates(viewportPoint);
@@ -188,7 +197,7 @@ globals = {
                     id !== globals.editedAnnotationsId) {
 
                     var annotation = globals.allAnnotations.filter(function (d) {
-                        return d.id === id;
+                        return d.id === globals.editedAnnotationsId;
                     })[0];
 
                     createAnnotation(annotation);
@@ -206,11 +215,11 @@ globals = {
 
 
             } else if(globals.editedAnnotationsId === undefined &&
-                selected_annotation !== undefined &&
-                selected_annotation.vectorType === 6) {
+                selected_annotation_type !== undefined) {
 
                 // create fixes size anno
-
+                var newAnno = tool.initNewAnnotation(event, selected_annotation_type);
+                globals.allAnnotations.push(newAnno)
 
             } else if (globals.editedAnnotationsId !== undefined &&
                 id === undefined) {
@@ -370,6 +379,7 @@ globals = {
             headers: gHeaders,
             dataType: 'json',
             success: function (data) {
+                data.annotation_types.forEach(x => gAnnotationTypes[x.id] = x);
                 displayAnnotationTypeOptions(data.annotation_types);
             },
             error: function () {
@@ -398,6 +408,7 @@ globals = {
                 'data-default_width': annotationType.default_width,
                 'data-default_height': annotationType.default_height,
                 'data-concealed': annotationType.enable_concealed,
+                'data-background-color': annotationType.color_code
             }));
 
             annotationTypeFilterSelect.append($('<option/>', {
@@ -690,10 +701,10 @@ globals = {
         let data = {
             image_id: imageId,
             options: {
-                min_x: imageRect.x,
-                min_y: imageRect.y,
-                max_x: imageRect.x + imageRect.width,
-                max_y: imageRect.y + imageRect.height
+                min_x:  Math.round(imageRect.x),
+                min_y:  Math.round(imageRect.y),
+                max_x:  Math.round(imageRect.x + imageRect.width),
+                max_y:  Math.round(imageRect.y + imageRect.height)
             }
 
         };
