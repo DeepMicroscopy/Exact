@@ -611,7 +611,7 @@ def view_imageset(request, image_set_id):
         image__in=images,
         annotation_type__active=True).order_by("id")
     annotation_types = AnnotationType.objects.filter(annotation__image__image_set=imageset, active=True)\
-        .distinct().order_by('name')\
+        .distinct().order_by('sort_order')\
         .annotate(count=Count('annotation'),
                   in_image_count=Count('annotation', filter=Q(annotation__vector__isnull=False)),
                   not_in_image_count=Count('annotation', filter=Q(annotation__vector__isnull=True)))
@@ -619,7 +619,7 @@ def view_imageset(request, image_set_id):
     user_teams = Team.objects.filter(members=request.user)
     imageset_edit_form = ImageSetEditForm(instance=imageset)
     imageset_edit_form.fields['main_annotation_type'].queryset = AnnotationType.objects\
-        .filter(active=True).order_by('name')
+        .filter(active=True).order_by('sort_order')
     return render(request, 'images/imageset.html', {
         'images': images,
         'image_count': images.count(),
@@ -657,7 +657,7 @@ def image_statistics(request) -> Response:
         }, status=HTTP_403_FORBIDDEN)
 
     annotation_types = AnnotationType.objects.filter(annotation__image=image, active=True)\
-        .distinct().order_by('name')\
+        .distinct().order_by('sort_order')\
         .annotate(count=Count('annotation'),
                   in_image_count=Count('annotation', filter=Q(annotation__vector__isnull=False)),
                   verified_count=Count('annotation', filter=Q(annotation__verifications__verified=True)),

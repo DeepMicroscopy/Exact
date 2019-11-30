@@ -18,7 +18,8 @@ class AnnotationTypeSerializer(ModelSerializer):
             'enable_blurred',
             'color_code',
             'default_width',
-            'default_height'
+            'default_height',
+            'sort_order'
         )
 
 
