@@ -18,6 +18,7 @@ class BoundingBoxes {
         this.imageid = imageid;
         this.image_width = imageSize["width"];
         this.image_hight = imageSize["height"];
+        this.new_tag = "newElement"
     }
 
     getImageId() {
@@ -52,14 +53,92 @@ class BoundingBoxes {
         return vector;
     }
 
-    drawAnnotation(annotation, update_view = false) {
-        if (annotation.vector === null) {
-            return;
+    initNewAnnotation(event, selected_annotation_type) {
+
+        // Convert pixel to viewport coordinates
+        var viewportPoint = this.viewer.viewport.pointFromPixel(event.position);
+
+        // Convert from viewport coordinates to image coordinates.
+        var imagePoint = new paper.Point(this.viewer.viewport.viewportToImageCoordinates(viewportPoint));
+
+        var canvasObject = undefined;
+
+        switch (selected_annotation_type.vector_type){
+            case 2:  // POINT or Elipse
+                var rectangle = new paper.Path.Rectangle(imagePoint, imagePoint + 10);
+                var ellipse = new paper.Path.Shape.Ellipse(rectangle);
+                ellipse.data.type = "circle";
+
+                break;
+
+            case 3:  // Line
+                var line = new paper.Path.Line(imagePoint, imagePoint + 10);
+                line.data.type = "line";
+
+                break;
+
+            case 4:  // MULTI_LINE / POLYGON
+            case 5:
+                var canvasObject = new paper.Path({
+                    closed: true,
+                });
+                canvasObject.add(imagePoint);
+                canvasObject.data.type = "poly";
+                break;
+
+            case 1:  // Rect
+                canvasObject = new paper.Path.Rectangle(imagePoint, imagePoint + 10);
+                canvasObject.data.type = "rect";
+
+                break;
+            case 6:
+            default:
+                canvasObject = new paper.Path.Rectangle(imagePoint,
+                    new paper.Size(selected_annotation_type.default_width, selected_annotation_type.default_hight));
+                canvasObject.data.type = "rect";
+
+                break;
+
         }
 
-        // remove annotation in update case
-        if (update_view){
-            this.removeAnnotation(annotation.id)
+
+        canvasObject.strokeColor = selected_annotation_type.color_code;
+        canvasObject.strokeWidth = 10; //TODO: Find better solution
+        canvasObject.name = '~' + new Date().getMilliseconds();
+        canvasObject.fillColor =  new paper.Color(0, 0, 0, 0.000001);
+
+
+        // bounding box coordinates
+        var bounding = [canvasObject.bounds.getTopLeft(), canvasObject.bounds.getBottomLeft(),
+            canvasObject.bounds.getBottomRight(), canvasObject.bounds.getTopRight()];
+
+        // sort bounding box coordinates by distance to mouse event
+        var sorted = bounding.sort((a, b) = > (a.getDistance(imagePoint) > b.getDistance(imagePoint)) ? 1
+            : ((b.getDistance(imagePoint) > a.getDistance(imagePoint)) ? -1 : 0));
+
+        // save opposite box corner and offset between mouse and next corner
+        canvasObject.data.from = new paper.Point(sorted[sorted.length - 1].x, sorted[sorted.length - 1].y);
+        canvasObject.data.offset_point = new paper.Point(sorted[0].x - imagePoint.x, sorted[0].y - imagePoint.y);
+
+        this.group.addChild(canvasObject);
+
+        // set object as selected
+        this.selection = {
+            type: "stroke",
+            item: canvasObject,
+        }
+
+        // return temp annotation
+        return {
+            annotation_type: selected_annotation_type,
+            id: canvasObject.name,
+            vector: this.getHitAnnotationVector()
+        }
+    }
+
+    drawAnnotation(annotation) {
+        if (annotation.vector === null) {
+            return;
         }
 
         switch (annotation.annotation_type.vector_type){
@@ -166,35 +245,6 @@ class BoundingBoxes {
             this.selection.item.selected = false;
             this.selection = undefined;
         }
-    }
-
-    /**
-     * Update the contents of the annotation values
-     *
-     * @param img
-     * @param selection
-     */
-    updateAnnotationFields(img, selection) {
-        let not_in_image_cb = $('#not_in_image');
-        if (not_in_image_cb.prop('checked')) {
-            $('#not_in_image').prop('checked', false).change();
-        }
-        // Add missing fields
-        let i = 1;
-        for (; selection.hasOwnProperty("x" + i); i++) {
-            if (!$('#x' + i + 'Field').length) {
-                $('#coordinate_table').append(BoundingBoxes.getTag("x" + i)).append(BoundingBoxes.getTag("y" + i));
-            }
-        }
-        // Remove unnecessary fields
-        for (; $('#x' + i + 'Field').length; i++) {
-            $('#x' + i + 'Box').remove();
-            $('#y' + i + 'Box').remove();
-        }
-        $('#x1Field').val(Math.round(selection.x1));
-        $('#y1Field').val(Math.round(selection.y1));
-        $('#x2Field').val(Math.round(selection.x2));
-        $('#y2Field').val(Math.round(selection.y2));
     }
 
     static getTag(field) {
