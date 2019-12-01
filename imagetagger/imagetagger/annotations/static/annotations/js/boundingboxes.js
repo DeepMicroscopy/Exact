@@ -65,15 +65,15 @@ class BoundingBoxes {
 
         switch (selected_annotation_type.vector_type){
             case 2:  // POINT or Elipse
-                var rectangle = new paper.Path.Rectangle(imagePoint, imagePoint + 10);
-                var ellipse = new paper.Path.Shape.Ellipse(rectangle);
-                ellipse.data.type = "circle";
+                var rectangle = new paper.Path.Rectangle(imagePoint, new paper.Size(10,10));
+                canvasObject = new paper.Shape.Ellipse(rectangle);
+                canvasObject.data.type = "circle";
 
                 break;
 
             case 3:  // Line
-                var line = new paper.Path.Line(imagePoint, imagePoint + 10);
-                line.data.type = "line";
+                canvasObject = new paper.Path.Line(imagePoint, new paper.Point(imagePoint.x + 10, imagePoint.y +10));
+                canvasObject.data.type = "line";
 
                 break;
 
@@ -87,7 +87,7 @@ class BoundingBoxes {
                 break;
 
             case 1:  // Rect
-                canvasObject = new paper.Path.Rectangle(imagePoint, imagePoint + 10);
+                canvasObject = new paper.Path.Rectangle(imagePoint, new paper.Size(10,10));
                 canvasObject.data.type = "rect";
 
                 break;
@@ -101,9 +101,9 @@ class BoundingBoxes {
 
         }
 
-
+        canvasObject.selected = true;
         canvasObject.strokeColor = selected_annotation_type.color_code;
-        canvasObject.strokeWidth = 10; //TODO: Find better solution
+        canvasObject.strokeWidth = 5; //TODO: Find better solution
         canvasObject.name = '~' + new Date().getMilliseconds();
         canvasObject.fillColor =  new paper.Color(0, 0, 0, 0.000001);
 
@@ -113,7 +113,7 @@ class BoundingBoxes {
             canvasObject.bounds.getBottomRight(), canvasObject.bounds.getTopRight()];
 
         // sort bounding box coordinates by distance to mouse event
-        var sorted = bounding.sort((a, b) = > (a.getDistance(imagePoint) > b.getDistance(imagePoint)) ? 1
+        var sorted = bounding.sort((a, b) => (a.getDistance(imagePoint) > b.getDistance(imagePoint)) ? 1
             : ((b.getDistance(imagePoint) > a.getDistance(imagePoint)) ? -1 : 0));
 
         // save opposite box corner and offset between mouse and next corner
@@ -226,13 +226,16 @@ class BoundingBoxes {
     }
 
     removeAnnotation(annotationid) {
+        if (typeof annotationid === 'string') {
+            this.group.children[annotationid].remove();
+        }
         this.group.children['#'+annotationid].remove();
     }
 
     /**
      * Delete current selection.
      */
-    resetSelection(abortEdit) {
+    resetSelection() {
         $('.annotation_value').val(0);
 
         globals.editedAnnotationsId = undefined;
@@ -264,9 +267,29 @@ class BoundingBoxes {
 
         var hit =  this.group.hitTest(point, this.hitOptions);
         if (hit) {
+            if (hit.item.name.startsWith('~'))
+                return hit.item.name;
             return parseInt(hit.item.name.replace('#', ''));
         }
         return undefined;
+    }
+
+    updateName(tempName, annotationId){
+        this.group.getItem({name: tempName}).set({name: '#' + annotationId});
+    }
+
+    updateAnnotationType(id, annotation_type){
+        var item = this.group.getItem({name: '#' + id})
+        if (item === undefined){
+            item = this.group.getItem({name: id})
+        }
+
+        if (item !== undefined) {
+            item.set({strokeColor: annotation_type.color_code});
+
+
+            // TODO: Zeiche annotation mit neuem vector typ
+        }
     }
 
     clear() {
@@ -353,13 +376,31 @@ class BoundingBoxes {
     }
 
     handleEscape() {
-        this.resetSelection(true);
+        this.resetSelection();
     }
 
     handleMouseDown(event) {
     }
 
     handleMousemove() {
+
+    }
+
+    checkIfAnnotationTypeChangeIsValid(sourceId, targetId){
+        const validConversions = {
+            1: [1, 2, 3, 4, 5, 6],
+            2: [1, 2, 6],
+            3: [1, 2, 3, 5, 6],
+            4: [1, 4, 5],
+            5: [5],
+            6: [1, 2, 3, 4, 5, 6],
+        }
+
+        if (sourceId in validConversions){
+            return validConversions[sourceId].includes(targetId);
+        } else {
+            return false;
+        }
 
     }
 

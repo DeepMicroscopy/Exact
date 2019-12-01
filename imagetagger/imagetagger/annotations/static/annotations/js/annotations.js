@@ -114,13 +114,6 @@ globals = {
         });
     });
 
-    viewer.addHandler('canvas-key', function (e) {
-        if ($(e.originalEvent)[0].key == 0) {
-            e.originalEvent.preventDefault();
-        }
-    });
-
-
     /*
        User navigation interaction on the image finished
      */
@@ -152,40 +145,35 @@ globals = {
 
     viewer.addHandler('selection_toggle', function (event) {
 
-        if (event.enabled === false) {
-            tool.resetSelection(true);
+        if (event.enabled === false && globals.editedAnnotationsId !== undefined) {
+            finishAnnotation(globals.editedAnnotationsId);
         }
 
     });
 
+    function finishAnnotation(id) {
+
+        if (id !== undefined) {
+
+            var annotation = globals.allAnnotations.filter(function (d) {
+                return d.id === id;
+            })[0];
+
+            saveAnnotationAtServer(annotation);
+            tool.resetSelection();
+        }
+    }
+
     viewer.addHandler('selection_onPress', function (event) {
 
-        let selected_annotation_type = undefined;
+        // Convert pixel to viewport coordinates
+        var viewportPoint = viewer.viewport.pointFromPixel(event.position);
 
-        if ($('#annotation_type_id').children().length > 0) {
-            selected_annotation_type = $('#annotation_type_id').children(':selected').data();
-            if (selected_annotation_type === undefined) {
-                displayFeedback($('#feedback_annotation_type_missing'));
-                return;
-            } else {
-                selected_annotation_type = gAnnotationTypes[$('#annotation_type_id').children(':selected').val()]
-            }
+        // Convert from viewport coordinates to image coordinates.
+        var imagePoint = viewer.viewport.viewportToImageCoordinates(viewportPoint);
 
-        }
-
-        // no element
-        if (globals.editedAnnotationsId !== undefined
-            && !viewer.selectionInstance.isSelecting) {
-            globals.editedAnnotationsId = undefined;
-
-            tool.resetSelection(true);
-        } else if (viewer.selectionInstance.isSelecting) {
-
-            // Convert pixel to viewport coordinates
-            var viewportPoint = viewer.viewport.pointFromPixel(event.position);
-
-            // Convert from viewport coordinates to image coordinates.
-            var imagePoint = viewer.viewport.viewportToImageCoordinates(viewportPoint);
+        // check if the point is inside the image
+        if (tool.isPointInImage(imagePoint)) {
 
             var id = tool.hitTest(imagePoint);
 
@@ -196,13 +184,7 @@ globals = {
                 if (globals.editedAnnotationsId !== undefined &&
                     id !== globals.editedAnnotationsId) {
 
-                    var annotation = globals.allAnnotations.filter(function (d) {
-                        return d.id === globals.editedAnnotationsId;
-                    })[0];
-
-                    createAnnotation(annotation);
-
-                    tool.resetSelection(true);
+                    finishAnnotation(globals.editedAnnotationsId);
                 }
                 tool.handleMousePress(event);
 
@@ -211,25 +193,40 @@ globals = {
                 var annotation = globals.allAnnotations.filter(function (d) {
                     return d.id === id;
                 })[0];
-                editAnnotation(undefined, annotation);
+                enableAnnotationEditing(annotation);
 
 
-            } else if(globals.editedAnnotationsId === undefined &&
-                selected_annotation_type !== undefined) {
+            } else {
 
-                // create fixes size anno
-                var newAnno = tool.initNewAnnotation(event, selected_annotation_type);
-                globals.allAnnotations.push(newAnno)
+                let selected_annotation_type = undefined;
 
-            } else if (globals.editedAnnotationsId !== undefined &&
-                id === undefined) {
+                if ($('#annotation_type_id').children().length > 0) {
+                    selected_annotation_type = $('#annotation_type_id').children(':selected').data();
+                    if (selected_annotation_type === undefined) {
+                        displayFeedback($('#feedback_annotation_type_missing'));
+                        return;
+                    } else {
+                        selected_annotation_type = gAnnotationTypes[$('#annotation_type_id').children(':selected').val()]
+                    }
+                }
 
-                var annotation = globals.allAnnotations.filter(function (d) {
-                    return d.id === globals.editedAnnotationsId;
-                })[0];
+                if (globals.editedAnnotationsId === undefined) {
 
-                createAnnotation(annotation);
-                tool.resetSelection(true);
+                    // create new anno
+                    var newAnno = tool.initNewAnnotation(event, selected_annotation_type);
+                    globals.allAnnotations.push(newAnno);
+                    enableAnnotationEditing(newAnno);
+
+                } else if (globals.editedAnnotationsId !== undefined &&
+                    id === undefined) {
+
+                    finishAnnotation(globals.editedAnnotationsId);
+
+                    // create new anno
+                    var newAnno = tool.initNewAnnotation(event, selected_annotation_type);
+                    globals.allAnnotations.push(newAnno);
+                    enableAnnotationEditing(newAnno);
+                }
             }
         }
     });
@@ -239,7 +236,7 @@ globals = {
      */
     viewer.addHandler("selection_cancel", function (data) {
         //viewer.selectionInstance.cancel();
-        tool.resetSelection(false);
+        tool.resetSelection();
     });
 
     viewer.guides({
@@ -310,7 +307,7 @@ globals = {
      * @param successCallback a function to be executed on success
      * @param markForRestore
      */
-    function createAnnotation(annotation) {
+    function saveAnnotationAtServer(annotation) {
 
         var annotationTypeId = parseInt($('#annotation_type_id').val());
         if (annotationTypeId == -1 || isNaN(annotationTypeId || annotation === undefined)) {
@@ -318,14 +315,22 @@ globals = {
             return;
         }
 
+        if (annotationTypeId !== annotation.annotation_type.id) {
+            tool.updateAnnotationType(globals.editedAnnotationsId, gAnnotationTypes[annotationTypeId]);
+        }
+
         var action = 'create';
+        var editing = false;
         var data = {
             annotation_type_id: annotationTypeId,
             image_id: gImageId,
             vector: annotation.vector
         };
-        var editing = false;
-        if (globals.editedAnnotationsId !== undefined) {
+        if ((typeof globals.editedAnnotationsId === 'string') &&
+            globals.editedAnnotationsId.startsWith('~'))
+        {
+            data.tempid = globals.editedAnnotationsId
+        } else if (globals.editedAnnotationsId !== undefined) {
             // edit instead of create
             action = 'update';
             data.annotation_id = globals.editedAnnotationsId;
@@ -351,8 +356,13 @@ globals = {
                 }
 
                 // update current annotations
-                const index = globals.allAnnotations.findIndex((elem) => elem.id === data.annotations.id);
+                var index = globals.allAnnotations.findIndex((elem) => elem.id === data.annotations.id);
                 if (index === -1) {
+                    if (data.tempid !== false) {
+                        index = globals.allAnnotations.findIndex((elem) => elem.id === data.tempid);
+                        tool.updateName(data.tempid, data.annotations.id);
+                        globals.allAnnotations[index] = data.annotations;
+                    }
                     globals.allAnnotations.push(data.annotations)
                 } else {
                     globals.allAnnotations[index] = data.annotations;
@@ -426,45 +436,51 @@ globals = {
      * @param annotationId
      */
     function deleteAnnotation(event, annotationId) {
-        if (globals.editedAnnotationsId === annotationId) {
-            // stop editing
-            $('#not_in_image').prop('checked', false).change();
-        }
 
         if (event !== undefined) {
-            // triggered using an event handler
-            event.preventDefault();
-
             // TODO: Do not use a primitive js confirm
             if (!confirm('Do you really want to delete the annotation?')) {
                 return;
             }
         }
-        $('.js_feedback').stop().addClass('hidden');
-        var params = {
-            annotation_id: annotationId
-        };
-        $.ajax(API_ANNOTATIONS_BASE_URL + 'annotation/delete/?' + $.param(params), {
-            type: 'DELETE',
-            headers: gHeaders,
-            dataType: 'json',
-            success: function (data) {
-                tool.removeAnnotation(data.annotations.id);
-                globals.allAnnotations = globals.allAnnotations.filter(function (value, index, arr) {
-                    return value.id !== data.annotations.id;
-                });
-                gAnnotationCache[gImageId] = globals.allAnnotations;
-                displayFeedback($('#feedback_annotation_deleted'));
-                globals.editedAnnotationsId = undefined;
 
-                tool.resetSelection(true);
-                loadStatistics(gImageId);
-            },
-            error: function () {
-                $('.annotate_button').prop('disabled', false);
-                displayFeedback($('#feedback_connection_error'));
-            }
-        });
+        tool.removeAnnotation(annotationId);
+        //  if annotation was not send to server stop now
+        if (typeof annotationId === 'string') {
+            globals.allAnnotations = globals.allAnnotations.filter(function (value, index, arr) {
+                return value.id !== data.annotations.id;
+            });
+            gAnnotationCache[gImageId] = globals.allAnnotations;
+            displayFeedback($('#feedback_annotation_deleted'));
+            globals.editedAnnotationsId = undefined;
+            tool.resetSelection();
+        } else {
+            $('.js_feedback').stop().addClass('hidden');
+            var params = {
+                annotation_id: annotationId
+            };
+            $.ajax(API_ANNOTATIONS_BASE_URL + 'annotation/delete/?' + $.param(params), {
+                type: 'DELETE',
+                headers: gHeaders,
+                dataType: 'json',
+                success: function (data) {
+
+                    globals.allAnnotations = globals.allAnnotations.filter(function (value, index, arr) {
+                        return value.id !== data.annotations.id;
+                    });
+                    gAnnotationCache[gImageId] = globals.allAnnotations;
+                    displayFeedback($('#feedback_annotation_deleted'));
+                    globals.editedAnnotationsId = undefined;
+
+                    tool.resetSelection();
+                    loadStatistics(gImageId);
+                },
+                error: function () {
+                    $('.annotate_button').prop('disabled', false);
+                    displayFeedback($('#feedback_connection_error'));
+                }
+            });
+        }
     }
 
     /**
@@ -570,7 +586,7 @@ globals = {
      * @param annotationElem the element which stores the edit button of the annotation
      * @param annotationId
      */
-    function editAnnotation(event, annotation) {
+    function enableAnnotationEditing(annotation) {
         //annotationElem = $(annotationElem);
         let annotationTypeId = annotation.annotation_type.id;
         $('#annotation_type_id').val(annotationTypeId);
@@ -601,59 +617,6 @@ globals = {
         });
 
         return imageList;
-    }
-
-    /**
-     * Validate a vector.
-     *
-     * @param vector
-     * @param vector_type
-     * @param node_count
-     */
-    function validate_vector(vector, vector_type, node_count) {
-        if (vector === null) {
-            // not in image
-            return true;
-        }
-        let len = Object.keys(vector).length;
-        switch (vector_type) {
-            case 1: // Ball (Boundingbox)
-                return vector.x2 - vector.x1 >= 1 && vector.y2 - vector.y1 >= 1 && len === 4;
-            case 2: // Point
-                return vector.hasOwnProperty('x1') && vector.hasOwnProperty('y1') && len === 2 && !(vector.x1 === 0 && vector.y1 === 0);
-            case 3: // Line
-                return vector.x1 !== vector.x2 || vector.y1 !== vector.y2 && len === 4;
-            case 4: // Multiline
-                // a multiline should have at least two points
-                if (len < 4) {
-                    return false;
-                }
-                for (let i = 1; i < len / 2 + 1; i++) {
-                    for (let j = 1; j < len / 2 + 1; j++) {
-                        if (i !== j && vector['x' + i] === vector['x' + j] && vector['y' + i] === vector['y' + j]) {
-                            return false;
-                        }
-                    }
-                }
-                return true;
-            case 5: // Polygon
-                if (len < 6) {
-                    // A polygon should have at least three points
-                    return false;
-                }
-                if (node_count !== 0 && node_count !== (len / 2)) {
-                    return false;
-                }
-                for (let i = 1; i <= len / 2; i++) {
-                    for (let j = 1; j <= len / 2; j++) {
-                        if (i !== j && vector["x" + i] === vector["x" + j] && vector["y" + i] === vector["y" + j]) {
-                            return false;
-                        }
-                    }
-                }
-                return true;
-        }
-        return false;
     }
 
     /**
@@ -1017,13 +980,36 @@ globals = {
 
     /**
      * Handle the selection change of the annotation type.
+     * Check if annotation type change is valid
      */
 
     function handleAnnotationTypeChange() {
-        AnnotationType = parseInt($('#annotation_type_id').val());
 
-        if (viewer.selectionInstance.isSelecting) {
-            // TODO: Save annotation
+        if (viewer.selectionInstance.isSelecting
+            && globals.editedAnnotationsId !== undefined) {
+
+            var newType = gAnnotationTypes[$('#annotation_type_id').children(':selected').val()]
+
+            var annotation = globals.allAnnotations.filter(function (d) {
+                return d.id === globals.editedAnnotationsId;
+            })[0];
+
+            // check if annotation type needs to be changed
+            if (annotation.annotation_type.id !==  newType.id) {
+                // check if annotation type can be converted and save
+                if(tool.checkIfAnnotationTypeChangeIsValid(annotation.annotation_type.vector_type,
+                    newType.vector_type)) {
+                    saveAnnotationAtServer(annotation)
+                } else { // reset annotation type on gui
+                    displayFeedback($('#feedback_annotation_type_can_not_be_set'));
+
+                    var annotationTypeId = '#annotation_type_' + annotation.annotation_type.id;
+                    var option = $(annotationTypeId);
+                    if (option.length) {
+                        $('#annotation_type_id').val(option.val());
+                    }
+                }
+            }
         }
     }
 
@@ -1148,7 +1134,7 @@ globals = {
             handleMouseClick(e);
         });
         $('#cancel_edit_button').click(function () {
-            tool.resetSelection(true);
+            tool.resetSelection();
         });
         $('#delete_annotation_button').click(function () {
             deleteAnnotation(undefined, globals.editedAnnotationsId);
@@ -1175,10 +1161,10 @@ globals = {
             })
         });
         $('#save_button').click(function () {
-            //viewer.selectionInstance.confirm();
+            finishAnnotation(globals.editedAnnotationsId);
         });
         $('#reset_button').click(function () {
-            tool.resetSelection(true);
+            tool.resetSelection();
         });
         $('#last_button').click(function (event) {
             event.preventDefault();
@@ -1269,27 +1255,6 @@ globals = {
         $('.js_feedback').mouseover(function () {
             $(this).addClass('hidden');
         });
-        $('.annotate_image_link').click(function (event) {
-            return;
-            event.preventDefault();
-            loadAnnotateView($(this).data('imageid'));
-        });
-
-        // annotation buttons
-        $('.annotation_edit_button').each(function (key, elem) {
-            return;
-            elem = $(elem);
-            elem.click(function (event) {
-                editAnnotation(event, this, parseInt(elem.data('annotationid')));
-            });
-        });
-        $('.annotation_delete_button').each(function (key, elem) {
-            return;
-            elem = $(elem);
-            elem.click(function (event) {
-                deleteAnnotation(event, parseInt(elem.data('annotationid')));
-            });
-        });
 
         $(document).on('mousemove touchmove', handleSelection);
         $(window).on('resize', handleResize);
@@ -1306,7 +1271,6 @@ globals = {
         $(document).on('mouseup.annotation_edit', handleMouseUp);
 
         $(document).keydown(function (event) {
-            console.log("Key " + event.keyCode);
             switch (event.keyCode) {
                 case 16: // Shift
                     gShiftDown = true;
@@ -1405,7 +1369,6 @@ globals = {
                     $('#save_button').click();
                     break;
                 case 16: // Shift
-                    gShiftDown = false;
                     break;
                 case 70: //f
                     $('#next_button').click();
@@ -1432,10 +1395,9 @@ globals = {
                     handleDelete(event);
                     break;
                 case 66: //b
-                    $('#blurred').click();
                     break;
                 case 67: //c
-                    $('#concealed').click();
+                    viewer.selectionInstance.toggleState();
                     break;
             }
         });
