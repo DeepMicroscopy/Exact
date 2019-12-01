@@ -56,7 +56,6 @@ def delete_annotation(request, annotation_id):
     annotation = get_object_or_404(Annotation, id=annotation_id)
     if annotation.image.image_set.has_perm('delete_annotation', request.user):
         annotation.delete()
-        print('deleted annotation ', annotation_id)
     return redirect(reverse('annotations:annotate', args=(annotation.image.id,)))
 
 
@@ -550,8 +549,9 @@ def create_annotation(request) -> Response:
         image_id = int(request.data['image_id'])
         annotation_type_id = int(request.data['annotation_type_id'])
         vector = request.data['vector']
-        blurred = request.data['blurred']
-        concealed = request.data['concealed']
+        blurred = request.data.get('blurred', False)
+        concealed = request.data.get('concealed', False)
+        tempid = request.data.get('tempid', False)
     except (KeyError, TypeError, ValueError):
         raise ParseError
 
@@ -611,6 +611,7 @@ def create_annotation(request) -> Response:
         many=False)
     return Response({
         'annotations': serializer.data,
+        'tempid': tempid
     }, status=HTTP_201_CREATED)
 
 
@@ -809,17 +810,17 @@ def update_annotation(request) -> Response:
             'detail': 'permission for updating annotations in this image set missing.',
         }, status=HTTP_403_FORBIDDEN)
 
-    if not annotation_type.validate_vector(vector):
-        serializer = AnnotationSerializer(
-            annotation,
-            context={
-                'request': request,
-            },
-            many=False)
-        return Response({
-            'annotations': serializer.data,
-            'detail': 'the vector is invalid.',
-        }, status=HTTP_400_BAD_REQUEST)
+    #if not annotation_type.validate_vector(vector):
+    #    serializer = AnnotationSerializer(
+    #        annotation,
+    #        context={
+    #            'request': request,
+    #        },
+    #        many=False)
+    #    return Response({
+    #        'annotations': serializer.data,
+    #        'detail': 'the vector is invalid.',
+    #    }, status=HTTP_400_BAD_REQUEST)
 
 
     with transaction.atomic():
@@ -840,6 +841,7 @@ def update_annotation(request) -> Response:
             'request': request,
         },
         many=False)
+
     return Response({
         'annotations': serializer.data,
     }, status=HTTP_200_OK)

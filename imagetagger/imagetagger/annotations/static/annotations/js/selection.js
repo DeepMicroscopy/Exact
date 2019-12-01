@@ -79,14 +79,14 @@
         this.borders = this.borders || [];
         var handle;
 
-        if (this.keyboardShortcut) {
-            $.addEvent(
-                this.viewer.container,
-                'keypress',
-                $.delegate(this, onKeyPress),
-                false
-            );
-        }
+        //if (this.keyboardShortcut) {
+        //    $.addEvent(
+        //        this.viewer.container,
+        //        'keypress',
+        //        $.delegate(this, onKeyPress),
+        //        false
+        //    );
+        //}
 
 
         this.selectionTracker = new $.MouseTracker({
@@ -110,7 +110,7 @@
                 element:    this.toggleButton ? $.getElement( this.toggleButton ) : null,
                 clickTimeThreshold: this.viewer.clickTimeThreshold,
                 clickDistThreshold: this.viewer.clickDistThreshold,
-                tooltip:    $.getString('Tooltips.SelectionToggle') || 'Toggle selection',
+                tooltip:    $.getString('Tooltips.SelectionToggle') || 'Toggle selection (c)',
                 srcRest:    prefix + this.navImages.selection.REST,
                 srcGroup:   prefix + this.navImages.selection.GROUP,
                 srcHover:   prefix + this.navImages.selection.HOVER,
@@ -154,6 +154,7 @@
     });
 
     function onKeyPress(e) {
+        console.log(e);
         var key = e.keyCode ? e.keyCode : e.charCode;
         if (String.fromCharCode(key) === this.keyboardShortcut) {
             this.toggleState();
