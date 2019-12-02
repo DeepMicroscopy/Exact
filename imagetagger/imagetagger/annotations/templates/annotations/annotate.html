@@ -31,7 +31,8 @@
 
 {% block additional_annotation_js %}
     <script type="text/javascript" src="https://openseadragon.github.io/openseadragon/openseadragon.min.js"></script>
-    <script type="text/javascript" src="https://rawgit.com/picturae/OpenSeadragonGuides/master/dist/openseadragon-guides.js"></script>
+    <script type="text/javascript"
+            src="https://rawgit.com/picturae/OpenSeadragonGuides/master/dist/openseadragon-guides.js"></script>
     <script type="text/javascript" src="{% static 'annotations/js/boundingboxes.js' %}"></script>
 
 
@@ -108,6 +109,7 @@
                                 {% for set_image in set_images %}
                                     <a id="annotate_image_link_{{ set_image.id }}"
                                        href="
+
                                                {% url 'annotations:annotate' set_image.id %}{% if filtered is not None %}?selected_annotation_type={{ filtered }}{% endif %}"
                                        class="annotate_image_link {% if set_image.id == selected_image.id %}active{% endif %}"
                                        data-imageid="{{ set_image.id }}">
@@ -125,6 +127,7 @@
                         </div>
                         <div class="panel-body">
                             <form id="annotation_form" action="
+
                                     {% url 'annotations:annotate' selected_image.id %}{% if filtered is not None %}?selected_annotation_type={{ filtered }}{% endif %}"
                                   enctype="multipart/form-data" method="post">
                                 {% csrf_token %}
@@ -138,14 +141,14 @@
                                 </ul>
 
                                 <div class="tab-content" id="statistics_tabs_content">
-                                    <div class="tab-pane fade in active" id="home" >
+                                    <div class="tab-pane fade in active" id="home">
                                         <table style="width: 100%">
                                             <tr>
                                                 <th>Label</th>
                                                 <th>Key</th>
                                                 <th>
                                                     <label data-toggle="tooltip" data-placement="right"
-                                                              title="( Number of annotations / Number of validated annotations )">
+                                                           title="( Number of annotations / Number of validated annotations )">
                                                         Count
 
                                                     </label>
@@ -171,6 +174,13 @@
                                         <!--<option value="-1">{% trans 'Annotation Type' %}</option> -->
                                     </select>
                                 </p>
+
+                                <p>
+                                    <label for="StrokeWidthSlider">Stroke Width</label>
+                                    <input id="StrokeWidthSlider" type="range"  class="custom-range" min="1"
+                                           max="20" step="1" value="5"/>
+                                </p>
+
 
                                 <p>
                                     <input type='checkbox' id='draw_annotations' name="draw_annotations" checked>

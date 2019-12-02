@@ -18,7 +18,7 @@ class BoundingBoxes {
         this.imageid = imageid;
         this.image_width = imageSize["width"];
         this.image_hight = imageSize["height"];
-        this.new_tag = "newElement"
+        this.strokeWidth = 3;
     }
 
     getImageId() {
@@ -108,7 +108,7 @@ class BoundingBoxes {
 
         canvasObject.selected = true;
         canvasObject.strokeColor = selected_annotation_type.color_code;
-        canvasObject.strokeWidth = 1; //TODO: Find better solution
+        canvasObject.strokeWidth = this.strokeWidth;
         canvasObject.name = '~' + new Date().getMilliseconds();
         canvasObject.fillColor = new paper.Color(0, 0, 0, 0.000001);
 
@@ -129,7 +129,7 @@ class BoundingBoxes {
 
         // set object as selected
         this.selection = {
-            type: "stroke",
+            type: "fill",
             item: canvasObject
         };
 
@@ -153,7 +153,7 @@ class BoundingBoxes {
                     annotation.vector.x2 - annotation.vector.x1, annotation.vector.y2 - annotation.vector.y1);
 
                 rect.strokeColor = annotation.annotation_type.color_code;
-                rect.strokeWidth = Math.ceil((annotation.vector.x2 - annotation.vector.x1) / 20);
+                rect.strokeWidth = this.strokeWidth;
                 rect.name = '#' + annotation.id;
                 rect.fillColor = new paper.Color(0, 0, 0, 0.000001);
                 rect.data.type = "rect";
@@ -167,7 +167,7 @@ class BoundingBoxes {
                 var ellipse = new paper.Shape.Ellipse(rectangle);
 
                 ellipse.strokeColor = annotation.annotation_type.color_code;
-                ellipse.strokeWidth = Math.ceil((annotation.vector.x2 - annotation.vector.x1) / 20);
+                ellipse.strokeWidth = this.strokeWidth;
                 ellipse.name = '#' + annotation.id;
                 ellipse.fillColor = new paper.Color(0, 0, 0, 0.000001);
                 ellipse.data.type = "circle";
@@ -180,7 +180,7 @@ class BoundingBoxes {
                     new paper.Point(annotation.vector.x2, annotation.vector.y2));
 
                 line.strokeColor = annotation.annotation_type.color_code;
-                line.strokeWidth = 3; // TODO: Find solution
+                line.strokeWidth = this.strokeWidth;
                 line.name = '#' + annotation.id;
                 line.data.type = "line";
 
@@ -191,7 +191,7 @@ class BoundingBoxes {
             case 5:
                 var poly = new paper.Path({
                     strokeColor: annotation.annotation_type.color_code,
-                    strokeWidth: 5,
+                    strokeWidth: this.strokeWidth,
                     name: '#' + annotation.id,
                     closed: true,
                     fillColor: new paper.Color(0, 0, 0, 0.000001)
@@ -246,11 +246,9 @@ class BoundingBoxes {
         return item;
     }
 
-    simplifyPoly(annotationid) {
-        var item = this.getItemFromID(annotationid);
-        if (item !== undefined && item.data.type === "poly") {
-            poly.simplify();
-        }
+    updateStrokeWidth(width){
+        this.strokeWidth = width;
+        this.group.children.forEach(x => { x.strokeWidth = this.strokeWidth });
     }
 
     /**
@@ -264,6 +262,7 @@ class BoundingBoxes {
         globals.editActiveContainer.addClass('hidden');
         $('#coordinate_table').hide();
         $('#annotation_buttons').hide();
+        $('.annotate_button').prop('disabled', true);
 
         if (this.selection !== undefined) {
             this.selection.item.selected = false;
@@ -300,7 +299,7 @@ class BoundingBoxes {
     }
 
     updateAnnotationType(id, annotation_type) {
-        var item = this.getItemFromID(id)
+        var item = this.getItemFromID(id);
 
         if (item !== null) {
 
@@ -357,7 +356,7 @@ class BoundingBoxes {
 
         // set object as selected
         this.selection = {
-            type: "stroke",
+            type: "fill",
             item: canvasObject
         };
 
@@ -436,8 +435,6 @@ class BoundingBoxes {
                     if (hit !== null && hit.type == 'segment') {
                         hit.segment.remove();
                     }
-                    ;
-
                 }
             }
         }

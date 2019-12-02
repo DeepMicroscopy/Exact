@@ -287,10 +287,13 @@ globals = {
         }
 
         if (tool) {
+            tool.clear();
             delete tool;
         }
 
         tool = new BoundingBoxes(viewer, gImageId, gImageSizes[gImageId]);
+        tool.strokeWidth = document.getElementById("StrokeWidthSlider").value;
+
 
         if (globals.allAnnotations) {
             tool.drawExistingAnnotations(globals.allAnnotations);
@@ -338,7 +341,6 @@ globals = {
         }
 
         $('.js_feedback').stop().addClass('hidden');
-        $('.annotate_button').prop('disabled', true);
         $.ajax(API_ANNOTATIONS_BASE_URL + 'annotation/' + action + '/', {
             type: 'POST',
             headers: gHeaders,
@@ -373,7 +375,6 @@ globals = {
                 loadStatistics(gImageId);
             },
             error: function () {
-                $('.annotate_button').prop('disabled', false);
                 displayFeedback($('#feedback_connection_error'));
             }
         });
@@ -476,7 +477,6 @@ globals = {
                     loadStatistics(gImageId);
                 },
                 error: function () {
-                    $('.annotate_button').prop('disabled', false);
                     displayFeedback($('#feedback_connection_error'));
                 }
             });
@@ -602,6 +602,7 @@ globals = {
 
         $('#annotation_type_id').val(annotationTypeId);
         $('#annotation_buttons').show();
+        $('.annotate_button').prop('disabled', false);
     }
 
     /**
@@ -769,7 +770,6 @@ globals = {
             return;
         }
 
-
         var noAnnotations = $('#no_annotations');
         var notInImage = $('#not_in_image');
         var existingAnnotations = $('#existing_annotations');
@@ -811,6 +811,7 @@ globals = {
         let handleNewAnnotations = function () {
             // image is in cache.
             globals.allAnnotations = gAnnotationCache[imageId];
+            setTool();
             loading.addClass('hidden');
             tool.drawExistingAnnotations(globals.allAnnotations);
         };
@@ -862,7 +863,6 @@ globals = {
                 displayImageList(data.image_set.images);
             },
             error: function () {
-                $('.annotate_button').prop('disabled', false);
                 displayFeedback($('#feedback_connection_error'));
             }
         });
@@ -1059,13 +1059,16 @@ globals = {
         var footer_node  = document.getElementById('footer_id');
 
         var image_rect = image_node.getBoundingClientRect();
-        var footer_rect = footer_node.getBoundingClientRect();
+        if (footer_node !== null) {
+            var footer_rect = footer_node.getBoundingClientRect();
 
-        var height = window.innerHeight - (3 * footer_rect.height); //footer_rect.y - image_rect.y;
-        var width = footer_rect.right - 45 - image_rect.left;
+            var height = window.innerHeight - (3 * footer_rect.height); //footer_rect.y - image_rect.y;
+            var width = footer_rect.right - 45 - image_rect.left;
 
-        image_node.style.height = height+ 'px';
-        image_node.style.width = width+ 'px';
+            image_node.style.height = height+ 'px';
+            image_node.style.width = width+ 'px';
+
+        }
     }
 
 
@@ -1255,6 +1258,9 @@ globals = {
         $('.js_feedback').mouseover(function () {
             $(this).addClass('hidden');
         });
+        document.getElementById("StrokeWidthSlider").oninput = function(event) {
+            tool.updateStrokeWidth(event.srcElement.valueAsNumber);
+        };
 
         $(document).on('mousemove touchmove', handleSelection);
         $(window).on('resize', handleResize);
