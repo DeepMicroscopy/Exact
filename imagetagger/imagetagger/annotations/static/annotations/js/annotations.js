@@ -448,7 +448,7 @@ globals = {
         //  if annotation was not send to server stop now
         if (typeof annotationId === 'string') {
             globals.allAnnotations = globals.allAnnotations.filter(function (value, index, arr) {
-                return value.id !== data.annotations.id;
+                return value.id !== annotationId;
             });
             gAnnotationCache[gImageId] = globals.allAnnotations;
             displayFeedback($('#feedback_annotation_deleted'));
@@ -1276,6 +1276,16 @@ globals = {
                     gShiftDown = true;
                     break;
                 case 27: // Escape
+                    // delete temp annotation
+                    if (typeof globals.editedAnnotationsId === 'string') {
+                        tool.removeAnnotation(globals.editedAnnotationsId);
+
+                        globals.allAnnotations = globals.allAnnotations.filter(function (value, index, arr) {
+                            return value.id !== globals.editedAnnotationsId;
+                        });
+                        gAnnotationCache[gImageId] = globals.allAnnotations;
+                    }
+
                     tool.handleEscape();
                     break;
                 case 73: //i
