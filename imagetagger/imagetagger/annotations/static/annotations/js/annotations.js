@@ -121,18 +121,16 @@ globals = {
         updatePlugins(gImageId);
     });
 
+
+    viewer.addHandler("selection_onScroll", function (event) {
+        tool.resizeItem(event);
+    });
+
     /*
        confirm selection
      */
     viewer.addHandler("selection_onDragEnd", function (event) {
 
-        if (globals.editedAnnotationsId !== undefined) {
-            var annotation = globals.allAnnotations.filter(function (d) {
-                return d.id === globals.editedAnnotationsId;
-            })[0];
-
-            annotation.vector = tool.getHitAnnotationVector();
-        }
     });
 
     viewer.addHandler('selection_onDrag', function (event) {
@@ -319,7 +317,7 @@ globals = {
         }
 
         if (annotationTypeId !== annotation.annotation_type.id) {
-            tool.updateAnnotationType(globals.editedAnnotationsId, gAnnotationTypes[annotationTypeId]);
+            tool.updateAnnotationType(annotation.id, gAnnotationTypes[annotationTypeId]);
         }
 
         var action = 'create';
@@ -327,16 +325,16 @@ globals = {
         var data = {
             annotation_type_id: annotationTypeId,
             image_id: gImageId,
-            vector: annotation.vector
+            vector: tool.getAnnotationVector(annotation.id)
         };
-        if ((typeof globals.editedAnnotationsId === 'string') &&
-            globals.editedAnnotationsId.startsWith('~'))
+        if ((typeof annotation.id === 'string') &&
+            annotation.id.startsWith('~'))
         {
-            data.tempid = globals.editedAnnotationsId
-        } else if (globals.editedAnnotationsId !== undefined) {
+            data.tempid = annotation.id
+        } else if (annotation.id !== undefined) {
             // edit instead of create
             action = 'update';
-            data.annotation_id = globals.editedAnnotationsId;
+            data.annotation_id = annotation.id;
             editing = true;
         }
 

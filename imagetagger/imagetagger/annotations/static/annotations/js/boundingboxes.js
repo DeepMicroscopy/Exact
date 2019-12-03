@@ -25,14 +25,13 @@ class BoundingBoxes {
         return this.imageid;
     }
 
-    getHitAnnotationVector() {
+    getAnnotationVector(id) {
 
-        if (this.selection === undefined)
-            return undefined;
+        var item = this.getItemFromID(id);
+        if (item === undefined)
+            return null;
 
         var vector = {};
-
-        var item = this.selection.item;
 
         switch (item.data.type) {
             case "rect":
@@ -137,7 +136,7 @@ class BoundingBoxes {
         return {
             annotation_type: selected_annotation_type,
             id: canvasObject.name,
-            vector: this.getHitAnnotationVector()
+            vector: this.getAnnotationVector(canvasObject.name)
         }
     }
 
@@ -249,6 +248,12 @@ class BoundingBoxes {
     updateStrokeWidth(width){
         this.strokeWidth = width;
         this.group.children.forEach(x => { x.strokeWidth = this.strokeWidth });
+    }
+
+    resizeItem(event) {
+        if (this.selection) {
+            this.selection.item.scale(1 + (event.scroll / 10));
+        }
     }
 
     /**
