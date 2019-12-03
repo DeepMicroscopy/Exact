@@ -61,7 +61,7 @@ class BoundingBoxes {
         var imagePoint = new paper.Point(this.viewer.viewport.viewportToImageCoordinates(viewportPoint));
 
         var canvasObject = undefined;
-
+        var selection_hit_type = 'fill';
         switch (selected_annotation_type.vector_type) {
             case 2:  // POINT or Elipse
                 var rectangle = new paper.Rectangle(imagePoint,
@@ -85,6 +85,7 @@ class BoundingBoxes {
                 });
                 canvasObject.add(imagePoint);
                 canvasObject.data.type = "poly";
+                selection_hit_type = 'new';
                 break;
 
             case 1:  // Rect
@@ -128,7 +129,7 @@ class BoundingBoxes {
 
         // set object as selected
         this.selection = {
-            type: "fill",
+            type: selection_hit_type,
             item: canvasObject
         };
 
@@ -383,64 +384,85 @@ class BoundingBoxes {
 
             if (!event.shift) {
 
-                if (this.selection.type == 'fill') {
-
-                    var tempRect = this.selection.item.bounds.clone();
-                    tempRect.center = imagePoint;
-
-                    if (this.isPointInImage(tempRect.getTopLeft()) && this.isPointInImage(tempRect.getBottomRight()))
-                        this.selection.item.position = imagePoint;
-
-                } else if (this.selection.item.data.type == "poly") {
-
-                    if (this.selection.type == 'segment') {
-                        this.selection.segment.point = this.fixPointToImage(imagePoint);
-                    } else {
-                        this.selection.item.add(imagePoint);
-                    }
-
-
-                } else if (this.selection.item.data.type == "line") {
-
-                    if (this.selection.item.segments.length == 1) {
-                        this.selection.item.add(imagePoint);
-
-                    } else {
-                        // check if mouse is near to first, second or center point and move that one
-                        if (this.selection.item.segments[0].point.getDistance(imagePoint)
-                            < this.selection.item.position.getDistance(imagePoint)) {
-                            this.selection.item.segments[0].point = imagePoint;
-
-                        } else if (this.selection.item.segments[1].point.getDistance(imagePoint)
-                            < this.selection.item.position.getDistance(imagePoint)) {
-                            this.selection.item.segments[1].point = imagePoint;
-                        } else {
-                            this.selection.item.position = imagePoint;
+                switch (this.selection.item.data.type) {
+                    case 'poly':
+                        if (this.selection.type == 'new') {
+                            this.selection.item.add(imagePoint);
                         }
-                    }
-                } else {
-                    var offset = imagePoint.add(this.selection.item.data.offset_point);
-                    var min_x = Math.min(this.selection.item.data.from.x, offset.x);
-                    var min_y = Math.min(this.selection.item.data.from.y, offset.y);
-                    var max_x = Math.max(this.selection.item.data.from.x, offset.x);
-                    var max_y = Math.max(this.selection.item.data.from.y, offset.y);
+                        //else if (this.selection.type == 'stroke' &&
+                        //    this.selection.item.data.type == 'poly' &&
+                        //    this.selection.item.segments.length > 3) {
+                        //    var location = this.selection.location;
+                        //    if (this.selection.location !== undefined) {
+                        //        this.selection.item.insert(location.index + 1, imagePoint);
+                        //    }
+                        //}
+                        else if (this.selection.type == 'fill') {
 
-                    if (max_x - min_x < 10) max_x = min_x + 10;
-                    if (max_y - min_y < 10) max_y = min_y + 10;
+                            var tempRect = this.selection.item.bounds.clone();
+                            tempRect.center = imagePoint;
 
-                    // fix annotation to image
-                    var topLeft = this.fixPointToImage(new paper.Point(min_x, min_y));
-                    var bottomRight = this.fixPointToImage(new paper.Point(max_x, max_y));
+                            if (this.isPointInImage(tempRect.getTopLeft()) && this.isPointInImage(tempRect.getBottomRight()))
+                                this.selection.item.position = imagePoint;
+                        }
+                        if (this.selection.type == 'segment') {
+                            this.selection.segment.point = this.fixPointToImage(imagePoint);
+                        }
+                        break;
 
-                    this.selection.item.bounds = new paper.Rectangle(topLeft, bottomRight);
+                    case 'line':
+
+                        if (this.selection.item.segments.length == 1) {
+                            this.selection.item.add(imagePoint);
+
+                        } else {
+                            // check if mouse is near to first, second or center point and move that one
+                            if (this.selection.item.segments[0].point.getDistance(imagePoint)
+                                < this.selection.item.position.getDistance(imagePoint)) {
+                                this.selection.item.segments[0].point = imagePoint;
+
+                            } else if (this.selection.item.segments[1].point.getDistance(imagePoint)
+                                < this.selection.item.position.getDistance(imagePoint)) {
+                                this.selection.item.segments[1].point = imagePoint;
+                            } else {
+                                this.selection.item.position = imagePoint;
+                            }
+                        }
+                        break;
+
+                    default:
+
+                        if (this.selection.type == 'fill') {
+
+                            var tempRect = this.selection.item.bounds.clone();
+                            tempRect.center = imagePoint;
+
+                            if (this.isPointInImage(tempRect.getTopLeft()) && this.isPointInImage(tempRect.getBottomRight()))
+                                this.selection.item.position = imagePoint;
+
+                        } else {
+
+                            var offset = imagePoint.add(this.selection.item.data.offset_point);
+                            var min_x = Math.min(this.selection.item.data.from.x, offset.x);
+                            var min_y = Math.min(this.selection.item.data.from.y, offset.y);
+                            var max_x = Math.max(this.selection.item.data.from.x, offset.x);
+                            var max_y = Math.max(this.selection.item.data.from.y, offset.y);
+
+                            if (max_x - min_x < 10) max_x = min_x + 10;
+                            if (max_y - min_y < 10) max_y = min_y + 10;
+
+                            // fix annotation to image
+                            var topLeft = this.fixPointToImage(new paper.Point(min_x, min_y));
+                            var bottomRight = this.fixPointToImage(new paper.Point(max_x, max_y));
+
+                            this.selection.item.bounds = new paper.Rectangle(topLeft, bottomRight);
+                        }
+
+                        break;
                 }
-            } else { // erase mode
-                if (this.selection.item.data.type == "poly") {
-                    var hit = this.selection.item.hitTest(imagePoint, this.hitOptions);
-                    if (hit !== null && hit.type == 'segment') {
-                        hit.segment.remove();
-                    }
-                }
+            } else {
+                // TODO: erase on the fly
+
             }
         }
 
@@ -473,13 +495,22 @@ class BoundingBoxes {
             hitResult.item.data.offset_point = new paper.Point(sorted[0].x - point.x, sorted[0].y - point.y);
 
 
-            // if poly add new handling point
-            if (this.selection.type == 'stroke' &&
-                this.selection.item.data.type == 'poly' &&
-                this.selection.item.segments.length > 3) {
-                var location = this.selection.location;
-                if (this.selection.location !== undefined) {
-                    this.selection.item.insert(location.index + 1, point);
+            if (!event.originalEvent.shiftKey) {
+                // if poly add new handling point
+                if (this.selection.type == 'stroke' &&
+                    this.selection.item.data.type == 'poly' &&
+                    this.selection.item.segments.length > 3) {
+                    var location = this.selection.location;
+                    if (this.selection.location !== undefined) {
+                        this.selection.item.insert(location.index + 1, point);
+                    }
+                }
+            } else {
+                // or remove point
+                if (this.selection.item.data.type == "poly") {
+                    if (hitResult.type == 'segment' && this.selection.item.segments.length > 2) {
+                        hitResult.segment.remove();
+                    }
                 }
             }
 
