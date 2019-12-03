@@ -96,6 +96,7 @@
             dragHandler:        $.delegate( this, onDrag ),
             dragEndHandler:     $.delegate( this, onDragEnd ),
             pressHandler:       $.delegate( this, onPress ),
+            scrollHandler:      $.delegate( this, onScroll ),
             startDisabled:      !this.isSelecting,
         });
 
@@ -161,11 +162,9 @@
         }
     }
 
-
     function onDrag(e) {
         this.viewer.raiseEvent('selection_onDrag', e);
     }
-
 
     function onDragEnd(e) {
         this.viewer.raiseEvent('selection_onDragEnd', e);
@@ -173,6 +172,10 @@
 
     function onPress(e) {
         this.viewer.raiseEvent('selection_onPress', e);
+    }
+
+    function onScroll(e) {
+        this.viewer.raiseEvent('selection_onScroll', e);
     }
 
 })(OpenSeadragon);
