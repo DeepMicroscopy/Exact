@@ -51,6 +51,7 @@ from pathlib import Path
 import re
 from multiprocessing.pool import ThreadPool
 import subprocess
+import openslide
 from openslide import OpenSlide
 
 # TODO: Add to cache
@@ -320,6 +321,16 @@ def upload_image(request, imageset_id):
                         try:
                             osr = OpenSlide(image.path())
                             image.width, image.height = osr.level_dimensions[0]
+                            try:
+                                mpp_x = osr.properties[openslide.PROPERTY_NAME_MPP_X]
+                                mpp_y = osr.properties[openslide.PROPERTY_NAME_MPP_Y]
+                                image.mpp = (float(mpp_x) + float(mpp_y)) / 2
+                            except (KeyError, ValueError):
+                                image.mpp = 0
+                            try:
+                                image.objectivePower = osr.properties[openslide.PROPERTY_NAME_OBJECTIVE_POWER]
+                            except (KeyError, ValueError):
+                                image.objectivePower = 1
                             image.save()
                         except:
                             error['unsupported'] = True
@@ -341,6 +352,16 @@ def upload_image(request, imageset_id):
                         try:
                             osr = OpenSlide(image.path())
                             image.width, image.height = osr.level_dimensions[0]
+                            try:
+                                mpp_x = osr.properties[openslide.PROPERTY_NAME_MPP_X]
+                                mpp_y = osr.properties[openslide.PROPERTY_NAME_MPP_Y]
+                                image.mpp = (float(mpp_x) + float(mpp_y)) / 2
+                            except (KeyError, ValueError):
+                                image.mpp = 0
+                            try:
+                                image.objectivePower = osr.properties[openslide.PROPERTY_NAME_OBJECTIVE_POWER]
+                            except (KeyError, ValueError):
+                                image.objectivePower = 1
                             image.save()
                         except:
                             error['unsupported'] = True

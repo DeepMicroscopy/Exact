@@ -3,7 +3,6 @@ globals = {
     editActiveContainer: {},
     drawAnnotations: true,
     allAnnotations: undefined,
-    mousePosition: undefined,
     isSelecting: false
 };
 
@@ -27,9 +26,10 @@ globals = {
     var gImageSetId;
     var gImageList;
     var gAnnotationType = -1;
-    var gAnnotationTypes = {}
+    var gAnnotationTypes = {};
     let gAnnotationCache = {};
-    let gImageSizes = {};
+    let gImageInformation = {};
+    var gZoomSlider;
 
 
     var gShiftDown;
@@ -51,10 +51,10 @@ globals = {
         maxZoomPixelRatio: 2,
         //minZoomLevel: 1,
         visibilityRatio: 1,
-        zoomPerScroll: 2,
+        zoomPerScroll: 1.5,
         timeout: 120000,
     });
-    viewer.gestureSettingsMouse.clickToZoom = false;
+    // viewer.gestureSettingsMouse.clickToZoom = false;
 
 
     viewer.selection({
@@ -63,6 +63,20 @@ globals = {
         //showConfirmDenyButtons: false
     });
 
+    viewer.scalebar({
+        xOffset: 10,
+        yOffset: 10,
+        barThickness: 3,
+        color: '#555555',
+        fontColor: '#333333',
+        backgroundColor: 'rgba(255, 255, 255, 0.5)',
+        pixelsPerMeter: 0
+    });
+
+    //var imagingHelper = viewer.activateImagingHelper();
+    viewer.activateImagingHelper({onImageViewChanged: onImageViewChanged});
+
+
     viewer.addHandler("open", function () {
         // To improve load times, ignore the lowest-resolution Deep Zoom
         // levels.  This is a hack: we can't configure the minLevel via
@@ -70,12 +84,44 @@ globals = {
         // from DZI XML.
         //viewer.source.minLevel = 8;
 
-        var tracker = new OpenSeadragon.MouseTracker({
-            element: viewer.container,
-            moveHandler: function (event) {
-                globals.mousePosition = event.position;
-            }
+        viewer.scalebar({
+            pixelsPerMeter: gImageInformation[gImageId]['mpp'] > 0.0001 ? (1e6 / gImageInformation[gImageId]['mpp']) : 0,
         });
+
+        var objectivePower = gImageInformation[gImageId]['objectivePower'];
+        if (objectivePower > 1) {
+
+            const default_ticks = [0, 1, 2, 5, 10, 20, 40, 80, 160];
+            const default_names = ["0x", "1x", "2x", "5x", "10x", "20x", "40x", "80x", "160x" ];
+
+            var ticks_to_use = [];
+            var labels_to_use = [];
+
+            for (i = 0; i < default_ticks.length; i++) {
+                if (default_ticks[i] <= objectivePower){
+                    ticks_to_use.push(default_ticks[i]);
+                    labels_to_use.push(default_names[i]);
+                } else {
+                    ticks_to_use.push(default_ticks[i]);
+                    labels_to_use.push(default_names[i]);
+                    break;
+                }
+            }
+
+            if (gZoomSlider === undefined) {
+                gZoomSlider = new Slider("#zoomSlider", {
+                    ticks: ticks_to_use,
+                    scale: 'logarithmic',
+                    ticks_labels: labels_to_use,
+                    tooltip: 'always'
+                });
+                gZoomSlider.on('change', onSliderChanged);
+            } else {
+                gZoomSlider.setAttribute('ticks', ticks_to_use);
+                gZoomSlider.setAttribute('ticks_labels', labels_to_use);
+            }
+        }
+
 
         // Check if navigator overlay exists or is supported
         $.ajax(API_IMAGES_BASE_URL + 'image/navigator_overlay_status/', {
@@ -95,8 +141,8 @@ globals = {
                             Overlap: "2",
                             TileSize: "256",
                             Size: {
-                                Width: gImageSizes[gImageId]['width'],
-                                Height: gImageSizes[gImageId]['height'],
+                                Width: gImageInformation[gImageId]['width'],
+                                Height: gImageInformation[gImageId]['height'],
                             }
                         }
                     };
@@ -113,6 +159,26 @@ globals = {
             }
         });
     });
+
+
+    function onImageViewChanged(event) {
+
+        if (gZoomSlider !== undefined &&
+            gZoomSlider.getValue().toFixed(3)
+            !== (event.zoomFactor * gImageInformation[gImageId]['objectivePower']).toFixed(3)) {
+
+            gZoomSlider.setValue(gImageInformation[gImageId]['objectivePower'] * event.zoomFactor);
+        }
+    }
+
+    function onSliderChanged(event) {
+
+        if (viewer.imagingHelper.getZoomFactor().toFixed(3) !==
+            (event.newValue / gImageInformation[gImageId]['objectivePower']).toFixed(3))
+
+            viewer.imagingHelper.setZoomFactor(event.newValue / gImageInformation[gImageId]['objectivePower'], true);
+    }
+
 
     /*
        User navigation interaction on the image finished
@@ -289,7 +355,7 @@ globals = {
             delete tool;
         }
 
-        tool = new BoundingBoxes(viewer, gImageId, gImageSizes[gImageId]);
+        tool = new BoundingBoxes(viewer, gImageId, gImageInformation[gImageId]);
         tool.strokeWidth = document.getElementById("StrokeWidthSlider").value;
 
 
@@ -679,43 +745,47 @@ globals = {
             data: {'values': JSON.stringify(data)},
             success: function (data) {
                 var el = document.getElementById('statistics_tabs');
-
-                for (plugin of data.plugins) {
-                    var tab_name = plugin.id;
-
-                    if (document.getElementById(tab_name + "_tab") === null){
-
-                        var node = document.createElement("li");
-                        node.setAttribute('class', 'nav-item');
-
+                if (el) {
+                    for (plugin of data.plugins) {
                         var tab_name = plugin.id;
-                        var link = document.createElement("a");
-                        link.setAttribute('class', 'nav-link');
-                        link.setAttribute('id', tab_name + "_tab");
-                        link.setAttribute('data-toggle', 'tab');
-                        link.setAttribute('href', '#' + tab_name);
-                        link.textContent = tab_name;
 
-                        node.appendChild(link);
-                        el.appendChild(node);
+                        if (document.getElementById(tab_name + "_tab") === null){
+
+                            var node = document.createElement("li");
+                            node.setAttribute('class', 'nav-item');
+
+                            var tab_name = plugin.id;
+                            var link = document.createElement("a");
+                            link.setAttribute('class', 'nav-link');
+                            link.setAttribute('id', tab_name + "_tab");
+                            link.setAttribute('data-toggle', 'tab');
+                            link.setAttribute('href', '#' + tab_name);
+                            link.textContent = tab_name;
+
+                            node.appendChild(link);
+                            el.appendChild(node);
+                        }
                     }
                 }
 
+
                 var el_content = document.getElementById('statistics_tabs_content');
 
-                for (plugin of data.plugins) {
-                    var tab_name = plugin.id;
+                if (el_content) {
+                    for (plugin of data.plugins) {
+                        var tab_name = plugin.id;
 
-                    var node = document.getElementById(tab_name);
-                    if (node === null) {
-                        var node = document.createElement("div");
-                        node.setAttribute('class', 'tab-pane fade');
-                        node.setAttribute('id', tab_name);
+                        var node = document.getElementById(tab_name);
+                        if (node === null) {
+                            var node = document.createElement("div");
+                            node.setAttribute('class', 'tab-pane fade');
+                            node.setAttribute('id', tab_name);
 
-                        node.innerHTML = plugin.content;
-                        el_content.appendChild(node);
-                    } else {
-                        node.innerHTML = plugin.content;
+                            node.innerHTML = plugin.content;
+                            el_content.appendChild(node);
+                        } else {
+                            node.innerHTML = plugin.content;
+                        }
                     }
                 }
             },
@@ -1060,7 +1130,7 @@ globals = {
         if (footer_node !== null) {
             var footer_rect = footer_node.getBoundingClientRect();
 
-            var height = window.innerHeight - (3 * footer_rect.height); //footer_rect.y - image_rect.y;
+            var height = footer_rect.top - image_rect.top - 40; // window.innerHeight - (5 * footer_rect.height); //footer_rect.y - image_rect.y;
             var width = footer_rect.right - 45 - image_rect.left;
 
             image_node.style.height = height+ 'px';
@@ -1103,7 +1173,8 @@ globals = {
             headers: gHeaders,
             dataType: 'json',
             success: function (data, textStatus, jqXHR) {
-                data.image_set.images.forEach(x => gImageSizes[x.id] = {"width":x.width, "height": x.height });
+                data.image_set.images.forEach(x => gImageInformation[x.id] = {"width":x.width, "height": x.height,
+                    "mpp": x.mpp, "objectivePower": x.objectivePower });
 
                 initTool();
             },

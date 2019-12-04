@@ -5,6 +5,7 @@
 {% block additional_annotation_css %}
     <link rel="stylesheet" type="text/css" href="{% static 'annotations/css/bounding_boxes.css' %}"/>
     <link rel="stylesheet" type="text/css" href="{% static 'annotations/css/openseadragon-guides.css' %}"/>
+    <link rel="stylesheet" type="text/css" href="{% static 'annotations/css/bootstrap-slider.min.css' %}"/>
     <style>
         {% if not "delete_annotation" in imageset_perms %}
             .annotation_delete_button {
@@ -37,11 +38,15 @@
 
 
     <script type="text/javascript" src="{% static 'annotations/js/selection.js' %}"></script>
+    <script type="text/javascript" src="{% static 'annotations/js/openseadragon-scalebar.js' %}"></script>
 
 
     <script type="text/javascript" src="{% static 'annotations/js/openseadragon-paperjs-overlay.js' %}"></script>
     <script type="text/javascript" src="{% static 'annotations/js/paper-full.js' %}"></script>
+    <script type="text/javascript" src="{% static 'annotations/js/imaginghelper.js' %}"></script>
     <script type="text/javascript" src="{% static 'annotations/js/annotations.js' %}"></script>
+
+    <script type="text/javascript" src="{% static 'annotations/js/bootstrap-slider.min.js' %}"></script>
 {% endblock additional_annotation_js %}
 {% block bodyblock %}
     <div class="container-fluid">
@@ -318,11 +323,16 @@
             <div class="col-md-9">
                 <div class="col-md" id="openseadragon1" style="width: 85vh; height: 600px;"/>
 
-                <hr color="silver" width="100%">
-                <div id="no_annotations"
-                     class="alert alert-warning{% if image_annotations %} hidden{% endif %}">{% trans 'No annotations found.' %}</div>
                 <div id="annotations_loading" class="alert alert-info hidden">
-                    <p> {% trans 'Loading Annotations ...' %} </p></div>
+                    <p> {% trans 'Loading Annotations ...' %} </p>
+                </div>
+                <div id="no_annotations"
+                     class="alert alert-warning{% if image_annotations %} hidden{% endif %}">{% trans 'No annotations found.' %}
+                </div>
+
+                <div style="width: 100%" id="zoomSlider">
+                </div>
+
             </div>
 
         </div>
