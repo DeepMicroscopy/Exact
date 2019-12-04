@@ -15,6 +15,8 @@ class Image(models.Model):
     filename = models.CharField(max_length=100, unique=True)
     time = models.DateTimeField(auto_now_add=True)
     checksum = models.BinaryField()
+    mpp = models.FloatField(default=0)
+    objectivePower = models.FloatField(default=1)
     width = models.IntegerField(default=800)
     height = models.IntegerField(default=600)
 

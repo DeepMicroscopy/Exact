@@ -10,7 +10,9 @@ class ImageSerializer(ModelSerializer):
             'id',
             'name',
             'height',
-            'width'
+            'width',
+            'mpp',
+            'objectivePower'
         )
 
 

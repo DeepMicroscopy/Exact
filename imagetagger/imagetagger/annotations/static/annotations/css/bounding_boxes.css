@@ -5,3 +5,16 @@
 .boundingBox {
     border: 2px solid #ff00ff;
 }
+
+
+.openseadragon-container.fullscreen {
+    background-color: white;
+}
+
+.openseadragon-container {
+    background-color: white !important;
+}
+
+.col-md.fullpage {
+    background-color: white;
+}
