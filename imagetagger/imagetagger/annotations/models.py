@@ -39,7 +39,7 @@ class Annotation(models.Model):
     vector = JSONField(null=True)
     _concealed = models.BooleanField(default=False)
     _blurred = models.BooleanField(default=False)
-    closed = models.BooleanField(default=False)
+
     time = models.DateTimeField(auto_now_add=True)
 
     annotation_type = models.ForeignKey('AnnotationType', on_delete=models.PROTECT)
@@ -54,6 +54,9 @@ class Annotation(models.Model):
     verified_by = models.ManyToManyField(settings.AUTH_USER_MODEL, through='Verification')
 
     objects = models.Manager.from_queryset(AnnotationQuerySet)()
+
+    deleted = models.BooleanField(default=False)
+    description = models.TextField(max_length=1000, blank=True)
 
     def __str__(self):
         return 'Annotation: {0}'.format(self.annotation_type.name)
@@ -413,6 +416,8 @@ class AnnotationType(models.Model):
     default_width = models.IntegerField(default=50, unique=False)
     default_height = models.IntegerField(default=50, unique=False)
     sort_order = models.IntegerField(default=0, unique=False)
+
+    closed = models.BooleanField(default=True)
 
     def __str__(self):
         if self.active:

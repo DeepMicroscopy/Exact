@@ -1,5 +1,6 @@
 import datetime
 import time;
+import pytz
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -94,6 +95,7 @@ def download_export(request, export_id):
 def manage_annotations(request, image_set_id):
     filter = request.GET.get("filter", None)
     value = request.GET.get("value", None)
+    include_deleted = bool(request.GET.get('include_deleted', False))
     userteams = Team.objects.filter(members=request.user)
     imagesets = ImageSet.objects.select_related('team').filter(
         Q(team__in=userteams) | Q(public=True))
@@ -102,7 +104,9 @@ def manage_annotations(request, image_set_id):
     annotations = Annotation.objects.annotate_verification_difference() \
         .select_related('image', 'user', 'last_editor',
                         'annotation_type')
-    annotations = annotations.filter(image__in=images, annotation_type__active=True)
+
+
+    annotations = annotations.filter(image__in=images, annotation_type__active=True, deleted=include_deleted)
     try:
         if filter == 'annotation-type':
             annotations = annotations.filter(annotation_type__name=value)
@@ -518,6 +522,7 @@ def delete_exportformat(request, format_id):
 def api_delete_annotation(request) -> Response:
     try:
         annotation_id = int(request.query_params['annotation_id'])
+        keep_deleted_element = bool(request.query_params.get('keep_deleted_element', False))
     except (KeyError, TypeError, ValueError):
         raise ParseError
 
@@ -529,12 +534,18 @@ def api_delete_annotation(request) -> Response:
             'detail': 'permission for deleting annotations in this image set missing.',
         }, status=HTTP_403_FORBIDDEN)
 
-    #image = annotation.image
-    annotation.delete()
+    if keep_deleted_element:
+        with transaction.atomic():
+            annotation.last_editor = request.user
+            annotation.deleted = True
+            annotation.save()
+    else:
+        annotation.delete()
+
     annotation.id = annotation_id
 
     serializer = AnnotationSerializer(
-        annotation, #image.annotations.select_related().filter(annotation_type__active=True).order_by('annotation_type__name'),
+        annotation,
         context={'request': request, },
         many=False)
     return Response({
@@ -563,22 +574,9 @@ def create_annotation(request) -> Response:
             'detail': 'permission for annotating in this image set missing.',
         }, status=HTTP_403_FORBIDDEN)
 
-    if not annotation_type.validate_vector(vector):
-        serializer = AnnotationSerializer(
-            image.annotations.filter(annotation_type__active=True).select_related()
-            .order_by('annotation_type__sort_order'),
-            context={
-                'request': request,
-            },
-            many=True)
-        return Response({
-            'annotations': serializer.data,
-            'detail': 'the vector is invalid.',
-        }, status=HTTP_400_BAD_REQUEST)
-
     if Annotation.similar_annotations(vector, image, annotation_type):
         serializer = AnnotationSerializer(
-            image.annotations.filter(annotation_type__active=True).select_related()
+            image.annotations.filter(annotation_type__active=True, deleted=False).select_related()
             .order_by('annotation_type__sort_order'),
             context={
                 'request': request,
@@ -595,6 +593,7 @@ def create_annotation(request) -> Response:
             image=image,
             annotation_type=annotation_type,
             user=request.user,
+            last_editor=request.user,
             _blurred=blurred,
             _concealed=concealed
         )
@@ -602,15 +601,8 @@ def create_annotation(request) -> Response:
         # Automatically verify for owner
         annotation.verify(request.user, False)
 
-    #.image.annotations.filter(annotation_type__active=True).select_related().order_by('annotation_type__name')
-    serializer = AnnotationSerializer(
-        annotation,
-        context={
-            'request': request,
-        },
-        many=False)
     return Response({
-        'annotations': serializer.data,
+        'annotations': serialize_annotation(annotation),
         'tempid': tempid
     }, status=HTTP_201_CREATED)
 
@@ -620,6 +612,13 @@ def create_annotation(request) -> Response:
 def load_annotations(request) -> Response:
     try:
         image_id = int(request.query_params['image_id'])
+        since = request.query_params.get('since', None)
+        min_x = request.query_params.get('min_x', None)
+        max_x = request.query_params.get('max_x', None)
+        min_y = request.query_params.get('min_y', None)
+        max_y = request.query_params.get('max_y', None)
+        include_deleted = bool(request.query_params.get('include_deleted', False))
+
     except (KeyError, TypeError, ValueError):
         raise ParseError
 
@@ -630,8 +629,21 @@ def load_annotations(request) -> Response:
             'detail': 'permission for reading this image set missing.',
         }, status=HTTP_403_FORBIDDEN)
 
+    annotations = image.annotations.select_related().filter(annotation_type__active=True)
+    if include_deleted is False:
+        annotations = annotations.filter(deleted=include_deleted)
+
+    if since is not None:
+        annotations = annotations.filter(last_edit_time__gte=
+                                         pytz.utc.localize(datetime.datetime.fromtimestamp(int(since))))
+        annotations = annotations.filter(~Q(last_editor__username=request.user.username))
+
+    if min_x is not None and min_y is not None and max_x is not None and max_y is not None:
+        annotations =  annotations.filter(x1__gte=int(min_x), y1__gte=int(min_y),
+                                          x1__lte=int(max_x), y2__lte=int(max_y))
+
     t = time.process_time()
-    data = [serialize_annotation(a) for a in image.annotations.select_related().filter(annotation_type__active=True)]
+    data = [serialize_annotation(a) for a in annotations]
     print(time.process_time() - t)
 
     respond = Response({
@@ -645,13 +657,15 @@ def load_annotations(request) -> Response:
 def load_set_annotations(request) -> Response:
     try:
         imageset_id = int(request.query_params['imageset_id'])
+        include_deleted = bool(request.query_params.get('include_deleted', False))
     except (KeyError, TypeError, ValueError):
         raise ParseError
 
     imageset = get_object_or_404(ImageSet, pk=imageset_id)
     images = Image.objects.filter(image_set=imageset)
     annotations = Annotation.objects.filter(image__in=images,
-                                            annotation_type__active=True)
+                                            annotation_type__active=True,
+                                            deleted=include_deleted)
 
     if not imageset.has_perm('read', request.user):
         return Response({
@@ -697,13 +711,15 @@ def load_annotation_types(request) -> Response:
 def load_set_annotation_types(request) -> Response:
     try:
         imageset_id = int(request.query_params['imageset_id'])
+        include_deleted = bool(request.query_params.get('include_deleted', False))
     except (KeyError, TypeError, ValueError):
         raise ParseError
 
     imageset = get_object_or_404(ImageSet, pk=imageset_id)
     images = Image.objects.filter(image_set=imageset)
     annotations = Annotation.objects.filter(image__in=images,
-                                            annotation_type__active=True)
+                                            annotation_type__active=True,
+                                            deleted=include_deleted)
     annotation_types = AnnotationType.objects.filter(
         active=True,
         annotation__in=annotations)\
@@ -731,13 +747,15 @@ def load_filtered_set_annotations(request) -> Response:
         imageset_id = int(request.query_params['imageset_id'])
         verified = request.query_params['verified'] == 'true'
         annotation_type_id = int(request.query_params['annotation_type'])
+        include_deleted = bool(request.query_params.get('include_deleted', False))
     except (KeyError, TypeError, ValueError):
         raise ParseError
 
     imageset = get_object_or_404(ImageSet, pk=imageset_id)
     images = Image.objects.filter(image_set=imageset)
     annotations = Annotation.objects.filter(image__in=images,
-                                            annotation_type__active=True).select_related()
+                                            annotation_type__active=True,
+                                            deleted=include_deleted).select_related()
     user_verifications = Verification.objects.filter(user=request.user, annotation__in=annotations)
     if annotation_type_id > -1:
         annotations = annotations.filter(annotation_type__id=annotation_type_id)
@@ -796,6 +814,7 @@ def update_annotation(request) -> Response:
         vector = request.data['vector']
         blurred = request.data.get('blurred', False)
         concealed = request.data.get('concealed', False)
+        deleted = bool(request.data.get('deleted', False))
     except (KeyError, TypeError, ValueError):
         raise ParseError
 
@@ -810,18 +829,6 @@ def update_annotation(request) -> Response:
             'detail': 'permission for updating annotations in this image set missing.',
         }, status=HTTP_403_FORBIDDEN)
 
-    #if not annotation_type.validate_vector(vector):
-    #    serializer = AnnotationSerializer(
-    #        annotation,
-    #        context={
-    #            'request': request,
-    #        },
-    #        many=False)
-    #    return Response({
-    #        'annotations': serializer.data,
-    #        'detail': 'the vector is invalid.',
-    #    }, status=HTTP_400_BAD_REQUEST)
-
 
     with transaction.atomic():
         annotation.annotation_type = annotation_type
@@ -829,21 +836,16 @@ def update_annotation(request) -> Response:
         annotation._concealed = concealed
         annotation._blurred = blurred
         annotation.last_editor = request.user
-        annotation.save()
         annotation.annotation_type = annotation_type
+        annotation.deleted = deleted
+        annotation.save()
+
 
         # Automatically verify for owner
         annotation.verify(request.user, True)
 
-    serializer = AnnotationSerializer(
-        annotation,
-        context={
-            'request': request,
-        },
-        many=False)
-
     return Response({
-        'annotations': serializer.data,
+        'annotations': serialize_annotation(annotation),
     }, status=HTTP_200_OK)
 
 

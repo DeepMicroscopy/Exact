@@ -36,6 +36,7 @@
             src="https://rawgit.com/picturae/OpenSeadragonGuides/master/dist/openseadragon-guides.js"></script>
     <script type="text/javascript" src="{% static 'annotations/js/boundingboxes.js' %}"></script>
 
+    <script type="text/javascript" src="{% static 'annotations/js/notify.min.js' %}"></script>
 
     <script type="text/javascript" src="{% static 'annotations/js/selection.js' %}"></script>
     <script type="text/javascript" src="{% static 'annotations/js/openseadragon-scalebar.js' %}"></script>
@@ -180,49 +181,65 @@
                                     </select>
                                 </p>
 
-                                <p>
-                                    <label for="StrokeWidthSlider">Stroke Width</label>
-                                    <input id="StrokeWidthSlider" type="range"  class="custom-range" min="1"
-                                           max="20" step="1" value="5"/>
-                                </p>
-
-
-                                <p>
-                                    <input type='checkbox' id='draw_annotations' name="draw_annotations" checked>
-                                    <label for='draw_annotations'>Draw annotations</label>
-                                </p>
-
-                                {% if 'annotate' in imageset_perms %}
-                                    <p>
-                                        <input type='checkbox' name='not_in_image' id='not_in_image'
-                                               style="display:none;">
-                                        <label for='not_in_image' style="display:none;">Not in the image (g)</label>
-                                    </p>
-                                    <p data-toggle="tooltip" data-placement="right"></p>
-                                    <div class="row" id="coordinate_table">
-                                        {% for field in vector_fields %}
-                                            <div id="{{ field }}Box">
-                                                <div class="col-xs-2" style="max-width: 3em">
-                                                    <label for="{{ field }}Field">
-                                                        {{ field }}
-                                                    </label>
-                                                </div>
-                                                <div class="col-xs-10">
-                                                    <input id="{{ field }}Field"
-                                                           class="Coordinates annotation_value form-control"
-                                                           type="text" name="{{ field }}Field" value="0" min="0"
-                                                           disabled>
-                                                </div>
-                                                <div class="col-xs-12"></div>
-                                            </div>
-                                        {% endfor %}
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label for="StrokeWidthSlider">Stroke Width</label>
+                                        <input id="StrokeWidthSlider" type="range"  class="custom-range" min="1"
+                                               max="20" step="1" value="5"/>
                                     </div>
-                                {% endif %}
+
+                                    <div class="col-md-6" style="margin-top: 22px">
+                                        <input type='checkbox' id='draw_annotations' name="draw_annotations" checked>
+                                        <label for='draw_annotations'>Draw annotations</label>
+                                    </div>
+                                </div>
+
+
+                                <div class="row" id="AnnotationInformation">
+                                    <table style="width: 100%; margin-left: 20px; margin-top: 10px">
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Description</th>
+                                        </tr>
+
+                                        <tr>
+                                            <th>First Editor</th>
+                                            <th>
+                                                <a id="annotationFirstEditor"></a>
+                                            </th>
+                                        </tr>
+
+                                        <tr>
+                                            <th>Last Editor</th>
+                                            <th>
+                                                <a id="annotationLastEditor"></a>
+                                            </th>
+                                        </tr>
+
+                                        <tr>
+                                            <th>Last Edit</th>
+                                            <th>
+                                                <input type="date" id="annotationLastTime" disabled>
+                                            </th>
+                                        </tr>
+
+                                        <tr>
+                                            <th>Unique ID</th>
+                                            <th>
+                                                <a id="annotationUniqueID"></a>
+                                            </th>
+                                        </tr>
+
+
+                                    </table>
+
+                                </div>
+
+
                                 <br>
-                                <div class="row ">
-                                    <input type="hidden" name="annotate">
+                                <div class="row">
                                     {% if 'annotate' in imageset_perms %}
-                                        <div class="row" id="annotation_buttons">
+                                        <div class="row" id="annotation_buttons" style="margin: auto">
                                             <div class="col-md-6">
                                                 <button type="button" class="annotate_button btn btn-default btn-block"
                                                         id="delete_annotation_button">
