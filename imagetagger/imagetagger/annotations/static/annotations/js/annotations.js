@@ -30,17 +30,12 @@ globals = {
     let gAnnotationCache = {};
     let gImageInformation = {};
     var gZoomSlider;
-
-
+    var gLastUpdateTimePoint = Math.floor(Date.now() / 1000);
+    var gRefreshAnnotationsFromServer;
+    var gUpDateFromServerInterval = 3000; // 1s
     var gShiftDown;
 
-    // a threshold for editing an annotation if you select a small rectangle
-    var gSelectionThreshold = 5;
-
-    // save the current annotations of the image, so we can draw and hide the
-
     var tool;
-    var selection;
     var viewer = OpenSeadragon({
         id: "openseadragon1",
         prefixUrl: '../../static/images/',
@@ -358,6 +353,20 @@ globals = {
         tool = new BoundingBoxes(viewer, gImageId, gImageInformation[gImageId]);
         tool.strokeWidth = document.getElementById("StrokeWidthSlider").value;
 
+        if (gRefreshAnnotationsFromServer)
+            clearInterval(gRefreshAnnotationsFromServer);
+        else {
+            gRefreshAnnotationsFromServer = setInterval(function () {
+                options = {
+                    image_id: gImageId,
+                    'since': gLastUpdateTimePoint,
+                    'include_deleted': true
+                };
+                loadAnnotationsWithConditions(options);
+                gLastUpdateTimePoint = Math.floor(Date.now() / 1000);
+            }, gUpDateFromServerInterval);
+        }
+
 
         if (globals.allAnnotations) {
             tool.drawExistingAnnotations(globals.allAnnotations);
@@ -522,7 +531,8 @@ globals = {
         } else {
             $('.js_feedback').stop().addClass('hidden');
             var params = {
-                annotation_id: annotationId
+                annotation_id: annotationId,
+                keep_deleted_element: true
             };
             $.ajax(API_ANNOTATIONS_BASE_URL + 'annotation/delete/?' + $.param(params), {
                 type: 'DELETE',
@@ -666,6 +676,27 @@ globals = {
 
         $('#annotation_type_id').val(annotationTypeId);
         $('#annotation_buttons').show();
+
+        $('#AnnotationInformation').show();
+        document.getElementById('annotationFirstEditor')
+            .setAttribute('href', `/users/user/${annotation.first_editor.id}/`);
+        document.getElementById('annotationFirstEditor').textContent  = annotation.first_editor.name;
+
+        document.getElementById('annotationLastEditor')
+            .setAttribute('href', `/users/user/${annotation.last_editor.id}/`);
+        document.getElementById('annotationLastEditor').textContent  = annotation.last_editor.name;
+
+        var isoStr = new Date(annotation.last_edit_time).toISOString();
+        document.getElementById('annotationLastTime').value = isoStr.substring(0,10);
+
+
+        document.getElementById('annotationUniqueID').textContent = annotation.id;
+        document.getElementById('annotationUniqueID').onclick = function(event) {
+
+        };
+
+
+
         $('.annotate_button').prop('disabled', false);
     }
 
@@ -682,21 +713,6 @@ globals = {
         });
 
         return imageList;
-    }
-
-    /**
-     * Handle toggle of the not in image checkbox.
-     *
-     * @param event
-     */
-    function handleNotInImageToggle(event) {
-        let coordinate_table = $('#coordinate_table');
-
-        if ($('#not_in_image').is(':checked')) {
-            coordinate_table.hide();
-        } else {
-            coordinate_table.show();
-        }
     }
 
     /**
@@ -851,13 +867,10 @@ globals = {
         loadStatistics(imageId);
         displayImage(imageId);
 
-        $('#coordinate_table').hide();
         $('#annotation_buttons').hide();
+        $('#AnnotationInformation').hide();
 
-        if (!$('#keep_selection').prop('checked')) {
-            $('#concealed').prop('checked', false);
-            $('#blurred').prop('checked', false);
-        }
+
         scrollImageList();
 
         $('.annotate_image_link').removeClass('active');
@@ -935,6 +948,60 @@ globals = {
             }
         });
     }
+
+
+    function loadAnnotationsWithConditions(params) {
+
+        $.ajax(API_ANNOTATIONS_BASE_URL + 'annotation/load/?' + $.param(params), {
+            type: 'GET',
+            headers: gHeaders,
+            dataType: 'json',
+            success: function (data, textStatus, jqXHR) {
+
+                if (jqXHR.status === 200) {
+                    var annotations = data.annotations;
+
+                    for (i = 0; i < annotations.length; i++) {
+                        var anno = annotations[i];
+
+                        if (anno.deleted) {
+                            tool.removeAnnotation(anno.id);
+                            globals.allAnnotations = globals.allAnnotations.filter(function (value, index, arr) {
+                                return value.id !== anno.id;
+                            });
+                            gAnnotationCache[gImageId] = globals.allAnnotations;
+
+                            $.notify(`Annotation ${anno.id} was deleted by ${anno.last_editor.name}`,
+                                {position: "bottom center", className: "info"});
+                        } else {
+                            // update current annotations
+                            var index = globals.allAnnotations.findIndex((elem) => elem.id === anno.id
+                        )
+                            ;
+                            if (index === -1) {
+                                globals.allAnnotations.push(anno);
+
+                                $.notify(`Annotation ${anno.id} was created by ${anno.last_editor.name}`,
+                                    {position: "bottom center", className: "info"});
+                            } else {
+                                tool.removeAnnotation(anno.id);
+                                globals.allAnnotations[index] = anno;
+
+                                $.notify(`Annotation ${anno.id} was updated by ${anno.last_editor.name}`,
+                                    {position: "bottom center", className: "info"});
+                            }
+                            tool.drawAnnotation(anno);
+                            gAnnotationCache[gImageId] = globals.allAnnotations;
+                        }
+                    }
+                }
+            },
+            error: function (request, status, error) {
+                $.notify(`Server ERR_CONNECTION_REFUSED`, {position: "bottom center", className: "error"});
+            }
+        });
+    }
+
 
     /**
      * Load the annotations of an image to the cache if they are not in it already.
@@ -1191,8 +1258,6 @@ globals = {
         $('.annotation_value').on('input', function () {
 
         });
-        $('#not_in_image').on('change', handleNotInImageToggle);
-        handleNotInImageToggle();
         $('select#filter_annotation_type').on('change', loadImageList);
         $('#filter_update_btn').on('click', loadImageList);
         $('select').on('change', function () {
@@ -1330,6 +1395,31 @@ globals = {
         document.getElementById("StrokeWidthSlider").oninput = function(event) {
             tool.updateStrokeWidth(event.srcElement.valueAsNumber);
         };
+
+        //listen for click events from this style
+        $(document).on('click', '.notifyjs-bootstrap-info', function(event) {
+            var id  = $(this).text().split(" ")[1];
+            var item = tool.getItemFromID(parseInt(id));
+            // if annotation was found zoom to annotation
+            if (item !== undefined) {
+                const vpRect = viewer.viewport.imageToViewportRectangle(new OpenSeadragon.Rect(
+                    item.bounds.topLeft.x,
+                    item.bounds.topLeft.y,
+                    item.bounds.width,
+                    item.bounds.height
+                ))
+                const vpPos = viewer.viewport.imageToViewportCoordinates(item.bounds.centerX, item.bounds.centerY)
+                viewer.viewport.fitBoundsWithConstraints(new OpenSeadragon.Rect(
+                    vpPos.x - vpRect.width / 2,
+                    vpPos.y - vpRect.height / 2,
+                    vpRect.width,
+                    vpRect.height
+                ));
+
+            }
+
+
+        });
 
         $(document).on('mousemove touchmove', handleSelection);
         $(window).on('resize', handleResize);
