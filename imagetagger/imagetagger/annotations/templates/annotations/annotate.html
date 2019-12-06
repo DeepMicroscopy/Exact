@@ -198,36 +198,42 @@
                                 <div class="row" id="AnnotationInformation">
                                     <table style="width: 100%; margin-left: 20px; margin-top: 10px">
                                         <tr>
-                                            <th>Name</th>
-                                            <th>Description</th>
+                                            <th></th>
+                                            <th></th>
+                                            <th>Remark</th>
                                         </tr>
 
                                         <tr>
-                                            <th>First Editor</th>
-                                            <th>
+                                            <td>First Editor:</td>
+                                            <td>
                                                 <a id="annotationFirstEditor"></a>
-                                            </th>
+                                            </td>
+                                            <td rowspan="4">
+                                                <textarea id="annotationRemark" rows="4" cols="15"
+                                                          style="resize: none;">
+                                                </textarea>
+                                            </td>
                                         </tr>
 
                                         <tr>
-                                            <th>Last Editor</th>
-                                            <th>
+                                            <td>Last Editor:</td>
+                                            <td>
                                                 <a id="annotationLastEditor"></a>
-                                            </th>
+                                            </td>
                                         </tr>
 
                                         <tr>
-                                            <th>Last Edit</th>
-                                            <th>
-                                                <input type="date" id="annotationLastTime" disabled>
-                                            </th>
+                                            <td>Last Edit:</td>
+                                            <td>
+                                                <label id="annotationLastTime"></label>
+                                            </td>
                                         </tr>
 
                                         <tr>
-                                            <th>Unique ID</th>
-                                            <th>
+                                            <td>Unique ID:</td>
+                                            <td>
                                                 <a id="annotationUniqueID"></a>
-                                            </th>
+                                            </td>
                                         </tr>
 
 
