@@ -563,6 +563,7 @@ def create_annotation(request) -> Response:
         blurred = request.data.get('blurred', False)
         concealed = request.data.get('concealed', False)
         tempid = request.data.get('tempid', False)
+        description = request.data.get('description', "")
     except (KeyError, TypeError, ValueError):
         raise ParseError
 
@@ -595,7 +596,8 @@ def create_annotation(request) -> Response:
             user=request.user,
             last_editor=request.user,
             _blurred=blurred,
-            _concealed=concealed
+            _concealed=concealed,
+            description=description
         )
 
         # Automatically verify for owner
@@ -635,7 +637,7 @@ def load_annotations(request) -> Response:
 
     if since is not None:
         annotations = annotations.filter(last_edit_time__gte=
-                                         pytz.utc.localize(datetime.datetime.fromtimestamp(int(since))))
+                                         datetime.datetime.fromtimestamp(int(since))) #pytz.utc.localize(
         annotations = annotations.filter(~Q(last_editor__username=request.user.username))
 
     if min_x is not None and min_y is not None and max_x is not None and max_y is not None:
@@ -815,6 +817,7 @@ def update_annotation(request) -> Response:
         blurred = request.data.get('blurred', False)
         concealed = request.data.get('concealed', False)
         deleted = bool(request.data.get('deleted', False))
+        description = request.data.get('description', "")
     except (KeyError, TypeError, ValueError):
         raise ParseError
 
@@ -838,6 +841,7 @@ def update_annotation(request) -> Response:
         annotation.last_editor = request.user
         annotation.annotation_type = annotation_type
         annotation.deleted = deleted
+        annotation.description = description
         annotation.save()
 
 
