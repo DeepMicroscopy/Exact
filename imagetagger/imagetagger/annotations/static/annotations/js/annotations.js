@@ -30,17 +30,12 @@ globals = {
     let gAnnotationCache = {};
     let gImageInformation = {};
     var gZoomSlider;
-
-
+    var gLastUpdateTimePoint = Math.floor(Date.now() / 1000);
+    var gRefreshAnnotationsFromServer;
+    var gUpDateFromServerInterval = 3000; // 1s
     var gShiftDown;
 
-    // a threshold for editing an annotation if you select a small rectangle
-    var gSelectionThreshold = 5;
-
-    // save the current annotations of the image, so we can draw and hide the
-
     var tool;
-    var selection;
     var viewer = OpenSeadragon({
         id: "openseadragon1",
         prefixUrl: '../../static/images/',
@@ -358,6 +353,20 @@ globals = {
         tool = new BoundingBoxes(viewer, gImageId, gImageInformation[gImageId]);
         tool.strokeWidth = document.getElementById("StrokeWidthSlider").value;
 
+        if (gRefreshAnnotationsFromServer)
+            clearInterval(gRefreshAnnotationsFromServer);
+        else {
+            gRefreshAnnotationsFromServer = setInterval(function () {
+                options = {
+                    image_id: gImageId,
+                    'since': gLastUpdateTimePoint,
+                    'include_deleted': true
+                };
+                loadAnnotationsWithConditions(options);
+                gLastUpdateTimePoint = Math.floor(Date.now() / 1000);
+            }, gUpDateFromServerInterval);
+        }
+
 
         if (globals.allAnnotations) {
             tool.drawExistingAnnotations(globals.allAnnotations);
@@ -391,7 +400,8 @@ globals = {
         var data = {
             annotation_type_id: annotationTypeId,
             image_id: gImageId,
-            vector: tool.getAnnotationVector(annotation.id)
+            vector: tool.getAnnotationVector(annotation.id),
+            description: document.getElementById('annotationRemark').value
         };
         if ((typeof annotation.id === 'string') &&
             annotation.id.startsWith('~'))
@@ -522,7 +532,8 @@ globals = {
         } else {
             $('.js_feedback').stop().addClass('hidden');
             var params = {
-                annotation_id: annotationId
+                annotation_id: annotationId,
+                keep_deleted_element: true
             };
             $.ajax(API_ANNOTATIONS_BASE_URL + 'annotation/delete/?' + $.param(params), {
                 type: 'DELETE',
@@ -666,6 +677,28 @@ globals = {
 
         $('#annotation_type_id').val(annotationTypeId);
         $('#annotation_buttons').show();
+
+        $('#AnnotationInformation').show();
+        document.getElementById('annotationFirstEditor')
+            .setAttribute('href', `/users/user/${annotation.first_editor.id}/`);
+        document.getElementById('annotationFirstEditor').textContent  = annotation.first_editor.name;
+
+        document.getElementById('annotationLastEditor')
+            .setAttribute('href', `/users/user/${annotation.last_editor.id}/`);
+        document.getElementById('annotationLastEditor').textContent  = annotation.last_editor.name;
+
+        var isoStr = new Date(annotation.last_edit_time).toISOString();
+        document.getElementById('annotationLastTime').innerText = isoStr.substring(0,10);
+
+        document.getElementById('annotationRemark').value = annotation.description;
+
+        document.getElementById('annotationUniqueID').textContent = annotation.id;
+        document.getElementById('annotationUniqueID').onclick = function(event) {
+
+        };
+
+
+
         $('.annotate_button').prop('disabled', false);
     }
 
@@ -682,21 +715,6 @@ globals = {
         });
 
         return imageList;
-    }
-
-    /**
-     * Handle toggle of the not in image checkbox.
-     *
-     * @param event
-     */
-    function handleNotInImageToggle(event) {
-        let coordinate_table = $('#coordinate_table');
-
-        if ($('#not_in_image').is(':checked')) {
-            coordinate_table.hide();
-        } else {
-            coordinate_table.show();
-        }
     }
 
     /**
@@ -851,13 +869,10 @@ globals = {
         loadStatistics(imageId);
         displayImage(imageId);
 
-        $('#coordinate_table').hide();
         $('#annotation_buttons').hide();
+        $('#AnnotationInformation').hide();
 
-        if (!$('#keep_selection').prop('checked')) {
-            $('#concealed').prop('checked', false);
-            $('#blurred').prop('checked', false);
-        }
+
         scrollImageList();
 
         $('.annotate_image_link').removeClass('active');
@@ -935,6 +950,64 @@ globals = {
             }
         });
     }
+
+
+    function loadAnnotationsWithConditions(params) {
+
+        $.ajax(API_ANNOTATIONS_BASE_URL + 'annotation/load/?' + $.param(params), {
+            type: 'GET',
+            headers: gHeaders,
+            dataType: 'json',
+            success: function (data, textStatus, jqXHR) {
+
+                if (jqXHR.status === 200) {
+                    var annotations = data.annotations;
+
+                    for (i = 0; i < annotations.length; i++) {
+                        var anno = annotations[i];
+
+                        if (anno.deleted) {
+                            tool.removeAnnotation(anno.id);
+                            globals.allAnnotations = globals.allAnnotations.filter(function (value, index, arr) {
+                                return value.id !== anno.id;
+                            });
+                            gAnnotationCache[gImageId] = globals.allAnnotations;
+
+                            $.notify(`Annotation ${anno.id} was deleted by ${anno.last_editor.name}`,
+                                {position: "bottom center", className: "info"});
+                        } else {
+                            // update current annotations
+                            var index = globals.allAnnotations.findIndex((elem) => elem.id === anno.id
+                        )
+                            className = "info";
+                            if (anno.description.includes('@') &&
+                                anno.description.includes(document.getElementById("username").innerText.trim()))
+                                className = "warn";
+
+                            if (index === -1) {
+                                globals.allAnnotations.push(anno);
+
+                                $.notify(`Annotation ${anno.id} was created by ${anno.last_editor.name}`,
+                                    {position: "bottom center", className: className});
+                            } else {
+                                tool.removeAnnotation(anno.id);
+                                globals.allAnnotations[index] = anno;
+
+                                $.notify(`Annotation ${anno.id} was updated by ${anno.last_editor.name}`,
+                                    {position: "bottom center", className: className});
+                            }
+                            tool.drawAnnotation(anno);
+                            gAnnotationCache[gImageId] = globals.allAnnotations;
+                        }
+                    }
+                }
+            },
+            error: function (request, status, error) {
+                $.notify(`Server ERR_CONNECTION_REFUSED`, {position: "bottom center", className: "error"});
+            }
+        });
+    }
+
 
     /**
      * Load the annotations of an image to the cache if they are not in it already.
@@ -1191,8 +1264,6 @@ globals = {
         $('.annotation_value').on('input', function () {
 
         });
-        $('#not_in_image').on('change', handleNotInImageToggle);
-        handleNotInImageToggle();
         $('select#filter_annotation_type').on('change', loadImageList);
         $('#filter_update_btn').on('click', loadImageList);
         $('select').on('change', function () {
@@ -1331,6 +1402,50 @@ globals = {
             tool.updateStrokeWidth(event.srcElement.valueAsNumber);
         };
 
+        //listen for click events from this style
+        $(document).on('click', '.notifyjs-bootstrap-info', function(event) {
+            var id  = $(this).text().split(" ")[1];
+            var item = tool.getItemFromID(parseInt(id));
+            // if annotation was found zoom to annotation
+            if (item !== undefined) {
+                const vpRect = viewer.viewport.imageToViewportRectangle(new OpenSeadragon.Rect(
+                    item.bounds.topLeft.x,
+                    item.bounds.topLeft.y,
+                    item.bounds.width,
+                    item.bounds.height
+                ))
+                const vpPos = viewer.viewport.imageToViewportCoordinates(item.bounds.centerX, item.bounds.centerY)
+                viewer.viewport.fitBoundsWithConstraints(new OpenSeadragon.Rect(
+                    vpPos.x - vpRect.width / 2,
+                    vpPos.y - vpRect.height / 2,
+                    vpRect.width,
+                    vpRect.height
+                ));
+
+            }
+        });
+        $(document).on('click', '.notifyjs-bootstrap-warn', function(event) {
+            var id  = $(this).text().split(" ")[1];
+            var item = tool.getItemFromID(parseInt(id));
+            // if annotation was found zoom to annotation
+            if (item !== undefined) {
+                const vpRect = viewer.viewport.imageToViewportRectangle(new OpenSeadragon.Rect(
+                    item.bounds.topLeft.x,
+                    item.bounds.topLeft.y,
+                    item.bounds.width,
+                    item.bounds.height
+                ))
+                const vpPos = viewer.viewport.imageToViewportCoordinates(item.bounds.centerX, item.bounds.centerY)
+                viewer.viewport.fitBoundsWithConstraints(new OpenSeadragon.Rect(
+                    vpPos.x - vpRect.width / 2,
+                    vpPos.y - vpRect.height / 2,
+                    vpRect.width,
+                    vpRect.height
+                ));
+
+            }
+        });
+
         $(document).on('mousemove touchmove', handleSelection);
         $(window).on('resize', handleResize);
 
@@ -1351,138 +1466,160 @@ globals = {
                     gShiftDown = true;
                     break;
                 case 27: // Escape
-                    // delete temp annotation
-                    if (typeof globals.editedAnnotationsId === 'string') {
-                        tool.removeAnnotation(globals.editedAnnotationsId);
+                    if (event.target.id !== "annotationRemark") {
+                        // delete temp annotation
+                        if (typeof globals.editedAnnotationsId === 'string') {
+                            tool.removeAnnotation(globals.editedAnnotationsId);
 
-                        globals.allAnnotations = globals.allAnnotations.filter(function (value, index, arr) {
-                            return value.id !== globals.editedAnnotationsId;
-                        });
-                        gAnnotationCache[gImageId] = globals.allAnnotations;
+                            globals.allAnnotations = globals.allAnnotations.filter(function (value, index, arr) {
+                                return value.id !== globals.editedAnnotationsId;
+                            });
+                            gAnnotationCache[gImageId] = globals.allAnnotations;
+                        }
+
+                        tool.handleEscape();
                     }
 
-                    tool.handleEscape();
                     break;
                 case 73: //i
-                    if (gShiftDown) {
-                        break;
-                    }
                     break;
                 case 75: //k
-                    if (gShiftDown) {
-                        break;
-                    }
                     break;
                 case 76: //l
-                    if (gShiftDown) {
-                        break;
-                    }
                     break;
                 case 74: //j
-                    if (gShiftDown) {
-                        break;
-                    }
                     break;
                 case 48: //0
-                    selectAnnotationType(0);
+                    if (event.target.id !== "annotationRemark")
+                        selectAnnotationType(0);
                     break;
                 case 49: //1
-                    selectAnnotationType(1);
+                    if (event.target.id !== "annotationRemark")
+                        selectAnnotationType(1);
                     break;
                 case 50: //2
-                    selectAnnotationType(2);
+                    if (event.target.id !== "annotationRemark")
+                        selectAnnotationType(2);
                     break;
                 case 51: //3
-                    selectAnnotationType(3);
+                    if (event.target.id !== "annotationRemark")
+                        selectAnnotationType(3);
                     break;
                 case 52: //4
-                    selectAnnotationType(4);
+                    if (event.target.id !== "annotationRemark")
+                        selectAnnotationType(4);
                     break;
                 case 53: //5
-                    selectAnnotationType(5);
+                    if (event.target.id !== "annotationRemark")
+                        selectAnnotationType(5);
                     break;
                 case 54: //6
-                    selectAnnotationType(6);
+                    if (event.target.id !== "annotationRemark")
+                        selectAnnotationType(6);
                     break;
                 case 55: //7
-                    selectAnnotationType(7);
+                    if (event.target.id !== "annotationRemark")
+                        selectAnnotationType(7);
                     break;
                 case 56: //8
-                    selectAnnotationType(8);
+                    if (event.target.id !== "annotationRemark")
+                        selectAnnotationType(8);
                     break;
                 case 57: //9
-                    selectAnnotationType(9);
+                    if (event.target.id !== "annotationRemark")
+                        selectAnnotationType(9);
                     break;
                 case 96: //0
-                    selectAnnotationType(0);
+                    if (event.target.id !== "annotationRemark")
+                        selectAnnotationType(0);
                     break;
                 case 97: //1
-                    selectAnnotationType(1);
+                    if (event.target.id !== "annotationRemark")
+                        selectAnnotationType(1);
                     break;
                 case 98: //2
-                    selectAnnotationType(2);
+                    if (event.target.id !== "annotationRemark")
+                        selectAnnotationType(2);
                     break;
                 case 99: //3
-                    selectAnnotationType(3);
+                    if (event.target.id !== "annotationRemark")
+                        selectAnnotationType(3);
                     break;
                 case 100: //4
-                    selectAnnotationType(4);
+                    if (event.target.id !== "annotationRemark")
+                        selectAnnotationType(4);
                     break;
                 case 101: //5
-                    selectAnnotationType(5);
+                    if (event.target.id !== "annotationRemark")
+                        selectAnnotationType(5);
                     break;
                 case 102: //6
-                    selectAnnotationType(6);
+                    if (event.target.id !== "annotationRemark")
+                        selectAnnotationType(6);
                     break;
                 case 103: //7
-                    selectAnnotationType(7);
+                    if (event.target.id !== "annotationRemark")
+                        selectAnnotationType(7);
                     break;
                 case 104: //8
-                    selectAnnotationType(8);
+                    if (event.target.id !== "annotationRemark")
+                        selectAnnotationType(8);
                     break;
                 case 105: //9
-                    selectAnnotationType(9);
+                    if (event.target.id !== "annotationRemark")
+                        selectAnnotationType(9);
                     break;
             }
         });
         $(document).keyup(function (event) {
             switch (event.keyCode) {
                 case 8: //'DEL'
-                    handleDelete(event);
+                    if (event.target.id !== "annotationRemark")
+                        handleDelete(event);
                     break;
                 case 13: //'enter'
-                    $('#save_button').click();
+                    if (event.target.id !== "annotationRemark")
+                        $('#save_button').click();
                     break;
                 case 16: // Shift
                     break;
                 case 70: //f
-                    $('#next_button').click();
+                    if (event.target.id !== "annotationRemark")
+                        $('#next_button').click();
                     break;
                 case 68: //d
-                    $('#skip_button').click();
+                    if (event.target.id !== "annotationRemark")
+                        $('#skip_button').click();
                     break;
                 case 83: //s
-                    $('#back_button').click();
+                    if (event.target.id !== "annotationRemark")
+                        $('#back_button').click();
                     break;
                 case 65: //a
-                    $('#last_button').click();
+                    if (event.target.id !== "annotationRemark")
+                        $('#last_button').click();
                     break;
                 case 71: //g
-                    $('#not_in_image').click();
+                    if (event.target.id !== "annotationRemark")
+                        $('#not_in_image').click();
                     break;
                 case 82: //r
-                    $('#reset_button').click();
+                    if (event.target.id !== "annotationRemark")
+                        $('#reset_button').click();
                     break;
                 case 86: //'v'
-                    $('#save_button').click();
+                    if (event.target.id !== "annotationRemark")
+                        $('#save_button').click();
                     break;
                 case 46: //'DEL'
-                    handleDelete(event);
+                    if (event.target.id !== "annotationRemark")
+                        handleDelete(event);
                     break;
                 case 66: //b
                     break;
                 case 67: //c
-                    viewer.selectionInstance.toggleState();
+                    if (event.target.id !== "annotationRemark")
+                        viewer.selectionInstance.toggleState();
                     break;
             }
         });
