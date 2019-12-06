@@ -81,7 +81,7 @@ class BoundingBoxes {
             case 4:  // MULTI_LINE / POLYGON
             case 5:
                 var canvasObject = new paper.Path({
-                    closed: true,
+                    closed: selected_annotation_type.closed,
                 });
                 canvasObject.add(imagePoint);
                 canvasObject.data.type = "poly";
@@ -137,7 +137,10 @@ class BoundingBoxes {
         return {
             annotation_type: selected_annotation_type,
             id: canvasObject.name,
-            vector: this.getAnnotationVector(canvasObject.name)
+            vector: this.getAnnotationVector(canvasObject.name),
+            first_editor: {id: null, name: "you"},
+            last_editor: {id: null, name: "you"},
+            last_edit_time: new Date(Date.now())
         }
     }
 
@@ -193,7 +196,7 @@ class BoundingBoxes {
                     strokeColor: annotation.annotation_type.color_code,
                     strokeWidth: this.strokeWidth,
                     name: '#' + annotation.id,
-                    closed: true,
+                    closed: annotation.annotation_type.closed,
                     fillColor: new paper.Color(0, 0, 0, 0.000001)
                 });
                 poly.data.type = "poly";
@@ -266,8 +269,10 @@ class BoundingBoxes {
         globals.editedAnnotationsId = undefined;
         $('.annotation').removeClass('alert-info');
         globals.editActiveContainer.addClass('hidden');
-        $('#coordinate_table').hide();
+
+        $('#AnnotationInformation').hide();
         $('#annotation_buttons').hide();
+
         $('.annotate_button').prop('disabled', true);
 
         if (this.selection !== undefined) {
@@ -327,7 +332,7 @@ class BoundingBoxes {
                 case 4:  // MULTI_LINE / POLYGON
                 case 5:
                     var canvasObject = new paper.Path({
-                        closed: true
+                        closed: annotation_type.closed
                     });
                     for (var i = 0; i < item.segments.lenght; i++) {
                         canvasObject.add(item.segments[i].point);

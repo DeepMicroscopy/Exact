@@ -19,7 +19,8 @@ class AnnotationTypeSerializer(ModelSerializer):
             'color_code',
             'default_width',
             'default_height',
-            'sort_order'
+            'sort_order',
+            'closed'
         )
 
 
@@ -41,6 +42,10 @@ class AnnotationSerializer(ModelSerializer):
             'image',
             'concealed',
             'blurred',
+            'last_editor',
+            'user',
+            'deleted',
+            'description'
         )
 
     annotation_type = AnnotationTypeSerializer(read_only=True)
@@ -64,6 +69,8 @@ class AnnotationSerializerFast(ModelSerializer):
             'image',
             'concealed',
             'blurred',
+            'deleted',
+            'description'
         )
         read_only_fields = fields
 
@@ -74,23 +81,31 @@ class AnnotationSerializerFast(ModelSerializer):
 def serialize_annotation(anno: Annotation) -> Dict[str, Any]:
     return {
         'id': anno.id,
-        'concealed': anno.concealed,
-        'blurred': anno.blurred,
         'vector': anno.vector,
+        'last_edit_time': anno.last_edit_time,
+        'deleted': anno.deleted,
+        'description': anno.description,
         'annotation_type': {
             'id': anno.annotation_type.id,
+            'closed': anno.annotation_type.closed,
             'name': anno.annotation_type.name,
             'vector_type': anno.annotation_type.vector_type,
-            'node_count': anno.annotation_type.node_count,
-            'enable_concealed': anno.annotation_type.enable_concealed,
-            'enable_blurred': anno.annotation_type.enable_blurred,
-            'color_code': anno.annotation_type.color_code
+            'color_code': anno.annotation_type.color_code,
         },
         'image': {
             'id': anno.image.id,
             'name': anno.image.name
-        }
+        },
+        'last_editor': {
+            'id': anno.last_editor.id if anno.last_editor is not None else anno.user.id,
+            'name': anno.last_editor.username if anno.last_editor is not None else anno.user.username
+        },
+        'first_editor': {
+            'id': anno.user.id,
+            'name': anno.user.username
+        },
     }
+
 
 class AnnotationSerializerCustom(serializers.Serializer):
     id = serializers.IntegerField()
