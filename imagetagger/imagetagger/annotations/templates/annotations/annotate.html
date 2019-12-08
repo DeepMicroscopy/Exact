@@ -101,9 +101,11 @@
                             <div class="input-group">
                                 <select id="filter_annotation_type" class="form-control">
                                     <option value="Unverified" name="Unverified"
-                                            class="bold">{% trans 'Show unverified' %}</option>
+                                            class="bold">{% trans 'Show Unverified' %}</option>
                                     <option value="Verified" name="Verified"
                                             class="bold">{% trans 'Show Verified' %}</option>
+                                    <option value="All" name="All"
+                                            class="bold">{% trans 'Show All' %}</option>
                                 </select>
                                 <span class="input-group-btn">
                                       <button class="btn btn-primary" id="filter_update_btn"><span
@@ -185,7 +187,7 @@
                                     <div class="col-md-6">
                                         <label for="StrokeWidthSlider">Stroke Width</label>
                                         <input id="StrokeWidthSlider" type="range"  class="custom-range" min="1"
-                                               max="20" step="1" value="5"/>
+                                               max="40" step="1" value="5"/>
                                     </div>
 
                                     <div class="col-md-6" style="margin-top: 22px">
@@ -208,8 +210,8 @@
                                             <td>
                                                 <a id="annotationFirstEditor"></a>
                                             </td>
-                                            <td rowspan="4">
-                                                <textarea id="annotationRemark" rows="4" cols="15"
+                                            <td rowspan="5">
+                                                <textarea id="annotationRemark" rows="5" cols="15"
                                                           style="resize: none;">
                                                 </textarea>
                                             </td>
@@ -233,6 +235,13 @@
                                             <td>Unique ID:</td>
                                             <td>
                                                 <a id="annotationUniqueID"></a>
+                                            </td>
+                                        </tr>
+
+                                        <tr>
+                                            <td>Verified:</td>
+                                            <td>
+                                                <label id="annotationVerified"></label>
                                             </td>
                                         </tr>
 
@@ -348,9 +357,6 @@
 
                 <div id="annotations_loading" class="alert alert-info hidden">
                     <p> {% trans 'Loading Annotations ...' %} </p>
-                </div>
-                <div id="no_annotations"
-                     class="alert alert-warning{% if image_annotations %} hidden{% endif %}">{% trans 'No annotations found.' %}
                 </div>
 
                 <div style="width: 100%" id="zoomSlider">
