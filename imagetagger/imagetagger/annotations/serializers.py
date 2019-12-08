@@ -26,11 +26,16 @@ class AnnotationTypeSerializer(ModelSerializer):
 
 class AnnotationSerializer(ModelSerializer):
     verified_by_user = SerializerMethodField('is_verified_by_user')
+    is_verified = SerializerMethodField('is_verified')
+
+    def is_verified(self, annotation):
+
+        return Verification.objects.filter(annotation=annotation, verified=True).exists()
 
     def is_verified_by_user(self, annotation):
 
         user = self.context['request'].user
-        return Verification.objects.filter(user=user, annotation=annotation).exists()
+        return Verification.objects.filter(user=user, annotation=annotation, verified=True).exists()
 
     class Meta:
         model = Annotation
@@ -104,12 +109,5 @@ def serialize_annotation(anno: Annotation) -> Dict[str, Any]:
             'id': anno.user.id,
             'name': anno.user.username
         },
+        'is_verified': Verification.objects.filter(annotation=anno, verified=True).exists(),
     }
-
-
-class AnnotationSerializerCustom(serializers.Serializer):
-    id = serializers.IntegerField()
-    concealed = serializers.BooleanField()
-    blurred = serializers.BooleanField()
-    vector = serializers.JSONField()
-    #annotation_type =

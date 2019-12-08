@@ -32,7 +32,7 @@ globals = {
     var gZoomSlider;
     var gLastUpdateTimePoint = Math.floor(Date.now() / 1000);
     var gRefreshAnnotationsFromServer;
-    var gUpDateFromServerInterval = 3000; // 1s
+    var gUpDateFromServerInterval = 300000; // 300s
     var gShiftDown;
 
     var tool;
@@ -262,7 +262,8 @@ globals = {
                 if ($('#annotation_type_id').children().length > 0) {
                     selected_annotation_type = $('#annotation_type_id').children(':selected').data();
                     if (selected_annotation_type === undefined) {
-                        displayFeedback($('#feedback_annotation_type_missing'));
+                        $("#annotation_type_id").notify("You have to choose a type for the annotation.",
+                            {position: "right", className: "error"});
                         return;
                     } else {
                         selected_annotation_type = gAnnotationTypes[$('#annotation_type_id').children(':selected').val()]
@@ -350,28 +351,30 @@ globals = {
             delete tool;
         }
 
-        tool = new BoundingBoxes(viewer, gImageId, gImageInformation[gImageId]);
-        tool.strokeWidth = document.getElementById("StrokeWidthSlider").value;
+        if (gImageId > 0 && gImageId in gImageInformation) {
+            tool = new BoundingBoxes(viewer, gImageId, gImageInformation[gImageId]);
+            tool.strokeWidth = document.getElementById("StrokeWidthSlider").value;
 
-        if (gRefreshAnnotationsFromServer)
-            clearInterval(gRefreshAnnotationsFromServer);
-        else {
-            gRefreshAnnotationsFromServer = setInterval(function () {
-                options = {
-                    image_id: gImageId,
-                    'since': gLastUpdateTimePoint,
-                    'include_deleted': true
-                };
-                loadAnnotationsWithConditions(options);
-                gLastUpdateTimePoint = Math.floor(Date.now() / 1000);
-            }, gUpDateFromServerInterval);
+            if (gRefreshAnnotationsFromServer)
+                clearInterval(gRefreshAnnotationsFromServer);
+            else {
+                gRefreshAnnotationsFromServer = setInterval(function () {
+                    options = {
+                        image_id: gImageId,
+                        'since': gLastUpdateTimePoint,
+                        'include_deleted': true
+                    };
+                    loadAnnotationsWithConditions(options);
+                    gLastUpdateTimePoint = Math.floor(Date.now() / 1000);
+                }, gUpDateFromServerInterval);
+            }
+
+
+            if (globals.allAnnotations) {
+                tool.drawExistingAnnotations(globals.allAnnotations);
+            }
+            console.log("Created tool for " + tool.getImageId());
         }
-
-
-        if (globals.allAnnotations) {
-            tool.drawExistingAnnotations(globals.allAnnotations);
-        }
-        console.log("Created tool for " + tool.getImageId());
     }
 
 
@@ -387,7 +390,8 @@ globals = {
 
         var annotationTypeId = parseInt($('#annotation_type_id').val());
         if (annotationTypeId == -1 || isNaN(annotationTypeId || annotation === undefined)) {
-            displayFeedback($('#feedback_annotation_type_missing'));
+            $("#annotation_type_id").notify("You have to choose a type for the annotation.",
+                            {position: "right", className: "error"});
             return;
         }
 
@@ -578,16 +582,15 @@ globals = {
         imageId = parseInt(imageId);
 
         if (gImageList.indexOf(imageId) === -1) {
-            console.log(
-                'skiping request to load image ' + imageId +
-                ' as it is not in current image list.');
-            return;
+            viewer.close();
+        } else {
+            gImageId = imageId;
+            preloadAnnotations(imageId, gImageList);
+
+            viewer.open({tileSource: window.location.origin + "/images/image/" + imageId});
+
         }
 
-        gImageId = imageId;
-        preloadAnnotations(imageId, gImageList);
-
-        viewer.open({tileSource: window.location.origin + "/images/image/" + imageId});
     }
 
     /**
@@ -630,11 +633,12 @@ globals = {
         gImageList = getImageList();
 
         // load first image if current image is not within image set
-        if (!imageContained) {
+        if (imageList.length > 0) {
             loadAnnotateView(imageList[0].id);
+            scrollImageList();
+        } else {
+            loadAnnotateView(-1);
         }
-
-        scrollImageList();
     }
 
     /**
@@ -691,6 +695,8 @@ globals = {
         document.getElementById('annotationLastTime').innerText = isoStr.substring(0,10);
 
         document.getElementById('annotationRemark').value = annotation.description;
+
+        document.getElementById('annotationVerified').innerText = annotation.is_verified.toString();
 
         document.getElementById('annotationUniqueID').textContent = annotation.id;
         document.getElementById('annotationUniqueID').onclick = function(event) {
@@ -814,28 +820,40 @@ globals = {
     }
 
     function loadStatistics(imageId) {
-        let data = {
-            image_id: imageId
-        };
 
-        // update statistics
-        $.ajax(API_IMAGES_BASE_URL + 'image/statistics/', {
-            type: 'GET',
-            headers: gHeaders,
-            dataType: 'json',
-            data: data,
-            success: function (data) {
-                for (anno_type of data.statistics) {
-                    document.getElementById(anno_type.name + '_' + anno_type.id).innerHTML =
-                        anno_type.count + ' / ' + anno_type.verified_count;
+        if (imageId > 0) {
+            let data = {
+                image_id: imageId
+            };
+
+            // update statistics
+            $.ajax(API_IMAGES_BASE_URL + 'image/statistics/', {
+                type: 'GET',
+                headers: gHeaders,
+                dataType: 'json',
+                data: data,
+                success: function (data) {
+
+                    Object.keys(gAnnotationTypes).forEach(function (key) {
+                        document.getElementById(gAnnotationTypes[key].name + '_' + gAnnotationTypes[key].id).innerHTML = 0;
+                    });
+
+                    for (anno_type of data.statistics) {
+                        document.getElementById(anno_type.name + '_' + anno_type.id).innerHTML =
+                            anno_type.count + ' / ' + anno_type.verified_count;
+                    }
+                },
+                error: function () {
+
                 }
-            },
-            error: function () {
+            });
 
-            }
-        });
-
-        updatePlugins(imageId);
+            updatePlugins(imageId);
+        } else {
+            Object.keys(gAnnotationTypes).forEach(function (key) {
+                document.getElementById(gAnnotationTypes[key].name + '_' + gAnnotationTypes[key].id).innerHTML = 0;
+            });
+        }
     }
 
     /**
@@ -849,69 +867,70 @@ globals = {
 
         imageId = parseInt(imageId);
 
-        if (gImageList.indexOf(imageId) === -1) {
-            console.log(
-                'skiping request to load image ' + imageId +
-                ' as it is not in current image list.');
-            return;
+        if (imageId > 0) {
+            var loading = $('#annotations_loading');
+
+
+            loading.removeClass('hidden');
+            $('#annotation_type_id').val(gAnnotationType);
+
+            loadStatistics(imageId);
+            displayImage(imageId);
+
+            $('#annotation_buttons').hide();
+            $('#AnnotationInformation').hide();
+
+
+            scrollImageList();
+
+            $('.annotate_image_link').removeClass('active');
+            var link = $('#annotate_image_link_' + imageId);
+            link.addClass('active');
+            $('#active_image_name').text(link.text().trim());
+            let next_image_id = gImageList[gImageList.indexOf(imageId) + 1];
+            if (gImageList.length !== 1 && next_image_id === undefined) {
+                next_image_id = gImageList[0];
+            }
+            $('#next-image-id').attr('value', next_image_id || '');
+
+            if (fromHistory !== true) {
+                history.pushState({
+                    imageId: imageId
+                }, document.title, '/annotations/' + imageId + '/');
+            }
+
+            let handleNewAnnotations = function () {
+                // image is in cache.
+                globals.allAnnotations = gAnnotationCache[imageId];
+                setTool();
+                loading.addClass('hidden');
+                tool.drawExistingAnnotations(globals.allAnnotations);
+            };
+
+            // load existing annotations for this image
+            if (gAnnotationCache[imageId] === undefined) {
+                // image is not available in cache. Load it.
+                loadAnnotationsToCache(imageId);
+                $(document).one("ajaxStop", handleNewAnnotations);
+            } else if ($.isEmptyObject(gAnnotationCache[imageId])) {
+                // we are already loading the annotation, wait for ajax
+                $(document).one("ajaxStop", handleNewAnnotations);
+            } else {
+                handleNewAnnotations();
+            }
+
+            //loadImageList();
+        }
+        else {
+            // if the image set is empty
+            loadStatistics(imageId);
+            displayImage(imageId);
+            if (tool) {
+                tool.clear();
+                delete tool;
+            }
         }
 
-        var noAnnotations = $('#no_annotations');
-        var notInImage = $('#not_in_image');
-        var existingAnnotations = $('#existing_annotations');
-        var loading = $('#annotations_loading');
-        existingAnnotations.addClass('hidden');
-        noAnnotations.addClass('hidden');
-        notInImage.prop('checked', false).change();
-        loading.removeClass('hidden');
-        $('#annotation_type_id').val(gAnnotationType);
-
-        loadStatistics(imageId);
-        displayImage(imageId);
-
-        $('#annotation_buttons').hide();
-        $('#AnnotationInformation').hide();
-
-
-        scrollImageList();
-
-        $('.annotate_image_link').removeClass('active');
-        var link = $('#annotate_image_link_' + imageId);
-        link.addClass('active');
-        $('#active_image_name').text(link.text().trim());
-        let next_image_id = gImageList[gImageList.indexOf(imageId) + 1];
-        if (gImageList.length !== 1 && next_image_id === undefined) {
-            next_image_id = gImageList[0];
-        }
-        $('#next-image-id').attr('value', next_image_id || '');
-
-        if (fromHistory !== true) {
-            history.pushState({
-                imageId: imageId
-            }, document.title, '/annotations/' + imageId + '/');
-        }
-
-        let handleNewAnnotations = function () {
-            // image is in cache.
-            globals.allAnnotations = gAnnotationCache[imageId];
-            setTool();
-            loading.addClass('hidden');
-            tool.drawExistingAnnotations(globals.allAnnotations);
-        };
-
-        // load existing annotations for this image
-        if (gAnnotationCache[imageId] === undefined) {
-            // image is not available in cache. Load it.
-            loadAnnotationsToCache(imageId);
-            $(document).one("ajaxStop", handleNewAnnotations);
-        } else if ($.isEmptyObject(gAnnotationCache[imageId])) {
-            // we are already loading the annotation, wait for ajax
-            $(document).one("ajaxStop", handleNewAnnotations);
-        } else {
-            handleNewAnnotations();
-        }
-
-        loadImageList();
     }
 
     /**
@@ -939,9 +958,15 @@ globals = {
             success: function (data, textStatus, jqXHR) {
                 if (data.image_set.images.length === 0) {
                     // redirect to image set view.
-                    displayFeedback($('#feedback_image_set_empty'));
-                    filterElem.val('').change();
-                    return;
+                    if ($('#filter_annotation_type').val() ===  "Unverified") {
+                        $("#filter_annotation_type").notify("All images are verified. :)",
+                            {position: "top", className: "error", autoHide: false});
+
+                    } else {
+                        $("#filter_annotation_type").notify("The image set is empty with that filter applied.",
+                            {position: "top", className: "error"});
+                        //$('#filter_annotation_type').val('All');
+                    }
                 }
                 displayImageList(data.image_set.images);
             },
@@ -1142,38 +1167,15 @@ globals = {
                     newType.vector_type)) {
                     saveAnnotationAtServer(annotation)
                 } else { // reset annotation type on gui
-                    displayFeedback($('#feedback_annotation_type_can_not_be_set'));
+                    $("#annotation_type_id").notify("Conversion to this type is not allowed.",
+                        {position: "right", className: "error"});
 
-                    var annotationTypeId = '#annotation_type_' + annotation.annotation_type.id;
-                    var option = $(annotationTypeId);
-                    if (option.length) {
-                        $('#annotation_type_id').val(option.val());
-                    }
+                    document.getElementById('annotation_type_id').value = annotation.annotation_type.id;
                 }
             }
         }
     }
 
-    function handleMouseDown(event) {
-
-        if (!$('#draw_annotations').is(':checked'))
-            return;
-
-        if (parseInt($('#annotation_type_id').val()) === -1) {
-            displayFeedback($('#feedback_annotation_type_missing'));
-            return;
-        }
-
-        tool.handleMouseDown(event);
-    }
-
-    function handleMouseUp(event) {
-        return;
-        if (!$('#draw_annotations').is(':checked'))
-            return;
-
-        tool.handleMouseUp(event);
-    }
 
     // handle DEL key press
     function handleDelete(event) {
@@ -1212,9 +1214,28 @@ globals = {
         }
     }
 
+    function syncAnnotationFromServer(anno, tempid) {
+        // update current annotations
+        var index = globals.allAnnotations.findIndex((elem) => elem.id === anno.id);
+        if (index === -1) {
+            if (tempid !== false) {
+                index = globals.allAnnotations.findIndex((elem) => elem.id === tempid);
+
+                tool.updateName(tempid, anno.id);
+                globals.allAnnotations[index] = anno;
+            }
+            globals.allAnnotations.push(anno)
+        } else {
+            globals.allAnnotations[index] = anno;
+        }
+
+        gAnnotationCache[gImageId] = globals.allAnnotations;
+    }
+
 
     $(function () {
         let get_params = decodeURIComponent(window.location.search.substring(1)).split('&');
+
         let editAnnotationId = undefined;
         for (let i = 0; i < get_params.length; i++) {
             let parameter = get_params[i].split('=');
@@ -1234,6 +1255,8 @@ globals = {
             "Content-Type": 'application/json',
             "X-CSRFTOKEN": gCsrfToken
         };
+
+        loadImageList();
         gImageList = getImageList();
         preloadAnnotations(gImageId, gImageList);
         loadAnnotationTypeList(gImageSetId);
@@ -1295,8 +1318,9 @@ globals = {
                 dataType: 'json',
                 data: JSON.stringify(data_val),
                 success: function (data) {
-                    displayFeedback($('#feedback_verify_successful'));
-                    loadImageList();
+                    syncAnnotationFromServer(data.annotation, false);
+
+                    $('#verify_annotation_button').notify('The annotation has been verified.', "info");
                 },
                 error: function () {
                     displayFeedback($('#feedback_connection_error'));
@@ -1326,7 +1350,7 @@ globals = {
 
             if (globals.allAnnotations.length == 0) {
 
-                var annotationTypeId = parseInt($('#annotation_type_id').val());
+                var annotationTypeId = parseInt($('#annotation_type_0').val());
                 var action = 'create';
                 var data = {
                     annotation_type_id: annotationTypeId,
@@ -1342,7 +1366,6 @@ globals = {
                     dataType: 'json',
                     data: JSON.stringify(data),
                     success: function (data) {
-                        displayFeedback($('#feedback_verify_successful'));
 
                         let data_val = {
                             annotation_id: data.annotations["0"].id,
@@ -1356,8 +1379,9 @@ globals = {
                             dataType: 'json',
                             data: JSON.stringify(data_val),
                             success: function (data) {
-                                displayFeedback($('#feedback_verify_successful'));
+                                $('#next_button').notify('The image has been verified.', "warn");
                                 loadImageList();
+                                loadAdjacentImage(1);
                             },
                             error: function () {
                                 displayFeedback($('#feedback_connection_error'));
@@ -1368,32 +1392,27 @@ globals = {
                         displayFeedback($('#feedback_connection_error'));
                     }
                 })
-            }
-
-            for (i = 0; i < globals.allAnnotations.length; i++) {
-                let anno = globals.allAnnotations[i];
+            } else {
 
                 let data = {
-                    annotation_id: anno.id,
-                    state: 'accept',
+                    image_id: gImageId,
+                    state: 'accept'
                 };
 
-                $.ajax(API_ANNOTATIONS_BASE_URL + 'annotation/verify/', {
+                $.ajax(API_IMAGES_BASE_URL + 'image/verify/', {
                     type: 'POST',
                     headers: gHeaders,
                     dataType: 'json',
                     data: JSON.stringify(data),
                     success: function (data) {
-                        displayFeedback($('#feedback_verify_successful'));
+                        loadImageList();
+                        loadAdjacentImage(1);
                     },
                     error: function () {
                         displayFeedback($('#feedback_connection_error'));
                     }
                 })
             }
-
-            loadImageList();
-            loadAdjacentImage(1);
         });
         $('.js_feedback').mouseover(function () {
             $(this).addClass('hidden');
@@ -1454,11 +1473,6 @@ globals = {
                 loadAnnotateView(event.state.imageId, true);
             }
         };
-
-        // attach listeners for mouse events
-        $(document).on('mousedown.annotation_edit', handleMouseDown);
-        // we have to bind the mouse up event globally to also catch mouseup on small selections
-        $(document).on('mouseup.annotation_edit', handleMouseUp);
 
         $(document).keydown(function (event) {
             switch (event.keyCode) {

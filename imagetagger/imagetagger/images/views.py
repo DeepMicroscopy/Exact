@@ -61,12 +61,18 @@ plugin_finder = PluginFinder(image_cache)
 
 def get_verified_ids(request, imageset):
     images = Image.objects.filter(image_set=imageset).order_by('name')
-    return images.filter(annotations__annotation_type__active=True, annotations__verifications__verified=True).distinct()
+    # find all images with verified annotations
+    images = images.filter(annotations__annotation_type__active=True, annotations__deleted=False,
+                         annotations__verifications__verified=True)
+    # remove all with one unverified id
+    images = images.exclude(annotations__verifications__verified=False).distinct()
+    return images
 
 
 def get_unverified_ids(request, imageset):
     images = Image.objects.filter(image_set=imageset).order_by('name')
-    unverified = images.filter(annotations__annotation_type__active=True, annotations__verifications__verified=False).distinct()
+    unverified = images.filter(annotations__annotation_type__active=True, annotations__deleted=False,
+                               annotations__verifications__verified=False).distinct()
     unannotated = images.annotate(annotation_count=Count('annotations')).filter(annotation_count__exact=0).distinct()
 
     # TODO_ Convert to single query
@@ -968,6 +974,37 @@ def download_imageset_zip(request, image_set_id):
     return response
 
 
+
+@login_required
+@api_view(['POST'])
+def api_verify_image(request) -> Response:
+    try:
+        image_id = int(request.data['image_id'])
+        if request.data['state'] == 'accept':
+            state = True
+        elif request.data['state'] == 'reject':
+            state = False
+        else:
+            raise ParseError
+
+    except (KeyError, TypeError, ValueError):
+        raise ParseError
+
+    image = get_object_or_404(Image, pk=image_id)
+
+    if not image.image_set.has_perm('verify', request.user):
+        return Response({
+            'detail': 'permission for verifying annotations in this image set missing.',
+        }, status=HTTP_403_FORBIDDEN)
+
+    for annotation in image.annotations.filter(verifications__verified=not state, verifications__user=request.user):
+        annotation.verify(request.user, state)
+
+    return Response({
+        'state': request.data['state'],
+    }, status=HTTP_200_OK)
+
+
 @login_required
 @api_view(['GET'])
 def load_image_set(request) -> Response:
@@ -987,13 +1024,12 @@ def load_image_set(request) -> Response:
 
     serializer = ImageSetSerializer(image_set)
     serialized_image_set = serializer.data
-    if type(filter_annotation_type_id) is int:
-        filter_annotation_type = get_object_or_404(
-            AnnotationType, pk=filter_annotation_type_id)
+    if filter_annotation_type_id is not None and filter_annotation_type_id.isdigit():
         # TODO: find a cleaner solution to filter related field set wihtin ImageSet serializer
         serialized_image_set['images'] = ImageSerializer(
-            image_set.images.exclude(
-                annotations__annotation_type=filter_annotation_type).order_by(
+            image_set.images.filter(
+                annotations__deleted=False, annotations__annotation_type__active=True,
+                annotations__annotation_type__id=int(filter_annotation_type_id)).distinct().order_by(
                 'name'), many=True).data
     elif type(filter_annotation_type_id) is str:
         if filter_annotation_type_id == "Unverified":
@@ -1001,16 +1037,21 @@ def load_image_set(request) -> Response:
             serialized_image_set['images'] = ImageSerializer(
                 image_set.images.filter(id__in=ids).order_by(
                 'name'), many=True).data
-        else:
+        elif filter_annotation_type_id == "Verified":
             ids = get_verified_ids(request, image_set)
             serialized_image_set['images'] = ImageSerializer(
                 image_set.images.filter(id__in=ids).order_by(
                 'name'), many=True).data
+        else:
+            serialized_image_set['images'] = ImageSerializer(
+                image_set.images.order_by('name'), many=True).data
+
 
     else:
         # TODO: find a cleaner solution to order related field set wihtin ImageSet serializer
         serialized_image_set['images'] = ImageSerializer(
             image_set.images.order_by('name'), many=True).data
+
     return Response({
         'image_set': serialized_image_set,
     }, status=HTTP_200_OK)

@@ -719,7 +719,7 @@
 	 *
 	 **/
 	function onOpen(event) {
-		OSD.console.log('!!! [onOpen]');
+		//OSD.console.log('!!! [onOpen]');
 		var tiledImage = this._viewer.world.getItemAt(this._worldIndex);
 
 		this._haveImage = true;
@@ -736,7 +736,7 @@
 	 *
 	 **/
 	function onClose() {
-		OSD.console.log('!!! [onClose]');
+		//OSD.console.log('!!! [onClose]');
 		this._haveImage = false;
 		this.imgWidth = 0.0;
 		this.imgHeight = 0.0;
@@ -797,7 +797,7 @@
 	 **/
 	function onWorldAddItem(event) {
 		//OSD.console.log( '!!! onWorldAddItem', request.status, url );
-		OSD.console.log('!!! [onWorldAddItem]');
+		//OSD.console.log('!!! [onWorldAddItem]');
 		// this._trackZoomPan();
 	}
 
@@ -807,7 +807,7 @@
 	 *
 	 **/
 	function onWorldRemoveItem(event) {
-		OSD.console.log('!!! [onWorldRemoveItem]');
+		//OSD.console.log('!!! [onWorldRemoveItem]');
 		// this._trackZoomPan();
 	}
 
@@ -817,7 +817,7 @@
 	 *
 	 **/
 	function onWorldItemIndexChange(event) {
-		OSD.console.log('!!! [onWorldItemIndexChange]');
+		//OSD.console.log('!!! [onWorldItemIndexChange]');
 		// this._trackZoomPan();
 	}
 
@@ -827,7 +827,7 @@
 	 *
 	 **/
 	function onWorldMetricsChange(event) {
-		OSD.console.log('!!! [onWorldMetricsChange]');
+		//OSD.console.log('!!! [onWorldMetricsChange]');
 		// this._trackZoomPan();
 	}
 
