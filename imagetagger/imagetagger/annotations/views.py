@@ -21,7 +21,7 @@ from imagetagger.annotations.forms import ExportFormatCreationForm, ExportFormat
 from imagetagger.annotations.models import Annotation, AnnotationType, Export, \
     Verification, ExportFormat
 from imagetagger.annotations.serializers import AnnotationSerializer, AnnotationTypeSerializer, \
-    AnnotationSerializerFast, AnnotationSerializerCustom, serialize_annotation
+    AnnotationSerializerFast, serialize_annotation
 from imagetagger.images.models import Image, ImageSet
 from imagetagger.users.models import Team
 
@@ -637,16 +637,14 @@ def load_annotations(request) -> Response:
 
     if since is not None:
         annotations = annotations.filter(last_edit_time__gte=
-                                         datetime.datetime.fromtimestamp(int(since))) #pytz.utc.localize(
+                                         datetime.datetime.fromtimestamp(int(since)))
         annotations = annotations.filter(~Q(last_editor__username=request.user.username))
 
     if min_x is not None and min_y is not None and max_x is not None and max_y is not None:
         annotations =  annotations.filter(x1__gte=int(min_x), y1__gte=int(min_y),
                                           x1__lte=int(max_x), y2__lte=int(max_y))
 
-    t = time.process_time()
     data = [serialize_annotation(a) for a in annotations]
-    print(time.process_time() - t)
 
     respond = Response({
         'annotations': data,
@@ -877,26 +875,40 @@ def api_verify_annotation(request) -> Response:
 
     if state:
         annotation.verify(request.user, True)
+        serializer = AnnotationSerializer(
+            annotation,
+            context={'request': request, },
+            many=False)
+
         if Verification.objects.filter(
                 user=request.user,
                 verified=state,
                 annotation=annotation).exists():
             return Response({
+                'annotation': serializer.data,
                 'detail': 'the user already verified this annotation and verified it now',
             }, status=HTTP_200_OK)
         return Response({
+            'annotation': serializer.data,
             'detail': 'you verified the last annotation',
         }, status=HTTP_200_OK)
     else:
         annotation.verify(request.user, False)
+        serializer = AnnotationSerializer(
+            annotation,
+            context={'request': request, },
+            many=False)
+
         if Verification.objects.filter(
                 user=request.user,
                 verified=state,
                 annotation=annotation).exists():
             return Response({
+                'annotation': serializer.data,
                 'detail': 'the user already verified this annotation and rejected it now',
             }, status=HTTP_200_OK)
         return Response({
+            'annotation': serializer.data,
             'detail': 'you rejected the last annotation',
         }, status=HTTP_200_OK)
 
