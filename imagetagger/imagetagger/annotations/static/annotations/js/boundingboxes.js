@@ -221,7 +221,7 @@ class BoundingBoxes {
 
             var annotation = annotations[a];
 
-            if (annotation.vector === null) {
+            if (annotation.vector === null || this.getItemFromID(annotation.id) !== undefined) {
                 continue;
             }
 
@@ -264,7 +264,7 @@ class BoundingBoxes {
      * Delete current selection.
      */
     resetSelection() {
-        $('.annotation_value').val(0);
+        //$('.annotation_value').val(0);
 
         globals.editedAnnotationsId = undefined;
         $('.annotation').removeClass('alert-info');
@@ -273,7 +273,7 @@ class BoundingBoxes {
         $('#AnnotationInformation').hide();
         $('#annotation_buttons').hide();
 
-        $('.annotate_button').prop('disabled', true);
+        //$('.annotate_button').prop('disabled', false);
 
         if (this.selection !== undefined) {
             this.selection.item.selected = false;
@@ -484,8 +484,10 @@ class BoundingBoxes {
         var hitResult = this.group.hitTest(point, this.hitOptions);
 
         if (hitResult) {
-            this.selection = hitResult;
+            //hitResult.item = this.group.children[hitResult.item.name]
             hitResult.item.selected = true;
+            this.selection = hitResult;
+
 
             // bounding box coordinates
             var bounding = [hitResult.item.bounds.getTopLeft(), hitResult.item.bounds.getBottomLeft(),

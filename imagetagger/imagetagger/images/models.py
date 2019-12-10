@@ -12,7 +12,7 @@ class Image(models.Model):
     image_set = models.ForeignKey(
         'ImageSet', on_delete=models.CASCADE, related_name='images')
     name = models.CharField(max_length=100)
-    filename = models.CharField(max_length=100, unique=True)
+    filename = models.CharField(max_length=100)
     time = models.DateTimeField(auto_now_add=True)
     checksum = models.BinaryField()
     mpp = models.FloatField(default=0)
@@ -47,16 +47,29 @@ class ImageSet(models.Model):
             'team',
         ]
 
-    class ZipState:
-        INVALID = 0
-        READY = 1
-        PROCESSING = 2
+    class CollaborationTypes:
+        COLLABORATIVE = 0
+        COMPETITIVE = 1
+        SECONDOPINION = 2
+
+    COLLABORATION_TYPES = (
+        (CollaborationTypes.COLLABORATIVE, 'Collaborative'),
+        (CollaborationTypes.COMPETITIVE, 'Competitive'),
+        (CollaborationTypes.SECONDOPINION, 'SecondOpinion'),
+    )
 
     PRIORITIES = (
         (1, 'High'),
         (0, 'Normal'),
         (-1, 'Low'),
     )
+
+
+    class ZipState:
+        INVALID = 0
+        READY = 1
+        PROCESSING = 2
+
     ZIP_STATES = (
         (ZipState.INVALID, 'invalid'),
         (ZipState.READY, 'ready'),
@@ -92,6 +105,7 @@ class ImageSet(models.Model):
     )
     pinned_by = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='pinned_sets')
     zip_state = models.IntegerField(choices=ZIP_STATES, default=ZipState.INVALID)
+    collaboration_type = models.IntegerField(choices=COLLABORATION_TYPES, default=CollaborationTypes.COLLABORATIVE)
 
     def root_path(self):
         return os.path.join(settings.IMAGE_PATH, self.path)
