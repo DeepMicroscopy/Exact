@@ -366,6 +366,16 @@
                                         </tr>
                                         <tr>
                                             <td>
+                                                <label for="image-lock">{{ edit_form.collaboration_type.label }}
+                                                    <span class="glyphicon glyphicon-question-sign" data-toggle="tooltip" data-placement="right" title="Decides whether the annotations will be shared between the participants"></span>
+                                                </label>
+                                            </td>
+                                            <td>
+                                                {% render_field edit_form.collaboration_type class+='form-control' %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
                                                 <label for="image-lock">{{ edit_form.main_annotation_type.label }}
                                                     <span class="glyphicon glyphicon-question-sign" data-toggle="tooltip" data-placement="right" title="The preferred annotation type to label in this set."></span>
                                                 </label>

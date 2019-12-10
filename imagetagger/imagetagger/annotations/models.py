@@ -227,6 +227,20 @@ class Annotation(models.Model):
                 annotation=self, user=user, verified=verified)
 
     @staticmethod
+    def equal_annotation(
+            vector: Union[dict, None], image: Image,
+            annotation_type: 'AnnotationType', request):
+
+        if image.image_set.collaboration_type == ImageSet.CollaborationTypes.COLLABORATIVE:
+            return image.annotations.filter(vector=vector, annotation_type_id=annotation_type.id).count() != 0
+        elif image.image_set.collaboration_type == ImageSet.CollaborationTypes.COMPETITIVE:
+            return image.annotations.filter(vector=vector, annotation_type_id=annotation_type.id, user=request.user).count() != 0
+
+
+
+
+
+    @staticmethod
     def similar_annotations(
             vector: Union[dict, None], image: Image,
             annotation_type: 'AnnotationType', max_similarity: int = 5,

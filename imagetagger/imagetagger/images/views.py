@@ -61,19 +61,38 @@ plugin_finder = PluginFinder(image_cache)
 
 def get_verified_ids(request, imageset):
     images = Image.objects.filter(image_set=imageset).order_by('name')
-    # find all images with verified annotations
-    images = images.filter(annotations__annotation_type__active=True, annotations__deleted=False,
-                         annotations__verifications__verified=True)
-    # remove all with one unverified id
-    images = images.exclude(annotations__verifications__verified=False).distinct()
+
+    if imageset.collaboration_type == ImageSet.CollaborationTypes.COLLABORATIVE:
+        # find all images with verified annotations
+        images = images.filter(annotations__annotation_type__active=True, annotations__deleted=False,
+                             annotations__verifications__verified=True)
+
+    if imageset.collaboration_type == ImageSet.CollaborationTypes.COMPETITIVE:
+        # find all images with verified annotations
+        images = images.filter(annotations__annotation_type__active=True, annotations__deleted=False,
+                             annotations__verifications__verified=True, annotations__user=request.user)
+        # remove all with one unverified id
+        images = images.exclude(id__in=images.filter(annotations__annotation_type__active=True,
+                                                     annotations__deleted=False,
+                                                     annotations__verifications__verified=False,
+                                                     annotations__user=request.user))
+
     return images
 
 
 def get_unverified_ids(request, imageset):
     images = Image.objects.filter(image_set=imageset).order_by('name')
-    unverified = images.filter(annotations__annotation_type__active=True, annotations__deleted=False,
-                               annotations__verifications__verified=False).distinct()
-    unannotated = images.annotate(annotation_count=Count('annotations')).filter(annotation_count__exact=0).distinct()
+
+    if imageset.collaboration_type == ImageSet.CollaborationTypes.COLLABORATIVE:
+        unverified = images.filter(annotations__annotation_type__active=True, annotations__deleted=False,
+                                   annotations__verifications__verified=False).distinct()
+        unannotated = images.annotate(annotation_count=Count('annotations')).filter(annotation_count__exact=0).distinct()
+
+    if imageset.collaboration_type == ImageSet.CollaborationTypes.COMPETITIVE:
+        unverified = images.filter(annotations__annotation_type__active=True, annotations__deleted=False,
+                                   annotations__verifications__verified=False, annotations__user=request.user).distinct()
+        unannotated = images.annotate(annotation_count=Count('annotations', filter=Q(annotations__user=request.user)))\
+            .filter(annotation_count__exact=0).distinct()
 
     # TODO_ Convert to single query
     return Image.objects.filter(id__in = [a.id for a in unverified] + [a.id for a in unannotated]) #Q(unverified) | Q(unannotated)
@@ -634,14 +653,30 @@ def view_imageset(request, image_set_id):
             annotations__annotation_type_id=request.POST.get("selected_annotation_type"))
     # a list of annotation types used in the imageset
     all_annotation_types = AnnotationType.objects.filter(active=True, name__in=[tag.name for tag in imageset.set_tags.all()])
-    annotations = Annotation.objects.filter(
-        image__in=images,
-        annotation_type__active=True).order_by("id")
-    annotation_types = AnnotationType.objects.filter(annotation__image__image_set=imageset, active=True)\
-        .distinct().order_by('sort_order')\
-        .annotate(count=Count('annotation'),
-                  in_image_count=Count('annotation', filter=Q(annotation__vector__isnull=False)),
-                  not_in_image_count=Count('annotation', filter=Q(annotation__vector__isnull=True)))
+
+    if imageset.collaboration_type == ImageSet.CollaborationTypes.COLLABORATIVE:
+        annotations = Annotation.objects.filter(
+            image__image_set=imageset,
+            deleted=False,
+            annotation_type__active=True).order_by("id")
+        annotation_types = AnnotationType.objects.filter(annotation__image__image_set=imageset, active=True)\
+            .distinct().order_by('sort_order')\
+            .annotate(count=Count('annotation'),
+                      in_image_count=Count('annotation', filter=Q(annotation__verifications__verified=True)),
+                      not_in_image_count=Count('annotation', filter=Q(annotation__verifications__verified=False)))
+
+    if imageset.collaboration_type == ImageSet.CollaborationTypes.COMPETITIVE:
+        annotations = Annotation.objects.filter(
+            image__image_set=imageset,
+            deleted=False,
+            user=request.user,
+            annotation_type__active=True).order_by("id")
+        annotation_types = AnnotationType.objects.filter(annotation__image__image_set=imageset, active=True, annotation__user=request.user)\
+            .distinct().order_by('sort_order')\
+            .annotate(count=Count('annotation'),
+                      in_image_count=Count('annotation', filter=Q(annotation__verifications__verified=True, annotation__user=request.user)),
+                      not_in_image_count=Count('annotation', filter=Q(annotation__verifications__verified=False, annotation__user=request.user)))
+
     first_annotation = annotations.first()
     user_teams = Team.objects.filter(members=request.user)
     imageset_edit_form = ImageSetEditForm(instance=imageset)
@@ -683,13 +718,24 @@ def image_statistics(request) -> Response:
             'detail': 'permission for reading this image set missing.',
         }, status=HTTP_403_FORBIDDEN)
 
-    annotation_types = AnnotationType.objects.filter(annotation__image=image, active=True)\
-        .distinct().order_by('sort_order')\
-        .annotate(count=Count('annotation'),
-                  in_image_count=Count('annotation', filter=Q(annotation__vector__isnull=False)),
-                  verified_count=Count('annotation', filter=Q(annotation__verifications__verified=True)),
-                  unverified_count=Count('annotation', filter=Q(annotation__verifications__verified=False)),
-                  not_in_image_count=Count('annotation', filter=Q(annotation__vector__isnull=True)))
+    if image.image_set.collaboration_type == ImageSet.CollaborationTypes.COLLABORATIVE:
+        annotation_types = AnnotationType.objects.filter(annotation__image=image, active=True, annotation__deleted=False)\
+            .distinct().order_by('sort_order')\
+            .annotate(count=Count('annotation'),
+                      in_image_count=Count('annotation', filter=Q(annotation__vector__isnull=False)),
+                      verified_count=Count('annotation', filter=Q(annotation__verifications__verified=True)),
+                      unverified_count=Count('annotation', filter=Q(annotation__verifications__verified=False)),
+                      not_in_image_count=Count('annotation', filter=Q(annotation__vector__isnull=True)))
+
+    if image.image_set.collaboration_type == ImageSet.CollaborationTypes.COMPETITIVE:
+        annotation_types = AnnotationType.objects.filter(annotation__image=image, active=True, annotation__deleted=False, annotation__user=request.user)\
+            .distinct().order_by('sort_order')\
+            .annotate(count=Count('annotation'),
+                      in_image_count=Count('annotation', filter=Q(annotation__vector__isnull=False, annotation__user=request.user)),
+                      verified_count=Count('annotation', filter=Q(annotation__verifications__verified=True, annotation__user=request.user)),
+                      unverified_count=Count('annotation', filter=Q(annotation__verifications__verified=False, annotation__user=request.user)),
+                      not_in_image_count=Count('annotation', filter=Q(annotation__vector__isnull=True, annotation__user=request.user)))
+
 
     data = [t for t in annotation_types.values()]
 
@@ -879,11 +925,13 @@ def label_upload(request, imageset_id):
                                                " \"{}\" was not accepted as valid JSON".format(line_frags[0], line_frags[2]))
 
                     if annotation_type.validate_vector(vector):
-                        if not Annotation.similar_annotations(vector, image, annotation_type):
+                        #if not Annotation.similar_annotations(vector, image, annotation_type):
+                        if not Annotation.equal_annotation(vector, image, annotation_type, request):
                             annotation = Annotation()
                             annotation.annotation_type = annotation_type
                             annotation.image = image
                             annotation.user = request.user
+                            annotation.last_editor = request.user
                             annotation.vector = vector
                             annotation._blurred = blurred
                             annotation._concealed = concealed

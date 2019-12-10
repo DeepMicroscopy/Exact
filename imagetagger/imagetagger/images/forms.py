@@ -37,6 +37,7 @@ class ImageSetEditForm(forms.ModelForm):
             'public_collaboration',
             'image_lock',
             'priority',
+            'collaboration_type',
             'main_annotation_type',
         ]
 

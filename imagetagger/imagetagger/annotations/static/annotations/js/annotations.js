@@ -488,7 +488,7 @@ globals = {
             annotationTypeToolSelect.append($('<option/>', {
                 name: annotationType.name,
                 value: annotationType.id,
-                style: "background-color: " + annotationType.color_code,
+                //style: "background-color: " + annotationType.color_code,
                 html: annotationType.name + ' (' + (key) + ')',
                 id: 'annotation_type_' + (key),
                 'data-vector-type': annotationType.vector_type,
@@ -696,7 +696,8 @@ globals = {
 
         document.getElementById('annotationRemark').value = annotation.description;
 
-        document.getElementById('annotationVerified').innerText = annotation.is_verified.toString();
+        if (annotation.is_verified !== undefined)
+            document.getElementById('annotationVerified').innerText = annotation.is_verified.toString();
 
         document.getElementById('annotationUniqueID').textContent = annotation.id;
         document.getElementById('annotationUniqueID').onclick = function(event) {
@@ -705,7 +706,7 @@ globals = {
 
 
 
-        $('.annotate_button').prop('disabled', false);
+        //$('.annotate_button').prop('disabled', true);
     }
 
     /**
@@ -1135,13 +1136,15 @@ globals = {
         var imageLink = $('#annotate_image_link_' + gImageId);
         var list = $('#image_list');
 
-        var offset = list.offset().top;
-        var linkTop = imageLink.offset().top;
+        if (imageLink.offset() !== undefined) {
+            var offset = list.offset().top;
+            var linkTop = imageLink.offset().top;
 
-        // link should be (roughly) in the middle of the element
-        offset += parseInt(list.height() / 2);
+            // link should be (roughly) in the middle of the element
+            offset += parseInt(list.height() / 2);
 
-        list.scrollTop(list.scrollTop() + linkTop - offset);
+            list.scrollTop(list.scrollTop() + linkTop - offset);
+        }
     }
 
     /**
@@ -1328,6 +1331,7 @@ globals = {
             })
         });
         $('#save_button').click(function () {
+            event.preventDefault();
             finishAnnotation(globals.editedAnnotationsId);
         });
         $('#reset_button').click(function () {
@@ -1432,7 +1436,7 @@ globals = {
                     item.bounds.topLeft.y,
                     item.bounds.width,
                     item.bounds.height
-                ))
+                ));
                 const vpPos = viewer.viewport.imageToViewportCoordinates(item.bounds.centerX, item.bounds.centerY)
                 viewer.viewport.fitBoundsWithConstraints(new OpenSeadragon.Rect(
                     vpPos.x - vpRect.width / 2,
@@ -1453,7 +1457,7 @@ globals = {
                     item.bounds.topLeft.y,
                     item.bounds.width,
                     item.bounds.height
-                ))
+                ));
                 const vpPos = viewer.viewport.imageToViewportCoordinates(item.bounds.centerX, item.bounds.centerY)
                 viewer.viewport.fitBoundsWithConstraints(new OpenSeadragon.Rect(
                     vpPos.x - vpRect.width / 2,
@@ -1593,7 +1597,7 @@ globals = {
                     break;
                 case 13: //'enter'
                     if (event.target.id !== "annotationRemark")
-                        $('#save_button').click();
+                        finishAnnotation(globals.editedAnnotationsId);
                     break;
                 case 16: // Shift
                     break;
@@ -1623,7 +1627,7 @@ globals = {
                     break;
                 case 86: //'v'
                     if (event.target.id !== "annotationRemark")
-                        $('#save_button').click();
+                        finishAnnotation(globals.editedAnnotationsId);
                     break;
                 case 46: //'DEL'
                     if (event.target.id !== "annotationRemark")
