@@ -27,7 +27,7 @@
                     </div>
                     <table class="table table-striped">
                         <tbody>
-                            <form action="{% url "administration:edit_annotation_type" annotation_type.id %}" method="POST">
+                            <form action="{% url "administration:edit_annotation_type" annotation_type.id %}" enctype="multipart/form-data" method="POST">
                                 {% csrf_token %}
                                 <tr>
                                     <td>
@@ -129,6 +129,27 @@
                                         {% render_field edit_form.sort_order class+='form-control' %}
                                     </td>
                                 </tr>
+
+                                <tr>
+                                    <td>
+                                        <label> Example: </label>
+                                    </td>
+                                    <td>
+                                        <a href="{{ annotation_type.image_file}}">
+                                            <img src="{{ annotation_type.image_file}}" style="widows: 50px; height: 50px" >
+                                        </a>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>
+                                        <label> Upload New Example: </label>
+                                    </td>
+                                    <td>
+                                        <input type="file" name="image_file">
+                                    </td>
+                                </tr>
+
                                 <tr>
                                     <td>
                                     </td>

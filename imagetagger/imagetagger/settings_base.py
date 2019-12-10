@@ -71,6 +71,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'imagetagger.base.context_processors.base_data',
+                'django.template.context_processors.media',
             ],
         },
     },
@@ -140,6 +141,9 @@ EXPORT_SEPARATOR = '|'
 DATA_PATH = os.path.join(BASE_DIR, 'data')
 
 IMAGE_PATH = os.path.join(BASE_DIR, 'images')  # the absolute path to the folder with the imagesets
+
+MEDIA_ROOT= os.path.join(BASE_DIR, 'media')
+MEDIA_URL= "/media/"
 
 # filename extension of accepted imagefiles
 IMAGE_EXTENSION = {

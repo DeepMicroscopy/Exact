@@ -16,7 +16,11 @@ Including another URLconf
 from django.conf.urls import url, include
 from django.contrib import admin
 from django.shortcuts import render
+from django.conf import settings
+from django.conf.urls.static import static
+
 from registration.backends.hmac.views import RegistrationView
+
 
 from .users.forms import UserRegistrationForm
 
@@ -32,7 +36,7 @@ urlpatterns = [
     url(r'^users/', include('imagetagger.users.urls')),
     url(r'^tagger_messages/', include('imagetagger.tagger_messages.urls')),
     url(r'^tools/', include('imagetagger.tools.urls')),
-]
+] + static(settings.MEDIA_URL, document_root= settings.MEDIA_ROOT)
 
 
 def handler500(request):

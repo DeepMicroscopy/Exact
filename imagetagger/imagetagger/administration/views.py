@@ -4,6 +4,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
 from django.db import transaction
+from django.core.files.storage import FileSystemStorage
 
 from .forms import AnnotationTypeCreationForm, AnnotationTypeEditForm
 from imagetagger.annotations.models import Annotation, AnnotationType
@@ -65,6 +66,12 @@ def edit_annotation_type(request, annotation_type_id):
             selected_annotation_type.default_height = request.POST['default_height']
             selected_annotation_type.color_code = request.POST['color_code']
             selected_annotation_type.sort_order = request.POST['sort_order']
+
+            file = request.FILES['image_file']
+            fs = FileSystemStorage()
+            filename = fs.save(file.name, file)
+
+            selected_annotation_type.image_file = fs.url(filename)
             selected_annotation_type.save()
 
             messages.success(request, _('The annotation type was edited successfully.'))
