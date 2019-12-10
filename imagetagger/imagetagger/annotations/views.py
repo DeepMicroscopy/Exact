@@ -575,18 +575,6 @@ def create_annotation(request) -> Response:
             'detail': 'permission for annotating in this image set missing.',
         }, status=HTTP_403_FORBIDDEN)
 
-    if Annotation.similar_annotations(vector, image, annotation_type):
-        serializer = AnnotationSerializer(
-            image.annotations.filter(annotation_type__active=True, deleted=False).select_related()
-            .order_by('annotation_type__sort_order'),
-            context={
-                'request': request,
-            },
-            many=True)
-        return Response({
-            'annotations': serializer.data,
-            'detail': 'similar annotation exists.',
-        })
 
     with transaction.atomic():
         annotation = Annotation.objects.create(
@@ -632,6 +620,10 @@ def load_annotations(request) -> Response:
         }, status=HTTP_403_FORBIDDEN)
 
     annotations = image.annotations.select_related().filter(annotation_type__active=True)
+
+    if image.image_set.collaboration_type == ImageSet.CollaborationTypes.COMPETITIVE:
+        annotations = annotations.filter(user=request.user)
+
     if include_deleted is False:
         annotations = annotations.filter(deleted=include_deleted)
 
@@ -643,6 +635,8 @@ def load_annotations(request) -> Response:
     if min_x is not None and min_y is not None and max_x is not None and max_y is not None:
         annotations =  annotations.filter(x1__gte=int(min_x), y1__gte=int(min_y),
                                           x1__lte=int(max_x), y2__lte=int(max_y))
+
+
 
     data = [serialize_annotation(a) for a in annotations]
 
@@ -691,9 +685,10 @@ def load_annotation_types(request) -> Response:
         imageset_id = int(request.query_params['imageset_id'])
         imageset = get_object_or_404(ImageSet, pk=imageset_id)
         annotation_types = AnnotationType.objects.filter(active=True,
-                                                         name__in=[tag.name for tag in imageset.set_tags.all()])
+                                                         name__in=[tag.name for tag in imageset.set_tags.all()])\
+            .order_by('sort_order')
     else:
-        annotation_types = AnnotationType.objects.filter(active=True)
+        annotation_types = AnnotationType.objects.filter(active=True).order_by('sort_order')
 
 
     serializer = AnnotationTypeSerializer(
@@ -875,40 +870,34 @@ def api_verify_annotation(request) -> Response:
 
     if state:
         annotation.verify(request.user, True)
-        serializer = AnnotationSerializer(
-            annotation,
-            context={'request': request, },
-            many=False)
+        serializer = serialize_annotation(annotation)
 
         if Verification.objects.filter(
                 user=request.user,
                 verified=state,
                 annotation=annotation).exists():
             return Response({
-                'annotation': serializer.data,
+                'annotation': serializer,
                 'detail': 'the user already verified this annotation and verified it now',
             }, status=HTTP_200_OK)
         return Response({
-            'annotation': serializer.data,
+            'annotation': serializer,
             'detail': 'you verified the last annotation',
         }, status=HTTP_200_OK)
     else:
         annotation.verify(request.user, False)
-        serializer = AnnotationSerializer(
-            annotation,
-            context={'request': request, },
-            many=False)
+        serializer = serialize_annotation(annotation)
 
         if Verification.objects.filter(
                 user=request.user,
                 verified=state,
                 annotation=annotation).exists():
             return Response({
-                'annotation': serializer.data,
+                'annotation': serializer,
                 'detail': 'the user already verified this annotation and rejected it now',
             }, status=HTTP_200_OK)
         return Response({
-            'annotation': serializer.data,
+            'annotation': serializer,
             'detail': 'you rejected the last annotation',
         }, status=HTTP_200_OK)
 
