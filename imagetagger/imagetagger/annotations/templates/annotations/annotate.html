@@ -162,14 +162,20 @@
                                                     </label>
                                                 </th>
                                                 <th>Color</th>
+                                                <th>Example</th>
                                             </tr>
 
                                             {% for annotation_type in annotation_types %}
                                                 <tr>
-                                                    <th>{{ annotation_type.name }}</th>
-                                                    <th>{{ forloop.counter0 }}</th>
-                                                    <th id={{ annotation_type.name }}_{{ annotation_type.id }}>{{ annotation_type.node_count }}</th>
-                                                    <th style="background-color: {{ annotation_type.color_code }}"></th>
+                                                    <td>{{ annotation_type.name }}</td>
+                                                    <td>{{ forloop.counter0 }}</td>
+                                                    <td id={{ annotation_type.name }}_{{ annotation_type.id }}>{{ annotation_type.node_count }}</td>
+                                                    <td style="background-color: {{ annotation_type.color_code }}"></td>
+                                                    <td>
+                                                        <a href="{{ annotation_type.image_file}}">
+                                                            <img src="{{ annotation_type.image_file}}" style="widows: 50px; height: 50px" >
+                                                        </a>
+                                                    </td>
                                                 </tr>
                                             {% endfor %}
                                         </table>
