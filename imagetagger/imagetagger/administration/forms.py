@@ -17,7 +17,7 @@ class AnnotationTypeCreationForm(forms.ModelForm):
             'default_height',
             'color_code',
             'sort_order',
-            'image_file'
+            #'image_file'
         ]
 
 
