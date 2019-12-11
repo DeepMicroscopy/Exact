@@ -33,4 +33,7 @@ class Product(models.Model):
                                 null=True,
                                 blank=True)
 
-    imagesets = models.ManyToManyField(ImageSet) #, related_name='set_products'
+    imagesets = models.ManyToManyField(ImageSet)
+
+    def __str__(self):
+        return u'Product: {0} [{1}]'.format(self.name, "; ".join(self.annotationtype_set.values_list('name', flat=True)))

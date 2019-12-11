@@ -183,10 +183,21 @@
                                         <td><a href="{% url 'users:team' imageset.team.id %}">{{imageset.team.name}}</a></td>
                                     </tr>
                                 {% endif %}
-                                    <tr>
-                                        <td>Tags</td>
+                                <tr>
+                                    <td><b>Products</b></td>
+                                    <td class="tag-container">
+                                        {% for product in imageset.product_set.all %}
+                                            <a href="{% url 'administration:product' product.id %}"> {{ product }}&nbsp;</a>&#8203;
+                                        {% endfor %}
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>Tags</td>
                                         <td id="tags-without-delete" class="tag-container">
-                                            {% for tag in imageset.set_tags.all %}<a href="{% url 'images:explore_imageset' %}?tags={{ tag.name }}" class="label label-info">{{ tag.name }}</a>&#8203;{% endfor %}
+                                            {% for tag in imageset.set_tags.all %}
+                                                <a href="{% url 'images:explore_imageset' %}?tags={{ tag.name }}" class="label label-info">{{ tag.name }}</a>&#8203;
+                                            {% endfor %}
                                         </td>
                                     </tr>
                                 {% if user.is_superuser %}
@@ -311,11 +322,15 @@
                                                     <select id="product_id" name="selected_product" class="form-control">
                                                         {% for product in all_products %}
                                                             <option value={{ product.id }}
-                                                                class="bold">{{ product.name }}</option>
+                                                                class="bold">{{ product }}</option>
                                                         {% endfor %}
                                                     </select>
                                                     <span class="input-group-btn">
                                                         <input id="add_product_btn" class="btn btn-primary" type="button" value="Add">
+                                                    </span>
+                                                    <span class="input-group-btn">
+                                                        <input class="btn btn-primary" type="button" value="Create New"
+                                                                onclick="window.location.href = '{% url "administration:products" %}';" >
                                                     </span>
                                                 </div>
                                              </td>

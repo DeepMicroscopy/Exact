@@ -41,7 +41,9 @@ class AnnotationTypeCreationForm(forms.ModelForm):
             'default_height',
             'color_code',
             'sort_order',
-            #'image_file'
+            'product',
+            'closed',
+            'area_hit_test'
         ]
 
 
@@ -57,7 +59,10 @@ class AnnotationTypeEditForm(forms.ModelForm):
             'default_height',
             'color_code',
             'sort_order',
-            'image_file'
+            'image_file',
+            'product',
+            'closed',
+            'area_hit_test'
         ]
 
     def __init__(self, *args, **kwargs):

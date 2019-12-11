@@ -90,6 +90,7 @@
                             <tr>
                                 <th>Dataset</th>
                                 <th>Tags</th>
+                                <th>Products</th>
                                 <th>Example Image</th>
                                 <th></th>
                             </tr>
@@ -110,6 +111,12 @@
                                         <th>
                                             {% for tag in imageset.set_tags.all %}
                                                 <a href="{% url 'images:explore_imageset' %}?tags={{ tag.name }}, " class="label label-info">{{ tag.name }}</a>
+                                            {% endfor %}
+                                        </th>
+
+                                        <th>
+                                            {% for product in imageset.product_set.all %}
+                                                <a href="{% url "administration:product" product.id %}" >{{ product }}</a>&#8203;
                                             {% endfor %}
                                         </th>
 

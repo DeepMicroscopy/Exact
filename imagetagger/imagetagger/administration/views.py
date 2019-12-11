@@ -14,9 +14,11 @@ from imagetagger.users.models import Team
 
 @staff_member_required
 def products(request):
+    teams = Team.objects.filter(members=request.user)
     return render(request, 'administration/product.html', {
         'products': Product.objects.filter(team__in=request.user.team_set.all()).order_by('team_id'),
-        'create_form': ProductCreationForm
+        'create_form': ProductCreationForm,
+        'teams': teams
     })
 
 @staff_member_required
@@ -26,7 +28,8 @@ def product(request, product_id):
         'products': Product.objects.filter(team__in=request.user.team_set.all()).order_by('team_id'),
         'product': selected_product,
         'create_form': ProductCreationForm,
-        'edit_form': ProductEditForm(instance=selected_product)
+        'edit_form': ProductEditForm(instance=selected_product),
+        'teams': Team.objects.filter(members=request.user)
     })
 
 @staff_member_required
@@ -68,21 +71,35 @@ def edit_product(request, product_id):
 
 @staff_member_required
 def annotation_types(request):
+    form = AnnotationTypeCreationForm()
+    form.fields['product'].queryset = Product.objects.filter(team__in=Team.objects.filter(members=request.user))
+
+    teams = Team.objects.filter(members=request.user)
     return render(request, 'administration/annotation_type.html', {
-        'annotation_types': AnnotationType.objects.all().order_by('name'),
-        'create_form': AnnotationTypeCreationForm,
+        'annotation_types': AnnotationType.objects.filter(product__isnull=True).order_by('name'),
+        'create_form': form,
+        'teams': teams
     })
 
 
 @staff_member_required
 def annotation_type(request, annotation_type_id):
+    creation_form = AnnotationTypeCreationForm()
+    creation_form.fields['product'].queryset = Product.objects.filter(team__in=Team.objects.filter(members=request.user))
+
     selected_annotation_type = get_object_or_404(AnnotationType, id=annotation_type_id)
+
+    edit_form = AnnotationTypeEditForm(instance=selected_annotation_type)
+    edit_form.fields['product'].queryset = Product.objects.filter(team__in=Team.objects.filter(members=request.user))
+
+    teams = Team.objects.filter(members=request.user)
     return render(request, 'administration/annotation_type.html', {
-        'annotation_types': AnnotationType.objects.all().order_by('name'),
+        'annotation_types': AnnotationType.objects.filter(product__isnull=True).order_by('name'),
         'annotation_type': selected_annotation_type,
         'vector_type_name': AnnotationType.get_vector_type_name(selected_annotation_type.vector_type),
-        'create_form': AnnotationTypeCreationForm(),
-        'edit_form': AnnotationTypeEditForm(instance=selected_annotation_type)
+        'create_form': creation_form,
+        'edit_form': edit_form,
+        'teams': teams
     })
 
 
@@ -92,7 +109,8 @@ def create_annotation_type(request):
         form = AnnotationTypeCreationForm(request.POST)
 
         if form.is_valid():
-            if AnnotationType.objects.filter(name=form.cleaned_data.get('name')).exists():
+            if AnnotationType.objects.filter(name=form.cleaned_data.get('name'),
+                                             product=form.cleaned_data.get('product')).exists():
                 form.add_error(
                     'name',
                     _('The name is already in use by an annotation type.'))
@@ -115,19 +133,24 @@ def edit_annotation_type(request, annotation_type_id):
             messages.error(request, _('The name is already in use by an annotation type.'))
         else:
             selected_annotation_type.name = request.POST['name']
-            selected_annotation_type.active = 'active' in request.POST.keys()
-            selected_annotation_type.enable_concealed = 'enable_concealed' in request.POST.keys()
-            selected_annotation_type.enable_blurred = 'enable_blurred' in request.POST.keys()
+            selected_annotation_type.active = True if 'on' == request.POST['active'] else False
+            selected_annotation_type.enable_concealed = True if 'on' == request.POST['enable_concealed'] else False
+            selected_annotation_type.enable_blurred = True if 'on' == request.POST['enable_blurred'] else False
             selected_annotation_type.default_width = request.POST['default_width']
             selected_annotation_type.default_height = request.POST['default_height']
             selected_annotation_type.color_code = request.POST['color_code']
             selected_annotation_type.sort_order = request.POST['sort_order']
+            selected_annotation_type.closed = True if 'on' == request.POST['closed'] else False
+            selected_annotation_type.area_hit_test = True if 'on' == request.POST['area_hit_test'] else False
+            selected_annotation_type.product = Product.objects.filter(id=request.POST['product']).first()
 
-            file = request.FILES['image_file']
-            fs = FileSystemStorage()
-            filename = fs.save(file.name, file)
+            if 'image_file' in request.FILES:
+                file = request.FILES['image_file']
+                fs = FileSystemStorage()
+                filename = fs.save(file.name, file)
 
-            selected_annotation_type.image_file = fs.url(filename)
+                selected_annotation_type.image_file = fs.url(filename)
+
             selected_annotation_type.save()
 
             messages.success(request, _('The annotation type was edited successfully.'))

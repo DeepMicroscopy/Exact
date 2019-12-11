@@ -683,7 +683,7 @@ def view_imageset(request, image_set_id):
     user_teams = Team.objects.filter(members=request.user)
     imageset_edit_form = ImageSetEditForm(instance=imageset)
     imageset_edit_form.fields['main_annotation_type'].queryset = AnnotationType.objects\
-        .filter(active=True).order_by('sort_order')
+        .filter(active=True, product__in=imageset.product_set.all()).order_by('product', 'sort_order')
 
     all_products = Product.objects.filter(team=imageset.team).order_by('name')
     return render(request, 'images/imageset.html', {

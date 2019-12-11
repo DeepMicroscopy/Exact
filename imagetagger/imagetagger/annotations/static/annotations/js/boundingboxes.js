@@ -213,7 +213,10 @@ class BoundingBoxes {
 
 
     drawExistingAnnotations(annotations) {
-        if (annotations.length === 0 || !globals.drawAnnotations) {
+        if (annotations === undefined ||
+            annotations.length === 0 ||
+            !globals.drawAnnotations) {
+
             return;
         }
 
