@@ -12,7 +12,7 @@ from django.utils.functional import cached_property
 from imagetagger.images.models import Image, ImageSet
 from imagetagger.users.models import Team
 from imagetagger.annotations.fields import NonStrippingTextField
-
+from imagetagger.administration.models import Product
 
 class AnnotationQuerySet(models.QuerySet):
     def annotate_verification_difference(self) -> models.QuerySet:
@@ -411,6 +411,12 @@ class Annotation(models.Model):
 
 
 class AnnotationType(models.Model):
+    class Meta:
+        unique_together = [
+            'name',
+            'product',
+        ]
+
     class VECTOR_TYPE():
         BOUNDING_BOX = 1
         POINT = 2
@@ -419,7 +425,7 @@ class AnnotationType(models.Model):
         POLYGON = 5
         FIXED_SIZE_BOUNDING_BOX = 6
 
-    name = models.CharField(max_length=20, unique=True)
+    name = models.CharField(max_length=20)
     active = models.BooleanField(default=True)
     vector_type = models.IntegerField(default=VECTOR_TYPE.BOUNDING_BOX)
     # Number of required nodes (in polygon and multiline) 0->unspecified
@@ -431,9 +437,11 @@ class AnnotationType(models.Model):
     default_height = models.IntegerField(default=50, unique=False)
     sort_order = models.IntegerField(default=0, unique=False)
 
-    image_file = models.FileField(upload_to='images/', null=True, verbose_name="")
+    image_file = models.ImageField(upload_to='images/', null=True, verbose_name="")
 
+    product = models.ForeignKey(Product, on_delete= models.SET_NULL, null=True)
     closed = models.BooleanField(default=True)
+    area_hit_test = models.BooleanField(default=True)
 
     def __str__(self):
         if self.active:

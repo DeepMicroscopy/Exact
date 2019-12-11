@@ -6,24 +6,37 @@
     </div>
     <div class="panel-body">
         <ul>
-            {% for product_item in products %}
+            {% for team in teams %}
                 <li>
-                    {% if product_item == product%}
-                        <a href="{% url "users:team" product_item.team.id %}">
-                            {{ product_item.team.name }}
-                        </a>
-                        <b>
-                            / {{ product_item.name }}
-                        </b>
-                    {% else %}
-                        <a href="{% url "users:team" product_item.team.id %}">
-                            {{ product_item.team.name }}
-                        </a>
-                        /
-                        <a href="{% url "administration:product" product_item.id %}">
-                             {{ product_item.name }}
-                        </a>
-                    {% endif %}
+                    <a href="{% url "users:team" team.id %}">
+                        {{ team.name }}
+                    </a>
+                    <ul>
+                        {% for product_list_item in team.product_set.all %}
+                            <li>
+                                {% if product_list_item == product %}
+                                    <b>
+                                        {{ product_list_item.name }}
+                                    </b>
+                                {% else %}
+                                    <a href="{% url "administration:product" product_list_item.id %}">
+                                        {{ product_list_item.name }}</a>
+                                {% endif %}
+
+                                <ul>
+                                    {% for list_annotation_type in product_list_item.annotationtype_set.all %}
+                                        <li>
+                                            <a href="{% url "administration:annotation_type" list_annotation_type.id %}">
+                                                {{ list_annotation_type.name }}
+                                                 <span class="text-orientation-right-css" style="background-color: {{ list_annotation_type.color_code }};">  ~~ </span>
+                                            </a>
+                                        </li>
+                                    {% endfor %}
+                                    <a href="{% url "administration:annotation_types" %}">+</a>
+                                </ul>
+                            </li>
+                        {% endfor %}
+                    </ul>
                 </li>
             {% endfor %}
         </ul>

@@ -22,8 +22,11 @@
         </div>
     </div>
     <div class="row">
-        <div class="col-md-8">
+        <div class="col-md-3">
             <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">{% trans 'Imagesets' %}</h3>
+                </div>
                 <div class="panel-body">
                     {% if not team.admins and request.user in members %}
                         Your team has no admin!
@@ -32,7 +35,6 @@
                             <input type="submit" value="I want to become admin!" class="btn btn-link" />
                         </form>
                     {% endif %}
-                    <h3>Imagesets</h3>
                     <div>
                         {% if imagesets %}
                             <ul class="nav nav-tabs" role="tablist">
@@ -72,6 +74,15 @@
                                                 {% for tag in imageset.set_tags.all %}
                                                     <a href="{% url 'images:explore_imageset' %}?tags={{ tag.name }}," class="label label-info">{{ tag.name }}</a>
                                                 {% endfor %}
+
+                                                <ul>
+                                                    {% for product_item in imageset.product_set.all %}
+                                                        <li>
+                                                            <a href="{% url "administration:product" product_item.id %}">
+                                                                {{ product_item.name }} </a>
+                                                        </li>
+                                                    {% endfor %}
+                                                </ul>
                                             </li>
                                         {% empty %}
                                             {% trans 'no imagesets available' %}
@@ -92,6 +103,15 @@
                                                 {% for tag in imageset.set_tags.all %}
                                                     <a href="{% url 'images:explore_imageset' %}?tags={{ tag.name }}," class="label label-info">{{ tag.name }}</a>
                                                 {% endfor %}
+
+                                                <ul>
+                                                    {% for product_item in imageset.product_set.all %}
+                                                        <li>
+                                                            <a href="{% url "administration:product" product_item.id %}">
+                                                                {{ product_item.name }} </a>
+                                                        </li>
+                                                    {% endfor %}
+                                                </ul>
                                             </li>
                                         {% empty %}
                                             {% trans 'no imagesets available' %}
@@ -112,6 +132,15 @@
                                                 {% for tag in imageset.set_tags.all %}
                                                     <a href="{% url 'images:explore_imageset' %}?tags={{ tag.name }}," class="label label-info">{{ tag.name }}</a>
                                                 {% endfor %}
+
+                                                <ul>
+                                                    {% for product_item in imageset.product_set.all %}
+                                                        <li>
+                                                            <a href="{% url "administration:product" product_item.id %}">
+                                                                {{ product_item.name }} </a>
+                                                        </li>
+                                                    {% endfor %}
+                                                </ul>
                                             </li>
                                         {% empty %}
                                             {% trans 'no imagesets available' %}
@@ -132,6 +161,15 @@
                                                 {% for tag in imageset.set_tags.all %}
                                                     <a href="{% url 'images:explore_imageset' %}?tags={{ tag.name }}," class="label label-info">{{ tag.name }}</a>
                                                 {% endfor %}
+
+                                                <ul>
+                                                    {% for product_item in imageset.product_set.all %}
+                                                        <li>
+                                                            <a href="{% url "administration:product" product_item.id %}">
+                                                                {{ product_item.name }} </a>
+                                                        </li>
+                                                    {% endfor %}
+                                                </ul>
                                             </li>
                                         {% empty %}
                                             Here, all imagesets with the tag 'test' are listed.<br>
@@ -144,7 +182,16 @@
                             {% trans 'no imagesets available' %}
                         {% endif %}
                     </div>
-                    <h3>{% trans 'Members' %}</h3>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">{% trans 'Members' %}</h3>
+                </div>
                     {% if "user_management" in team_perms %}
                         <p>
                             <form method="post" action="{% url 'users:add_team_member' team.id %}" class="form-inline">
@@ -241,24 +288,38 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    <h3>{% trans 'Products' %}</h3>
-                    <div>
-                        <ul>
-                            {% for product_item in products %}
-                                <li>
-                                    <a href="{% url "administration:product" product_item.id %}">
-                                        {{ product_item.name }}
-                                    </a>
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-
+        <div class="col-md-3">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">{% trans 'Products' %}</h3>
+                </div>
+                <div>
+                    <ul>
+                        {% for product_item in products %}
+                            <li>
+                                <a href="{% url "administration:product" product_item.id %}">
+                                    {{ product_item.name }}
+                                </a>
+                                <ul>
+                                    {% for annotation_type in product_item.annotationtype_set.all %}
+                                        <li>
+                                            <a href="{% url "administration:annotation_type" annotation_type.id %}">
+                                                {{ annotation_type.name }}
+                                            </a>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </li>
+                        {% endfor %}
+                    </ul>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+
+        <div class="col-md-3">
             {% if 'create_set' in team_perms %}
                 <div class="panel panel-default">
                     <div class="panel-heading">
@@ -291,8 +352,10 @@
                 </div>
             {% endif %}
 
-            {% if 'create_set' in team_perms %}
+        </div>
 
+        <div class="col-md-3">
+            {% if 'create_set' in team_perms %}
                 <div class="panel panel-default">
                     <div class="panel-heading">
                         <h3 class="panel-title">Create a new Product</h3>
@@ -340,9 +403,10 @@
                         </tbody>
                     </table>
                 </div>
-
             {% endif %}
+        </div>
 
+        <div class="col-md-3">
             {% if 'manage_export_formats' in team_perms %}
                 <div class="row">
                     <div class="col-md-12">
@@ -505,6 +569,7 @@
                 </div>
             {% endif %}
         </div>
+
     </div>
 </div>
 {% endblock %}
