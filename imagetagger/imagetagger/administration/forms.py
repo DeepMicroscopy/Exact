@@ -1,6 +1,30 @@
 from django import forms
 
+from imagetagger.administration.models import Product
 from imagetagger.annotations.models import AnnotationType
+
+
+class ProductCreationForm(forms.ModelForm):
+    class Meta:
+        model = Product
+        fields = [
+            'name',
+            'description',
+            'team',
+        ]
+
+class ProductEditForm(forms.ModelForm):
+    class Meta:
+        model = Product
+        fields = [
+            'name',
+            'description',
+            'team',
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
 
 
 class AnnotationTypeCreationForm(forms.ModelForm):

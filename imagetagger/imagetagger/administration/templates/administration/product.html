@@ -1,0 +1,125 @@
+{% extends 'base/base.html' %}
+{% load widget_tweaks %}
+
+
+{% block bodyblock %}
+
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            {% if product %}
+                <h2>Product "{{ product.name }}"</h2>
+            {% else %}
+                <h2>Products</h2>
+            {% endif %}
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-3">
+            {% include "administration/product_list.html" %}
+        </div>
+        {% if product %}
+            <div class="col-md-5">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h3 class="panel-title" id="edit_id">Edit "{{ product.name }}"</h3>
+                    </div>
+                </div>
+                <table class="table table-striped">
+                    <tbody>
+                        <form action="{% url "administration:edit_product" product.id %}" method="POST">
+                            {% csrf_token %}
+                            <tr>
+                                <td>
+                                    <label for="id_name">{{ edit_form.name.label }}</label>
+                                </td>
+                                <td>
+                                    {% render_field edit_form.name class+='form-control' %}
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    <label for="id_name">{{ edit_form.description.label }}</label>
+                                </td>
+                                <td>
+                                    {% render_field edit_form.description class+='form-control' %}
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    <label for="id_team">{{ edit_form.team.label }}</label>
+                                </td>
+                                <td>
+                                    {% render_field edit_form.team class+='form-control' %}
+                                </td>
+                            </tr>
+
+                                <tr>
+                                    <td>
+                                    </td>
+                                    <td align="right">
+                                        <input class="btn btn-primary right" type="submit" value="Save">
+                                    </td>
+                                </tr>
+                        </form>
+                    </tbody>
+                </table>
+            </div>
+            <div class="col-md-4">
+        {% else %}
+            <div class="col-md-4 col-md-offset-5">
+        {% endif %}
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Create a new Product</h3>
+                </div>
+                <table class="table table-striped">
+                    <tbody>
+                        <form action="{% url "administration:create_product" %}" method="POST">
+                            {% csrf_token %}
+                            <tr>
+                                <td>
+                                    <label for="id_name">{{ create_form.name.label }}</label>
+                                </td>
+                                <td>
+                                    {% render_field create_form.name class+='form-control' %}
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    <label for="id_description">{{ create_form.description.label }}</label>
+                                </td>
+                                <td>
+                                    {% render_field create_form.description class+='form-control' %}
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    <label for="id_team">{{ create_form.team.label }}</label>
+                                </td>
+                                <td>
+                                    {% render_field create_form.team class+='form-control' %}
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    <input class="btn btn-danger" type="reset" value="Reset">
+                                </td>
+                                <td align="right">
+                                    <input class="btn btn-primary right" type="submit" value="Create">
+                                </td>
+                            </tr>
+                        </form>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

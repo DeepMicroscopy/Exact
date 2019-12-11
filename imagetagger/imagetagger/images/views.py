@@ -26,6 +26,8 @@ from imagetagger.images.forms import ImageSetCreationForm, ImageSetCreationFormW
 from imagetagger.users.forms import TeamCreationForm
 from imagetagger.users.models import User, Team
 from imagetagger.tagger_messages.forms import TeamMessageCreationForm
+from imagetagger.administration.models import Product
+from imagetagger.administration.serializers import ProductSerializer
 
 from .models import ImageSet, Image, SetTag
 from .forms import LabelUploadForm
@@ -682,11 +684,14 @@ def view_imageset(request, image_set_id):
     imageset_edit_form = ImageSetEditForm(instance=imageset)
     imageset_edit_form.fields['main_annotation_type'].queryset = AnnotationType.objects\
         .filter(active=True).order_by('sort_order')
+
+    all_products = Product.objects.filter(team=imageset.team).order_by('name')
     return render(request, 'images/imageset.html', {
         'images': images,
         'image_count': images.count(),
         'annotationcount': annotations.count(),
         'imageset': imageset,
+        'all_products': all_products,
         'annotationtypes': annotation_types,
         'annotation_types': annotation_types,
         'all_annotation_types': all_annotation_types,
@@ -1103,6 +1108,70 @@ def load_image_set(request) -> Response:
     return Response({
         'image_set': serialized_image_set,
     }, status=HTTP_200_OK)
+
+@login_required
+@api_view(['POST'])
+def product_image_set(request) -> Response:
+    try:
+        image_set_id = int(request.data['image_set_id'])
+        product_id = int(request.data['product_id'])
+    except (KeyError, TypeError, ValueError):
+        raise ParseError
+    image_set = get_object_or_404(ImageSet, pk=image_set_id)
+
+    if not image_set.has_perm('edit_set', request.user):
+        return Response({
+            'detail': 'permission for adding a product to this image set missing.',
+        }, status=HTTP_403_FORBIDDEN)
+
+    if image_set.product_set.filter(id=product_id).exists():
+        return Response({
+            'detail': 'imageset has the product already.',
+        }, status=HTTP_200_OK)
+
+    product = Product.objects.filter(id=product_id).first()
+    product.imagesets.add(image_set)
+    product.save()
+
+    serializer = ProductSerializer(product)
+
+    return Response({
+        'detail': 'added a product to the imageset.',
+        'product': serializer.data,
+    }, status=HTTP_201_CREATED)
+
+@login_required
+@api_view(['DELETE'])
+def remove_image_set_product(request) -> Response:
+    try:
+        image_set_id = int(request.data['image_set_id'])
+        product_id = int(request.data['product_id'])
+    except (KeyError, TypeError, ValueError):
+        raise ParseError
+    image_set = get_object_or_404(ImageSet, pk=image_set_id)
+    product = get_object_or_404(Product, id=product_id)
+
+    if not image_set.has_perm('edit_set', request.user):
+        return Response({
+            'detail': 'permission for removing products for this image set missing.',
+        }, status=HTTP_403_FORBIDDEN)
+
+    if product not in image_set.product_set.all():
+        return Response({
+            'detail': 'product not in imageset tags',
+        }, status=HTTP_200_OK)
+
+    product.imagesets.remove(image_set)
+
+    serializer = ProductSerializer(product)
+    serializer_data = serializer.data
+
+    product.save()
+
+    return Response({
+        'detail': 'removed the product.',
+        'product': serializer_data,
+    }, status=HTTP_201_CREATED)
 
 
 @login_required

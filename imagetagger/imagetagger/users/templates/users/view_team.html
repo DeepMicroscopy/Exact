@@ -242,6 +242,19 @@
                         </div>
                     </div>
 
+                    <h3>{% trans 'Products' %}</h3>
+                    <div>
+                        <ul>
+                            {% for product_item in products %}
+                                <li>
+                                    <a href="{% url "administration:product" product_item.id %}">
+                                        {{ product_item.name }}
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -277,6 +290,59 @@
                     </div>
                 </div>
             {% endif %}
+
+            {% if 'create_set' in team_perms %}
+
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">Create a new Product</h3>
+                    </div>
+                    <table class="table table-striped">
+                        <tbody>
+                            <form action="{% url "administration:create_product" %}" method="POST">
+                                {% csrf_token %}
+                                <tr>
+                                    <td>
+                                        <label for="id_name">{{ product_creation_form.name.label }}</label>
+                                    </td>
+                                    <td>
+                                        {% render_field product_creation_form.name class+='form-control' %}
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>
+                                        <label for="id_description">{{ product_creation_form.description.label }}</label>
+                                    </td>
+                                    <td>
+                                        {% render_field product_creation_form.description class+='form-control' %}
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>
+                                        <label for="id_team">{{ product_creation_form.team.label }}</label>
+                                    </td>
+                                    <td>
+                                        {% render_field product_creation_form.team class+='form-control' %}
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>
+                                        <input class="btn btn-danger" type="reset" value="Reset">
+                                    </td>
+                                    <td align="right">
+                                        <input class="btn btn-primary right" type="submit" value="Create">
+                                    </td>
+                                </tr>
+                            </form>
+                        </tbody>
+                    </table>
+                </div>
+
+            {% endif %}
+
             {% if 'manage_export_formats' in team_perms %}
                 <div class="row">
                     <div class="col-md-12">

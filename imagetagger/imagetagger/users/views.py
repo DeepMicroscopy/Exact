@@ -15,6 +15,8 @@ from rest_framework.status import HTTP_200_OK
 from imagetagger.annotations.models import ExportFormat
 from imagetagger.annotations.forms import ExportFormatEditForm
 from imagetagger.images.forms import ImageSetCreationForm
+from imagetagger.administration.forms import ProductCreationForm
+from imagetagger.administration.models import Product
 from imagetagger.images.models import ImageSet
 from imagetagger.users.forms import TeamCreationForm
 from .models import Team, User
@@ -250,6 +252,8 @@ def view_team(request, team_id):
     export_format_forms = (ExportFormatEditForm(instance=format_instance) for format_instance in export_formats)
     test_imagesets = imagesets.filter(set_tags__name='test').order_by('-public', 'name')
 
+    products = Product.objects.filter(team=team).order_by('team_id')
+
     return render(request, 'users/view_team.html', {
         'team': team,
         'members': members,
@@ -260,6 +264,8 @@ def view_team(request, team_id):
         'size_imagesets': sorted(imagesets, key=lambda i: i.image_count, reverse=True),
         'test_imagesets': test_imagesets,
         'imageset_creation_form': ImageSetCreationForm(),
+        'product_creation_form': ProductCreationForm(),
+        'products': products,
         'team_perms': team.get_perms(request.user),
         'export_formats_forms': export_format_forms,
     })
