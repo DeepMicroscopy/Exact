@@ -120,6 +120,8 @@
 <!-- An additional form script -->
 <script src="{% static 'scripts/pub_coll.js' %}"></script>
 <script type="text/javascript" src="{% static 'scripts/tags.js' %}"></script>
+<script type="text/javascript" src="{% static 'scripts/products.js' %}"></script>
+<script type="text/javascript" src="{% static 'scripts/notify.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'scripts/jquery.autocomplete.js' %}"></script>
 <![endif]-->
 {% endblock additional_js %}
@@ -290,16 +292,46 @@
                                                 {% render_field edit_form.name class+='form-control' %}
                                             </td>
                                         </tr>
+
+                                        <tr>
+                                            <td><b>Products</b></td>
+                                            <td id="products-with-delete" class="tag-container">
+                                                {% for product in imageset.product_set.all %}
+                                                    <span class="label label-info" value="{{ product.id }}" id="product_{{ product.id }}">
+                                                        <a href="{% url 'administration:product' product.id%}"> {{ product.name }}&nbsp;</a>
+                                                        <span class="glyphicon glyphicon-remove-sign product-delete" value={{ product.id }} data_id={{ product.id }}></span>
+                                                    </span>&#8203;
+                                                {% endfor %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><b>Add Products</b></td>
+                                             <td>
+                                                <div class="input-group" role="group" aria-label="team_creation">
+                                                    <select id="product_id" name="selected_product" class="form-control">
+                                                        {% for product in all_products %}
+                                                            <option value={{ product.id }}
+                                                                class="bold">{{ product.name }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                    <span class="input-group-btn">
+                                                        <input id="add_product_btn" class="btn btn-primary" type="button" value="Add">
+                                                    </span>
+                                                </div>
+                                             </td>
+                                        </tr>
+
+
                                         <tr>
                                             <td><b>Tags</b></td>
                                             <td id="tags-with-delete" class="tag-container">
-                                                {% for tag in imageset.set_tags.all %}<span class="label label-info">{{ tag.name }}&nbsp;<span class="glyphicon glyphicon-remove-sign tag-delete"></span></span>&#8203;{% endfor %}
+                                                {% for tag in imageset.set_tags.all %}<span class="label label-info">{{ tag.name }}&nbsp;
+                                                    <span class="glyphicon glyphicon-remove-sign tag-delete"></span></span>&#8203;{% endfor %}
                                             </td>
                                         </tr>
                                         <tr>
                                             <td><b>Add Tag</b></td>
                                             <td>
-                                                
                                                 <div class="input-group" role="group" aria-label="team_creation">
                                                     <input id="new_tag_name_field" type="text" class="form-control">
                                                     <span class="input-group-btn">

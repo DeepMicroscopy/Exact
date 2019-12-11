@@ -1,0 +1,31 @@
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <h3 class="panel-title">
+            Products
+        </h3>
+    </div>
+    <div class="panel-body">
+        <ul>
+            {% for product_item in products %}
+                <li>
+                    {% if product_item == product%}
+                        <a href="{% url "users:team" product_item.team.id %}">
+                            {{ product_item.team.name }}
+                        </a>
+                        <b>
+                            / {{ product_item.name }}
+                        </b>
+                    {% else %}
+                        <a href="{% url "users:team" product_item.team.id %}">
+                            {{ product_item.team.name }}
+                        </a>
+                        /
+                        <a href="{% url "administration:product" product_item.id %}">
+                             {{ product_item.name }}
+                        </a>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>

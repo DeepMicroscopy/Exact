@@ -35,4 +35,8 @@ urlpatterns = [
     url(r'^api/imageset/tag/add/$', views.tag_image_set, name='tag_image_set'),
     url(r'^api/imageset/tag/delete/$', views.remove_image_set_tag, name='remove_image_set_tag'),
     url(r'^api/imageset/tag/autocomplete/$', views.autocomplete_image_set_tag, name='autocomplete_image_set_tag'),
+
+    url(r'^api/imageset/product/add/$', views.product_image_set, name='product_image_set'),
+    url(r'^api/imageset/product/delete/$', views.remove_image_set_product, name='remove_image_set_product'),
+
 ]

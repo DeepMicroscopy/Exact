@@ -6,9 +6,65 @@ from django.contrib import messages
 from django.db import transaction
 from django.core.files.storage import FileSystemStorage
 
-from .forms import AnnotationTypeCreationForm, AnnotationTypeEditForm
+from .forms import AnnotationTypeCreationForm, AnnotationTypeEditForm, ProductCreationForm, ProductEditForm
 from imagetagger.annotations.models import Annotation, AnnotationType
+from imagetagger.administration.models import Product
+from imagetagger.users.models import Team
 
+
+@staff_member_required
+def products(request):
+    return render(request, 'administration/product.html', {
+        'products': Product.objects.filter(team__in=request.user.team_set.all()).order_by('team_id'),
+        'create_form': ProductCreationForm
+    })
+
+@staff_member_required
+def product(request, product_id):
+    selected_product = get_object_or_404(Product, id=product_id)
+    return render(request, 'administration/product.html', {
+        'products': Product.objects.filter(team__in=request.user.team_set.all()).order_by('team_id'),
+        'product': selected_product,
+        'create_form': ProductCreationForm,
+        'edit_form': ProductEditForm(instance=selected_product)
+    })
+
+@staff_member_required
+def create_product(request):
+    if request.method == 'POST':
+        form = ProductCreationForm(request.POST)
+
+        if form.is_valid():
+            if Product.objects.filter(name=form.cleaned_data.get('name'), team=form.cleaned_data.get('team')).exists():
+                form.add_error(
+                    'name',
+                    _('The name team combination is already in use by an product.'))
+            else:
+                with transaction.atomic():
+                    form.instance.creator = request.user
+                    product = form.save()
+
+                messages.success(request, _('The product was created successfully.'))
+                return redirect(reverse('administration:product', args=(product.id,)))
+    else:
+        return redirect(reverse('administration:product'))
+
+
+@staff_member_required
+def edit_product(request, product_id):
+    selected_product = get_object_or_404(Product, id=product_id)
+    if request.method == 'POST':
+        if Product.objects.filter(name=request.POST['name'], team_id=request.POST['team']).exclude(id=selected_product.id).exists():
+            messages.error(request, _('The name team combination is already in use by an product.'))
+        else:
+            selected_product.name = request.POST['name']
+            selected_product.description = request.POST['description']
+            selected_product.team = Team.objects.filter(id=request.POST['team']).first()
+
+            selected_product.save()
+
+            messages.success(request, _('The product was edited successfully.'))
+    return redirect(reverse('administration:product', args=(product_id, )))
 
 @staff_member_required
 def annotation_types(request):
