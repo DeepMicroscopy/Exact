@@ -32,7 +32,7 @@ from imagetagger.administration.serializers import ProductSerializer
 from .models import ImageSet, Image, SetTag
 from .forms import LabelUploadForm
 from imagetagger.annotations.models import Annotation, Export, ExportFormat, \
-    AnnotationType, Verification
+    AnnotationType, Verification, LogImageAction
 from imagetagger.tagger_messages.models import Message, TeamMessage, GlobalMessage
 from util.slide_server import SlideCache, SlideFile, PILBytesIO
 
@@ -60,44 +60,6 @@ from openslide import OpenSlide
 image_cache = SlideCache(cache_size=10)
 plugin_finder = PluginFinder(image_cache)
 
-
-def get_verified_ids(request, imageset):
-    images = Image.objects.filter(image_set=imageset).order_by('name')
-
-    if imageset.collaboration_type == ImageSet.CollaborationTypes.COLLABORATIVE:
-        # find all images with verified annotations
-        images = images.filter(annotations__annotation_type__active=True, annotations__deleted=False,
-                             annotations__verifications__verified=True)
-
-    if imageset.collaboration_type == ImageSet.CollaborationTypes.COMPETITIVE:
-        # find all images with verified annotations
-        images = images.filter(annotations__annotation_type__active=True, annotations__deleted=False,
-                             annotations__verifications__verified=True, annotations__user=request.user)
-        # remove all with one unverified id
-        images = images.exclude(id__in=images.filter(annotations__annotation_type__active=True,
-                                                     annotations__deleted=False,
-                                                     annotations__verifications__verified=False,
-                                                     annotations__user=request.user))
-
-    return images
-
-
-def get_unverified_ids(request, imageset):
-    images = Image.objects.filter(image_set=imageset).order_by('name')
-
-    if imageset.collaboration_type == ImageSet.CollaborationTypes.COLLABORATIVE:
-        unverified = images.filter(annotations__annotation_type__active=True, annotations__deleted=False,
-                                   annotations__verifications__verified=False).distinct()
-        unannotated = images.annotate(annotation_count=Count('annotations')).filter(annotation_count__exact=0).distinct()
-
-    if imageset.collaboration_type == ImageSet.CollaborationTypes.COMPETITIVE:
-        unverified = images.filter(annotations__annotation_type__active=True, annotations__deleted=False,
-                                   annotations__verifications__verified=False, annotations__user=request.user).distinct()
-        unannotated = images.annotate(annotation_count=Count('annotations', filter=Q(annotations__user=request.user)))\
-            .filter(annotation_count__exact=0).distinct()
-
-    # TODO_ Convert to single query
-    return Image.objects.filter(id__in = [a.id for a in unverified] + [a.id for a in unannotated]) #Q(unverified) | Q(unannotated)
 
 @login_required
 def explore_imageset(request):
@@ -215,7 +177,7 @@ def index(request):
         'team_creation_form': team_creation_form,
         'imageset_creation_form': imageset_creation_form,
         'team_message_creation_form': team_message_creation_form,
-        'image_sets': imagesets,
+        'image_sets': imagesets.order_by('team', 'priority' ,'name'),
         'user_has_admin_teams': user_admin_teams.exists(),
         'userteams': userteams,
         'stats': stats,
@@ -623,6 +585,51 @@ def list_images(request, image_set_id):
 
 
 @login_required
+@api_view(['GET'])
+def image_opened(request, image_id):
+
+    image = get_object_or_404(Image, id=image_id)
+
+    if image.image_set.team not in request.user.team_set.all():
+        return Response({}, status=HTTP_403_FORBIDDEN)
+
+
+    with transaction.atomic():
+        LogImageAction.objects.create(
+            image=image,
+            user=request.user,
+            action=LogImageAction.ActionType.OPEN,
+            ip=LogImageAction.get_ip_fom_request(request)
+        )
+
+    return Response({
+    }, status=HTTP_200_OK)
+
+
+@login_required
+@api_view(['GET'])
+def image_closed(request, image_id):
+    image = get_object_or_404(Image, id=image_id)
+
+    # TODO: Check permission
+    if image.image_set.team not in request.user.team_set.all():
+        return Response({}, status=HTTP_403_FORBIDDEN)
+
+    with transaction.atomic():
+        LogImageAction.objects.create(
+            image=image,
+            user=request.user,
+            action=LogImageAction.ActionType.CLOSED,
+            ip=LogImageAction.get_ip_fom_request(request)
+        )
+
+    return Response({
+    }, status=HTTP_200_OK)
+
+
+
+
+@login_required
 def delete_images(request, image_id):
     image = get_object_or_404(Image, id=image_id)
     if image.image_set.has_perm('delete_images', request.user) and not image.image_set.image_lock:
@@ -642,7 +649,7 @@ def view_imageset(request, image_set_id):
         messages.warning(request, 'you do not have the permission to access this imageset')
         return redirect(reverse('images:index'))
     # images the imageset contains
-    images = get_unverified_ids(request, imageset)
+    images = imageset.get_unverified_ids(request.user)
 
     # the saved exports of the imageset
     exports = Export.objects.filter(image_set=image_set_id).order_by('-id')[:5]
@@ -728,8 +735,8 @@ def image_statistics(request) -> Response:
             .distinct().order_by('sort_order')\
             .annotate(count=Count('annotation'),
                       in_image_count=Count('annotation', filter=Q(annotation__vector__isnull=False)),
-                      verified_count=Count('annotation', filter=Q(annotation__verifications__verified=True)),
-                      unverified_count=Count('annotation', filter=Q(annotation__verifications__verified=False)),
+                      verified_count=Count('annotation', filter=Q(annotation__vector__isnull=False, annotation__verifications__verified=True)),
+                      unverified_count=Count('annotation', filter=Q(annotation__vector__isnull=False, annotation__verifications__verified=False)),
                       not_in_image_count=Count('annotation', filter=Q(annotation__vector__isnull=True)))
 
     if image.image_set.collaboration_type == ImageSet.CollaborationTypes.COMPETITIVE:
@@ -737,8 +744,8 @@ def image_statistics(request) -> Response:
             .distinct().order_by('sort_order')\
             .annotate(count=Count('annotation'),
                       in_image_count=Count('annotation', filter=Q(annotation__vector__isnull=False, annotation__user=request.user)),
-                      verified_count=Count('annotation', filter=Q(annotation__verifications__verified=True, annotation__user=request.user)),
-                      unverified_count=Count('annotation', filter=Q(annotation__verifications__verified=False, annotation__user=request.user)),
+                      verified_count=Count('annotation', filter=Q(annotation__vector__isnull=False, annotation__verifications__verified=True, annotation__user=request.user)),
+                      unverified_count=Count('annotation', filter=Q(annotation__vector__isnull=False, annotation__verifications__verified=False, annotation__user=request.user)),
                       not_in_image_count=Count('annotation', filter=Q(annotation__vector__isnull=True, annotation__user=request.user)))
 
 
@@ -1086,12 +1093,12 @@ def load_image_set(request) -> Response:
                 'name'), many=True).data
     elif type(filter_annotation_type_id) is str:
         if filter_annotation_type_id == "Unverified":
-            ids = get_unverified_ids(request, image_set)
+            ids = image_set.get_unverified_ids(request.user)
             serialized_image_set['images'] = ImageSerializer(
                 image_set.images.filter(id__in=ids).order_by(
                 'name'), many=True).data
         elif filter_annotation_type_id == "Verified":
-            ids = get_verified_ids(request, image_set)
+            ids = image_set.get_verified_ids(request.user)
             serialized_image_set['images'] = ImageSerializer(
                 image_set.images.filter(id__in=ids).order_by(
                 'name'), many=True).data

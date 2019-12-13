@@ -66,6 +66,11 @@
             self.resizecanvas();
         });
 
+        this._viewer.addHandler('full-screen', function() {
+            self.resize();
+            self.resizecanvas();
+        });
+
         this.resize();
     };
 

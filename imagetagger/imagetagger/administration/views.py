@@ -134,8 +134,6 @@ def edit_annotation_type(request, annotation_type_id):
         else:
             selected_annotation_type.name = request.POST['name']
             selected_annotation_type.active = True if 'on' == request.POST['active'] else False
-            selected_annotation_type.enable_concealed = True if 'on' == request.POST['enable_concealed'] else False
-            selected_annotation_type.enable_blurred = True if 'on' == request.POST['enable_blurred'] else False
             selected_annotation_type.default_width = request.POST['default_width']
             selected_annotation_type.default_height = request.POST['default_height']
             selected_annotation_type.color_code = request.POST['color_code']

@@ -19,6 +19,8 @@ class BoundingBoxes {
         this.image_width = imageSize["width"];
         this.image_hight = imageSize["height"];
         this.strokeWidth = 3;
+
+        this.resetSelection();
     }
 
     getImageId() {
@@ -276,21 +278,10 @@ class BoundingBoxes {
         $('#AnnotationInformation').hide();
         $('#annotation_buttons').hide();
 
-        //$('.annotate_button').prop('disabled', false);
-
         if (this.selection !== undefined) {
             this.selection.item.selected = false;
             this.selection = undefined;
         }
-    }
-
-    static getTag(field) {
-        return '<div id="' + field + 'Box"><div class="col-xs-2" style="max-width: 3em">' +
-            '<label for="' + field + 'Field">' + field + '</label>' +
-            '</div><div class="col-xs-10">' +
-            '<input id="' + field + 'Field" class="Coordinates annotation_value form-control"' +
-            'type="text" name="' + field + 'Field" value="0" min="0" disabled>' +
-            '</div><div class="col-xs-12"></div></div>';
     }
 
     reset() {
@@ -373,7 +364,6 @@ class BoundingBoxes {
             type: "fill",
             item: canvasObject
         };
-
     }
 
 

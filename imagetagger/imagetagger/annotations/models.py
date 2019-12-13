@@ -1,5 +1,6 @@
 import json
 from typing import Set, Union
+from enum import Enum, IntEnum
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -605,3 +606,30 @@ class ExportFormat(models.Model):
 
     def __str__(self):
         return '{}: {}'.format(self.team.name, self.name)
+
+
+class LogImageAction(models.Model):
+
+    class ActionType(IntEnum):
+        OPEN = 1
+        CLOSED = 2
+
+    image = models.ForeignKey(Image, on_delete=models.SET_NULL, null=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL,
+                                 on_delete=models.SET_NULL,
+                                 null=True)
+    time = models.DateTimeField(auto_now=True)
+
+    action = models.IntegerField(default=1)
+
+    ip = models.GenericIPAddressField(null=True)
+
+    @staticmethod
+    def get_ip_fom_request(request):
+
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip

@@ -39,7 +39,9 @@ def annotate(request, image_id):
     if 'read' in imageset_perms:
         set_images = selected_image.image_set.images.all().order_by('name')
         annotation_types = AnnotationType.objects.filter(active=True,
-                                                         product__in=selected_image.image_set.product_set.all())  # for the dropdown option
+                                                         product__in=selected_image.image_set.product_set.all())\
+            .order_by('sort_order')  # for the dropdown option
+
         imageset_lock = selected_image.image_set.image_lock
         return render(request, 'annotations/annotate.html', {
             'selected_image': selected_image,
@@ -718,7 +720,7 @@ def load_set_annotation_types(request) -> Response:
     annotation_types = AnnotationType.objects.filter(
         active=True,
         annotation__in=annotations)\
-        .distinct()
+        .distinct().order_by('sort_order')
 
     if not imageset.has_perm('read', request.user):
         return Response({
