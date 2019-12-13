@@ -909,7 +909,8 @@ def label_upload(request, imageset_id):
             image = images.filter(name=line_frags[0])
             if image.exists():
                 image = image[0]
-                annotation_type = AnnotationType.objects.filter(name=line_frags[1], active=True)
+                annotation_type = AnnotationType.objects.filter(name=line_frags[1], active=True,
+                                                                product__in=imageset.product_set.all())
                 if annotation_type.exists():
                     annotation_type = annotation_type[0]
                     vector = False
