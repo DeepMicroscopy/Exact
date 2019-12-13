@@ -495,7 +495,10 @@ globals = {
                         showSelectionControl: true
                     });
 
-                    gAnnotationType = gAnnotationTypes[$('#main_annotation_type_id').html().trim()];
+                    if ($('#main_annotation_type_id').html().trim() > -1)
+                        gAnnotationType = gAnnotationTypes[$('#main_annotation_type_id').html().trim()];
+                    else if (Object.keys(gAnnotationTypes).length > 0)
+                        gAnnotationType = gAnnotationTypes[Object.keys(gAnnotationTypes)[0]];
                 }
             },
             error: function () {
