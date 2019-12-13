@@ -3,6 +3,10 @@ from typing import Set
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import models
+
+from django.db.models import Count, Q, Sum
+from django.db.models.expressions import F
+
 import os
 
 from imagetagger.users.models import Team
@@ -195,6 +199,69 @@ class ImageSet(models.Model):
             return ''
         elif self.priority is 1:
             return '<span class="glyphicon glyphicon-exclamation-sign" data-toggle="tooltip" data-placement="right" title="High labeling priority"></span>'
+
+
+    def get_verified_ids(self, user):
+        images = Image.objects.filter(image_set=self).order_by('name')
+
+        if self.collaboration_type == ImageSet.CollaborationTypes.COLLABORATIVE:
+            # find all images with verified annotations
+            images = images.filter(annotations__annotation_type__active=True, annotations__deleted=False,
+                                 annotations__verifications__verified=True)
+
+        if self.collaboration_type == ImageSet.CollaborationTypes.COMPETITIVE:
+            # find all images with verified annotations
+            images = images.filter(annotations__annotation_type__active=True, annotations__deleted=False,
+                                 annotations__verifications__verified=True, annotations__user=user)
+            # remove all with one unverified id
+            images = images.exclude(id__in=images.filter(annotations__annotation_type__active=True,
+                                                         annotations__deleted=False,
+                                                         annotations__verifications__verified=False,
+                                                         annotations__user=user))
+
+
+        return images
+
+    def get_unverified_ids(self, user):
+        images = Image.objects.filter(image_set=self).order_by('name')
+
+        if self.collaboration_type == ImageSet.CollaborationTypes.COLLABORATIVE:
+            unverified = images.filter(annotations__annotation_type__active=True, annotations__deleted=False,
+                                       annotations__verifications__verified=False).distinct()
+            unannotated = images.annotate(annotation_count=Count('annotations')).filter(annotation_count__exact=0).distinct()
+
+        if self.collaboration_type == ImageSet.CollaborationTypes.COMPETITIVE:
+            unverified = images.filter(annotations__annotation_type__active=True, annotations__deleted=False,
+                                       annotations__verifications__verified=False, annotations__user=user).distinct()
+            unannotated = images.annotate(annotation_count=Count('annotations', filter=Q(annotations__user=user)))\
+                .filter(annotation_count__exact=0).distinct()
+
+        # TODO_ Convert to single query
+        images =  Image.objects.filter(id__in = [a.id for a in unverified] + [a.id for a in unannotated]) #Q(unverified) | Q(unannotated)
+
+        # if there are any unverified images but the verified tag was added.
+        # remove tag
+
+        # TODO: Implement and test
+        if (False):
+            tag_name = "verified"
+            if any(images) and self.set_tags.filter(name=tag_name).exists():
+                for tag in self.set_tags.filter(name="verified"):
+                    tag.delete()
+            if images.count() == 0 and not self.set_tags.filter(name=tag_name).exists():
+                # TODO: validate the name?
+                # TODO: this in better?
+                if SetTag.objects.filter(name=tag_name).exists():
+                    tag = SetTag.objects.get(name=tag_name)
+                else:
+                    tag = SetTag(name=tag_name)
+                    # TODO this in better?
+                    tag.save()
+                tag.imagesets.add(self)
+                tag.save()
+
+
+        return images
 
 
 class SetTag(models.Model):

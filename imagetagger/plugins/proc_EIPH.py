@@ -55,13 +55,13 @@ class Plugin(ExactServerPlugin):
             gt_image = np.zeros(shape=(len(x_steps) + 1, len(y_steps) + 1))
             annotations = np.array(
                 [[a.vector['x1'], a.vector['y1'], a.vector['x2'], a.vector['y2'], int(a.annotation_type.name)]
-                 for a in image.annotations.filter(annotation_type__active=True).all()])
+                 for a in image.annotations.filter(annotation_type__active=True, deleted=False).all()])
 
             # image.annotations.filter(vector__x1__gte=x_min, vector__y1__gte=y_min, vector__x2__lte=x_max,
             # vector__y2__lte=y_max).annotate(name_as_int=Cast('annotation_type__name', FloatField()))
             # .aggregate(Avg('name_as_int'))['name_as_int__avg']
 
-            if image.annotations.filter(annotation_type__active=True).count() > 0:
+            if image.annotations.filter(annotation_type__active=True, deleted=False).exists():
                 x_index = 0
                 for x in x_steps:
                     y_index = 0
@@ -126,7 +126,7 @@ class Plugin(ExactServerPlugin):
         y_min = int(options.get("min_y", 0))
         y_max = int(options.get("max_y", slide._osr.level_dimensions[0][1]))
 
-        annotation_types = AnnotationType.objects.filter(annotation__image=image, active=True,
+        annotation_types = AnnotationType.objects.filter(annotation__image=image, active=True, annotation__deleted=False,
                                                          annotation__vector__x1__gte=x_min,
                                                          annotation__vector__y1__gte=y_min,
                                                          annotation__vector__x2__lte=x_max,

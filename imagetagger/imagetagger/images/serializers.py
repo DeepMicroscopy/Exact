@@ -33,6 +33,7 @@ class ImageSetSerializer(ModelSerializer):
             'location',
             'description',
             'images',
+            'main_annotation_type'
         )
 
     images = ImageSerializer(many=True)
