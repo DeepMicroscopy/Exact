@@ -38,6 +38,7 @@ class BoundingBoxes {
         switch (item.data.type) {
             case "rect":
             case "circle":
+            case "fixed_rect":
                 vector["x1"] = Math.round(item.bounds.getTopLeft().x);
                 vector["y1"] = Math.round(item.bounds.getTopLeft().y);
                 vector["x2"] = Math.round(item.bounds.getBottomRight().x);
@@ -112,6 +113,7 @@ class BoundingBoxes {
         canvasObject.strokeColor = selected_annotation_type.color_code;
         canvasObject.strokeWidth = this.strokeWidth;
         canvasObject.name = '~' + new Date().getMilliseconds();
+        canvasObject.data.type_id = selected_annotation_type.id;
 
         if (selected_annotation_type.area_hit_test)
             ellipse.fillColor = new paper.Color(0, 0, 0, 0.000001);
@@ -164,6 +166,7 @@ class BoundingBoxes {
                 if (annotation.annotation_type.area_hit_test)
                     rect.fillColor = new paper.Color(0, 0, 0, 0.000001);
                 rect.data.type = "rect";
+                rect.data.type_id = annotation.annotation_type.id;
 
                 this.group.addChild(rect);
                 break;
@@ -179,6 +182,7 @@ class BoundingBoxes {
                 if (annotation.annotation_type.area_hit_test)
                     rect.fillColor = new paper.Color(0, 0, 0, 0.000001);
                 rect.data.type = "fixed_rect";
+                rect.data.type_id = annotation.annotation_type.id;
 
                 this.group.addChild(rect);
                 break;
@@ -194,6 +198,7 @@ class BoundingBoxes {
                 if (annotation.annotation_type.area_hit_test)
                     ellipse.fillColor = new paper.Color(0, 0, 0, 0.000001);
                 ellipse.data.type = "circle";
+                ellipse.data.type_id = annotation.annotation_type.id;
 
                 this.group.addChild(ellipse);
                 break;
@@ -206,6 +211,7 @@ class BoundingBoxes {
                 line.strokeWidth = this.strokeWidth;
                 line.name = '#' + annotation.id;
                 line.data.type = "line";
+                line.data.type_id = annotation.annotation_type.id;
 
                 this.group.addChild(line);
                 break;
@@ -222,6 +228,7 @@ class BoundingBoxes {
                     poly.fillColor = new paper.Color(0, 0, 0, 0.000001);
 
                 poly.data.type = "poly";
+                poly.data.type_id = annotation.annotation_type.id;
 
                 var count = Object.keys(annotation.vector).length / 2;
                 for (var i = 1; i <= count; i++) {
@@ -231,6 +238,12 @@ class BoundingBoxes {
                 this.group.addChild(poly);
                 break;
         }
+    }
+
+    updateVisbility(annotation_type_id, visibility ) {
+
+        this.group.children.filter(function (el) {return el.data.type_id === annotation_type_id})
+            .forEach(function (el) {el.visible = visibility});
     }
 
 
@@ -374,6 +387,7 @@ class BoundingBoxes {
 
         canvasObject.selected = true;
         canvasObject.strokeWidth = item.strokeWidth;
+        canvasObject.data.type_id = annotation_type.id;
 
         if (annotation_type.area_hit_test)
             canvasObject.fillColor = new paper.Color(0, 0, 0, 0.000001);
