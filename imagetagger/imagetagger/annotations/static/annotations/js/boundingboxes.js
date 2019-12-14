@@ -112,7 +112,9 @@ class BoundingBoxes {
         canvasObject.strokeColor = selected_annotation_type.color_code;
         canvasObject.strokeWidth = this.strokeWidth;
         canvasObject.name = '~' + new Date().getMilliseconds();
-        canvasObject.fillColor = new paper.Color(0, 0, 0, 0.000001);
+
+        if (selected_annotation_type.area_hit_test)
+            ellipse.fillColor = new paper.Color(0, 0, 0, 0.000001);
 
 
         // bounding box coordinates
@@ -160,7 +162,8 @@ class BoundingBoxes {
                 rect.strokeColor = annotation.annotation_type.color_code;
                 rect.strokeWidth = this.strokeWidth;
                 rect.name = '#' + annotation.id;
-                rect.fillColor = new paper.Color(0, 0, 0, 0.000001);
+                if (annotation.annotation_type.area_hit_test)
+                    rect.fillColor = new paper.Color(0, 0, 0, 0.000001);
                 rect.data.type = "rect";
 
                 this.group.addChild(rect);
@@ -174,7 +177,8 @@ class BoundingBoxes {
                 ellipse.strokeColor = annotation.annotation_type.color_code;
                 ellipse.strokeWidth = this.strokeWidth;
                 ellipse.name = '#' + annotation.id;
-                ellipse.fillColor = new paper.Color(0, 0, 0, 0.000001);
+                if (annotation.annotation_type.area_hit_test)
+                    ellipse.fillColor = new paper.Color(0, 0, 0, 0.000001);
                 ellipse.data.type = "circle";
 
                 this.group.addChild(ellipse);
@@ -199,8 +203,10 @@ class BoundingBoxes {
                     strokeWidth: this.strokeWidth,
                     name: '#' + annotation.id,
                     closed: annotation.annotation_type.closed,
-                    fillColor: new paper.Color(0, 0, 0, 0.000001)
                 });
+                if (annotation.annotation_type.area_hit_test)
+                    poly.fillColor = new paper.Color(0, 0, 0, 0.000001);
+
                 poly.data.type = "poly";
 
                 var count = Object.keys(annotation.vector).length / 2;
@@ -350,6 +356,10 @@ class BoundingBoxes {
 
         canvasObject.selected = true;
         canvasObject.strokeWidth = item.strokeWidth;
+
+        if (annotation_type.area_hit_test)
+            canvasObject.fillColor = new paper.Color(0, 0, 0, 0.000001);
+
         canvasObject.fillColor = new paper.Color(0, 0, 0, 0.000001);
 
         var tempName = item.name;

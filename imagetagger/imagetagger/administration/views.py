@@ -133,13 +133,13 @@ def edit_annotation_type(request, annotation_type_id):
             messages.error(request, _('The name is already in use by an annotation type.'))
         else:
             selected_annotation_type.name = request.POST['name']
-            selected_annotation_type.active = True if 'on' == request.POST['active'] else False
+            selected_annotation_type.active = 'active' in request.POST
             selected_annotation_type.default_width = request.POST['default_width']
             selected_annotation_type.default_height = request.POST['default_height']
             selected_annotation_type.color_code = request.POST['color_code']
             selected_annotation_type.sort_order = request.POST['sort_order']
-            selected_annotation_type.closed = True if 'on' == request.POST['closed'] else False
-            selected_annotation_type.area_hit_test = True if 'on' == request.POST['area_hit_test'] else False
+            selected_annotation_type.closed = 'closed' in request.POST
+            selected_annotation_type.area_hit_test = 'area_hit_test' in request.POST
             selected_annotation_type.product = Product.objects.filter(id=request.POST['product']).first()
 
             if 'image_file' in request.FILES:
