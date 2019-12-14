@@ -485,7 +485,11 @@ globals = {
             headers: gHeaders,
             dataType: 'json',
             success: function (data) {
-                data.annotation_types.forEach(x => gAnnotationTypes[x.id] = x);
+                data.annotation_types.forEach(x => {
+                    gAnnotationTypes[x.id] = x;
+                });
+
+
                 displayAnnotationTypeOptions(data.annotation_types);
 
                 if (data.annotation_types.length > 0) {
@@ -500,12 +504,22 @@ globals = {
                         gAnnotationType = gAnnotationTypes[$('#main_annotation_type_id').html().trim()];
                     else if (Object.keys(gAnnotationTypes).length > 0)
                         gAnnotationType = gAnnotationTypes[Object.keys(gAnnotationTypes)[0]];
+
+
+                    data.annotation_types.forEach(x =>
+                        $('#DrawCheckBox_'+x.id).change(handleAnnotationVisibilityChanged)
+                    );
                 }
             },
             error: function () {
                 displayFeedback($('#feedback_connection_error'))
             }
         })
+    }
+
+    function handleAnnotationVisibilityChanged(event) {
+        var annotation_type_id = parseInt(event.target.getAttribute('data-annotation_type-id'));
+        tool.updateVisbility(annotation_type_id, event.currentTarget.checked);
     }
 
     function displayAnnotationTypeOptions(annotationTypeList) {

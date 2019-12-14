@@ -175,7 +175,10 @@
                                                     <td>{{ annotation_type.name }}</td>
                                                     <td>{{ forloop.counter0 }}</td>
                                                     <td id="{{ annotation_type.name }}_{{ annotation_type.id }}">{{ annotation_type.node_count }}</td>
-                                                    <td style="background-color: {{ annotation_type.color_code }}"></td>
+                                                    <td style="background-color: {{ annotation_type.color_code }}">
+                                                        <input type="checkbox" id="DrawCheckBox_{{ annotation_type.id }}"
+                                                               data-annotation_type-id={{ annotation_type.id }} checked>
+                                                    </td>
                                                     <td>
                                                         <a href="{{ annotation_type.image_file}}">
                                                             <img src="{{ annotation_type.image_file}}" style="widows: 50px; height: 50px" >
