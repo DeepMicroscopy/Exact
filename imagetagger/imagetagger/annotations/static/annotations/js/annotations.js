@@ -495,7 +495,8 @@ globals = {
                         showSelectionControl: true
                     });
 
-                    if ($('#main_annotation_type_id').html().trim() > -1)
+                    var id = parseInt($('#main_annotation_type_id').html().trim());
+                    if (id > -1 && id in gAnnotationTypes)
                         gAnnotationType = gAnnotationTypes[$('#main_annotation_type_id').html().trim()];
                     else if (Object.keys(gAnnotationTypes).length > 0)
                         gAnnotationType = gAnnotationTypes[Object.keys(gAnnotationTypes)[0]];
