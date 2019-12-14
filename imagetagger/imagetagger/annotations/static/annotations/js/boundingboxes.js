@@ -102,7 +102,7 @@ class BoundingBoxes {
                 canvasObject = new paper.Path.Rectangle(imagePoint,
                     new paper.Size(selected_annotation_type.default_width, selected_annotation_type.default_hight));
                 canvasObject.position = imagePoint;
-                canvasObject.data.type = "rect";
+                canvasObject.data.type = "fixed_rect";
 
                 break;
 
@@ -155,7 +155,6 @@ class BoundingBoxes {
 
         switch (annotation.annotation_type.vector_type) {
             case 1:  // Rect
-            case 6:
                 var rect = new paper.Path.Rectangle(annotation.vector.x1, annotation.vector.y1,
                     annotation.vector.x2 - annotation.vector.x1, annotation.vector.y2 - annotation.vector.y1);
 
@@ -165,6 +164,21 @@ class BoundingBoxes {
                 if (annotation.annotation_type.area_hit_test)
                     rect.fillColor = new paper.Color(0, 0, 0, 0.000001);
                 rect.data.type = "rect";
+
+                this.group.addChild(rect);
+                break;
+
+
+            case 6:
+                var rect = new paper.Path.Rectangle(annotation.vector.x1, annotation.vector.y1,
+                    annotation.vector.x2 - annotation.vector.x1, annotation.vector.y2 - annotation.vector.y1);
+
+                rect.strokeColor = annotation.annotation_type.color_code;
+                rect.strokeWidth = this.strokeWidth;
+                rect.name = '#' + annotation.id;
+                if (annotation.annotation_type.area_hit_test)
+                    rect.fillColor = new paper.Color(0, 0, 0, 0.000001);
+                rect.data.type = "fixed_rect";
 
                 this.group.addChild(rect);
                 break;
@@ -267,7 +281,8 @@ class BoundingBoxes {
 
     resizeItem(event) {
         if (this.selection) {
-            this.selection.item.scale(1 + (event.scroll / 10));
+            if (this.selection.item.data.type !== "fixed_rect")
+                this.selection.item.scale(1 + (event.scroll / 10));
         }
     }
 
@@ -341,9 +356,12 @@ class BoundingBoxes {
                     break;
 
                 case 1:  // Rect
-                case 6:
                     canvasObject = new paper.Path.Rectangle(item.bounds);
                     canvasObject.data.type = "rect";
+
+                case 6:
+                    canvasObject = new paper.Path.Rectangle(item.bounds);
+                    canvasObject.data.type = "fixed_rect";
 
                     break;
                 default:
@@ -359,8 +377,6 @@ class BoundingBoxes {
 
         if (annotation_type.area_hit_test)
             canvasObject.fillColor = new paper.Color(0, 0, 0, 0.000001);
-
-        canvasObject.fillColor = new paper.Color(0, 0, 0, 0.000001);
 
         var tempName = item.name;
 
@@ -436,6 +452,17 @@ class BoundingBoxes {
                                 this.selection.item.position = imagePoint;
                             }
                         }
+                        break;
+
+                    case 'fixed_rect':
+
+                        var tempRect = this.selection.item.bounds.clone();
+                        tempRect.center = imagePoint;
+
+                        if (this.isPointInImage(tempRect.getTopLeft()) && this.isPointInImage(tempRect.getBottomRight()))
+                            this.selection.item.position = imagePoint;
+
+
                         break;
 
                     default:
