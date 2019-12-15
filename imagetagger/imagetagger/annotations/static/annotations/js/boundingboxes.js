@@ -279,10 +279,13 @@ class BoundingBoxes {
 
     getItemFromID(annotationid) {
         var item = undefined;
-        if (typeof annotationid === 'string') {
-            item = this.group.children[annotationid];
-        } else {
+        if (typeof annotationid === 'number')
             item = this.group.children['#' + annotationid];
+        if (typeof annotationid === 'string') {
+            if (!isNaN(parseInt(annotationid)))
+                item = this.group.children['#' + annotationid];
+            else
+                item = this.group.children[annotationid];
         }
         return item;
     }
@@ -290,6 +293,26 @@ class BoundingBoxes {
     updateStrokeWidth(width){
         this.strokeWidth = width;
         this.group.children.forEach(x => { x.strokeWidth = this.strokeWidth });
+    }
+
+    showItem(annotationid) {
+        var item = this.getItemFromID(annotationid);
+        // if annotation was found zoom to annotation
+        if (item !== undefined) {
+            const vpRect = this.viewer.viewport.imageToViewportRectangle(new OpenSeadragon.Rect(
+                item.bounds.topLeft.x,
+                item.bounds.topLeft.y,
+                item.bounds.width,
+                item.bounds.height
+            ));
+            const vpPos = this.viewer.viewport.imageToViewportCoordinates(item.bounds.centerX, item.bounds.centerY)
+            this.viewer.viewport.fitBoundsWithConstraints(new OpenSeadragon.Rect(
+                vpPos.x - vpRect.width / 2,
+                vpPos.y - vpRect.height / 2,
+                vpRect.width,
+                vpRect.height
+            ));
+        }
     }
 
     resizeItem(event) {
