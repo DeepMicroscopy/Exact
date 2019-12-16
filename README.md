@@ -78,7 +78,10 @@ The following settings should probably be changed:
 
 For the database, postgresql is used. Install it by running `sudo apt install postgresql`
 
-Initialize the database cluster with `sudo -iu postgres initdb --locale en_US.UTF-8 -D '/var/lib/postgres/data'`
+Initialize the database cluster with `sudo -iu postgres initdb --locale en_US.UTF-8 -D '/var/lib/postgres/data'`.
+
+Note: It may be that initdb is not in your current PATH (seems to be default for postgresql >= 10), in this case, you have to specify the proper path to initdb, e.g:
+`sudo -iu postgres /usr/lib/postgresql/*/bin/initdb --locale en_US.UTF-8 -D '/var/lib/postgresql/data'` (for Ubuntu systems)
 
 To start the postgresql server, run `sudo systemctl start postgresql.service`. If the server should always be started on boot, run `sudo systemctl enable postgresql.service`.
 
