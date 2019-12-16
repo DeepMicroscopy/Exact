@@ -63,7 +63,7 @@ pip3 install -r requirements.txt
 Copy settings.py.example to settings.py in the imagetagger folder:
 
 ```
-cp imagetagger/settings.py.example imagetagger/settings.py
+cp imagetagger/imagetagger/settings.py.example imagetagger/imagetagger/settings.py
 ```
 
 and customize the settings.py.
