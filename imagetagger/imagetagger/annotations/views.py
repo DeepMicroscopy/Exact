@@ -634,11 +634,11 @@ def load_annotations(request) -> Response:
                                          datetime.datetime.fromtimestamp(int(since)))
         annotations = annotations.filter(~Q(last_editor__username=request.user.username))
 
-    if min_x is not None and min_y is not None and max_x is not None and max_y is not None:
-        annotations =  annotations.filter(x1__gte=int(min_x), y1__gte=int(min_y),
-                                          x1__lte=int(max_x), y2__lte=int(max_y))
+    if min_x is not None and min_y is not None:
+        annotations = annotations.filter(vector__x1__gte=int(min_x), vector__y1__gte=int(min_y))
 
-
+    if max_x is not None and max_y is not None:
+        annotations = annotations.filter(vector__x1__lt=int(max_x), vector__y1__lt=int(max_y))
 
     data = [serialize_annotation(a) for a in annotations]
 

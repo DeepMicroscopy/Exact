@@ -14,7 +14,7 @@ globals = {
     const ANNOTATE_URL = '/annotations/%s/';
     const IMAGE_SET_URL = '/images/imageset/%s/';
     const PRELOAD_BACKWARD = 2;
-    const PRELOAD_FORWARD = 5;
+    const PRELOAD_FORWARD = 2;
     const STATIC_ROOT = '/static/';
 
     // TODO: Find a solution for url resolvings
@@ -80,6 +80,7 @@ globals = {
         // OpenSeadragon configuration options when the viewer is created
         // from DZI XML.
         //viewer.source.minLevel = 8;
+        console.log("image  open");
 
         $.ajax(API_IMAGES_BASE_URL + 'image/opened/' + gImageId, {
                 type: 'GET',
@@ -182,6 +183,12 @@ globals = {
             viewer.imagingHelper.setZoomFactor(event.newValue / gImageInformation[gImageId]['objectivePower'], true);
     }
 
+    viewer.addHandler('tile-loaded', function (e) {
+        //if (!e.fullScreen)
+        //handleResize();
+
+    });
+
     viewer.addHandler('full-screen', function (e) {
         //if (!e.fullScreen)
         //handleResize();
@@ -192,6 +199,7 @@ globals = {
      */
     viewer.addHandler('animation-finish', function (e) {
         updatePlugins(gImageId);
+
     });
 
 
@@ -756,8 +764,8 @@ globals = {
             viewer.close();
         } else {
             gImageId = imageId;
-            preloadAnnotations(imageId, gImageList);
 
+            console.log("displayImage " + imageId);
             viewer.open({tileSource: window.location.origin + "/images/image/" + imageId});
 
         }
@@ -1103,7 +1111,7 @@ globals = {
             // load existing annotations for this image
             if (gAnnotationCache[imageId] === undefined) {
                 // image is not available in cache. Load it.
-                loadAnnotationsToCache(imageId);
+                //loadAnnotationsToCache(imageId);
                 $(document).one("ajaxStop", handleNewAnnotations);
             } else if ($.isEmptyObject(gAnnotationCache[imageId])) {
                 // we are already loading the annotation, wait for ajax
@@ -1237,23 +1245,58 @@ globals = {
             return;
         }
         // prevent multiple ajax requests for the same image
-        gAnnotationCache[imageId] = {};
+        gAnnotationCache[imageId] = [];
 
-        var params = {
-            image_id: imageId
-        };
-        $.ajax(API_ANNOTATIONS_BASE_URL + 'annotation/load/?' + $.param(params), {
-            type: 'GET',
-            headers: gHeaders,
-            dataType: 'json',
-            success: function (data) {
-                // save the current annotations to the cache
-                gAnnotationCache[imageId] = data.annotations;
-                console.log("Chaching annotations for", imageId);
-            },
-            error: function () {
-                console.log("Unable to load annotations for image" + imageId);
-            }
+        var x_steps = [];
+        var y_steps = [];
+        var step = 10000; //pixel
+        var num_tiles = 10;
+        var stop_x = gImageInformation[gImageId]['width'];
+        var stop_y = gImageInformation[gImageId]['height'];
+
+        if (stop_x > step)
+            step = Math.ceil(stop_x / num_tiles);
+
+        for (var i = 0; step > 0 ? i < stop_x : i > stop_x; i += step) {
+            x_steps.push(i);
+        }
+        for (var i = 0; step > 0 ? i < stop_y : i > stop_y; i += step) {
+            y_steps.push(i);
+        }
+
+        console.log("load annotations " + imageId);
+        x_steps.forEach(function (x) {
+
+            y_steps.forEach(function (y) {
+
+                var params = {
+                    image_id: imageId,
+                    'min_x': x,
+                    'min_y': y,
+                    'max_x': x + step,
+                    'max_y': y + step
+                };
+
+                $.ajax(API_ANNOTATIONS_BASE_URL + 'annotation/load/?' + $.param(params), {
+                    type: 'GET',
+                    headers: gHeaders,
+                    dataType: 'json',
+                    success: function (data) {
+                        // save the current annotations to the cache
+                        gAnnotationCache[imageId] = gAnnotationCache[imageId].concat(data.annotations);
+
+                        if (imageId === tool.getImageId())
+                        {
+                            globals.allAnnotations = gAnnotationCache[imageId];
+                            tool.drawExistingAnnotations(data.annotations);
+                        }
+                        console.log("Starting to chach annotations for", imageId);
+                    },
+                    error: function () {
+                        console.log("Unable to load annotations for image" + imageId);
+                    }
+                });
+            })
         });
     }
 
@@ -1539,7 +1582,7 @@ globals = {
 
         //loadImageList();
         gImageList = getImageList();
-        preloadAnnotations(gImageId, gImageList);
+        //preloadAnnotations(gImageId, gImageList);
         loadAnnotationTypeList(gImageSetId);
         scrollImageList();
 
@@ -1559,6 +1602,8 @@ globals = {
                     data.image_set.main_annotation_type !== null &&
                     data.image_set.main_annotation_type in gAnnotationTypes)
                     gAnnotationType = gAnnotationTypes[data.image_set.main_annotation_type];
+
+                preloadAnnotations(gImageId, gImageList);
 
                 initTool(gImageId);
             },
@@ -1641,6 +1686,7 @@ globals = {
             finishAnnotation(globals.editedAnnotationsId);
         });
         $('#reset_button').click(function () {
+            event.preventDefault();
             tool.resetSelection();
         });
         $('#last_button').click(function (event) {
