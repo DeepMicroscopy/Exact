@@ -54,7 +54,7 @@ import re
 from multiprocessing.pool import ThreadPool
 import subprocess
 import openslide
-from openslide import OpenSlide
+from openslide import OpenSlide, open_slide
 
 # TODO: Add to cache
 image_cache = SlideCache(cache_size=10)
@@ -207,156 +207,125 @@ def upload_image(request, imageset_id):
                 'unsupported': False,
                 'zip': False,
             }
-            if ".zip" in f.name: # f.peek(4) == b'PK\x03\x04':  # ZIP file magic number
+            magic_number = f.read(4)
+            f.seek(0)  # reset file cursor to the beginning of the file
+
+            file_list = {}
+            if magic_number == b'PK\x03\x04':  # ZIP file magic number
                 error['zip'] = True
                 zipname = ''.join(random.choice(string.ascii_uppercase +
                                                 string.ascii_lowercase +
                                                 string.digits)
                                   for _ in range(6)) + '.zip'
-                if not os.path.exists(os.path.join(imageset.root_path(), 'tmp')):
-                    os.makedirs(os.path.join(imageset.root_path(), 'tmp'))
-                with open(os.path.join(imageset.root_path(), 'tmp', zipname), 'wb') as out:
+
+                with open(os.path.join(imageset.root_path(), zipname), 'wb') as out:
                     for chunk in f.chunks():
                         out.write(chunk)
                 # unpack zip-file
-                zip_ref = zipfile.ZipFile(os.path.join(imageset.root_path(), 'tmp', zipname), 'r')
-                zip_ref.extractall(os.path.join(imageset.root_path(), 'tmp'))
+                zip_ref = zipfile.ZipFile(os.path.join(imageset.root_path(), zipname), 'r')
+                zip_ref.extractall(os.path.join(imageset.root_path()))
                 zip_ref.close()
                 # delete zip-file
-                os.remove(os.path.join(imageset.root_path(), 'tmp', zipname))
-                filenames = [f for f in os.listdir(os.path.join(imageset.root_path(), 'tmp'))]
+                os.remove(os.path.join(imageset.root_path(), zipname))
+                filenames = [f for f in os.listdir(os.path.join(imageset.root_path()))]
                 filenames.sort()
                 duplicat_count = 0
                 for filename in filenames:
-                    file_path = os.path.join(imageset.root_path(), 'tmp', filename)
-                    try:
-                        if imghdr.what(file_path) in settings.IMAGE_EXTENSION:
-                            # creates a checksum for image
-                            fchecksum = hashlib.sha512()
-                            with open(file_path, 'rb') as fil:
-                                while True:
-                                    buf = fil.read(10000)
-                                    if not buf:
-                                        break
-                                    fchecksum.update(buf)
-                            fchecksum = fchecksum.digest()
-                            # Tests for duplicats in imageset
-                            if Image.objects.filter(checksum=fchecksum,
-                                                    image_set=imageset).count() == 0:
-                                (shortname, extension) = os.path.splitext(filename)
-                                img_fname = (''.join(shortname) + '_' +
-                                             ''.join(
-                                                 random.choice(
-                                                     string.ascii_uppercase + string.ascii_lowercase + string.digits)
-                                                 for _ in range(6)) + extension)
-                                try:
-                                    with PIL_Image.open(file_path) as image:
-                                        width, height = image.size
-                                    file_new_path = os.path.join(imageset.root_path(), img_fname)
-                                    shutil.move(file_path, file_new_path)
-                                    shutil.chown(file_new_path, group=settings.UPLOAD_FS_GROUP)
-                                    new_image = Image(name=filename,
-                                                      image_set=imageset,
-                                                      filename=img_fname,
-                                                      checksum=fchecksum,
-                                                      width=width,
-                                                      height=height
-                                                      )
-                                    new_image.save()
-                                except (OSError, IOError):
-                                    error['damaged'] = True
-                                    os.remove(file_path)
+
+                    file_path = os.path.join(imageset.root_path(), filename)
+                    if Image.objects.filter(Q(filename=filename)|Q(name=filename),
+                                            image_set=imageset).count() == 0:
+
+                        try:
+                            if open_slide(file_path):
+                                # creates a checksum for image
+                                fchecksum = hashlib.sha512()
+                                with open(file_path, 'rb') as fil:
+                                    while True:
+                                        buf = fil.read(10000)
+                                        if not buf:
+                                            break
+                                        fchecksum.update(buf)
+                                fchecksum = fchecksum.digest()
+
+                                file_list[file_path] = fchecksum
                             else:
-                                os.remove(file_path)
-                                duplicat_count = duplicat_count + 1
-                        else:
+                                error['unsupported'] = True
+
+                        except IsADirectoryError:
+                            error['directories'] = True
+                        except:
                             error['unsupported'] = True
-                    except IsADirectoryError:
-                        error['directories'] = True
+                    else:
+                        os.remove(file_path)
+
                 if duplicat_count > 0:
                     error['duplicates'] = duplicat_count
-            #if ".svs" in f.name:
             else:
                 # creates a checksum for image
                 fchecksum = hashlib.sha512()
                 for chunk in f.chunks():
                     fchecksum.update(chunk)
                 fchecksum = fchecksum.digest()
+
+                filename = os.path.join(imageset.root_path(), f.name)
                 # tests for duplicats in  imageset
-                if Image.objects.filter(checksum=fchecksum, image_set=imageset)\
+                if Image.objects.filter(Q(filename=filename)|Q(name=filename), checksum=fchecksum,
+                                        image_set=imageset)\
                         .count() == 0:
-                    ext = f.name.split('.')[-1]
 
-                    if any(f.name.lower().endswith(ext) for ext in settings.IMAGE_EXTENSION):
-                        fname = f.name.replace(ext, "tiff")
+                    with open(filename, 'wb') as out:
+                        for chunk in f.chunks():
+                            out.write(chunk)
 
-                        image = Image(
-                            name=f.name,
-                            image_set=imageset,
-                            filename=fname,
-                            checksum=fchecksum)
-
-                        with open(image.path().replace("tiff", ext), 'wb') as out:
-                            for chunk in f.chunks():
-                                out.write(chunk)
-
-                        shutil.chown(image.path().replace("tiff", ext), group=settings.UPLOAD_FS_GROUP)
-
-                        # TODO: Time intensive use multiprocessing
-                        os.system(
-                            'convert "{0}" -define tiff:tile-geometry=254x254 ptif:"{1}"'.format(image.path().replace("tiff", ext), image.path()))
-                        shutil.chown(image.path(), group=settings.UPLOAD_FS_GROUP)
-
-                        try:
-                            osr = OpenSlide(image.path())
-                            image.width, image.height = osr.level_dimensions[0]
-                            try:
-                                mpp_x = osr.properties[openslide.PROPERTY_NAME_MPP_X]
-                                mpp_y = osr.properties[openslide.PROPERTY_NAME_MPP_Y]
-                                image.mpp = (float(mpp_x) + float(mpp_y)) / 2
-                            except (KeyError, ValueError):
-                                image.mpp = 0
-                            try:
-                                image.objectivePower = osr.properties[openslide.PROPERTY_NAME_OBJECTIVE_POWER]
-                            except (KeyError, ValueError):
-                                image.objectivePower = 1
-                            image.save()
-                        except:
-                            error['unsupported'] = True
-                            os.remove(image.path())
-                    else:
-
-                        image = Image(
-                            name=f.name,
-                            image_set=imageset,
-                            filename=f.name,
-                            checksum=fchecksum)
-
-                        with open(image.path(), 'wb') as out:
-                            for chunk in f.chunks():
-                                out.write(chunk)
-
-                        shutil.chown(image.path(), group=settings.UPLOAD_FS_GROUP)
-
-                        try:
-                            osr = OpenSlide(image.path())
-                            image.width, image.height = osr.level_dimensions[0]
-                            try:
-                                mpp_x = osr.properties[openslide.PROPERTY_NAME_MPP_X]
-                                mpp_y = osr.properties[openslide.PROPERTY_NAME_MPP_Y]
-                                image.mpp = (float(mpp_x) + float(mpp_y)) / 2
-                            except (KeyError, ValueError):
-                                image.mpp = 0
-                            try:
-                                image.objectivePower = osr.properties[openslide.PROPERTY_NAME_OBJECTIVE_POWER]
-                            except (KeyError, ValueError):
-                                image.objectivePower = 1
-                            image.save()
-                        except:
-                            error['unsupported'] = True
-                            os.remove(image.path())
+                    file_list[filename] = fchecksum
                 else:
-                    error['exists'] = True
+                    os.remove(filename)
+
+            for path in file_list:
+
+                try:
+
+                    fchecksum = file_list[path]
+
+                    path = Path(path)
+                    name = path.name
+                    # check if the file can be opened by OpenSlide if not convert it
+                    try:
+                        osr = OpenSlide(str(path))
+                    except:
+                        old_path = path
+                        path = Path(path).with_suffix('.tiff')
+                        # TODO: Time intensive decrease priority
+                        os.system(
+                            'nice -n 19 convert "{0}" -define tiff:tile-geometry=254x254 ptif:"{1}"'.format(
+                                old_path, path))
+
+                    shutil.chown(str(path), group=settings.UPLOAD_FS_GROUP)
+
+                    image = Image(
+                        name=name,
+                        image_set=imageset,
+                        filename=path.name,
+                        checksum=fchecksum)
+
+
+                    osr = OpenSlide(image.path())
+                    image.width, image.height = osr.level_dimensions[0]
+                    try:
+                        mpp_x = osr.properties[openslide.PROPERTY_NAME_MPP_X]
+                        mpp_y = osr.properties[openslide.PROPERTY_NAME_MPP_Y]
+                        image.mpp = (float(mpp_x) + float(mpp_y)) / 2
+                    except (KeyError, ValueError):
+                        image.mpp = 0
+                    try:
+                        image.objectivePower = osr.properties[openslide.PROPERTY_NAME_OBJECTIVE_POWER]
+                    except (KeyError, ValueError):
+                        image.objectivePower = 1
+                    image.save()
+                except:
+                    error['unsupported'] = True
+                    os.remove(str(path))
 
             errormessage = ''
             if error['zip']:
