@@ -13,8 +13,8 @@ globals = {
     const FEEDBACK_DISPLAY_TIME = 3000;
     const ANNOTATE_URL = '/annotations/%s/';
     const IMAGE_SET_URL = '/images/imageset/%s/';
-    const PRELOAD_BACKWARD = 2;
-    const PRELOAD_FORWARD = 2;
+    const PRELOAD_BACKWARD = 1;
+    const PRELOAD_FORWARD = 1;
     const STATIC_ROOT = '/static/';
 
     // TODO: Find a solution for url resolvings
@@ -187,6 +187,7 @@ globals = {
         //if (!e.fullScreen)
         //handleResize();
 
+	preloadAnnotations(gImageId, gImageList);
     });
 
     viewer.addHandler('full-screen', function (e) {
@@ -1250,7 +1251,7 @@ globals = {
         var x_steps = [];
         var y_steps = [];
         var step = 10000; //pixel
-        var num_tiles = 10;
+        var num_tiles = 3;
         var stop_x = gImageInformation[gImageId]['width'];
         var stop_y = gImageInformation[gImageId]['height'];
 
@@ -1602,8 +1603,6 @@ globals = {
                     data.image_set.main_annotation_type !== null &&
                     data.image_set.main_annotation_type in gAnnotationTypes)
                     gAnnotationType = gAnnotationTypes[data.image_set.main_annotation_type];
-
-                preloadAnnotations(gImageId, gImageList);
 
                 initTool(gImageId);
             },
