@@ -1070,6 +1070,8 @@ globals = {
         imageId = parseInt(imageId);
 
         if (imageId > 0) {
+            setTool(imageId);
+
             var loading = $('#annotations_loading');
 
 
@@ -1104,7 +1106,7 @@ globals = {
             let handleNewAnnotations = function () {
                 // image is in cache.
                 globals.allAnnotations = gAnnotationCache[imageId];
-                setTool(imageId);
+                //setTool(imageId);
                 loading.addClass('hidden');
                 tool.drawExistingAnnotations(globals.allAnnotations);
             };
