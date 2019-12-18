@@ -116,7 +116,7 @@ class BoundingBoxes {
         canvasObject.data.type_id = selected_annotation_type.id;
 
         if (selected_annotation_type.area_hit_test)
-            ellipse.fillColor = new paper.Color(0, 0, 0, 0.000001);
+            canvasObject.fillColor = new paper.Color(0, 0, 0, 0.000001);
 
 
         // bounding box coordinates
