@@ -440,9 +440,14 @@ def image_plugins(request) -> Response:
         }, status=HTTP_403_FORBIDDEN)
 
     plugins = []
-    if "EIPH" in image.image_set.name: #TODO: Replace with call to image_set plugins
-        for plugin in plugin_finder.filter_plugins(product_name="EIPH"):
-            plugins.append(plugin.instance.getPluginStatisticsElements(image, options))
+    # add all plugins with a matching name
+    # TODO: Add Plugins to product properties like products
+    for product in image.image_set.product_set.all():
+        for plugin in plugin_finder.filter_plugins(product_name=product.name):
+            plugins.append(plugin.instance.getPluginStatisticsElements(image, request.user, options))
+    # add all default plugins
+    for plugin in plugin_finder.filter_plugins(product_name=''):
+        plugins.append(plugin.instance.getPluginStatisticsElements(image, request.user, options))
 
 
     return Response({
@@ -463,8 +468,8 @@ def navigator_overlay_status(request) -> Response:
         return HttpResponseForbidden()
 
     # replace with databse call to imageset.product
-    if "EIPH" in image.image_set.name:  # TODO: Replace with call to image_set plugins
-        for plugin in plugin_finder.filter_plugins(product_name="EIPH", navigation_view_policy=ViewPolicy.RGB_IMAGE):
+    for product in image.image_set.product_set.all():
+        for plugin in plugin_finder.filter_plugins(product_name=product.name, navigation_view_policy=ViewPolicy.RGB_IMAGE):
 
             status = plugin.instance.getNavigationViewOverlayStatus(image)
             if status == NavigationViewOverlayStatus.ERROR:
@@ -503,8 +508,8 @@ def view_image_navigator_overlay_tile(request, tile_path):
     tile = slide.get_tile(level, (col, row))
 
     # replace with databse call to imageset.product
-    if "EIPH" in image.image_set.name:  # TODO: Replace with call to image_set plugins
-        for plugin in plugin_finder.filter_plugins(product_name="EIPH", navigation_view_policy=ViewPolicy.RGB_IMAGE):
+    for product in image.image_set.product_set.all():
+        for plugin in plugin_finder.filter_plugins(product_name=product.name, navigation_view_policy=ViewPolicy.RGB_IMAGE):
             tile = plugin.instance.getNavigationViewOverlay(image)
 
     buf = PILBytesIO()
@@ -684,7 +689,7 @@ def view_imageset(request, image_set_id):
     })
 
 
-@login_required
+#@login_required
 @api_view(['GET'])
 def image_statistics(request) -> Response:
     try:

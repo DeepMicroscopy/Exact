@@ -2,6 +2,7 @@ from typing import Set
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.contrib.postgres.fields import JSONField
 from django.db import models
 
 from django.db.models import Count, Q, Sum
@@ -267,3 +268,26 @@ class ImageSet(models.Model):
 class SetTag(models.Model):
     name = models.CharField(max_length=100, unique=True)
     imagesets = models.ManyToManyField(ImageSet, related_name='set_tags')
+
+
+class ScreeningMode(models.Model):
+    class Meta:
+        unique_together = [
+            'image',
+            'user',
+        ]
+
+    image = models.ForeignKey(Image, on_delete=models.CASCADE, related_name='screening')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL,
+                             on_delete=models.SET_NULL,
+                             null=True)
+
+    screening_tiles = JSONField(null=True)
+
+    x_steps = models.IntegerField(default=0)
+    y_steps = models.IntegerField(default=0)
+
+    x_resolution = models.IntegerField(default=0)
+    y_resolution = models.IntegerField(default=0)
+
+    current_index = models.IntegerField(default=0)

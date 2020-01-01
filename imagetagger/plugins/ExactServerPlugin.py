@@ -2,6 +2,7 @@ from enum import Enum
 
 from util.slide_server import SlideCache
 from imagetagger.images.models import Image
+from django.contrib.auth import get_user_model
 
 
 class UpdatePolicy(str, Enum):
@@ -46,11 +47,10 @@ class ExactServerPlugin:
     def updateNavigationViewOverlay(self, image: Image):
         raise NotImplementedError("To be implemented")
 
-
     def getStatisticsUpdatePolicy(self):
         return UpdatePolicy.UPDATE_ON_SLIDE_CHANGE
 
-    def getPluginStatisticsElements(self, image: Image, option ={}):
+    def getPluginStatisticsElements(self, image: Image, user: get_user_model(), option={}):
         raise NotImplementedError("To be implemented")
 
 

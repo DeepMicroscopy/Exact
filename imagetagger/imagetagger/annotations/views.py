@@ -599,7 +599,7 @@ def create_annotation(request) -> Response:
     }, status=HTTP_201_CREATED)
 
 
-@login_required
+#@login_required
 @api_view(['GET'])
 def load_annotations(request) -> Response:
     try:
