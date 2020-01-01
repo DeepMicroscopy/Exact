@@ -3,7 +3,8 @@ globals = {
     editActiveContainer: {},
     drawAnnotations: true,
     allAnnotations: undefined,
-    isSelecting: false
+    isSelecting: false,
+    screeningTool: undefined
 };
 
 
@@ -34,7 +35,7 @@ globals = {
     var gZoomSlider;
     var gLastUpdateTimePoint = Math.floor(Date.now() / 1000);
     var gRefreshAnnotationsFromServer;
-    var gUpDateFromServerInterval = 3000; // 300s
+    var gUpDateFromServerInterval = 30000000; // 300s
     var gShiftDown;
 
     var tool;
@@ -89,7 +90,7 @@ globals = {
         handleResize();
 
         viewer.scalebar({
-            pixelsPerMeter: gImageInformation[gImageId]['mpp'] > 0.0001 ? (1e6 / gImageInformation[gImageId]['mpp']) : 0,
+            pixelsPerMeter: gImageInformation[gImageId]['mpp'] > 0.0001 ? (1e6 / gImageInformation[gImageId]['mpp']) : 1,
         });
 
         var objectivePower = gImageInformation[gImageId]['objectivePower'];
@@ -164,6 +165,22 @@ globals = {
         });
     });
 
+    viewer.addHandler("navigator-click", function (event) {
+        if (globals.screeningTool !== undefined) {
+            event.preventDefaultAction = true;
+
+            var target = viewer.navigator.viewport.pointFromPixel(event.position);
+
+            var imagePoint = viewer.viewport.viewportToImageCoordinates(target);
+            var result = globals.screeningTool.movePosition(imagePoint);
+
+            viewCoordinates(result['x_min'], result['y_min'], result['x_max'], result['y_max']);
+        }
+
+
+        console.log(event.position);
+
+    });
 
     function onImageViewChanged(event) {
 
@@ -187,7 +204,7 @@ globals = {
         //if (!e.fullScreen)
         //handleResize();
 
-	preloadAnnotations(gImageId, gImageList);
+	    preloadAnnotations(gImageId, gImageList);
     });
 
     viewer.addHandler('full-screen', function (e) {
@@ -506,6 +523,8 @@ globals = {
 
         if (imageId > 0 && imageId in gImageInformation) {
             tool = new BoundingBoxes(viewer, imageId, gImageInformation[gImageId]);
+            delete globals.screeningTool;
+            globals.screeningTool = undefined;
 
             if (!OpenSeadragon.isFullScreen())
                 tool.strokeWidth = document.getElementById("StrokeWidthSlider").value;
@@ -956,6 +975,10 @@ globals = {
 
         };
 
+        if (globals.screeningTool !== undefined && globals.screeningTool.getImageId() === imageId) {
+            data.options['current_index'] = globals.screeningTool.getCurrentIndx();
+        }
+
         // update Plugins
         $.ajax(API_IMAGES_BASE_URL + 'image/plugins/', {
             type: 'GET',
@@ -1293,7 +1316,7 @@ globals = {
                             globals.allAnnotations = gAnnotationCache[imageId];
                             tool.drawExistingAnnotations(data.annotations);
                         }
-                        console.log("Starting to chach annotations for", imageId);
+                        console.log("Starting to cach annotations for", imageId);
                     },
                     error: function () {
                         console.log("Unable to load annotations for image" + imageId);
@@ -1559,6 +1582,23 @@ globals = {
         }
     }
 
+    function viewCoordinates(x_min, y_min, x_max, y_max) {
+
+        const vpRect = viewer.viewport.imageToViewportRectangle(new OpenSeadragon.Rect(
+            x_min,
+            y_min,
+            x_max - x_min,
+            y_max - y_min
+        ));
+
+        viewer.viewport.fitBoundsWithConstraints(new OpenSeadragon.Rect(
+            vpRect.x,
+            vpRect.y,
+            vpRect.width,
+            vpRect.height
+        ));
+
+    }
 
     $(function () {
         let get_params = decodeURIComponent(window.location.search.substring(1)).split('&');
@@ -1720,8 +1760,14 @@ globals = {
 
         //listen for click events from this style
         $(document).on('click', '.notifyjs-bootstrap-info', function(event) {
-            var id  = $(this).text().split(" ")[1];
-            tool.showItem(parseInt(id));
+            if ($(this).text().trim()  === "Start Screening") {
+                var result = globals.screeningTool.getCurrentPosition();
+                viewCoordinates(result['x_min'], result['y_min'], result['x_max'], result['y_max']);
+
+            } else {
+                var id  = $(this).text().split(" ")[1];
+                tool.showItem(parseInt(id));
+            }
         });
         $(document).on('click', '.notifyjs-bootstrap-warn', function(event) {
             var id  = $(this).text().split(" ")[1];
@@ -1745,8 +1791,8 @@ globals = {
         };
 
         $(document).keydown(function (event) {
-            if (event.target.id === "annotationRemark"
-                || event.target.id == 'searchInputAnnotation')
+            if (event.target.id === "TEXTAREA"
+                || event.target.nodeName == 'INPUT')
                 return;
 
             switch (event.keyCode) {
@@ -1802,7 +1848,7 @@ globals = {
                     selectAnnotationType(1);
                     break;
                 case 98: //2
-                    electAnnotationType(2);
+                    selectAnnotationType(2);
                     break;
                 case 99: //3
                     selectAnnotationType(3);
@@ -1828,8 +1874,8 @@ globals = {
             }
         });
         $(document).keyup(function (event) {
-            if (event.target.id === "annotationRemark"
-                || event.target.id == 'searchInputAnnotation')
+            if (event.target.id === "TEXTAREA"
+                || event.target.nodeName == 'INPUT')
                 return;
 
             switch (event.keyCode) {
@@ -1844,22 +1890,38 @@ globals = {
                 case 70: //f
                     verifyAndLoadNext();
                     break;
-                case 68: //d
+                case 69: //e load next image
                     CancelEdit(globals.editedAnnotationsId);
                     loadAdjacentImage(1);
 
                     break;
-                case 83: //s
+                case 81: //q load last image
                     CancelEdit(globals.editedAnnotationsId);
                     loadAdjacentImage(-1);
 
                     break;
-                case 65: //a
-                    $('#last_button').click();
+                case 65: //a left tile
+                    var result = globals.screeningTool.moveLeft();
+                    viewCoordinates(result['x_min'], result['y_min'], result['x_max'], result['y_max']);
+
                     break;
-                case 71: //g
-                    $('#not_in_image').click();
+                case 87: //w up tile
+                    var result = globals.screeningTool.moveUp();
+                    viewCoordinates(result['x_min'], result['y_min'], result['x_max'], result['y_max']);
+
                     break;
+
+                case 83: //s down tile
+                    var result = globals.screeningTool.moveDown();
+                    viewCoordinates(result['x_min'], result['y_min'], result['x_max'], result['y_max']);
+
+                    break;
+                case 68: //d right tile
+                    var result = globals.screeningTool.moveRight();
+                    viewCoordinates(result['x_min'], result['y_min'], result['x_max'], result['y_max']);
+
+                    break;
+
                 case 82: //r
                     $('#reset_button').click();
                     break;

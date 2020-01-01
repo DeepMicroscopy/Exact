@@ -32,7 +32,7 @@ class PluginFinder:
         return self.pluginList
 
     def filter_plugins(self, product_name:  str, navigation_view_policy :ViewPolicy = None) -> list:
-        filtered_list = [p for p in self.pluginList if p.instance.productName == product_name]
+        filtered_list = [p for p in self.pluginList if product_name in p.instance.productName]
         if navigation_view_policy is not None:
             filtered_list = [p for p in filtered_list if p.instance.getNavigationViewPolicy() == navigation_view_policy]
 
@@ -64,7 +64,7 @@ class PluginFinder:
 
                     # check if plugin is already with an older version loaded
                     index = [i for i, e in enumerate(self.pluginList)
-                             if e.mainClass == new_plugin.mainClass]
+                             if e.commonName == new_plugin.commonName]
                     if len(index) > 0:
                         self.pluginList[index[0]] = new_plugin
                     else:

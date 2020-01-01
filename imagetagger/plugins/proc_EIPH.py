@@ -5,12 +5,13 @@ from datetime import datetime
 from PIL import Image as PIL_Image
 import cv2
 
+from django.contrib.auth import get_user_model
 from django.template.loader import render_to_string
 from django.db.models import Count, Q, Sum, Avg, FloatField
 from django.db.models.functions import Cast
 
 from imagetagger.annotations.models import AnnotationType
-from imagetagger.images.models import Image
+from imagetagger.images.models import Image, ImageSet
 
 
 from plugins.ExactServerPlugin import \
@@ -115,7 +116,7 @@ class Plugin(ExactServerPlugin):
     def getStatisticsUpdatePolicy(self):
         return UpdatePolicy.UPDATE_ON_SCROLL_CHANGE
 
-    def getPluginStatisticsElements(self, image: Image, options={}):
+    def getPluginStatisticsElements(self, image: Image, user: get_user_model(), options={}):
 
         tab_id = "EIPH_Statistics"
 
@@ -126,13 +127,25 @@ class Plugin(ExactServerPlugin):
         y_min = int(options.get("min_y", 0))
         y_max = int(options.get("max_y", slide._osr.level_dimensions[0][1]))
 
-        annotation_types = AnnotationType.objects.filter(annotation__image=image, active=True, annotation__deleted=False,
-                                                         annotation__vector__x1__gte=x_min,
-                                                         annotation__vector__y1__gte=y_min,
-                                                         annotation__vector__x2__lte=x_max,
-                                                         annotation__vector__y2__lte=y_max)\
-            .distinct().order_by('sort_order') \
-            .annotate(count=Count('annotation'))
+        if image.image_set.collaboration_type == ImageSet.CollaborationTypes.COMPETITIVE:
+            annotation_types = AnnotationType.objects.filter(annotation__image=image,
+                                                             active=True,
+                                                             annotation__deleted=False,
+                                                             annotation__user=user,
+                                                             annotation__vector__x1__gte=x_min,
+                                                             annotation__vector__y1__gte=y_min,
+                                                             annotation__vector__x2__lte=x_max,
+                                                             annotation__vector__y2__lte=y_max)
+        else:
+            annotation_types = AnnotationType.objects.filter(annotation__image=image,
+                                                             active=True,
+                                                             annotation__deleted=False,
+                                                             annotation__vector__x1__gte=x_min,
+                                                             annotation__vector__y1__gte=y_min,
+                                                             annotation__vector__x2__lte=x_max,
+                                                             annotation__vector__y2__lte=y_max)
+
+        annotation_types = annotation_types.distinct().order_by('sort_order').annotate(count=Count('annotation'))
 
         doucet_score = 0
         annotations_total = annotation_types.aggregate(Sum('count'))['count__sum']

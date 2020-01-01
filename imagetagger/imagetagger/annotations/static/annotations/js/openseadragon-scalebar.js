@@ -249,6 +249,10 @@
             var currentPPM = zoom * this.pixelsPerMeter;
             var props = this.sizeAndTextRenderer(currentPPM, this.minWidth);
 
+            var rect = viewport.viewportToImageRectangle(viewport.getBounds())
+            props.text = `X: ${Math.round(rect.x)}px Y: ${Math.round(rect.y)}px 
+                    Width: ${Math.round(rect.width)}px Height: ${Math.round(rect.height)}px \n` + props.text;
+
             this.drawScalebar(props.size, props.text);
             var location = this.getScalebarLocation();
             this.divElt.style.left = location.x + "px";
