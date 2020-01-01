@@ -32,7 +32,11 @@ class PluginFinder:
         return self.pluginList
 
     def filter_plugins(self, product_name:  str, navigation_view_policy :ViewPolicy = None) -> list:
-        filtered_list = [p for p in self.pluginList if product_name in p.instance.productName]
+        if product_name == "":
+            filtered_list = [p for p in self.pluginList if product_name == p.instance.productName]
+        else:
+            filtered_list = [p for p in self.pluginList if p.instance.productName != ""
+                             and p.instance.productName in product_name]
         if navigation_view_policy is not None:
             filtered_list = [p for p in filtered_list if p.instance.getNavigationViewPolicy() == navigation_view_policy]
 
