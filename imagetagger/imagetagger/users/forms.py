@@ -1,5 +1,5 @@
 from django import forms
-from registration.forms import RegistrationForm
+from django_registration.forms import RegistrationForm
 
 from .models import Team, User
 
