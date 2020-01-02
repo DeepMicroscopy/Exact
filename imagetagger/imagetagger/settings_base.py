@@ -42,7 +42,9 @@ INSTALLED_APPS = [
     'rest_framework',
     'widget_tweaks',
     'friendlytagloader',
-    'plugins'
+    'plugins',
+    'util',
+    'django_registration'
 ]
 
 MIDDLEWARE = [

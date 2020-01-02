@@ -8,7 +8,6 @@ import base64
 
 from django.contrib.auth import get_user_model
 from django.template.loader import render_to_string
-from django.db.models import Count, Q, Sum, Avg, FloatField
 from django.db.models.functions import Cast
 
 from imagetagger.annotations.models import AnnotationType
