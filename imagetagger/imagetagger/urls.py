@@ -18,12 +18,14 @@ from django.contrib import admin
 from django.shortcuts import render
 from django.conf import settings
 from django.conf.urls.static import static
+from django_registration.backends.activation.views import RegistrationView
 
 
 from .users.forms import UserRegistrationForm
 
 urlpatterns = [
     url(r'^user/', include('django.contrib.auth.urls')),
+    url(r'^accounts/register/$', RegistrationView.as_view(form_class=UserRegistrationForm)),
     url(r'^accounts/', include('django_registration.backends.activation.urls')),
     url(r'^accounts/', include('django.contrib.auth.urls')),
     url(r'^', include('imagetagger.base.urls')),
