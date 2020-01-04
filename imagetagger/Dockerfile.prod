@@ -1,0 +1,91 @@
+###########
+# BUILDER #
+###########
+
+
+# pull official base image
+FROM python:3.6.0 as builder
+
+# set work directory
+WORKDIR /usr/src/app
+
+RUN apt-get update && apt-get install -y python3-dev python3-openslide netcat dos2unix \
+    && rm -rf /var/lib/apt/lists/*
+
+# set environment variables
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+
+# lint
+RUN pip install --upgrade pip
+RUN pip install flake8
+COPY . /usr/src/app/
+
+# Just build if code is valid!!!
+#RUN flake8 --ignore=E501,F401 .
+
+# install dependencies
+COPY ./requirements.txt .
+RUN pip3 install wheel
+RUN pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requirements.txt
+RUN pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels git+git://github.com/ubernostrum/django-registration.git#egg=django-registration
+
+
+# copy entrypoint.sh and convert to linux format 
+#RUN apt-get update && apt-get install -y dos2unix
+COPY ./entrypoint.prod.sh /usr/src/app/entrypoint.prod.sh
+
+RUN dos2unix /usr/src/app/entrypoint.prod.sh
+
+RUN chmod +x /usr/src/app/entrypoint.prod.sh
+
+
+#########
+# FINAL #
+#########
+
+
+FROM python:3.6.0
+
+# create directory for the app user
+RUN mkdir -p /home/app
+
+# create the app user
+RUN addgroup --system  app --gid 1001
+RUN adduser --system --group app 
+
+# create the appropriate directories
+ENV HOME=/home/app
+ENV APP_HOME=/home/app/web
+RUN mkdir $APP_HOME
+RUN mkdir $APP_HOME/static
+RUN mkdir $APP_HOME/media
+WORKDIR $APP_HOME
+
+
+# install dependencies
+RUN apt-get update && apt-get install -y python3-openslide netcat
+
+
+COPY --from=builder /usr/src/app/wheels /wheels
+COPY --from=builder /usr/src/app/requirements.txt .
+RUN pip install --upgrade pip
+RUN pip install --no-cache /wheels/*
+
+
+# copy entrypoint-prod.sh
+COPY --from=builder /usr/src/app/entrypoint.prod.sh $APP_HOME
+
+# copy project
+COPY . $APP_HOME
+
+# chown all the files to the app user
+RUN chown -R app:app $APP_HOME
+
+# change to the app user
+USER app
+
+
+# run entrypoint.prod.sh
+ENTRYPOINT ["/home/app/web/entrypoint.prod.sh"]

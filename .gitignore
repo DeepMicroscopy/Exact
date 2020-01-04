@@ -70,6 +70,7 @@ db.sqlite3
 imagetagger/data
 imagetagger/images
 imagetagger/tools
+imagetagger/static
 
 categories.json
 confusables.json
@@ -77,3 +78,6 @@ confusables.json
 # VS Code stuff
 .vscode
 *.code-workspace
+
+env.prod
+env.prod.db

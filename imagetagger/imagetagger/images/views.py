@@ -301,7 +301,7 @@ def upload_image(request, imageset_id):
                             'nice -n 19 convert "{0}" -define tiff:tile-geometry=254x254 ptif:"{1}"'.format(
                                 old_path, path))
 
-                    shutil.chown(str(path), group=settings.UPLOAD_FS_GROUP)
+                    #shutil.chown(str(path), group=settings.UPLOAD_FS_GROUP)
 
                     image = Image(
                         name=name,
@@ -763,7 +763,7 @@ def create_imageset(request):
                     # create a folder to store the images of the set
                     folder_path = form.instance.root_path()
                     os.makedirs(folder_path)
-                    shutil.chown(folder_path, group=settings.UPLOAD_FS_GROUP)
+                    #shutil.chown(folder_path, group=settings.UPLOAD_FS_GROUP)
 
                 messages.success(request,
                                  _('The image set was created successfully.'))
