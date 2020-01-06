@@ -36,7 +36,7 @@ RUN pip list
 # copy project
 COPY . /usr/src/imagetagger/
 
-RUN mv /usr/src/imagetagger/imagetagger/settings.py.example /usr/src/imagetagger/imagetagger/settings.py
+#RUN mv /usr/src/imagetagger/imagetagger/settings.py.example /usr/src/imagetagger/imagetagger/settings.py
 #RUN cat /usr/src/imagetagger/imagetagger/settings.py
 
 # run entrypoint.sh
