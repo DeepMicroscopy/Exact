@@ -19,7 +19,7 @@ docker-compose exec web id
 
 AWS-DB:
 
-Create with the same name and credentials on aws rds
+Create DB with the same name and credentials on aws rds
 
 docker-compose -f docker-compose.prod.aws-db.yml down -v --remove-orphans
 docker-compose -f docker-compose.prod.aws-db.yml up -d --build
@@ -29,3 +29,16 @@ docker-compose -f docker-compose.prod.aws-db.yml exec web python manage.py colle
 docker-compose -f docker-compose.prod.aws-db.yml logs -f
 
 docker-compose exec web id
+
+Send to ECR 
+
+Invoke-Expression -Command (aws ecr get-login --no-include-email)
+
+docker tag imagetagger_nginx:latest 298068947512.dkr.ecr.eu-central-1.amazonaws.com/exact_nginx:latest
+docker tag imagetagger_web:latest 298068947512.dkr.ecr.eu-central-1.amazonaws.com/exact:latest
+
+
+docker tag imagetagger_nginx:latest 298068947512.dkr.ecr.eu-central-1.amazonaws.com/exact_nginx:latest
+docker push 298068947512.dkr.ecr.eu-central-1.amazonaws.com/exact:latest
+ 
+
