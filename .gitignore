@@ -81,3 +81,5 @@ confusables.json
 
 env.prod
 env.prod.db
+env.prod.aws-db
+*.aws-db
