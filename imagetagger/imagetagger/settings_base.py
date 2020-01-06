@@ -17,10 +17,13 @@ from django.contrib.messages import constants as messages
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = os.environ.get("SECRET_KEY", default='DEV KEY PLEASE CHANGE IN PRODUCTION INTO SOMETHING RANDOM')
 
-ALLOWED_HOSTS = []
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = int(os.environ.get("DEBUG", default=0))
+
+ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", default='127.0.0.1').split(" ")
 
 
 # Application definition
@@ -105,6 +108,21 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
+
+DATABASES = {
+    'default': {
+        # Imagetagger relies on some Postgres features so other Databses will _not_ work
+        'ENGINE': os.environ.get("SQL_ENGINE", default='django.db.backends.postgresql_psycopg2'), #, default='django.db.backends.postgresql_psycopg2'
+        'HOST': os.environ.get("SQL_HOST", default='127.0.0.1'), #, default='127.0.0.1'
+        'NAME': os.environ.get("SQL_DATABASE", default='imagetagger'), #, default='imagetagger'
+        'PASSWORD': os.environ.get("SQL_PASSWORD", default='imagetagger'), #, default='imagetagger'
+        'USER': os.environ.get("SQL_USER", default='imagetagger'), # , default='imagetagger'
+        'PORT': os.environ.get("SQL_PORT", default='5432'), #, default='5432'
+    }
+}
+
+UPLOAD_FS_GROUP = os.environ.get("UPLOAD_FS_GROUP", 33)
 
 AUTH_USER_MODEL = 'users.User'
 
