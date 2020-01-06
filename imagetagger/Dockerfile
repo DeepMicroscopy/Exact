@@ -20,6 +20,11 @@ RUN pip install -r requirements.txt
 # copy entrypoint.sh and convert to linux format 
 COPY ./entrypoint.sh /usr/src/imagetagger/entrypoint.sh
 
+# copy settingsfile 
+#COPY ./imagetagger/settings.py.example /usr/src/imagetagger/imagetagger/settings.py
+#RUN cat /usr/src/imagetagger/imagetagger/settings.py
+
+
 RUN dos2unix /usr/src/imagetagger/entrypoint.sh
 
 RUN chmod +x /usr/src/imagetagger/entrypoint.sh
@@ -30,6 +35,9 @@ RUN pip list
 
 # copy project
 COPY . /usr/src/imagetagger/
+
+RUN mv /usr/src/imagetagger/imagetagger/settings.py.example /usr/src/imagetagger/imagetagger/settings.py
+#RUN cat /usr/src/imagetagger/imagetagger/settings.py
 
 # run entrypoint.sh
 ENTRYPOINT ["/usr/src/imagetagger/entrypoint.sh"]
