@@ -17,37 +17,98 @@ This is a collaborative online tool for labeling image data.
 * upload of existing labels
 * WSI [viewer](https://openseadragon.github.io/) 
 
-## Reference
-
-This paper describes the Bit-Bots exact we build on in depth. Please cite if you use this tool in your research:
-
-FIEDLER, Niklas, et al. [exact: An Open Source Online Platform for Collaborative Image Labeling.](https://robocup.informatik.uni-hamburg.de/wp-content/uploads/2018/11/exact_paper.pdf) In: RoboCup 2018: Robot World Cup XXII. Springer, 2018.
-
-```
-@inproceedings{exact2018,
-   author={Fiedler, Niklas and Bestmann, Marc and Hendrich, Norman},
-   year={2018},
-   title={exact: An Open Source Online Platform for Collaborative Image Labeling},
-   booktitle={RoboCup 2018: Robot World Cup XXII},
-   organization={Springer}
-}
-```
-## Upgrade
-
-```
-pip install -U -r requirements.txt
-./manage.py migrate
-```
-
-for additional steps on some releases see instructions
-in [UPGRADE.md](https://github.com/bit-bots/exact/blob/master/UPGRADE.md)
 
 ## Install
+
+
+### Docker
+
+Install Docker
 
 Checkout the latest release:
 
 ```
-git checkout v0.x
+git clone https://github.com/ChristianMarzahl/Exact.git
+```
+
+#### Development
+
+Copy and rename `settings.py.example` to `settings.py` in the exact folder.
+
+Modify the configuration files: `env.dev` and `env.dev.db` or use the default configuration. 
+
+Build and run the container:
+```
+docker-compose -f docker-compose.yml up -d --build
+docker-compose logs -f 
+```
+
+Navigate to http://localhost:8000/
+For default the super user login is:
+```
+User: exact
+Pw: exact
+```
+
+#### Production
+
+Additional features:
+- gunicorn
+- nginx
+
+Copy the files `env.dev` and `env.dev.db`, rename to `env.prod` and `env.prod.db` and change settings according to your preferences.
+
+Copy and rename `settings.py.example` to `settings.py` in the exact folder.
+
+Build and run the container:
+```
+
+docker-compose -f docker-compose.prod.yml up -d --build
+docker-compose -f docker-compose.prod.yml exec web python manage.py migrate --noinput 
+docker-compose -f docker-compose.prod.yml exec web python manage.py createsuperuser
+docker-compose -f docker-compose.prod.yml exec web python manage.py collectstatic --no-input --clear
+docker-compose -f docker-compose.prod.yml logs -f
+```
+
+Navigate to  http://localhost:1337/
+
+
+####  Cloud
+
+To use cloud services like [amazon fargate](https://aws.amazon.com/fargate/). The exact server has to connect to a cloud database like [amazon rds](https://aws.amazon.com/rds/).   
+
+
+Copy the files `env.dev` and `env.dev.db`, rename to `env.prod` and `env.prod.aws-db` and change settings according to your preferences.
+
+Copy and rename `settings.py.example` to `settings.py` in the exact folder.
+
+Build and run the container:
+```
+docker-compose -f docker-compose.prod.aws-db.yml down -v --remove-orphans
+docker-compose -f docker-compose.prod.aws-db.yml up -d --build
+docker-compose -f docker-compose.prod.aws-db.yml exec web python manage.py migrate --noinput
+docker-compose -f docker-compose.prod.aws-db.yml exec web python manage.py createsuperuser
+docker-compose -f docker-compose.prod.aws-db.yml exec web python manage.py collectstatic --no-input --clear
+docker-compose -f docker-compose.prod.aws-db.yml logs -f
+```
+
+Send container to [AWS ECR](https://aws.amazon.com/ecr/)
+```
+Invoke-Expression -Command (aws ecr get-login --no-include-email)
+
+docker tag exact_nginx:latest **************.dkr.ecr.eu-central-1.amazonaws.com/exact_nginx:latest
+docker tag exact_web:latest **************.dkr.ecr.eu-central-1.amazonaws.com/exact:latest
+
+docker push **************.dkr.ecr.eu-central-1.amazonaws.com/exact_nginx:latest
+docker push **************.dkr.ecr.eu-central-1.amazonaws.com/exact:latest
+```
+
+### MacOS or Linux 
+
+Checkout the latest release:
+
+```
+git clone https://github.com/ChristianMarzahl/Exact.git
 ```
 
 In our production Senty is used for error reporting (pip install raven).
@@ -114,12 +175,16 @@ For **production** systems it is necessary to run the following commands after e
 ./manage.py collectstatic
 ```
 
-Our production uwisgi config can be found at https://github.com/fsinfuhh/mafiasi-rkt/blob/master/exact/uwsgi-exact.ini
+Our production uwisgi config can be found at https://github.com/fsinfuhh/mafiasi-rkt/blob/master/imagetagger/uwsgi-exact.ini
 
 Example Nginx Config:
 
 ```
 server {
+	sendfile on;
+	tcp_nopush on;
+	tcp_nodelay on;
+
         listen 443;
         server_name exact.bit-bots.de;
 
@@ -129,10 +194,13 @@ server {
         include /etc/nginx/acme.conf;
         ssl on;
 
-        client_max_body_size 4G;
+        client_max_body_size 10000M;
+        keepalive_timeout 65;
 
-        access_log /var/log/nginx/exact.bit-bots.de.access.log;
-        error_log /var/log/nginx/exact.bit-bots.de.error.log;
+
+	access_log /var/log/nginx/access.log;
+	error_log /var/log/nginx/error.log;
+
 
         location /static {
                 expires 1h;
@@ -151,6 +219,17 @@ server {
         }
 }
 ```
+
+### Upgrade
+
+```
+pip install -U -r requirements.txt
+./manage.py migrate
+```
+
+for additional steps on some releases see instructions
+in [UPGRADE.md](https://github.com/ChristianMarzahl/exact/blob/master/UPGRADE.md)
+
 
 If you want to provide zip files of image sets, set `ENABLE_ZIP_DOWNLOAD = True` in your `settings.py`.
 A daemon that creates and updates the zip files is necessary, you can start it with `./manage.py runzipdaemon`.
@@ -180,3 +259,20 @@ The exact relies on the following plugins, libraries and frameworks:
 - [OpenSeadragon](https://openseadragon.github.io//)
 
 We are grateful to the maintainers and contributors of the respective projects.
+
+
+## Reference
+
+This paper describes the Bit-Bots imagetagger we build on in depth. Please cite if you use this tool in your research:
+
+FIEDLER, Niklas, et al. [imagetagger: An Open Source Online Platform for Collaborative Image Labeling.](https://robocup.informatik.uni-hamburg.de/wp-content/uploads/2018/11/exact_paper.pdf) In: RoboCup 2018: Robot World Cup XXII. Springer, 2018.
+
+```
+@inproceedings{exact2018,
+   author={Fiedler, Niklas and Bestmann, Marc and Hendrich, Norman},
+   year={2018},
+   title={exact: An Open Source Online Platform for Collaborative Image Labeling},
+   booktitle={RoboCup 2018: Robot World Cup XXII},
+   organization={Springer}
+}
+```
