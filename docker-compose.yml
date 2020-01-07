@@ -2,10 +2,10 @@ version: '3.7'
 
 services:
   web:
-    build: ./imagetagger
+    build: ./exact
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
-      - ./imagetagger/:/usr/src/imagetagger/
+      - ./exact/:/usr/src/exact/
     ports:
       - 8000:8000
     env_file:

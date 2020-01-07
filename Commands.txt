@@ -34,11 +34,11 @@ Send to ECR
 
 Invoke-Expression -Command (aws ecr get-login --no-include-email)
 
-docker tag imagetagger_nginx:latest 298068947512.dkr.ecr.eu-central-1.amazonaws.com/exact_nginx:latest
-docker tag imagetagger_web:latest 298068947512.dkr.ecr.eu-central-1.amazonaws.com/exact:latest
+docker tag exact_nginx:latest 298068947512.dkr.ecr.eu-central-1.amazonaws.com/exact_nginx:latest
+docker tag exact_web:latest 298068947512.dkr.ecr.eu-central-1.amazonaws.com/exact:latest
 
 
-docker tag imagetagger_nginx:latest 298068947512.dkr.ecr.eu-central-1.amazonaws.com/exact_nginx:latest
+docker tag exact_nginx:latest 298068947512.dkr.ecr.eu-central-1.amazonaws.com/exact_nginx:latest
 docker push 298068947512.dkr.ecr.eu-central-1.amazonaws.com/exact:latest
  
 

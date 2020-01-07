@@ -67,10 +67,10 @@ target/
 db.sqlite3
 
 
-imagetagger/data
-imagetagger/images
-imagetagger/tools
-imagetagger/static
+exact/data
+exact/images
+exact/tools
+exact/static
 
 categories.json
 confusables.json
