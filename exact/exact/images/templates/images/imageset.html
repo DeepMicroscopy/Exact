@@ -1,0 +1,619 @@
+{% extends 'base/base.html' %}
+{% load i18n %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block taggerimports %}
+
+{% if "edit_set" in imageset_perms and not imageset.image_lock %}
+<!-- CSS to style the file input field as button and adjust the Bootstrap progress bars -->
+<link rel="stylesheet" href="{% static 'jQuery-File-Upload/css/jquery.fileupload.css' %}">
+<link rel="stylesheet" href="{% static 'jQuery-File-Upload/css/jquery.fileupload-ui.css' %}">
+{% endif %}
+{% endblock taggerimports %}
+
+{% block additional_js %}
+{% if "edit_set" in imageset_perms and not imageset.image_lock %}
+<!-- The template to display files available for upload -->
+{% verbatim %}
+<script id="template-upload" type="text/x-tmpl">
+{% for (var i=0, file; file=o.files[i]; i++) { %}
+    <tr class="template-upload fade">
+        <td>
+            <span class="preview"></span>
+        </td>
+        <td>
+            <p class="name">{%=file.name%}</p>
+            <strong class="error text-danger"></strong>
+        </td>
+        <td>
+            <p class="size">Processing...</p>
+            <div class="progress progress-striped active" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="progress-bar progress-bar-success" style="width:0%;"></div></div>
+        </td>
+        <td>
+            {% if (!i && !o.options.autoUpload) { %}
+                <button class="btn btn-primary start" disabled>
+                    <i class="glyphicon glyphicon-upload"></i>
+                    <span>Start</span>
+                </button>
+            {% } %}
+            {% if (!i) { %}
+                <button class="btn btn-warning cancel">
+                    <i class="glyphicon glyphicon-ban-circle"></i>
+                    <span>Cancel</span>
+                </button>
+            {% } %}
+        </td>
+    </tr>
+{% } %}
+</script>
+<!-- The template to display files available for download -->
+<script id="template-download" type="text/x-tmpl">
+{% for (var i=0, file; file=o.files[i]; i++) { %}
+    <tr class="template-download fade">
+        <td>
+            <span class="preview">
+                {% if (file.thumbnailUrl) { %}
+                    <a href="{%=file.url%}" title="{%=file.name%}" download="{%=file.name%}" data-gallery><img src="{%=file.thumbnailUrl%}"></a>
+                {% } %}
+            </span>
+        </td>
+        <td>
+            <p class="name">
+                {% if (file.url) { %}
+                    <a href="{%=file.url%}" title="{%=file.name%}" download="{%=file.name%}" {%=file.thumbnailUrl?'data-gallery':''%}>{%=file.name%}</a>
+                {% } else { %}
+                    <span>{%=file.name%}</span>
+                {% } %}
+            </p>
+            {% if (file.error) { %}
+                <div><span class="label label-danger">Error</span> {%=file.error%}</div>
+            {% } %}
+        </td>
+        <td>
+            <span class="size">{%=o.formatFileSize(file.size)%}</span>
+        </td>
+        <td>
+            {% if (file.deleteUrl) { %}
+                <button class="btn btn-danger delete" data-type="{%=file.deleteType%}" data-url="{%=file.deleteUrl%}"{% if (file.deleteWithCredentials) { %} data-xhr-fields='{"withCredentials":true}'{% } %}>
+                    <i class="glyphicon glyphicon-trash"></i>
+                    <span>Delete</span>
+                </button>
+                <input type="checkbox" name="delete" value="1" class="toggle">
+            {% } else { %}
+                <button class="btn btn-warning cancel">
+                    <i class="glyphicon glyphicon-ban-circle"></i>
+                    <span>Cancel</span>
+                </button>
+            {% } %}
+        </td>
+    </tr>
+{% } %}
+</script>
+
+{% endverbatim %}
+
+<!-- The jQuery UI widget factory, can be omitted if jQuery UI is already included -->
+<script src="{% static 'jQuery-File-Upload/js/vendor/jquery.ui.widget.js' %}"></script>
+<!-- The Templates plugin is included to render the upload/download listings -->
+<script src="{% static 'scripts/tmpl.min.js' %}"></script>
+<!-- The Load Image plugin is included for the preview images and image resizing functionality -->
+<script src="{% static 'scripts/load-image.all.min.js' %}"></script>
+<!-- The Canvas to Blob plugin is included for image resizing functionality -->
+<script src="{% static 'scripts/canvas-to-blob.min.js' %}"></script>
+<!-- The Iframe Transport is required for browsers without support for XHR file uploads -->
+<script src="{% static 'jQuery-File-Upload/js/jquery.iframe-transport.js' %}"></script>
+<!-- The basic File Upload plugin -->
+<script src="{% static 'jQuery-File-Upload/js/jquery.fileupload.js' %}"></script>
+<!-- The File Upload processing plugin -->
+<script src="{% static 'jQuery-File-Upload/js/jquery.fileupload-process.js' %}"></script>
+<!-- The File Upload image preview & resize plugin -->
+<script src="{% static 'jQuery-File-Upload/js/jquery.fileupload-image.js' %}"></script>
+<!-- The File Upload validation plugin -->
+<script src="{% static 'jQuery-File-Upload/js/jquery.fileupload-validate.js' %}"></script>
+<!-- The File Upload user interface plugin -->
+<script src="{% static 'jQuery-File-Upload/js/jquery.fileupload-ui.js' %}"></script>
+<!-- The main application script -->
+<script src="{% static 'jQuery-File-Upload/js/main.js' %}"></script>
+{% endif %}
+
+<!-- An additional form script -->
+<script src="{% static 'scripts/pub_coll.js' %}"></script>
+<script type="text/javascript" src="{% static 'scripts/tags.js' %}"></script>
+<script type="text/javascript" src="{% static 'scripts/products.js' %}"></script>
+<script type="text/javascript" src="{% static 'scripts/notify.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'scripts/jquery.autocomplete.js' %}"></script>
+<![endif]-->
+{% endblock additional_js %}
+{% block bodyblock %}
+<div class="container-fluid">
+    <div id="feedback_tag_added" class="js_feedback alert alert-success hidden">
+        {% trans 'The tag was added successfully.' %}
+    </div>
+    <div id="feedback_tag_removed" class="js_feedback alert alert-success hidden">
+        {% trans 'The tag has been removed from the imageset.' %}
+    </div>
+    <div id="feedback_tag_exists" class="js_feedback alert alert-info hidden">
+        {% trans 'The imageset already has the tag.' %}
+    </div>
+    <div id="feedback_tag_invalid" class="js_feedback alert alert-warning hidden">
+        {% trans 'The tag is invalid.' %}
+    </div>
+    <div id="feedback_connection_error" class="js_feedback alert alert-danger hidden">
+        {% trans 'There was an unhandled error during the connection.' %}
+    </div>
+    <div class="row">
+        <div class="col-md-3">
+            {% if images %}
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h2 class="panel-title">Images to label and verify</h2>
+                    </div>
+                    <div class="panel-body">
+                        <ul>
+                            {% for image in images %}
+                                <li>
+                                    <a href="{% url 'annotations:annotate' image.id %}"> {{image.name|truncatechars:30}}</a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        <div class="col-md-6">
+            <div class="row">
+                <div class="panel panel-default">
+                    <div class="panel-heading clearfix">
+                        <h2 class="panel-title pull-left" style="padding-top: 5px;">{{imageset.name}} {{ imageset.prio_symbol | safe }}</h2>
+                        <div class="btn-group pull-right">
+                            <a href="{% url 'images:pin_imageset' imageset.id %}" class="btn {% if imageset in request.user.pinned_sets.all %}btn-primary{% else %}btn-default{% endif %} btn-sm" data-toggle="tooltip" data-placement="bottom" title="Click to {% if imageset in request.user.pinned_sets.all %}un{% endif %}pin the imageset"><span class="glyphicon glyphicon-pushpin"></span></a>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <table class="table table-striped">
+                            <tbody>
+                                <tr>
+                                    <td>Name</td>
+                                    <td>{{imageset.name}}</td>
+                                </tr>
+                                {% if imageset.team and user.is_superuser %}
+                                    <tr>
+                                        <td>Team</td>
+                                        <td><a href="{% url 'users:team' imageset.team.id %}">{{imageset.team.name}}</a></td>
+                                    </tr>
+                                {% endif %}
+                                <tr>
+                                    <td><b>Products</b></td>
+                                    <td class="tag-container">
+                                        {% for product in imageset.product_set.all %}
+                                            <a href="{% url 'administration:product' product.id %}"> {{ product }}&nbsp;</a>&#8203;
+                                        {% endfor %}
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>Tags</td>
+                                        <td id="tags-without-delete" class="tag-container">
+                                            {% for tag in imageset.set_tags.all %}
+                                                <a href="{% url 'images:explore_imageset' %}?tags={{ tag.name }}" class="label label-info">{{ tag.name }}</a>&#8203;
+                                            {% endfor %}
+                                        </td>
+                                    </tr>
+                                {% if user.is_superuser %}
+                                    <tr>
+                                        <td>Location</td>
+                                        <td>{{imageset.location}}</td>
+                                    </tr>
+                                {% endif %}
+                                <tr>
+                                    <td>Description</td>
+                                    <td>{{imageset.description}}</td>
+                                </tr>
+                                {% if imageset.creator and user.is_superuser  %}
+                                <tr>
+                                    <td>Creator</td>
+                                    <td>{{imageset.creator.username}}</td>
+                                </tr>
+                                {% endif %}
+                                <tr>
+                                    <td>Image count</td>
+                                    <td>{{imageset.image_count}}</td>
+                                </tr>
+                                <tr>
+                                    <td>Images to verify</td>
+                                    {% if image_count > 0  %}
+                                        <td>{{image_count}}</td>
+                                    {% else %}
+                                        <td bgcolor="#00b300"> Done, Thank you  </td>
+                                    {% endif %}
+                                </tr>
+                                <tr>
+                                    <td>Annotation count</td>
+                                    <td>
+                                        {{annotationcount}}<br>
+                                        <ul>
+                                            {% for at in annotation_types %}
+                                                <li>
+                                                    {{ at.name }}: <b>{{ at.count }}</b> (<b><span class="text-success">{{ at.in_image_count }}</span></b>/<b><span class="text-danger">{{ at.not_in_image_count }}</span></b>)
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </td>
+                                </tr>
+                                {% if imageset.images.count > 0 and user.is_superuser %}
+                                <tr>
+                                    <td>Download</td>
+                                    <td>
+                                        {% if enable_zip_download %}
+                                        <ul>
+                                            <li>
+                                                {% if imageset.zip_state == imageset.ZipState.READY %}
+                                                    <a href="{% url 'images:download_imageset' imageset.id %}">Download zip</a>
+                                                {% else %}
+                                                    Download zip (processing, wait a few moments)
+                                                {% endif %}
+                                            </li>
+                                            <li>
+                                                <a href="{% url 'images:dl_script' %}">Download Script</a> Image Download via <pre>./exact_dl_script.py {{ imageset.id }}</pre> to current directory
+                                            </li>
+                                        </ul>
+                                        {% else %}
+                                            <a href="{% url 'images:dl_script' %}">Download Script</a> Image Download via <pre>./exact_dl_script.py {{ imageset.id }}</pre> to current directory
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endif %}
+
+                                {% if imageset.images.count > 0 %}
+                                <tr>
+                                    <td></td>
+                                    <td>
+                                        {% for image in imageset.images.all|slice:":1" %}
+                                            <form style="padding-left: 10px">
+                                                <input type="button" value="Start labeling"
+                                                       onclick="window.location.href='{% url 'annotations:annotate' image.id %}'" />
+                                            </form>
+                                        {% endfor %}
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% if "edit_set" in imageset_perms and user.is_superuser %}
+            <div class="row">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h2 class="panel-title">Imageset management</h2>
+                    </div>
+                    <div class="panel-body">
+                        <div>
+                            <table class="table table-striped">
+                                <tbody>
+                                    <form id="edit_set" action="{% url 'images:edit_imageset' imageset.id %}" method="POST">
+                                        {% csrf_token %}
+                                        <tr>
+                                            <td>
+                                                <label for="id_name">{{ edit_form.name.label }}</label>
+                                            </td>
+                                            <td>
+                                                {% render_field edit_form.name class+='form-control' %}
+                                            </td>
+                                        </tr>
+
+                                        <tr>
+                                            <td><b>Products</b></td>
+                                            <td id="products-with-delete" class="tag-container">
+                                                {% for product in imageset.product_set.all %}
+                                                    <span class="label label-info" value="{{ product.id }}" id="product_{{ product.id }}">
+                                                        <a href="{% url 'administration:product' product.id%}"> {{ product.name }}&nbsp;</a>
+                                                        <span class="glyphicon glyphicon-remove-sign product-delete" value={{ product.id }} data_id={{ product.id }}></span>
+                                                    </span>&#8203;
+                                                {% endfor %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><b>Add Products</b></td>
+                                             <td>
+                                                <div class="input-group" role="group" aria-label="team_creation">
+                                                    <select id="product_id" name="selected_product" class="form-control">
+                                                        {% for product in all_products %}
+                                                            <option value={{ product.id }}
+                                                                class="bold">{{ product }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                    <span class="input-group-btn">
+                                                        <input id="add_product_btn" class="btn btn-primary" type="button" value="Add">
+                                                    </span>
+                                                    <span class="input-group-btn">
+                                                        <input class="btn btn-primary" type="button" value="Create New"
+                                                                onclick="window.location.href = '{% url "administration:products" %}';" >
+                                                    </span>
+                                                </div>
+                                             </td>
+                                        </tr>
+
+
+                                        <tr>
+                                            <td><b>Tags</b></td>
+                                            <td id="tags-with-delete" class="tag-container">
+                                                {% for tag in imageset.set_tags.all %}<span class="label label-info">{{ tag.name }}&nbsp;
+                                                    <span class="glyphicon glyphicon-remove-sign tag-delete"></span></span>&#8203;{% endfor %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><b>Add Tag</b></td>
+                                            <td>
+                                                <div class="input-group" role="group" aria-label="team_creation">
+                                                    <input id="new_tag_name_field" type="text" class="form-control">
+                                                    <span class="input-group-btn">
+                                                        <input id="add_tag_btn" class="btn btn-primary" type="button" value="Add">
+                                                    </span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <label for="id_location">{{ edit_form.location.label }}</label>
+                                            </td>
+                                            <td>
+                                                {% render_field edit_form.location class+='form-control' %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <label for="id_description">{{ edit_form.description.label }}</label>
+                                            </td>
+                                            <td>
+                                                {% render_field edit_form.description class+='form-control' %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <label for="id_public">{{ edit_form.public.label }}
+                                                    <span class="glyphicon glyphicon-question-sign" data-toggle="tooltip" data-placement="right" title="Enables public users to read the imageset "></span>
+                                                </label>
+                                            </td>
+                                            <td>
+                                                {% render_field edit_form.public class+='form-control' %}
+                                            </td>
+                                        </tr>
+                                        <tr id="public_collaboration_row">
+                                            <td>
+                                                <label for="id_public_collaboration">{{ edit_form.public_collaboration.label }}
+                                                    <span class="glyphicon glyphicon-question-sign" data-toggle="tooltip" data-placement="right" title="Enables public users to annotate and verify in the imageset, when it is set public "></span>
+                                                </label>
+                                            </td>
+                                            <td>
+                                                {% render_field edit_form.public_collaboration class+='form-control' %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <label for="image-lock">{{ edit_form.image_lock.label }}
+                                                    <span class="glyphicon glyphicon-question-sign" data-toggle="tooltip" data-placement="right" title="Prevents the upload of new pictures to the set"></span>
+                                                </label>
+                                            </td>
+                                            <td>
+                                                {% render_field edit_form.image_lock class+='form-control' %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <label for="image-lock">{{ edit_form.priority.label }}
+                                                    <span class="glyphicon glyphicon-question-sign" data-toggle="tooltip" data-placement="right" title="The importance of the set."></span>
+                                                </label>
+                                            </td>
+                                            <td>
+                                                {% render_field edit_form.priority class+='form-control' %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <label for="image-lock">{{ edit_form.collaboration_type.label }}
+                                                    <span class="glyphicon glyphicon-question-sign" data-toggle="tooltip" data-placement="right" title="Decides whether the annotations will be shared between the participants"></span>
+                                                </label>
+                                            </td>
+                                            <td>
+                                                {% render_field edit_form.collaboration_type class+='form-control' %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <label for="image-lock">{{ edit_form.main_annotation_type.label }}
+                                                    <span class="glyphicon glyphicon-question-sign" data-toggle="tooltip" data-placement="right" title="The preferred annotation type to label in this set."></span>
+                                                </label>
+                                            </td>
+                                            <td>
+                                                {% render_field edit_form.main_annotation_type class+='form-control' %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                {% if "delete_set" in imageset_perms %}
+                                                    <a class="btn btn-danger" href="{% url 'images:delete_imageset' imageset.id %}">Delete Set</a>
+                                                {% endif %}
+                                            </td>
+                                            <td class="align-right">
+                                                {% if "delete_set" in imageset_perms and images %}
+                                                    <a class="btn btn-warning" href="{% url 'images:setfree_imageset' imageset.id %}" data-toggle="tooltip" data-placement="right" title="The set will be public and will not belong to the team anymore">Set Free</a>
+                                                {% endif %}
+                                                <input class="btn btn-primary" type="submit" value="{% trans 'Save changes' %}" />
+                                            </td>
+                                        </tr>
+                                    </form>
+                                </tbody>
+                            </table>
+                        </div>
+                        {% if not imageset.image_lock %}
+                        <hr>
+                        <h3>
+                            Upload new images:
+                        </h3>
+                        {{ upload_notice|safe }}
+                            <br>
+                            &nbsp;<br>
+                            Upload images as single files or as zip file with the images in its root directory (recommended).
+                        <div >
+                            <form id="fileupload" action="{% url 'images:upload_image' imageset.id %}" method="POST" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                <!-- The fileupload-buttonbar contains buttons to add/delete files and start/cancel the upload -->
+                                <div class="row fileupload-buttonbar">
+                                    <div class="col-lg-12">
+                                        <!-- The fileinput-button span is used to style the file input field as button -->
+                                        <span class="btn btn-success fileinput-button">
+                                            <i class="icon-plus icon-white"></i>
+                                            <span>Add files...</span>
+                                            <input type="file" name="files[]" multiple>
+                                        </span>
+                                        <button type="submit" class="btn btn-primary start">
+                                            <i class="icon-upload icon-white"></i>
+                                            <span>Start upload</span>
+                                        </button>
+                                        <button type="reset" class="btn btn-warning cancel">
+                                            <i class="icon-ban-circle icon-white"></i>
+                                            <span>Cancel upload</span>
+                                        </button>
+                                        <button type="button" class="btn btn-danger delete">
+                                            <i class="icon-trash icon-white"></i>
+                                            <span>Delete</span>
+                                        </button>
+                                        <input type="checkbox" class="toggle">
+                                        <!-- The global file processing state -->
+                                        <span class="fileupload-process"></span>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <!-- The global progress state -->
+                                    <div class="col-lg-12 fileupload-progress">
+                                        <!-- The global progress bar -->
+                                        <div class="progress progress-striped active" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+                                            <div class="progress-bar progress-bar-success" style="width:0%;"></div>
+                                        </div>
+                                        <!-- The extended global progress state -->
+                                        <div class="progress-extended">&nbsp;</div>
+                                    </div>
+                                </div>
+                                <!-- The table listing the files available for upload/download -->
+                                <table role="presentation" class="table table-striped"><tbody class="files"></tbody></table>
+                            </form>
+                        </div>
+                        {% endif %}
+                        <hr>
+                        <h3>
+                            Upload existing Labels
+                        </h3>
+                        Here you can upload existing labels as a text file in the following format:<br>
+                        image name|annotation type|{'x1': x1,'y1': y1...}|flags<br>
+                        &nbsp;&nbsp;with b as flag for blurred annotations and c for concealed ones.<br>
+                        Using the exact export tool for example:<br>
+                        Annotation format: <br>
+                        <code>%%imagename|%%type|{%%vector}|%%ifblurredb%%endif%%ifconcealedc%%endif</code><br>
+                        &nbsp;&nbsp;with vector format: <br>
+                        &nbsp;&nbsp;<code>"x%%count1": "%%x","y%%count1": "%%y"</code><br>
+                        or for negative annotations:<br>
+                        <code>image name|annotation type|not in image</code><br>&nbsp;<br>
+                        One annotation per line. The annotation type has to exist in the exact too.
+                        <form action="{% url 'images:label_upload' imageset.id %}" method="POST" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            {{ label_upload_form }}<br>
+                        <input type="submit" class="btn btn-primary" value="Upload labels">
+                    </form>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        <div class="col-md-3">
+            {%  if "annotate" in imageset_perms and is_superuser%}
+                {% if first_annotation or "edit_set" in imageset_perms and all_annotation_types%}
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h2 class="panel-title">Annotation management</h2>
+                        </div>
+                        <div class="panel-body">
+                            <ul>
+                            {% if first_annotation %}
+                                <li><a href="{% url 'annotations:manage_annotations' imageset.id %}">Manage annotations</a></li>
+                                <li><a href="{% url 'annotations:verify' first_annotation.id %}">Verify annotations</a></li>
+                            {% endif %}
+                            {% if "edit_set" in imageset_perms and all_annotation_types %}
+                                <li><a href="#" class="link" data-toggle="modal" data-target="#niiModal">Annotate the whole set</a></li>
+                                <!-- Modal -->
+                                <div class="modal fade" id="niiModal" tabindex="-1" role="dialog" aria-labelledby="niiModalLabel">
+                                    <div class="modal-dialog" role="document">
+                                        <div class="modal-content">
+                                            <form action="{% url 'annotations:annotate_set' imageset.id %}" method="POST">
+                                                {% csrf_token %}
+                                                <div class="modal-header">
+                                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                                    <h4 class="modal-title" id="niiModalLabel">Annotate the whole set</h4>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <p align="center">Here, you can annotate all the images contained in the set with</p>
+                                                    <p align="center">"<b><span class="text-danger">not in image</span></b>"</p>
+                                                    <p align="center">annotations. This enables you to create negative datasets quickly.</p>
+
+                                                    <hr>
+                                                    <label for="nii_select">Not in image annotation type:</label>
+                                                    <select id="nii_select" name="nii_annotation_type">
+                                                        {% for annotation_type in all_annotation_types %}
+                                                            <option value="{{ annotation_type.id }}">{{ annotation_type.name }}</option>
+                                                        {% endfor %}
+                                                    </select><br>
+                                                    <label for="check_verify">Verify the annotations</label>
+                                                    <input type="checkbox" name="verify">
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                                                    <button type="submit" class="btn btn-danger">Annotate</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endif %}
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h2 class="panel-title">Export tags to file</h2>
+                </div>
+                <div class="panel-body">
+                    <form method="post" action="{% url 'annotations:create_export' imageset.id %}" enctype="multipart/form-data">
+                        {% csrf_token %}
+                            {% comment %}
+                                {% for annotationtype in annotationtypes %}
+                                    <li><input type="checkbox" name="selected_annotation_type" value="{{annotationtype.id}}"> {{annotationtype.name}}</li>
+                                {% endfor %}
+                            {% endcomment %}
+                        <select name="export_format">
+                            {% for format in export_formats %}
+                                <option value={{ format.id }}>{{ format.team.name }}/{{ format.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <input name= "export" class="btn btn-primary" type="submit" value="Export">
+                    <form method="post" action="{% url 'annotations:create_exportformat' %}?mode=0&id={{ imageset.id }}" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <input name="create_new_format" class="btn btn-default" type="button" value="Create Format" onclick="location.href='{% url 'annotations:create_exportformat' %}?mode=0&id={{ imageset.id }}'">
+                    </form>
+                    </form>
+                    {% if exports %}
+                        <h3>Download exports:</h3>
+                        {% for export in exports %}
+                            <li>{% if export.deprecated %}<span data-toggle="tooltip" data-placement="left" title="The export format got changed after creating this export.">[dep]</span> {% endif %}<a href="{% url 'annotations:download_export' export.id %}">{% if export.format %}{{export.format.name}}{% else %}[deleted]{% endif %}: {{export.time|date:'j. N Y H:i:s'}}</a></li>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<span id="image_set_id" class="hidden">{{ imageset.id }}</span>
+{% endblock bodyblock%}

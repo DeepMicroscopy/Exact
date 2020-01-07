@@ -3,9 +3,9 @@ version: '3.7'
 services:
   web:
     build: 
-        context: ./imagetagger
+        context: ./exact
         dockerfile: Dockerfile.prod    
-    command: gunicorn imagetagger.wsgi:application --bind 0.0.0.0:8000
+    command: gunicorn exact.wsgi:application --bind 0.0.0.0:8000
     volumes:
       - static_volume:/home/app/web/static    
       - media_volume:/home/app/web/media

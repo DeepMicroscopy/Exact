@@ -19,15 +19,15 @@ This is a collaborative online tool for labeling image data.
 
 ## Reference
 
-This paper describes the Bit-Bots Imagetagger we build on in depth. Please cite if you use this tool in your research:
+This paper describes the Bit-Bots exact we build on in depth. Please cite if you use this tool in your research:
 
-FIEDLER, Niklas, et al. [ImageTagger: An Open Source Online Platform for Collaborative Image Labeling.](https://robocup.informatik.uni-hamburg.de/wp-content/uploads/2018/11/imagetagger_paper.pdf) In: RoboCup 2018: Robot World Cup XXII. Springer, 2018.
+FIEDLER, Niklas, et al. [exact: An Open Source Online Platform for Collaborative Image Labeling.](https://robocup.informatik.uni-hamburg.de/wp-content/uploads/2018/11/exact_paper.pdf) In: RoboCup 2018: Robot World Cup XXII. Springer, 2018.
 
 ```
-@inproceedings{imagetagger2018,
+@inproceedings{exact2018,
    author={Fiedler, Niklas and Bestmann, Marc and Hendrich, Norman},
    year={2018},
-   title={ImageTagger: An Open Source Online Platform for Collaborative Image Labeling},
+   title={exact: An Open Source Online Platform for Collaborative Image Labeling},
    booktitle={RoboCup 2018: Robot World Cup XXII},
    organization={Springer}
 }
@@ -40,7 +40,7 @@ pip install -U -r requirements.txt
 ```
 
 for additional steps on some releases see instructions
-in [UPGRADE.md](https://github.com/bit-bots/imagetagger/blob/master/UPGRADE.md)
+in [UPGRADE.md](https://github.com/bit-bots/exact/blob/master/UPGRADE.md)
 
 ## Install
 
@@ -60,10 +60,10 @@ Install Python Dependencies:
 pip3 install -r requirements.txt
 ```
 
-Copy settings.py.example to settings.py in the imagetagger folder:
+Copy settings.py.example to settings.py in the exact folder:
 
 ```
-cp imagetagger/imagetagger/settings.py.example imagetagger/imagetagger/settings.py
+cp exact/exact/settings.py.example exact/exact/settings.py
 ```
 
 and customize the settings.py.
@@ -92,8 +92,8 @@ Then, create the user and the database by running
 and then, in the postgres environment
 
 ```
-CREATE USER imagetagger PASSWORD 'imagetagger';
-CREATE DATABASE imagetagger WITH OWNER imagetagger ENCODING UTF8;
+CREATE USER exact PASSWORD 'exact';
+CREATE DATABASE exact WITH OWNER exact ENCODING UTF8;
 ```
 
 where of course the password and the user should be adapted to the ones specified in the database settings in the settings.py.
@@ -114,34 +114,34 @@ For **production** systems it is necessary to run the following commands after e
 ./manage.py collectstatic
 ```
 
-Our production uwisgi config can be found at https://github.com/fsinfuhh/mafiasi-rkt/blob/master/imagetagger/uwsgi-imagetagger.ini
+Our production uwisgi config can be found at https://github.com/fsinfuhh/mafiasi-rkt/blob/master/exact/uwsgi-exact.ini
 
 Example Nginx Config:
 
 ```
 server {
         listen 443;
-        server_name imagetagger.bit-bots.de;
+        server_name exact.bit-bots.de;
 
-        ssl_certificate /etc/letsencrypt/certs/imagetagger.bit-bots.de/fullchain.pem;
-        ssl_certificate_key /etc/letsencrypt/certs/imagetagger.bit-bots.de/privkey.pem;
+        ssl_certificate /etc/letsencrypt/certs/exact.bit-bots.de/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/certs/exact.bit-bots.de/privkey.pem;
         include /etc/nginx/ssl.conf;
         include /etc/nginx/acme.conf;
         ssl on;
 
         client_max_body_size 4G;
 
-        access_log /var/log/nginx/imagetagger.bit-bots.de.access.log;
-        error_log /var/log/nginx/imagetagger.bit-bots.de.error.log;
+        access_log /var/log/nginx/exact.bit-bots.de.access.log;
+        error_log /var/log/nginx/exact.bit-bots.de.error.log;
 
         location /static {
                 expires 1h;
-                alias /var/www/imagetagger;
+                alias /var/www/exact;
         }
 
         location /ngx_static_dn/ {
                 internal;
-                alias /srv/data/imagetagger/storage/pictures/;
+                alias /srv/data/exact/storage/pictures/;
         }
 
         location / {
@@ -162,7 +162,7 @@ For an empty image set, HTTP 204 NO CONTENT is returned instead of an empty zip 
 
 ## Used dependencies
 
-The ImageTagger relies on the following plugins, libraries and frameworks:
+The exact relies on the following plugins, libraries and frameworks:
 
 - [Bootstrap](https://getbootstrap.com/)
 - [Django](https://www.djangoproject.com/)
