@@ -8,7 +8,7 @@ import os
 SECRET_KEY = os.environ.get("SECRET_KEY", default='DEV KEY PLEASE CHANGE IN PRODUCTION INTO SOMETHING RANDOM')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG =  int(os.environ.get("DEBUG", default=0))
+DEBUG =  int(os.environ.get("DEBUG", default=1))
 
 # Allowed Host headers this site can server
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", default='127.0.0.1').split(" ")

@@ -105,6 +105,11 @@ docker push **************.dkr.ecr.eu-central-1.amazonaws.com/exact:latest
 
 ### MacOS or Linux 
 
+Install ImageMagick and verify executing the comand `convert`:
+```
+https://imagemagick.org/script/download.php
+```
+
 Checkout the latest release:
 
 ```

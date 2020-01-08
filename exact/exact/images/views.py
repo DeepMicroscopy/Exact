@@ -40,8 +40,10 @@ from util.slide_server import SlideCache, SlideFile, PILBytesIO
 from plugins.pluginFinder import PluginFinder
 from plugins.ExactServerPlugin import UpdatePolicy, ViewPolicy, NavigationViewOverlayStatus
 
+import platform
 import os
 import shutil
+from shutil import which
 import string
 import random
 import zipfile
@@ -206,6 +208,7 @@ def upload_image(request, imageset_id):
                 'exists': False,
                 'unsupported': False,
                 'zip': False,
+                'convert': False
             }
             magic_number = f.read(4)
             f.seek(0)  # reset file cursor to the beginning of the file
@@ -297,9 +300,22 @@ def upload_image(request, imageset_id):
                         old_path = path
                         path = Path(path).with_suffix('.tiff')
                         # TODO: Time intensive decrease priority
-                        os.system(
-                            'nice -n 19 convert "{0}" -define tiff:tile-geometry=254x254 ptif:"{1}"'.format(
-                                old_path, path))
+
+                        if (which('convert') == None):
+                            error['convert'] = True
+
+                        if (platform.system() == "Linux"):
+                            os.system(
+                                'nice -n 19 convert "{0}" -define tiff:tile-geometry=254x254 ptif:"{1}"'.format(
+                                    old_path, path))
+                        elif (platform.system() == "Windows"):
+                            os.system('convert "{0}" -define tiff:tile-geometry=254x254 ptif:"{1}"'.format(
+                                    old_path, path))
+                        else:
+                            os.system('convert "{0}" -define tiff:tile-geometry=254x254 ptif:"{1}"'.format(
+                                    old_path, path))
+
+
 
                     #shutil.chown(str(path), group=settings.UPLOAD_FS_GROUP)
 
@@ -347,6 +363,8 @@ def upload_image(request, imageset_id):
                     else:
                         errormessage = errormessage.capitalize()
             else:
+                if error['convert']:
+                    errormessage = 'Imagemagick not installed or can not be accessed from command line via convert' 
                 if error['unsupported']:
                     errormessage = 'This file type is unsupported!'
                 elif error['damaged']:
