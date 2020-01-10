@@ -395,6 +395,7 @@ class BoundingBoxes {
                     canvasObject = new paper.Path.Rectangle(item.bounds);
                     canvasObject.data.type = "rect";
 
+                    break;
                 case 6:
                     canvasObject = new paper.Path.Rectangle(item.bounds);
                     canvasObject.data.type = "fixed_rect";
