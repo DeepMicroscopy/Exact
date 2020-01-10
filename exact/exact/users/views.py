@@ -12,7 +12,7 @@ from rest_framework.decorators import api_view
 from rest_framework.exceptions import ParseError
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
-from exact.annotations.models import ExportFormat
+from exact.annotations.models import ExportFormat, AnnotationType
 from exact.annotations.forms import ExportFormatEditForm
 from exact.images.forms import ImageSetCreationForm
 from exact.administration.forms import ProductCreationForm
@@ -249,7 +249,14 @@ def view_team(request, team_id):
         export_formats = export_formats.filter(public=True)
         imagesets = imagesets.filter(public=True)
 
-    export_format_forms = (ExportFormatEditForm(instance=format_instance) for format_instance in export_formats)
+    export_format_forms = []
+    for format_instance in export_formats:
+        form = ExportFormatEditForm(instance=format_instance)
+        form.fields['annotations_types'].queryset = AnnotationType.objects.filter(product__in=Product.objects.
+                                                                                  filter(team__in=Team.objects.
+                                                                                         filter(members=request.user)))
+        export_format_forms.append(form)
+
     test_imagesets = imagesets.filter(set_tags__name='test').order_by('-public', 'name')
 
     products = Product.objects.filter(team=team).order_by('team_id')

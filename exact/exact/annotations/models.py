@@ -445,10 +445,11 @@ class AnnotationType(models.Model):
     area_hit_test = models.BooleanField(default=True)
 
     def __str__(self):
+        product_name = "({0})".format(self.product.name) if self.product is not None else ""
         if self.active:
-            return u'AnnotationType: {0}'.format(self.name)
+            return u'AnnotationType: {0} {1}'.format(self.name, product_name)
         else:
-            return u'[inactive] AnnotationType: {0}'.format(self.name)
+            return u'[inactive] AnnotationType: {0} {1}'.format(self.name, product_name)
 
     @staticmethod
     def get_vector_type_name(vector_type):
