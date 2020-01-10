@@ -3,6 +3,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db import transaction
+from django.db import connection
 from django.db.models import Count, Q, Sum
 from django.db.models.expressions import F
 from django.views.decorators.http import require_http_methods
@@ -642,7 +643,7 @@ def view_imageset(request, image_set_id):
             image__image_set=imageset,
             deleted=False,
             annotation_type__active=True).order_by("id")
-        annotation_types = AnnotationType.objects.filter(annotation__image__image_set=imageset, active=True)\
+        annotation_types = AnnotationType.objects.filter(annotation__image__image_set=imageset, active=True, annotation__deleted=False)\
             .distinct().order_by('sort_order')\
             .annotate(count=Count('annotation'),
                       in_image_count=Count('annotation', filter=Q(annotation__verifications__verified=True)),
@@ -654,7 +655,9 @@ def view_imageset(request, image_set_id):
             deleted=False,
             user=request.user,
             annotation_type__active=True).order_by("id")
-        annotation_types = AnnotationType.objects.filter(annotation__image__image_set=imageset, active=True, annotation__user=request.user)\
+        annotation_types = AnnotationType.objects.filter(annotation__image__image_set=imageset,
+                                                         active=True,  annotation__deleted=False,
+                                                         annotation__user=request.user)\
             .distinct().order_by('sort_order')\
             .annotate(count=Count('annotation'),
                       in_image_count=Count('annotation', filter=Q(annotation__verifications__verified=True, annotation__user=request.user)),
@@ -756,7 +759,7 @@ def create_imageset(request):
                     form.instance.team = team
                     form.instance.creator = request.user
                     form.instance.save()
-                    form.instance.path = '{}_{}'.format(team.id,
+                    form.instance.path = '{}_{}_{}'.format(connection.settings_dict['NAME'], team.id,
                                                         form.instance.id)
                     form.instance.save()
 
@@ -1032,7 +1035,8 @@ def api_verify_image(request) -> Response:
             'detail': 'permission for verifying annotations in this image set missing.',
         }, status=HTTP_403_FORBIDDEN)
 
-    for annotation in image.annotations.filter(verifications__verified=not state, verifications__user=request.user):
+    for annotation in image.annotations.filter(Q(verifications__verified=not state, verifications__user=request.user)
+                                               | Q(verifications=None)):
         annotation.verify(request.user, state)
 
     return Response({

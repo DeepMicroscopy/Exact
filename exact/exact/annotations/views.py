@@ -17,6 +17,7 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_200_OK, \
     HTTP_403_FORBIDDEN
 
+from exact.administration.models import Product
 from exact.annotations.forms import ExportFormatCreationForm, ExportFormatEditForm
 from exact.annotations.models import Annotation, AnnotationType, Export, \
     Verification, ExportFormat
@@ -254,9 +255,9 @@ def export_format(export_format_name, imageset):
     if export_format_name.image_aggregation:
         image_content = '\n'
         for image in images:
-            annotations = Annotation.objects.annotate_verification_difference()\
+            annotations = Annotation.objects\
                 .filter(image=image,
-                        verification_difference__gte=min_verifications,
+                        deleted=False,
                         annotation_type__in=export_format.annotations_types.all())\
                 .select_related('image')
             if not export_format.include_blurred:
@@ -275,7 +276,7 @@ def export_format(export_format_name, imageset):
                             '%%imageheight': annotation.image.height,
                             '%%imagename': image.name,
                             '%%type': annotation.annotation_type.name,
-                            '%%veriamount': annotation.verification_difference,
+                            #'%%veriamount': annotation.verification_difference,
                         }
                     else:
                         formatted_vector = str()
@@ -304,7 +305,7 @@ def export_format(export_format_name, imageset):
                             '%%imageheight': image.height,
                             '%%imagename': image.name,
                             '%%type': annotation.annotation_type.name,
-                            '%%veriamount': annotation.verification_difference,
+                            #'%%veriamount': annotation.verification_difference,
                             '%%vector': formatted_vector,
                             # absolute values
                             '%%rad': annotation.radius,
@@ -348,10 +349,11 @@ def export_format(export_format_name, imageset):
                 image_content += formatted_image + '\n'
         formatted_content = image_content
     else:
-        annotations = Annotation.objects.annotate_verification_difference()\
-            .filter(image__in=images,
-                    verification_difference__gte=min_verifications,
-                    annotation_type__in=export_format.annotations_types.all())
+        annotations = Annotation.objects\
+                .filter(deleted=False,
+                        image__in=images,
+                        annotation_type__in=export_format.annotations_types.all())\
+                .select_related('image')
         if not export_format.include_blurred:
             annotations = annotations.exclude(_blurred=True)
         if not export_format.include_concealed:
@@ -367,7 +369,7 @@ def export_format(export_format_name, imageset):
                     '%%imageheight': annotation.image.height,
                     '%%imagename': annotation.image.name,
                     '%%type': annotation.annotation_type.name,
-                    '%%veriamount': annotation.verification_difference,
+                    #'%%veriamount': annotation.verification_difference,
                 }
             else:
                 formatted_vector = str()
@@ -396,7 +398,7 @@ def export_format(export_format_name, imageset):
                     '%%imageheight': annotation.image.height,
                     '%%imagename': annotation.image.name,
                     '%%type': annotation.annotation_type.name,
-                    '%%veriamount': annotation.verification_difference,
+                    #'%%veriamount': annotation.verification_difference,
                     '%%vector': formatted_vector,
                     # absolute values
                     '%%rad': annotation.radius,
@@ -469,6 +471,9 @@ def create_exportformat(request):
     else:
         form = ExportFormatCreationForm()
         form.fields['team'].queryset = Team.objects.filter(members=request.user)
+        form.fields['annotations_types'].queryset = AnnotationType.objects.filter(product__in=Product.objects.
+                                                                                  filter(team__in=Team.objects.
+                                                                                         filter(members=request.user)))
     return render(request, 'annotations/create_exportformat.html', {
         'form': form,
         'mode': mode,

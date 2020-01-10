@@ -1058,7 +1058,9 @@ globals = {
                 success: function (data) {
 
                     Object.keys(gAnnotationTypes).forEach(function (key) {
-                        document.getElementById(gAnnotationTypes[key].name + '_' + gAnnotationTypes[key].id).innerHTML = 0;
+                        var elem = document.getElementById(gAnnotationTypes[key].name + '_' + gAnnotationTypes[key].id);
+                        if (elem !== null)
+                            elem.innerHTML = 0;
                     });
 
                     for (anno_type of data.statistics) {
@@ -1420,7 +1422,7 @@ globals = {
                     if(tool.checkIfAnnotationTypeChangeIsValid(annotation.annotation_type.vector_type,
                         newType.vector_type)) {
 
-                        annotation.annotation_type.id = newType.id;
+                        annotation.annotation_type = newType;
                         tool.updateAnnotationType(annotation.id, gAnnotationTypes[newType.id]);
 
                         saveAnnotationAtServer(annotation)
