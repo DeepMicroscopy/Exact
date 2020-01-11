@@ -23,10 +23,10 @@ class Command(BaseCommand):
         original_team = Team.objects.get(id=options['team_id'])
         admin_member = User.objects.get(id=options['member_id'])
 
-        new_team = Team.objects.filter(name=options['team_name']+ "_Study").first()
+        new_team = Team.objects.filter(name=options['team_name']).first()
         if  new_team is None:
             new_team = Team()
-            new_team.name = options['team_name']+ "_Study"
+            new_team.name = options['team_name']
             new_team.save()
 
         team_membership = TeamMembership.objects.filter(team=new_team, user=admin_member).first()
@@ -93,7 +93,9 @@ class Command(BaseCommand):
                     new_image = Image.objects.filter(image_set__id=new_imageset.id, name=image.name).first()
                 if new_image is None:
 
-                    copyfile(original_imageset_path+"/"+image.filename, imageset.root_path() + "/" + image.filename)
+                    # use symbolic link
+                    os.symlink(original_imageset_path+"/"+image.filename, imageset.root_path() + "/" + image.filename)
+                    #copyfile(original_imageset_path+"/"+image.filename, imageset.root_path() + "/" + image.filename)
 
                     image_original_id = image.id
                     image.id = None
