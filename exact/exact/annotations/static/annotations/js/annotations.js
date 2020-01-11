@@ -76,6 +76,9 @@ globals = {
 
 
     viewer.addHandler("open", function () {
+
+        viewer.canvas.tabIndex = 1;
+
         // To improve load times, ignore the lowest-resolution Deep Zoom
         // levels.  This is a hack: we can't configure the minLevel via
         // OpenSeadragon configuration options when the viewer is created
@@ -262,6 +265,7 @@ globals = {
     }
 
     viewer.addHandler('selection_onPress', function (event) {
+        viewer.canvas.focus()
 
         // Convert pixel to viewport coordinates
         var viewportPoint = viewer.viewport.pointFromPixel(event.position);
@@ -522,7 +526,7 @@ globals = {
         }
 
         if (imageId > 0 && imageId in gImageInformation) {
-            tool = new BoundingBoxes(viewer, imageId, gImageInformation[gImageId]);
+            tool = new BoundingBoxes(viewer, imageId, gImageInformation[imageId]);
             delete globals.screeningTool;
             globals.screeningTool = undefined;
 
@@ -822,12 +826,16 @@ globals = {
             link.text(image.name);
             link.data('imageid', image.id);
             link.click(function (event) {
+
                 event.preventDefault();
 
                 CancelEdit(globals.editedAnnotationsId);
 
                 image_id = $(this).data('imageid');
-                loadAnnotateView(image_id);
+
+                if (image_id !== gImageId)
+                    loadAnnotateView(image_id);
+
             });
 
             result.append(link);
@@ -1703,6 +1711,8 @@ globals = {
             deleteAnnotation(undefined, globals.editedAnnotationsId);
         });
         $('#verify_annotation_button').click(function () {
+            event.preventDefault();
+
             let data_val = {
                 annotation_id: globals.editedAnnotationsId,
                 state: 'accept',
