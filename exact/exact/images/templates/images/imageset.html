@@ -1,4 +1,4 @@
-{% extends 'base/base.html' %}
+{% extends 'base/formattedl' %}
 {% load i18n %}
 {% load static %}
 {% load widget_tweaks %}
@@ -208,7 +208,11 @@
                                 {% endif %}
                                 <tr>
                                     <td>Description</td>
-                                    <td>{{imageset.description}}</td>
+                                    <td>
+                                        <textarea readonly style="margin: 0px;width: -webkit-fill-available;height: 250px;">
+                                            {{imageset.description}}
+                                        </textarea>
+                                    </td>
                                 </tr>
                                 {% if imageset.creator and user.is_superuser  %}
                                 <tr>
