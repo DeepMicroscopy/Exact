@@ -1,4 +1,5 @@
 import json
+import uuid
 from typing import Set, Union
 from enum import Enum, IntEnum
 
@@ -58,6 +59,8 @@ class Annotation(models.Model):
 
     deleted = models.BooleanField(default=False)
     description = models.TextField(max_length=1000, blank=True)
+
+    unique_identifier = models.UUIDField(default=uuid.uuid4)
 
     def __str__(self):
         return 'Annotation: {0}'.format(self.annotation_type.name)

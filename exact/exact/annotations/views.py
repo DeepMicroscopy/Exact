@@ -595,6 +595,9 @@ def create_annotation(request) -> Response:
             description=description
         )
 
+        if "unique_identifier" in request.data:
+            annotation.unique_identifier = request.data["unique_identifier"]
+
         # Automatically verify for owner
         annotation.verify(request.user, False)
 
@@ -821,7 +824,12 @@ def update_annotation(request) -> Response:
     except (KeyError, TypeError, ValueError):
         raise ParseError
 
-    annotation = get_object_or_404(Annotation, pk=annotation_id)
+    if "unique_identifier" in request.data:
+        annotation = get_object_or_404(Annotation, image__id=image_id,
+                                       unique_identifier=request.data["unique_identifier"])
+    else:
+        annotation = get_object_or_404(Annotation, pk=annotation_id)
+
     annotation_type = get_object_or_404(AnnotationType, pk=annotation_type_id)
 
     if annotation.image_id != image_id:
