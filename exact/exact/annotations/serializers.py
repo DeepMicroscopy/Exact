@@ -51,7 +51,8 @@ class AnnotationSerializer(ModelSerializer):
             'last_editor',
             'user',
             'deleted',
-            'description'
+            'description',
+            'unique_identifier'
         )
 
     annotation_type = AnnotationTypeSerializer(read_only=True)
@@ -76,7 +77,8 @@ class AnnotationSerializerFast(ModelSerializer):
             'concealed',
             'blurred',
             'deleted',
-            'description'
+            'description',
+            'unique_identifier'
         )
         read_only_fields = fields
 
@@ -91,6 +93,7 @@ def serialize_annotation(anno: Annotation) -> Dict[str, Any]:
         'last_edit_time': anno.last_edit_time,
         'deleted': anno.deleted,
         'description': anno.description,
+        'unique_identifier': anno.unique_identifier,
         'annotation_type': {
             'id': anno.annotation_type.id,
             'closed': anno.annotation_type.closed,

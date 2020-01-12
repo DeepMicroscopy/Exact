@@ -102,7 +102,8 @@ class Command(BaseCommand):
                     image.image_set_id = imageset.id
                     image.save()
 
-                    for anno in Annotation.objects.filter(image__id=image_original_id):
+                    for anno in Annotation.objects.filter(image__id=image_original_id, deleted=False,
+                                                          annotation_type__active=True):
                         anno.image_id = image.id
 
                         original_annotation_type = AnnotationType.objects.get(id=anno.annotation_type_id)
