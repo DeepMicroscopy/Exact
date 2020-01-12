@@ -92,9 +92,15 @@ globals = {
 
         handleResize();
 
-        viewer.scalebar({
-            pixelsPerMeter: gImageInformation[gImageId]['mpp'] > 0.0001 ? (1e6 / gImageInformation[gImageId]['mpp']) : 1,
-        });
+        // disable nav if image is to small
+        if (gImageInformation[gImageId]['width'] < 2500 || gImageInformation[gImageId]['height'] < 2500)
+            viewer.navigator.element.style.display = "none";
+        else {
+            viewer.navigator.element.style.display = "inline-block";
+            viewer.scalebar({
+                pixelsPerMeter: gImageInformation[gImageId]['mpp'] > 0.0001 ? (1e6 / gImageInformation[gImageId]['mpp']) : 1
+            });
+        }
 
         var objectivePower = gImageInformation[gImageId]['objectivePower'];
         if (objectivePower > 1) {
