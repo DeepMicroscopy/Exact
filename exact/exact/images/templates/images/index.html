@@ -113,7 +113,7 @@
                                             <th></th>
                                         </tr>
 
-                                        {% for imageset in team.image_sets.all %}
+                                        {% for imageset in team.image_sets.all|dictsort:"name" %}
                                             <tr>
                                                 <div id="image_col">
 
