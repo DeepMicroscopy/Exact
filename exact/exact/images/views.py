@@ -54,6 +54,8 @@ import imghdr
 from datetime import date, timedelta, datetime
 from pathlib import Path
 import re
+import math
+import numpy as np
 from multiprocessing.pool import ThreadPool
 import subprocess
 import openslide
@@ -795,6 +797,57 @@ def create_imageset(request):
         'team': team,
         'form': form,
     })
+
+@login_required
+def create_annotation_map(request, imageset_id):
+    imageset = get_object_or_404(ImageSet, id=imageset_id)
+    if not imageset.has_perm('edit_set', request.user):
+        messages.warning(request,
+                         _('You do not have permission to edit this imageset.'))
+        return redirect(reverse('images:view_imageset', args=(imageset.id,)))
+
+
+    # delete auto generated annotations
+    Verification.objects.filter(annotation__in=
+                                Annotation.objects.filter(image__image_set=imageset,
+                                                          image__image_type=Image.ImageSourceTypes.SERVER_GENERATED))\
+        .delete()
+
+    Annotation.objects.filter(image__image_set=imageset,
+                              image__image_type=Image.ImageSourceTypes.SERVER_GENERATED).delete()
+
+    for annotation_type in AnnotationType.objects.filter(annotation__in=Annotation.objects
+            .filter(image__image_set=imageset, deleted=False)).distinct():
+        annotations = Annotation.objects.filter(image__image_set=imageset, deleted=False,
+                                                 annotation_type=annotation_type).order_by('image')
+        annotation_count = annotations.count()
+        x_images = math.ceil(annotation_count / 2)
+        y_images = math.ceil(annotation_count / 2)
+
+        x_total_size = x_images * annotation_type.default_width
+        y_total_size = y_images * annotation_type.default_height
+
+        result_image = np.zeros(shape=(x_total_size, y_total_size, 3), dtype=np.uint8)
+
+        ids = annotations.values_list('id', flat=True)
+
+        for x_row in range(x_images):
+            for y_row in range(y_images):
+                id =  ids.pop()
+
+
+
+
+
+
+
+@login_required
+def sync_annotation_map(request, imageset_id):
+    imageset = get_object_or_404(ImageSet, id=imageset_id)
+    if not imageset.has_perm('edit_set', request.user):
+        messages.warning(request,
+                         _('You do not have permission to edit this imageset.'))
+    return redirect(reverse('images:view_imageset', args=(imageset.id,)))
 
 
 @login_required

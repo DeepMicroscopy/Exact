@@ -14,6 +14,19 @@ from exact.users.models import Team
 
 
 class Image(models.Model):
+
+    class ImageSourceTypes:
+        DEFAULT = 0
+        SERVER_GENERATED = 1
+        FILE_LINK = 2
+
+    SOURCE_TYPES = (
+        (ImageSourceTypes.DEFAULT, 'Default'),
+        (ImageSourceTypes.SERVER_GENERATED, 'Server Generated'),
+        (ImageSourceTypes.FILE_LINK, 'File Link Generated')
+    )
+
+
     image_set = models.ForeignKey(
         'ImageSet', on_delete=models.CASCADE, related_name='images')
     name = models.CharField(max_length=100)
@@ -24,6 +37,8 @@ class Image(models.Model):
     objectivePower = models.FloatField(default=1)
     width = models.IntegerField(default=800)
     height = models.IntegerField(default=600)
+
+    image_type = models.IntegerField(choices=SOURCE_TYPES, default=ImageSourceTypes.DEFAULT)
 
     def path(self):
         return os.path.join(self.image_set.root_path(), self.filename)
