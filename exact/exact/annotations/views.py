@@ -599,7 +599,7 @@ def create_annotation(request) -> Response:
             annotation.unique_identifier = request.data["unique_identifier"]
 
         # Automatically verify for owner
-        annotation.verify(request.user, False)
+        annotation.verify(request.user, True)
 
     return Response({
         'annotations': serialize_annotation(annotation),

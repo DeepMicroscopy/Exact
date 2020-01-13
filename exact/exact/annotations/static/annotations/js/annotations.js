@@ -14,7 +14,7 @@ globals = {
     const FEEDBACK_DISPLAY_TIME = 3000;
     const ANNOTATE_URL = '/annotations/%s/';
     const IMAGE_SET_URL = '/images/imageset/%s/';
-    const PRELOAD_BACKWARD = 1;
+    const PRELOAD_BACKWARD = 0;
     const PRELOAD_FORWARD = 1;
     const STATIC_ROOT = '/static/';
 
