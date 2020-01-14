@@ -594,7 +594,6 @@ def api_delete_annotation(request) -> Response:
     }, status=HTTP_200_OK)
 
 
-@login_required
 @api_view(['POST'])
 def api_copy_annotation(request,source_annotation_id, target_image_id) -> Response:
 
