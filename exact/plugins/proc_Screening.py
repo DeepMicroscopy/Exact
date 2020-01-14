@@ -72,12 +72,13 @@ class Plugin(ExactServerPlugin):
 
                 tile_dict, x_steps, y_steps = self._create_tiles(resolution_x, resolution_y, image_width, image_height)
 
-                screening.x_steps = x_steps
-                screening.y_steps = y_steps
+                screening.x_steps = len(x_steps)
+                screening.y_steps = len(y_steps)
                 screening.x_resolution = resolution_x
                 screening.y_resolution = resolution_y
                 screening.screening_tiles = tile_dict
-                screening.Save()
+                screening.current_index = 0
+                screening.save()
         elif resolution_x is not None and resolution_y is not None and \
                 "resolution_x" in options and "resolution_y" in options:
             tile_dict, x_steps, y_steps = self._create_tiles(resolution_x, resolution_y, image_width, image_height)
