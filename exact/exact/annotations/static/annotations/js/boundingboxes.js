@@ -147,7 +147,8 @@ class BoundingBoxes {
             vector: this.getAnnotationVector(canvasObject.name),
             first_editor: {id: null, name: "you"},
             last_editor: {id: null, name: "you"},
-            last_edit_time: new Date(Date.now())
+            last_edit_time: new Date(Date.now()),
+            image: {id: this.imageid}
         }
     }
 
@@ -376,7 +377,8 @@ class BoundingBoxes {
     }
 
     updateName(tempName, annotationId) {
-        this.group.getItem({name: tempName}).set({name: '#' + annotationId});
+        if (this.group.getItem({name: tempName}) !== null)
+            this.group.getItem({name: tempName}).set({name: '#' + annotationId});
     }
 
     updateAnnotationType(id, annotation_type) {
