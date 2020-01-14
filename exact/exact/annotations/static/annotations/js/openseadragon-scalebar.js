@@ -42,7 +42,8 @@
         TOP_LEFT: 1,
         TOP_RIGHT: 2,
         BOTTOM_RIGHT: 3,
-        BOTTOM_LEFT: 4
+        BOTTOM_LEFT: 4,
+        TOP_Center: 5
     };
 
     /**
@@ -310,6 +311,23 @@
                             new $.Point(1, 0), true);
                     if (!this.viewer.wrapHorizontal) {
                         x = Math.min(x, pixel.x - barWidth);
+                    }
+                    if (!this.viewer.wrapVertical) {
+                        y = Math.max(y, pixel.y);
+                    }
+                }
+                return new $.Point(x - this.xOffset, y + this.yOffset);
+            }
+            if (this.location === $.ScalebarLocation.TOP_Center) {
+                var barWidth = this.divElt.offsetWidth;
+                var container = this.viewer.container;
+                var x = (container.offsetWidth - barWidth) / 2;
+                var y = 0;
+                if (this.stayInsideImage) {
+                    var pixel = this.viewer.viewport.pixelFromPoint(
+                            new $.Point(0.5, 0), true);
+                    if (!this.viewer.wrapHorizontal) {
+                        //x = Math.min(x, pixel.x - barWidth);
                     }
                     if (!this.viewer.wrapVertical) {
                         y = Math.max(y, pixel.y);
