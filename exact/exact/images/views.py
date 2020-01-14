@@ -1062,7 +1062,6 @@ def api_verify_image(request) -> Response:
     }, status=HTTP_200_OK)
 
 
-@login_required
 @api_view(['GET'])
 def load_image_set(request) -> Response:
     try:
