@@ -821,7 +821,7 @@ def create_annotation_map(request, imageset_id):
     Annotation.objects.filter(image__image_set=imageset,
                               image__image_type=Image.ImageSourceTypes.SERVER_GENERATED).delete()
 
-    result_image_names = []
+    result_image_names = {}
     for annotation_type in AnnotationType.objects.filter(annotation__in=Annotation.objects
             .filter(image__image_set=imageset, deleted=False)).distinct():
         annotations = Annotation.objects.filter(image__image_set=imageset, deleted=False, vector__isnull=False,
@@ -963,7 +963,7 @@ def sync_annotation_map(request, imageset_id):
         .delete()
 
     changed_annotations = {}
-    for anno in Annotation.objects.filter(image__image_set=imageset,
+    for anno in Annotation.objects.filter(image__image_set=imageset, last_editor__isnull=False,
                                           image__image_type=Image.ImageSourceTypes.SERVER_GENERATED):
 
         for original_anno in Annotation.objects.filter(unique_identifier=anno.unique_identifier,
@@ -975,8 +975,13 @@ def sync_annotation_map(request, imageset_id):
                 changed_annotations[original_anno.id] = "Id: {0} Original Type: {1} New Type: {2}"\
                     .format(original_anno.id, original_anno.annotation_type.name, anno.annotation_type.name)
 
+                original_anno.last_editor = anno.last_editor
                 original_anno.annotation_type = anno.annotation_type
                 original_anno.save()
+
+        anno.last_editor = None
+        anno.save()
+
 
     return Response({
         "Updates" : changed_annotations
