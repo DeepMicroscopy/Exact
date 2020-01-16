@@ -248,20 +248,34 @@ For an empty image set, HTTP 204 NO CONTENT is returned instead of an empty zip 
 
 The exact relies on the following plugins, libraries and frameworks:
 
-- [Bootstrap](https://getbootstrap.com/)
-- [Django](https://www.djangoproject.com/)
-- [Django REST Framework](http://www.django-rest-framework.org/)
-- [django-registration](https://github.com/ubernostrum/django-registration)
-- [django-widget-tweaks](https://github.com/jazzband/django-widget-tweaks)
-- [imgAreaSelect](http://odyniec.net/projects/imgareaselect/)
-- [jCanvas](https://projects.calebevans.me/jcanvas/)
-- [jQuery](https://jquery.com/)
-- [jQuery-Autocomplete](https://github.com/devbridge/jquery-Autocomplete)
-- [jQuery-File-Upload](https://github.com/blueimp/jQuery-File-Upload)
-- [Pillow](https://github.com/python-pillow/Pillow)
-- [PostgreSQL](https://www.postgresql.org/)
-- [OpenSlide](https://openslide.org/)
-- [OpenSeadragon](https://openseadragon.github.io//)
+| Name                       | Version     | License                                        |
+|----------------------------|-------------|------------------------------------------------|
+| [Django](https://www.djangoproject.com/)                     | 3.0         | BSD         |                    
+| [Pillow](http://python-pillow.org)                     | 5.4.1       | Standard PIL License |                         
+| [asgiref](http://github.com/django/asgiref/)                  | 3.2.3       | BSD     |                  
+| [confusable-homoglyphs](https://github.com/vhf/confusable_homoglyphs )    | 3.2.0       | MIT |        
+| [django-friendly-tag-loader](https://github.com/ataylor32/django-friendly-tag-loader) | 1.3.1   | MIT |  
+| [django-registration](https://github.com/ubernostrum/django-registration/ )       | 3.0.1       | MIT |     
+| [django-widget-tweaks](https://github.com/jazzband/django-widget-tweaks  )       | 1.4.3       | MIT license |       
+| [djangorestframework](https://www.django-rest-framework.org/  )       | 3.11.0      | BSD     |                 
+| [fasteners](https://github.com/harlowja/fasteners  )                  | 0.14.1      | ASL 2.0 |                  
+| [gunicorn](http://gunicorn.org   )                   | 19.9.0      | MIT |                                   
+| [imagecodecs-lite](https://www.lfd.uci.edu/~gohlke/  )           | 2019.12.3   | BSD  |                       
+| [monotonic](https://github.com/atdt/monotonic   )                  | 1.5         | Apache   |                     
+| [numpy](https://www.numpy.org   )                      | 1.17.4      | BSD   |                                 
+| [opencv-python](https://github.com/skvark/opencv-python  )             | 4.1.2.30    | MIT  |                
+| [openslide-python](http://openslide.org/)           | 1.1.1       | GNU Lesser General Public License, version 2.1 |   
+| [psycopg2-binary](http://initd.org/psycopg/ )           | 2.7.7       | LGPL with exceptions or ZPL  |                               
+| [pytz](http://pythonhosted.org/pytz  )                       | 2018.9      | MIT    |                           
+| [six](https://github.com/benjaminp/six   )                        | 1.12.0      | MIT   |                      
+| [sqlparse](https://github.com/andialbrecht/sqlparse)                   | 0.3.0       | BSD  |                 
+| [tifffile](https://www.lfd.uci.edu/~gohlke/ )                   | 2019.7.26.2 | BSD   |                        
+| [Bootstrap](https://getbootstrap.com/)                   | 4.4 | BSD   |        
+| [jQuery](https://jquery.com/)                   | 3.4.1 |  MIT    |     
+| [jQuery-Autocomplete](https://github.com/devbridge/jquery-Autocomplete)    | 1.4.1 |   |   
+| [jQuery-File-Upload](https://github.com/blueimp/jQuery-File-Upload)     | 10.7.0 |   MIT    |          
+| [OpenSeadragon](https://openseadragon.github.io//)                 | 2.4.1 |     BSD-3  |           
+
 
 We are grateful to the maintainers and contributors of the respective projects.
 
@@ -270,13 +284,13 @@ We are grateful to the maintainers and contributors of the respective projects.
 
 This paper describes the Bit-Bots imagetagger we build on in depth. Please cite if you use this tool in your research:
 
-FIEDLER, Niklas, et al. [imagetagger: An Open Source Online Platform for Collaborative Image Labeling.](https://robocup.informatik.uni-hamburg.de/wp-content/uploads/2018/11/exact_paper.pdf) In: RoboCup 2018: Robot World Cup XXII. Springer, 2018.
+FIEDLER, Niklas, et al. [imagetagger: An Open Source Online Platform for Collaborative Image Labeling.](https://robocup.informatik.uni-hamburg.de/wp-content/uploads/2018/11/imagetagger_paper.pdf) In: RoboCup 2018: Robot World Cup XXII. Springer, 2018.
 
 ```
-@inproceedings{exact2018,
+@inproceedings{imagetagger2018,
    author={Fiedler, Niklas and Bestmann, Marc and Hendrich, Norman},
    year={2018},
-   title={exact: An Open Source Online Platform for Collaborative Image Labeling},
+   title={Imagetagger: An Open Source Online Platform for Collaborative Image Labeling},
    booktitle={RoboCup 2018: Robot World Cup XXII},
    organization={Springer}
 }
