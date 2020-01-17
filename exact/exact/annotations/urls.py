@@ -18,6 +18,8 @@ urlpatterns = [
     url(r'^(\d+)/verify/$', views.verify, name='verify'),
     url(r'^api/annotation/create/$', views.create_annotation, name='create_annotation'),
     url(r'^api/annotation/delete/$', views.api_delete_annotation, name='delete_annotation'),
+    url(r'^api/annotation/copy/(\d+)/(\d+)$', views.api_copy_annotation, name='copy_annotation'),
+
     url(r'^api/annotation/load/$', views.load_annotations, name='load_annotations'),  # loads annotations of an image
     url(r'^api/annotation/loadset/$', views.load_set_annotations, name='load_set_annotations'),  # loads annotations of an image
     url(r'^api/annotation/loadannotationtypes/$', views.load_annotation_types, name='load_annotation_types'),  # loads all active annotation types
