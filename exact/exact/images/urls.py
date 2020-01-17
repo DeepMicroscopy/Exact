@@ -34,6 +34,10 @@ urlpatterns = [
     url(r'^imageset/(\d+)/delete/$', views.delete_imageset, name='delete_imageset'),
     url(r'^imageset/(\d+)/pin/$', views.toggle_pin_imageset, name='pin_imageset'),
     url(r'^imageset/(\d+)/edit/$', views.edit_imageset, name='edit_imageset'),
+
+    url(r'^imageset/(\d+)/annotation_map/create/$', views.create_annotation_map, name='create_annotation_map'),
+    url(r'^imageset/(\d+)/annotation_map/sync/$', views.sync_annotation_map, name='sync_annotation_map'),
+
     url(r'^imageset/(\d+)/$', views.view_imageset, name='view_imageset'),
     url(r'^imageset/(\d+)/download/$', views.download_imageset_zip, name='download_imageset'),
     url(r'^imageset/explore/$', views.explore_imageset, name='explore_imageset'),
