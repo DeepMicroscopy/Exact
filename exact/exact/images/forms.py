@@ -55,5 +55,4 @@ class CopyImageSetForm(forms.Form):
                )
 
     copy_annotations = forms.BooleanField(required=None)
-    copy_verifications = forms.BooleanField(required=None)
 
