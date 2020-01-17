@@ -45,3 +45,15 @@ class ImageSetEditForm(forms.ModelForm):
 class LabelUploadForm(forms.Form):
     file = forms.FileField()
     verify = forms.BooleanField(required=None)
+
+
+class CopyImageSetForm(forms.Form):
+
+    imagesets = forms.ModelMultipleChoiceField(
+                       widget = forms.CheckboxSelectMultiple,
+                       queryset = ImageSet.objects.all()
+               )
+
+    copy_annotations = forms.BooleanField(required=None)
+    copy_verifications = forms.BooleanField(required=None)
+

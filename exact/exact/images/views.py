@@ -24,6 +24,7 @@ from PIL import Image as PIL_Image
 
 from exact.images.serializers import ImageSetSerializer, ImageSerializer, SetTagSerializer
 from exact.images.forms import ImageSetCreationForm, ImageSetCreationFormWT, ImageSetEditForm
+from exact.annotations.views import api_copy_annotation
 from exact.users.forms import TeamCreationForm
 from exact.users.models import User, Team
 from exact.tagger_messages.forms import TeamMessageCreationForm
@@ -31,7 +32,7 @@ from exact.administration.models import Product
 from exact.administration.serializers import ProductSerializer
 
 from .models import ImageSet, Image, SetTag
-from .forms import LabelUploadForm
+from .forms import LabelUploadForm, CopyImageSetForm
 from exact.annotations.models import Annotation, Export, ExportFormat, \
     AnnotationType, Verification, LogImageAction
 from exact.tagger_messages.models import Message, TeamMessage, GlobalMessage
@@ -687,6 +688,9 @@ def view_imageset(request, image_set_id):
     imageset_edit_form.fields['main_annotation_type'].queryset = AnnotationType.objects\
         .filter(active=True, product__in=imageset.product_set.all()).order_by('product', 'sort_order')
 
+    copyImageSetForm = CopyImageSetForm()
+    copyImageSetForm.fields['imagesets'].queryset = ImageSet.objects.filter(team__in=request.user.team_set.all())
+
     all_products = Product.objects.filter(team=imageset.team).order_by('name')
     return render(request, 'images/imageset.html', {
         'images': images,
@@ -704,6 +708,7 @@ def view_imageset(request, image_set_id):
         'imageset_perms': imageset.get_perms(request.user),
         'export_formats': ExportFormat.objects.filter(Q(public=True) | Q(team__in=user_teams)),
         'label_upload_form': LabelUploadForm(),
+        'copy_imagesets_form': copyImageSetForm,
         'upload_notice': settings.UPLOAD_NOTICE,
         'enable_zip_download': settings.ENABLE_ZIP_DOWNLOAD,
         'user': request.user
@@ -878,6 +883,63 @@ def toggle_pin_imageset(request, imageset_id):
                           .format(imageset.name))
 
     return redirect(reverse('images:view_imageset', args=(imageset_id,)))
+
+
+
+@login_required
+def copy_image(request, image_id, imageset_id):
+    image = get_object_or_404(Image, id=image_id)
+    target_imageset = get_object_or_404(ImageSet, id=imageset_id)
+
+    try:
+        copy_annotations = 'copy_annotations' in request.POST.keys()
+    except (KeyError, TypeError, ValueError):
+        raise ParseError
+
+    new_image = target_imageset.images.filter(name=image.name).first()
+    if new_image is None:
+        # use symbolic link
+        os.symlink(image.path(), target_imageset.root_path() + "/" + image.filename)
+
+        image_original_id = image.id
+        image.id = None
+        image.image_set = target_imageset
+        image.save()
+
+        if copy_annotations:
+            for anno in Annotation.objects.filter(image__id=image_original_id, deleted=False,
+                                                          annotation_type__active=True):
+
+                api_copy_annotation(request, anno.id, image.id)
+    else:
+        return Response({
+            'detail': 'Image with the same name already exists'
+                .format(image.name),
+        }, status=HTTP_403_FORBIDDEN)
+
+    return Response({
+        "Image": ImageSerializer(image).data
+    }, status=HTTP_201_CREATED)
+
+
+@login_required
+def copy_images_to_imageset(request, imageset_id):
+    target_imageset = get_object_or_404(ImageSet, id=imageset_id)
+    if not target_imageset.has_perm('edit_set', request.user):
+        messages.warning(request,
+                         _('You do not have permission to edit this imageset.'))
+        return redirect(reverse('images:view_imageset', args=(target_imageset.id,)))
+
+    if request.method == 'POST':
+        copy_annotations = 'copy_annotations' in request.POST.keys()
+        ids = request.POST.getlist('imagesets')
+
+        for image in Image.objects.filter(image_set_id__in=ids):
+            copy_image(request, image.id, imageset_id)
+
+
+    return redirect(reverse('images:view_imageset', args=(imageset_id,)))
+
 
 
 @login_required
