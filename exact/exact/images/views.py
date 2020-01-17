@@ -693,7 +693,8 @@ def view_imageset(request, image_set_id):
         .filter(active=True, product__in=imageset.product_set.all()).order_by('product', 'sort_order')
 
     copyImageSetForm = CopyImageSetForm()
-    copyImageSetForm.fields['imagesets'].queryset = ImageSet.objects.filter(team__in=request.user.team_set.all())
+    copyImageSetForm.fields['imagesets'].queryset = ImageSet.objects\
+        .filter(Q(team__in=request.user.team_set.all())|Q(public=True))
 
     all_products = Product.objects.filter(team=imageset.team).order_by('name')
     return render(request, 'images/imageset.html', {
@@ -1090,7 +1091,9 @@ def copy_image(request, image_id, imageset_id):
     new_image = target_imageset.images.filter(name=image.name).first()
     if new_image is None:
         # use symbolic link
-        os.symlink(image.path(), target_imageset.root_path() + "/" + image.filename)
+
+        if os.path.exists(target_imageset.root_path() + "/" + image.filename) ==  False:
+            os.symlink(image.path(), target_imageset.root_path() + "/" + image.filename)
 
         image_original_id = image.id
         image.id = None
@@ -1102,11 +1105,10 @@ def copy_image(request, image_id, imageset_id):
                                                           annotation_type__active=True):
 
                 api_copy_annotation(request, anno.id, image.id)
-    else:
-        return Response({
-            'detail': 'Image with the same name already exists'
-                .format(image.name),
-        }, status=HTTP_403_FORBIDDEN)
+    elif(copy_annotations):
+        for anno in Annotation.objects.filter(image__id=new_image.id, deleted=False,
+                                              annotation_type__active=True):
+            api_copy_annotation(request, anno.id, image.id)
 
     return Response({
         "Image": ImageSerializer(image).data
@@ -1122,10 +1124,10 @@ def copy_images_to_imageset(request, imageset_id):
         return redirect(reverse('images:view_imageset', args=(target_imageset.id,)))
 
     if request.method == 'POST':
-        copy_annotations = 'copy_annotations' in request.POST.keys()
         ids = request.POST.getlist('imagesets')
 
-        for image in Image.objects.filter(image_set_id__in=ids):
+        for image in Image.objects.filter(image_set_id__in=ids)\
+                .exclude(image_type=Image.ImageSourceTypes.SERVER_GENERATED):
             copy_image(request, image.id, imageset_id)
 
 

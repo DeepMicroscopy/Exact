@@ -567,9 +567,9 @@ def api_copy_annotation(request,source_annotation_id, target_image_id) -> Respon
     source_annotation = get_object_or_404(Annotation, pk=source_annotation_id)
     target_image = get_object_or_404(Image, pk=target_image_id)
 
-    target_annotation_type = AnnotationType.objects.get(product__in=target_image.imageset.product_set.all(),
+    target_annotation_type = AnnotationType.objects.filter(product__in=target_image.image_set.product_set.all(),
                                                         vector_type=source_annotation.annotation_type.vector_type,
-                                                        name=source_annotation.annotation_type.name)
+                                                        name=source_annotation.annotation_type.name).first()
 
     if target_annotation_type:
         source_annotation.image_id = target_image.id
