@@ -461,79 +461,138 @@
                             </table>
                         </div>
                         {% if not imageset.image_lock %}
-                        <hr>
-                        <h3>
-                            Upload new images:
-                        </h3>
-                        {{ upload_notice|safe }}
-                            <br>
-                            &nbsp;<br>
-                            Upload images as single files or as zip file with the images in its root directory (recommended).
-                        <div >
-                            <form id="fileupload" action="{% url 'images:upload_image' imageset.id %}" method="POST" enctype="multipart/form-data">
-                                {% csrf_token %}
-                                <!-- The fileupload-buttonbar contains buttons to add/delete files and start/cancel the upload -->
-                                <div class="row fileupload-buttonbar">
-                                    <div class="col-lg-12">
-                                        <!-- The fileinput-button span is used to style the file input field as button -->
-                                        <span class="btn btn-success fileinput-button">
-                                            <i class="icon-plus icon-white"></i>
-                                            <span>Add files...</span>
-                                            <input type="file" name="files[]" multiple>
-                                        </span>
-                                        <button type="submit" class="btn btn-primary start">
-                                            <i class="icon-upload icon-white"></i>
-                                            <span>Start upload</span>
-                                        </button>
-                                        <button type="reset" class="btn btn-warning cancel">
-                                            <i class="icon-ban-circle icon-white"></i>
-                                            <span>Cancel upload</span>
-                                        </button>
-                                        <button type="button" class="btn btn-danger delete">
-                                            <i class="icon-trash icon-white"></i>
-                                            <span>Delete</span>
-                                        </button>
-                                        <input type="checkbox" class="toggle">
-                                        <!-- The global file processing state -->
-                                        <span class="fileupload-process"></span>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <!-- The global progress state -->
-                                    <div class="col-lg-12 fileupload-progress">
-                                        <!-- The global progress bar -->
-                                        <div class="progress progress-striped active" role="progressbar" aria-valuemin="0" aria-valuemax="100">
-                                            <div class="progress-bar progress-bar-success" style="width:0%;"></div>
+
+                             <hr>
+
+                            <ul class="nav nav-tabs" id="upLoadTab" role="tablist">
+
+                                <li class="nav-item">
+                                    <a class="nav-link active" id="upload-images-tab" data-toggle="tab" href="#uploadImages"
+                                       role="tab" aria-controls="uploadImages">
+                                        <h4>
+                                            Upload new images
+                                        </h4>
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a class="nav-link" id="copy-images-tab" data-toggle="tab" href="#copyImages"
+                                       role="tab" aria-controls="copyImages">
+                                        <h4>
+                                            Copy images
+                                        </h4>
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a class="nav-link" id="upload-labels-tab" data-toggle="tab" href="#uploadLabels"
+                                       role="tab" aria-controls="uploadLabels">
+                                        <h4>
+                                            Upload existing Labels
+                                        </h4>
+                                    </a>
+                                </li>
+
+
+
+                            </ul>
+
+                            <div class="tab-content" id="upLoadTabContent">
+                                <div class="tab-pane fade" id="uploadImages" role="tabpanel" aria-labelledby="uploadImages-tab">
+
+                                    <br>
+                                    <br>
+
+                                    {{ upload_notice|safe }}
+                                    <br>
+                                    <br>
+                                    Upload images as single files or as zip file with the images in its root directory (recommended).
+
+                                    <div >
+                                        <form id="fileupload" action="{% url 'images:upload_image' imageset.id %}" method="POST" enctype="multipart/form-data">
+                                        {% csrf_token %}
+                                        <!-- The fileupload-buttonbar contains buttons to add/delete files and start/cancel the upload -->
+                                        <div class="row fileupload-buttonbar">
+                                            <div class="col-lg-12">
+                                                <!-- The fileinput-button span is used to style the file input field as button -->
+                                                <span class="btn btn-success fileinput-button">
+                                                    <i class="icon-plus icon-white"></i>
+                                                    <span>Add files...</span>
+                                                    <input type="file" name="files[]" multiple>
+                                                </span>
+                                                <button type="submit" class="btn btn-primary start">
+                                                    <i class="icon-upload icon-white"></i>
+                                                    <span>Start upload</span>
+                                                </button>
+                                                <button type="reset" class="btn btn-warning cancel">
+                                                    <i class="icon-ban-circle icon-white"></i>
+                                                    <span>Cancel upload</span>
+                                                </button>
+                                                <button type="button" class="btn btn-danger delete">
+                                                    <i class="icon-trash icon-white"></i>
+                                                    <span>Delete</span>
+                                                </button>
+                                                <input type="checkbox" class="toggle">
+                                                <!-- The global file processing state -->
+                                                <span class="fileupload-process"></span>
+                                            </div>
                                         </div>
-                                        <!-- The extended global progress state -->
-                                        <div class="progress-extended">&nbsp;</div>
+                                        <div class="row">
+                                            <!-- The global progress state -->
+                                            <div class="col-lg-12 fileupload-progress">
+                                                <!-- The global progress bar -->
+                                                <div class="progress progress-striped active" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+                                                    <div class="progress-bar progress-bar-success" style="width:0%;"></div>
+                                                </div>
+                                                <!-- The extended global progress state -->
+                                                <div class="progress-extended">&nbsp;</div>
+                                            </div>
+                                        </div>
+                                        <!-- The table listing the files available for upload/download -->
+                                        <table role="presentation" class="table table-striped"><tbody class="files"></tbody></table>
+                                    </form>
                                     </div>
+
                                 </div>
-                                <!-- The table listing the files available for upload/download -->
-                                <table role="presentation" class="table table-striped"><tbody class="files"></tbody></table>
-                            </form>
-                        </div>
+
+                                <div class="tab-pane fade" id="copyImages" role="tabpanel" aria-labelledby="copyImages-tab">
+
+                                    <form action="{% url 'images:copy_images_to_imageset' imageset.id %}" method="POST" enctype="multipart/form-data">
+                                        {% csrf_token %}
+                                        {{ copy_imagesets_form }}<br>
+                                        <input type="submit" class="btn btn-primary" value="Copy imagesets">
+                                    </form>
+
+
+                                </div>
+
+                                <div class="tab-pane fade" id="uploadLabels" role="tabpanel" aria-labelledby="uploadLabels-tab">
+
+                                    <br>
+                                    <br>
+
+                                    Here you can upload existing labels as a text file in the following format:<br>
+                                    image name|annotation type|{'x1': x1,'y1': y1...}|flags<br>
+                                    &nbsp;&nbsp;with b as flag for blurred annotations and c for concealed ones.<br>
+                                    Using the exact export tool for example:<br>
+                                    Annotation format: <br>
+                                    <code>%%imagename|%%type|{%%vector}|%%ifblurredb%%endif%%ifconcealedc%%endif</code><br>
+                                    &nbsp;&nbsp;with vector format: <br>
+                                    &nbsp;&nbsp;<code>"x%%count1": "%%x","y%%count1": "%%y"</code><br>
+                                    or for negative annotations:<br>
+                                    <code>image name|annotation type|not in image</code><br>&nbsp;<br>
+                                    One annotation per line. The annotation type has to exist in the exact too.
+
+                                    <form action="{% url 'images:label_upload' imageset.id %}" method="POST" enctype="multipart/form-data">
+                                        {% csrf_token %}
+                                        {{ label_upload_form }}<br>
+                                        <input type="submit" class="btn btn-primary" value="Upload labels">
+                                    </form>
+                                </div>
+                            </div>
+
                         {% endif %}
-                        <hr>
-                        <h3>
-                            Upload existing Labels
-                        </h3>
-                        Here you can upload existing labels as a text file in the following format:<br>
-                        image name|annotation type|{'x1': x1,'y1': y1...}|flags<br>
-                        &nbsp;&nbsp;with b as flag for blurred annotations and c for concealed ones.<br>
-                        Using the exact export tool for example:<br>
-                        Annotation format: <br>
-                        <code>%%imagename|%%type|{%%vector}|%%ifblurredb%%endif%%ifconcealedc%%endif</code><br>
-                        &nbsp;&nbsp;with vector format: <br>
-                        &nbsp;&nbsp;<code>"x%%count1": "%%x","y%%count1": "%%y"</code><br>
-                        or for negative annotations:<br>
-                        <code>image name|annotation type|not in image</code><br>&nbsp;<br>
-                        One annotation per line. The annotation type has to exist in the exact too.
-                        <form action="{% url 'images:label_upload' imageset.id %}" method="POST" enctype="multipart/form-data">
-                            {% csrf_token %}
-                            {{ label_upload_form }}<br>
-                        <input type="submit" class="btn btn-primary" value="Upload labels">
-                    </form>
+
                     </div>
                 </div>
             </div>
