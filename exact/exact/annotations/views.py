@@ -562,6 +562,39 @@ def api_delete_annotation(request) -> Response:
 
 @login_required
 @api_view(['POST'])
+def api_copy_annotation(request,source_annotation_id, target_image_id) -> Response:
+
+    source_annotation = get_object_or_404(Annotation, pk=source_annotation_id)
+    target_image = get_object_or_404(Image, pk=target_image_id)
+
+    target_annotation_type = AnnotationType.objects.filter(product__in=target_image.image_set.product_set.all(),
+                                                        vector_type=source_annotation.annotation_type.vector_type,
+                                                        name=source_annotation.annotation_type.name).first()
+
+    if target_annotation_type:
+        source_annotation.image_id = target_image.id
+        source_annotation.annotation_type = target_annotation_type
+        source_annotation.id = None
+        source_annotation.save()
+    else:
+        return Response({
+            'detail': 'No target annotation type match the source annotation type {0}'
+                .format(source_annotation.annotation_type.name),
+        }, status=HTTP_403_FORBIDDEN)
+
+
+    return Response({
+        'annotations': serialize_annotation(source_annotation)
+    }, status=HTTP_201_CREATED)
+
+
+
+
+
+
+
+@login_required
+@api_view(['POST'])
 def create_annotation(request) -> Response:
     try:
         image_id = int(request.data['image_id'])

@@ -6,6 +6,7 @@ app_name = 'images'
 urlpatterns = [
     url(r'^$', views.index, name='index'),
     url(r'^image/delete/(\d+)/$', views.delete_images, name='delete_images'),
+    url(r'^image/copy/(\d+)/(\d+)/$', views.copy_image, name='copy_image'),
 
     url(r'^api/image/opened/(\d+)/$', views.image_opened, name='image_opened'),
     url(r'^api/image/closed/(\d+)/$', views.image_closed, name='image_closed'),
@@ -27,6 +28,8 @@ urlpatterns = [
     url(r'^api/image/statistics/$', views.image_statistics, name='image_statistics'),
     url(r'^imagelist/(\d+)/$', views.list_images, name='list_images'),
     url(r'^imageset/(\d+)/label-upload/$', views.label_upload, name='label_upload'),
+    url(r'^imageset/(\d+)/copy-images/$', views.copy_images_to_imageset, name='copy_images_to_imageset'),
+
     url(r'^imageset/create/$', views.create_imageset, name='create_imageset'),
     url(r'^imageset/(\d+)/delete/$', views.delete_imageset, name='delete_imageset'),
     url(r'^imageset/(\d+)/pin/$', views.toggle_pin_imageset, name='pin_imageset'),
