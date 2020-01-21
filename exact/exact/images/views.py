@@ -54,8 +54,12 @@ import imghdr
 from datetime import date, timedelta, datetime
 from pathlib import Path
 import re
+import math
+import numpy as np
 from multiprocessing.pool import ThreadPool
 import subprocess
+import cv2
+from tifffile import *
 import openslide
 from openslide import OpenSlide, open_slide
 
@@ -795,6 +799,193 @@ def create_imageset(request):
         'team': team,
         'form': form,
     })
+
+@api_view(['GET'])
+@login_required
+def create_annotation_map(request, imageset_id):
+    imageset = get_object_or_404(ImageSet, id=imageset_id)
+    context_offset = 0.15
+
+    if not imageset.has_perm('edit_set', request.user):
+        messages.warning(request,
+                         _('You do not have permission to edit this imageset.'))
+        return redirect(reverse('images:view_imageset', args=(imageset.id,)))
+
+
+    # delete auto generated annotations
+    Verification.objects.filter(annotation__in=
+                                Annotation.objects.filter(image__image_set=imageset,
+                                                          image__image_type=Image.ImageSourceTypes.SERVER_GENERATED))\
+        .delete()
+
+    Annotation.objects.filter(image__image_set=imageset,
+                              image__image_type=Image.ImageSourceTypes.SERVER_GENERATED).delete()
+
+    result_image_names = {}
+    for annotation_type in AnnotationType.objects.filter(annotation__in=Annotation.objects
+            .filter(image__image_set=imageset, deleted=False)).distinct():
+        annotations = Annotation.objects.filter(image__image_set=imageset, deleted=False, vector__isnull=False,
+                                                 annotation_type=annotation_type).order_by('image')
+        annotation_count = annotations.count()
+        x_images = math.ceil(math.sqrt(annotation_count))
+        y_images = math.ceil(math.sqrt(annotation_count))
+
+        patch_width = int(annotation_type.default_width + annotation_type.default_width * context_offset)
+        patch_height = int(annotation_type.default_height + annotation_type.default_height * context_offset)
+
+        x_total_size = int(x_images * patch_width)
+        y_total_size = int(y_images * patch_height)
+
+        result_image = np.zeros(shape=(x_total_size, y_total_size, 3), dtype=np.uint8)
+
+        ids = list(annotations.values_list('id', flat=True))
+
+        name = '{0}_{1}.tif'.format(annotation_type.product.name, annotation_type.name)
+        result_image_names[name] = annotation_count
+
+        new_image = imageset.images.filter(name=name,
+                                           image_type=Image.ImageSourceTypes.SERVER_GENERATED).first()
+        if new_image is None:
+            new_image = Image(
+                name = name,
+                image_set = imageset,
+                filename = name+"f",
+                image_type=Image.ImageSourceTypes.SERVER_GENERATED
+            )
+            new_image.save()
+
+        slide = None
+        last_path = None
+
+        x_total_max = 0
+        y_total_max = 0
+        for x_row in range(x_images):
+            x_start = x_total_max
+            y_max = 0
+
+            for y_row in range(y_images):
+                if len(ids) == 0:
+                    break
+                id = ids.pop()
+                anno = annotations.get(id=id)
+
+                file_path = os.path.join(settings.IMAGE_PATH, anno.image.path())
+                if file_path != last_path:
+                    slide = openslide.open_slide(str(file_path))
+                    last_path = file_path
+
+                x_ori = anno.min_x
+                y_ori = anno.min_y
+                w_ori = anno.max_x - anno.min_x
+                h_ori = anno.max_y - anno.min_y
+
+                # increase patch to context_offset
+                x = int(max(0, x_ori - w_ori * context_offset))
+                y = int(max(0, y_ori - h_ori * context_offset))
+                w = int(w_ori + w_ori * context_offset)
+                h = int(h_ori + h_ori * context_offset)
+                if y + h > anno.image.height:
+                    h = anno.image.height - y
+                if x + w > anno.image.width:
+                    w = anno.image.width - x
+
+                scale_x = patch_width / w
+                scale_y = patch_height / h
+                for i in range(1, (len(anno.vector) // 2) + 1):
+                    #  bring to coordinate center
+                    anno.vector['x' + str(i)] = anno.vector['x' + str(i)] - x_ori + ((w - w_ori) / 2)
+                    anno.vector['y' + str(i)] = anno.vector['y' + str(i)] - y_ori + ((h - h_ori) / 2)
+
+                    # scale
+                    anno.vector['x' + str(i)] *= scale_x
+                    anno.vector['y' + str(i)] *= scale_y
+
+                patch = np.array(slide.read_region(location=(int(x), int(y)),
+                                                   level=0, size=(w, h)))[:, :, :3]
+
+                patch = cv2.resize(patch, (patch_width, patch_height))
+
+                x_min = x_start
+                x_max = x_min + patch.shape[1]
+                x_total_max = x_max if x_max > x_total_max else x_total_max
+
+                y_min = y_max
+                y_max = y_min + patch.shape[0]
+                y_total_max = y_max if y_max > y_total_max else y_total_max
+
+                # create new image
+                anno.image_id = new_image.id
+
+                # move annotation to new location
+                for i in range(1, (len(anno.vector) // 2) + 1):
+                    #  bring to coordinate center
+                    anno.vector['x' + str(i)] = int(anno.vector['x' + str(i)] + x_min)
+                    anno.vector['y' + str(i)] = int(anno.vector['y' + str(i)] + y_min)
+
+                anno.id = None
+                anno.save()
+
+                result_image[y_min:y_max, x_min:x_max] = patch
+
+        if annotation_count > 0:
+            source_path = os.path.join(settings.IMAGE_PATH, new_image.path()).replace(".tiff", ".tif")
+            destination_path = os.path.join(settings.IMAGE_PATH, new_image.path())
+
+            with TiffWriter(source_path, bigtiff=False) as tif:
+                tif.save(result_image, compress=6, photometric='rgb')
+            os.system('nice -n 19 convert {0} -define tiff:tile-geometry=256x256 ptif:{1}'
+                      .format(source_path, destination_path))
+
+            os.remove(source_path)
+
+            new_image.width = x_total_size
+            new_image.height = y_total_size
+            new_image.save()
+
+    return Response({
+        'Names': result_image_names,
+    }, status=HTTP_201_CREATED)
+
+
+@api_view(['GET'])
+@login_required
+def sync_annotation_map(request, imageset_id):
+    imageset = get_object_or_404(ImageSet, id=imageset_id)
+    if not imageset.has_perm('edit_set', request.user):
+        messages.warning(request,
+                         _('You do not have permission to edit this imageset.'))
+        return redirect(reverse('images:view_imageset', args=(imageset.id,)))
+
+    # delete auto generated validations
+    Verification.objects.filter(annotation__in=
+                                Annotation.objects.filter(image__image_set=imageset,
+                                                          image__image_type=Image.ImageSourceTypes.SERVER_GENERATED))\
+        .delete()
+
+    changed_annotations = {}
+    for anno in Annotation.objects.filter(image__image_set=imageset, last_editor__isnull=False,
+                                          image__image_type=Image.ImageSourceTypes.SERVER_GENERATED):
+
+        for original_anno in Annotation.objects.filter(unique_identifier=anno.unique_identifier,
+                                                       image__image_set=imageset) \
+                .exclude(image__image_type=Image.ImageSourceTypes.SERVER_GENERATED) \
+                .exclude(annotation_type=anno.annotation_type):
+
+            if anno.annotation_type.id != original_anno.annotation_type.id:
+                changed_annotations[original_anno.id] = "Id: {0} Original Type: {1} New Type: {2}"\
+                    .format(original_anno.id, original_anno.annotation_type.name, anno.annotation_type.name)
+
+                original_anno.last_editor = anno.last_editor
+                original_anno.annotation_type = anno.annotation_type
+                original_anno.save()
+
+        anno.last_editor = None
+        anno.save()
+
+
+    return Response({
+        "Updates" : changed_annotations
+    }, status=HTTP_201_CREATED)
 
 
 @login_required
