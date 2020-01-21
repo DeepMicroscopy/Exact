@@ -939,7 +939,7 @@ def create_annotation_map(request, imageset_id):
 
             with TiffWriter(source_path, bigtiff=False) as tif:
                 tif.save(result_image, compress=6, photometric='rgb')
-            os.system('nice -n 19 convert {0} -define tiff:tile-geometry=256x256 ptif:{1}'
+            os.system('nice -n 19 convert {0} -define tiff:tile-geometry=254x254 ptif:{1}'
                       .format(source_path, destination_path))
 
             os.remove(source_path)
