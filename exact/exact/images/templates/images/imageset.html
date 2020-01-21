@@ -243,6 +243,18 @@
                                 </tr>
                                 {% if imageset.images.count > 0 and user.is_superuser %}
                                 <tr>
+                                    <td>Annotationmap</td>
+
+                                    <td>
+                                        <a class="btn btn-primary" href="{% url 'images:create_annotation_map' imageset.id %}">
+                                            Create annotationmap</a>
+
+                                        <a class="btn btn-primary" href="{% url 'images:sync_annotation_map' imageset.id %}">
+                                            Sync annotations</a>
+                                    </td>
+                                </tr>
+
+                                <tr>
                                     <td>Download</td>
                                     <td>
                                         {% if enable_zip_download %}
@@ -271,7 +283,7 @@
                                     <td>
                                         {% for image in imageset.images.all|slice:":1" %}
                                             <form style="padding-left: 10px">
-                                                <input type="button" value="Start labeling"
+                                                <input type="button" value="Start labeling" class="btn btn-success"
                                                        onclick="window.location.href='{% url 'annotations:annotate' image.id %}'" />
                                             </form>
                                         {% endfor %}
