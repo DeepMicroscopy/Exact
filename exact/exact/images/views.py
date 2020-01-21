@@ -1189,7 +1189,7 @@ def label_upload(request, imageset_id):
 
                     if annotation_type.validate_vector(vector):
                         #if not Annotation.similar_annotations(vector, image, annotation_type):
-                        if not Annotation.equal_annotation(vector, image, annotation_type, request):
+                        if not Annotation.equal_annotation(vector, image, annotation_type, request.user):
                             annotation = Annotation()
                             annotation.annotation_type = annotation_type
                             annotation.image = image
