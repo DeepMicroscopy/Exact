@@ -543,17 +543,17 @@ globals = {
 
             if (gRefreshAnnotationsFromServer)
                 clearInterval(gRefreshAnnotationsFromServer);
-            else {
-                gRefreshAnnotationsFromServer = setInterval(function () {
+
+            gRefreshAnnotationsFromServer = setInterval(function () {
                     options = {
                         image_id: imageId,
                         'since': gLastUpdateTimePoint,
                         'include_deleted': true
                     };
-                    loadAnnotationsWithConditions(options);
                     gLastUpdateTimePoint = Math.floor(Date.now() / 1000);
+                    loadAnnotationsWithConditions(options);
                 }, gUpDateFromServerInterval);
-            }
+
 
 
             //if (globals.allAnnotations) {
@@ -1254,6 +1254,9 @@ globals = {
                             gAnnotationCache[gImageId] = globals.allAnnotations;
                         }
                     }
+
+                    if (annotations.length > 0)
+                        loadStatistics(gImageId)
                 }
             },
             error: function (request, status, error) {
