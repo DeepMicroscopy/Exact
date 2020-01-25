@@ -938,7 +938,7 @@ def create_annotation_map(request, imageset_id):
             destination_path = os.path.join(settings.IMAGE_PATH, new_image.path())
 
             with TiffWriter(source_path, bigtiff=False) as tif:
-                tif.save(result_image, compress=6, photometric='rgb')
+                tif.save(result_image, photometric='rgb') #compress=6, 
             os.system('nice -n 19 convert {0} -define tiff:tile-geometry=254x254 ptif:{1}'
                       .format(source_path, destination_path))
 
