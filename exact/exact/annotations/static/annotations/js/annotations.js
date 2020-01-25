@@ -35,7 +35,7 @@ globals = {
     var gZoomSlider;
     var gLastUpdateTimePoint = Math.floor(Date.now() / 1000);
     var gRefreshAnnotationsFromServer;
-    var gUpDateFromServerInterval = 30000000; // 300s
+    var gUpDateFromServerInterval = 3000; // 300s
     var gShiftDown;
 
     var tool;

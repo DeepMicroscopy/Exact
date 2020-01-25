@@ -4,7 +4,7 @@ FROM python:3.6.0
 # set work directory
 WORKDIR /usr/src/exact
 
-RUN apt-get update && apt-get install -y python3-dev python3-openslide netcat dos2unix \
+RUN apt-get update && apt-get install -y python3-dev python3-openslide netcat dos2unix imagemagick \
     && rm -rf /var/lib/apt/lists/*
 
 # set environment variables
@@ -30,7 +30,7 @@ RUN dos2unix /usr/src/exact/entrypoint.sh
 RUN chmod +x /usr/src/exact/entrypoint.sh
 #RUN cat /usr/src/exact/entrypoint.sh
 
-RUN pip install git+git://github.com/ubernostrum/django-registration.git#egg=django-registration
+RUN pip install --upgrade git+git://github.com/ubernostrum/django-registration.git#egg=django-registration
 RUN pip list
 
 # copy project

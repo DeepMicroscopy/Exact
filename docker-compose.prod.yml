@@ -5,9 +5,9 @@ services:
     build: 
         context: ./exact
         dockerfile: Dockerfile.prod    
-    command: gunicorn exact.wsgi:application --bind 0.0.0.0:8000
+    command: gunicorn --workers=6 --threads=4 --graceful-timeout=3000 exact.wsgi:application --bind 0.0.0.0:8000
     volumes:
-      - image_volume:/home/app/web/images
+      - ./exact/images:/home/app/web/images
       - static_volume:/home/app/web/static    
       - media_volume:/home/app/web/media
     expose:
@@ -38,4 +38,3 @@ volumes:
   postgres_data:      
   static_volume:
   media_volume:
-  image_volume:
