@@ -74,6 +74,7 @@ exact/data
 exact/images
 exact/tools
 exact/static
+exact/media
 
 categories.json
 confusables.json
