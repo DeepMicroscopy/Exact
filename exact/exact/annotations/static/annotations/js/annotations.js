@@ -35,7 +35,7 @@ globals = {
     var gZoomSlider;
     var gLastUpdateTimePoint = Math.floor(Date.now() / 1000);
     var gRefreshAnnotationsFromServer;
-    var gUpDateFromServerInterval = 3000; // 300s
+    var gUpDateFromServerInterval = 3000000; // 300s
     var gShiftDown;
 
     var tool;
@@ -1072,12 +1072,19 @@ globals = {
                             elem.innerHTML = 0;
                     });
 
+                    var total_count = 0;
                     for (anno_type of data.statistics) {
                         if (anno_type.id in gAnnotationTypes) {
+                            total_count += anno_type.in_image_count;
                             document.getElementById(anno_type.name + '_' + anno_type.id).innerHTML =
                                 anno_type.in_image_count + ' / ' + anno_type.verified_count;
                         }
                     }
+
+
+                    var total_elem = document.getElementById('statistics_total_annotations');
+                    if (total_elem !== null)
+                        total_elem.innerHTML = total_count;
                 },
                 error: function () {
 
