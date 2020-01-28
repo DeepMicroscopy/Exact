@@ -289,15 +289,21 @@
                                 </p>
 
                                 <div class="row">
-                                    <div class="col-md-6">
+                                    <div class="col-md-4">
                                         <label for="StrokeWidthSlider">Stroke Width</label>
                                         <input id="StrokeWidthSlider" type="range"  class="custom-range" min="1"
                                                max="40" step="1" value="5"/>
                                     </div>
 
-                                    <div class="col-md-6" style="margin-top: 22px">
+                                    <div class="col-md-3" style="margin-top: 22px">
                                         <input type='checkbox' id='draw_annotations' name="draw_annotations" checked>
-                                        <label for='draw_annotations'>Draw annotations</label>
+                                        <label for='draw_annotations'>Draw</label>
+                                    </div>
+
+                                    <div class="col-md-3" style="margin-top: 22px">
+                                        <label for='statistics_total_annotations'>Total:</label>
+                                        <label id="statistics_total_annotations" title="Total Annotations">{{ total_annotations }}</label>
+
                                     </div>
                                 </div>
 
@@ -378,7 +384,7 @@
                                         </div>
                                     {% endif %}
                                     {% if 'delete_images' in imageset_perms and not imageset_lock %}
-                                        <div class="col-sm-12"><p>{{ imageset.image_lock }}</p></div>
+                                        <div class="col-sm-12"><p></p></div>
                                         <div class="col-md-12">
                                             <button type="button" class="btn btn-danger" id="delete-button"
                                                     data-toggle="modal" data-target="#deleteModal" style="width: 100%">

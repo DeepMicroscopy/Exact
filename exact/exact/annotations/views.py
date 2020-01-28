@@ -43,12 +43,14 @@ def annotate(request, image_id):
                                                          product__in=selected_image.image_set.product_set.all())\
             .order_by('sort_order')  # for the dropdown option
 
+        total_annotations = selected_image.annotations.filter(deleted=False).count()
         imageset_lock = selected_image.image_set.image_lock
         return render(request, 'annotations/annotate.html', {
             'selected_image': selected_image,
             'imageset_perms': imageset_perms,
             'imageset_lock': imageset_lock,
             'set_images': set_images,
+            'total_annotations': total_annotations,
             'annotation_types': annotation_types,
         })
     else:
