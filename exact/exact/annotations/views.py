@@ -20,7 +20,7 @@ from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_2
 from exact.administration.models import Product
 from exact.annotations.forms import ExportFormatCreationForm, ExportFormatEditForm
 from exact.annotations.models import Annotation, AnnotationType, Export, \
-    Verification, ExportFormat
+    Verification, ExportFormat, LogImageAction
 from exact.annotations.serializers import AnnotationSerializer, AnnotationTypeSerializer, \
     AnnotationSerializerFast, serialize_annotation
 from exact.images.models import Image, ImageSet
@@ -251,15 +251,27 @@ def export_format(export_format_name, imageset):
 
     min_verifications = export_format.min_verifications
     annotation_counter = 0
+    log_image_action_content = ''
+
+    for image in images:
+        log_image_actions = LogImageAction.objects.filter(image=image)
+        if log_image_actions:
+            for image_action in log_image_actions:
+                log_image_action_content += "[{0}|{1}|{2}|{3}]\n".format(image.name ,image_action.user.username, image_action.time, image_action.action)
 
     if export_format_name.image_aggregation:
         image_content = '\n'
+
         for image in images:
+            
             annotations = Annotation.objects\
                 .filter(image=image,
-                        deleted=False,
                         annotation_type__in=export_format.annotations_types.all())\
                 .select_related('image')
+
+            if "deleted" not in export_format.annotation_format:
+                annotations = annotations.filter(deleted=False)
+
             if not export_format.include_blurred:
                 annotations = annotations.exclude(_blurred=True)
             if not export_format.include_concealed:
@@ -307,6 +319,14 @@ def export_format(export_format_name, imageset):
                             '%%type': annotation.annotation_type.name,
                             #'%%veriamount': annotation.verification_difference,
                             '%%vector': formatted_vector,
+                            #CRUD Infos
+                            '%%first_editor': annotation.user.username,
+                            '%%first_timepoint': annotation.time,
+                            '%%first_editor': annotation.last_editor.username,
+                            '%%last_timepoint': annotation.last_edit_time,
+                            '%%UUID': annotation.unique_identifier,
+                            '%%deleted': annotation.deleted,
+
                             # absolute values
                             '%%rad': annotation.radius,
                             '%%dia': annotation.diameter,
@@ -349,11 +369,14 @@ def export_format(export_format_name, imageset):
                 image_content += formatted_image + '\n'
         formatted_content = image_content
     else:
+
         annotations = Annotation.objects\
-                .filter(deleted=False,
-                        image__in=images,
+                .filter(image__in=images,
                         annotation_type__in=export_format.annotations_types.all())\
                 .select_related('image')
+        if "deleted" not in export_format.annotation_format:
+             annotations = annotations.filter(deleted=False)
+
         if not export_format.include_blurred:
             annotations = annotations.exclude(_blurred=True)
         if not export_format.include_concealed:
@@ -400,6 +423,14 @@ def export_format(export_format_name, imageset):
                     '%%type': annotation.annotation_type.name,
                     #'%%veriamount': annotation.verification_difference,
                     '%%vector': formatted_vector,
+                    #CRUD Infos
+                    '%%first_editor': annotation.user.username,
+                    '%%first_timepoint': annotation.time,
+                    '%%last_editor': annotation.last_editor.username,
+                    '%%last_timepoint': annotation.last_edit_time,
+                    '%%UUID': annotation.unique_identifier,
+                    '%%deleted': annotation.deleted,
+
                     # absolute values
                     '%%rad': annotation.radius,
                     '%%dia': annotation.diameter,
@@ -429,6 +460,7 @@ def export_format(export_format_name, imageset):
         formatted_content = annotation_content
     base_format = export_format.base_format
     placeholders_base = {
+        '%%view': log_image_action_content,
         '%%content': formatted_content,
         '%%imageset': imageset.name,
         '%%setdescription': imageset.description,
