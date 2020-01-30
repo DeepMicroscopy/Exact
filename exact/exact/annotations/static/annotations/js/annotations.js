@@ -1577,7 +1577,7 @@ globals = {
                 success: function (data) {
 
                     let data_val = {
-                        annotation_id: data.annotations["0"].id,
+                        annotation_id: data.annotations.id,
                         state: 'accept',
                     };
 
