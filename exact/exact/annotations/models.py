@@ -525,12 +525,6 @@ class AnnotationType(models.Model):
         if not (self.node_count is 0 or
                 self.node_count is int(len(vector) // 2)):
             return False
-        for i in range(1, int(len(vector) // 2) + 1):
-            for j in range(1, int(len(vector) // 2) + 1):
-                if i is not j and \
-                    (vector['x' + str(i)] is vector['x' + str(j)] and
-                     vector['y' + str(i)] is vector['y' + str(j)]):
-                    return False
         return True
 
     def _validate_multi_line(self, vector: dict) -> bool:
@@ -539,12 +533,6 @@ class AnnotationType(models.Model):
         if not (self.node_count is 0 or
                 self.node_count is int(len(vector) // 2)):
             return False
-        for i in range(1, int(len(vector) // 2) + 1):
-            for j in range(1, int(len(vector) // 2) + 1):
-                if i is not j and \
-                    (vector['x' + str(i)] is vector['x' + str(j)] and
-                     vector['y' + str(i)] is vector['y' + str(j)]):
-                    return False
         return True
 
 
