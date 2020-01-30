@@ -63,6 +63,7 @@ import cv2
 from tifffile import *
 import openslide
 from openslide import OpenSlide, open_slide
+from PIL import Image as PIL_Image
 
 # TODO: Add to cache
 image_cache = SlideCache(cache_size=10)
@@ -180,7 +181,10 @@ def index(request):
     if global_annoucements.count() > 5:
         many_annoucements = True
 
+    last_image_action = LogImageAction.objects.filter(user=request.user).order_by('-time').first()
+
     return TemplateResponse(request, 'images/index.html', {
+        'last_image_action': last_image_action,
         'user': request.user,
         'team_creation_form': team_creation_form,
         'imageset_creation_form': imageset_creation_form,
@@ -430,14 +434,19 @@ def view_thumbnail(request, image_id):
 
     it will return forbidden on if the user is not authenticated
     """
+    
     image = get_object_or_404(Image, id=image_id)
     if not image.image_set.has_perm('read', request.user):
         return HttpResponseForbidden()
 
-    file_path = os.path.join(settings.IMAGE_PATH, image.path())
-    slide = image_cache.get(file_path)
+    file_path = image.path()
 
-    tile = slide._osr.get_thumbnail((128,128))
+    if Path(image.thumbnail_path()).exists():
+        tile = PIL_Image.open(image.thumbnail_path())
+    else:
+        slide = image_cache.get(file_path)
+        tile = slide._osr.get_thumbnail((128,128))
+        tile.save(image.thumbnail_path())
 
     buf = PILBytesIO()
     tile.save(buf, 'jpeg', quality=90)

@@ -9,6 +9,7 @@ from django.db.models import Count, Q, Sum
 from django.db.models.expressions import F
 
 import os
+from pathlib import Path
 
 from exact.users.models import Team
 
@@ -25,7 +26,7 @@ class Image(models.Model):
         (ImageSourceTypes.SERVER_GENERATED, 'Server Generated'),
         (ImageSourceTypes.FILE_LINK, 'File Link Generated')
     )
-
+    thumbnail_extension = "_thumbnail.png"
 
     image_set = models.ForeignKey(
         'ImageSet', on_delete=models.CASCADE, related_name='images')
@@ -45,6 +46,12 @@ class Image(models.Model):
 
     def relative_path(self):
         return os.path.join(self.image_set.path, self.filename)
+
+    def thumbnail_path(self):
+        return os.path.join(self.image_set.root_path(), Path(self.filename).stem + self.thumbnail_extension )
+
+    def thumbnail_relative_path(self):
+        return os.path.join(self.image_set.root_path(), Path(self.filename).stem + self.thumbnail_extension )
 
     def delete(self, *args, **kwargs):
         self.image_set.zip_state = ImageSet.ZipState.INVALID
