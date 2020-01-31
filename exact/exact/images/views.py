@@ -395,7 +395,7 @@ def upload_image(request, imageset_id):
                                    'error': errormessage,
                                    })
 
-        return JsonResponse({'files': json_files,'debug':str(request.FILES),'debug2':str(request.FILES.getlist('files[]'))})
+        return JsonResponse({'files': json_files})
 
 
 # @login_required
