@@ -200,8 +200,7 @@ def index(request):
     })
 
 
-@login_required
-@require_http_methods(["POST", ])
+@api_view(['POST'])
 def upload_image(request, imageset_id):
     imageset = get_object_or_404(ImageSet, id=imageset_id)
     if request.method == 'POST' \
@@ -220,6 +219,7 @@ def upload_image(request, imageset_id):
                 'zip': False,
                 'convert': False
             }
+#            file_list['test'] = str(f)
             magic_number = f.read(4)
             f.seek(0)  # reset file cursor to the beginning of the file
 
@@ -395,7 +395,7 @@ def upload_image(request, imageset_id):
                                    'error': errormessage,
                                    })
 
-        return JsonResponse({'files': json_files})
+        return JsonResponse({'files': json_files,'debug':str(request.FILES),'debug2':str(request.FILES.getlist('files[]'))})
 
 
 # @login_required
@@ -1376,7 +1376,6 @@ def load_image_set(request) -> Response:
         'image_set': serialized_image_set,
     }, status=HTTP_200_OK)
 
-@login_required
 @api_view(['POST'])
 def product_image_set(request) -> Response:
     try:
