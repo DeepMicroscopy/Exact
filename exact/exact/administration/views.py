@@ -109,6 +109,34 @@ def annotation_type(request, annotation_type_id):
         'teams': teams
     })
 
+@api_view(['POST'])
+def api_delete_annotation_type(request) -> Response:
+    """
+            Deleting of annotation types - only SUPERUSER!
+    """
+    try:
+        annotation_type_id = request.data['annotation_type_id']
+    except (KeyError, TypeError, ValueError):
+        raise ParseError
+
+    annotation_type = get_object_or_404(AnnotationType, pk=annotation_type_id)        
+
+    number_of_annotations = Annotation.objects.filter(annotation_type=annotation_type).count()
+    if not number_of_annotations==0:
+        return Response({
+            'detail': f'Annotation type is being used. Currently {number_of_annotations} annotations with this type.',
+        }, status=HTTP_403_FORBIDDEN)
+
+    if not request.user.is_superuser:
+        return Response({
+            'detail': 'permission for deleting the annotation type is missing.',
+        }, status=HTTP_403_FORBIDDEN)
+
+    annotation_type.delete()
+
+    return Response({
+        'detail': 'OK',
+    }, status=HTTP_200_OK)    
 
 @api_view(['POST'])
 def api_create_annotation_type(request) -> Response:
