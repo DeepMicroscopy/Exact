@@ -634,6 +634,21 @@ def image_closed(request, image_id):
     }, status=HTTP_200_OK)
 
 
+@api_view(['GET'])
+def download_image_api(request, image_id) -> Response:
+    image = get_object_or_404(Image, id=image_id)
+    if not image.image_set.has_perm('read', request.user):
+        return Response({'message': 'you do not have the permission to access this imageset'
+        }, status=HTTP_403_FORBIDDEN)
+
+    file_path = os.path.join(settings.IMAGE_PATH, image.path())
+    _, fname = os.path.split(file_path)
+    response = FileResponse(open(file_path, 'rb'), content_type='application/zip')
+
+    response['Content-Length'] = os.path.getsize(file_path)
+    response['Content-Disposition'] = "attachment; filename={}".format(fname)
+
+    return response
 
 @api_view(['GET'])
 def delete_images_api(request, image_id) -> Response:
