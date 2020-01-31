@@ -594,7 +594,6 @@ def api_delete_annotation(request) -> Response:
     }, status=HTTP_200_OK)
 
 
-@login_required
 @api_view(['POST'])
 def api_copy_annotation(request,source_annotation_id, target_image_id) -> Response:
 
@@ -753,7 +752,6 @@ def load_set_annotations(request) -> Response:
     }, status=HTTP_200_OK)
 
 
-@login_required
 @api_view(['GET'])
 def load_annotation_types(request) -> Response:
 
@@ -766,6 +764,11 @@ def load_annotation_types(request) -> Response:
             .order_by('sort_order')
     else:
         annotation_types = AnnotationType.objects.filter(active=True).order_by('sort_order')
+
+    if not imageset.has_perm('read', request.user):
+        return Response({
+            'detail': 'permission for reading this image set missing.',
+        }, status=HTTP_403_FORBIDDEN)
 
 
     serializer = AnnotationTypeSerializer(
