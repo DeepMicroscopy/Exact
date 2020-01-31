@@ -626,7 +626,6 @@ def api_copy_annotation(request,source_annotation_id, target_image_id) -> Respon
 
 
 
-@login_required
 @api_view(['POST'])
 def create_annotation(request) -> Response:
     try:
