@@ -13,6 +13,7 @@ urlpatterns = [
 
 
     url(r'^api/annotation_type/create/$', views.api_create_annotation_type, name='api_create_annotation_type'),
+    url(r'^api/annotation_type/delete/$', views.api_delete_annotation_type, name='api_delete_annotation_type'),
     url(r'^annotation_type/list/$', views.annotation_types, name='annotation_types'),
     url(r'^annotation_type/(\d+)/$', views.annotation_type, name='annotation_type'),
     url(r'^annotation_type/create/$', views.create_annotation_type, name='create_annotation_type'),
