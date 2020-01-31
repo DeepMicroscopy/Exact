@@ -113,7 +113,7 @@ def annotation_type(request, annotation_type_id):
 @api_view(['POST'])
 def api_create_annotation_type(request) -> Response:
     try:
-         name = request.data['name'],
+         name = request.data['name']
          active = request.data.get('active',True)
          node_count = int(request.data.get('node_count',0))
          vector_type = request.data.get('vector_type')
