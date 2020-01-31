@@ -581,7 +581,7 @@ def view_image_tile(request, tile_path):
 
     return response
 
-@login_required
+@api_view(['GET'])
 def list_images(request, image_set_id):
     imageset = get_object_or_404(ImageSet, id=image_set_id)
     if not imageset.has_perm('read', request.user):
@@ -1326,7 +1326,6 @@ def api_verify_image(request) -> Response:
     }, status=HTTP_200_OK)
 
 
-@login_required
 @api_view(['GET'])
 def load_image_set(request) -> Response:
     try:
