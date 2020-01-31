@@ -635,6 +635,18 @@ def image_closed(request, image_id):
 
 
 
+@api_view(['GET'])
+def delete_images_api(request, image_id) -> Response:
+    image = get_object_or_404(Image, id=image_id)
+    if image.image_set.has_perm('delete_images', request.user) and not image.image_set.image_lock:
+        try:
+            os.remove(os.path.join(settings.IMAGE_PATH, image.path()))
+        except:
+            pass
+        image.delete()
+        return Response({}, status=HTTP_200_OK)
+    return Response({}, status=HTTP_403_FORBIDDEN)
+
 
 @login_required
 def delete_images(request, image_id):
