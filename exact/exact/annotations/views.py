@@ -558,7 +558,6 @@ def delete_exportformat(request, format_id):
     return redirect(reverse('users:team', args=(export_format.team.id,)))
 
 
-@login_required
 @api_view(['DELETE'])
 def api_delete_annotation(request) -> Response:
     try:
