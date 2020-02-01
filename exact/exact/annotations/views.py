@@ -661,6 +661,7 @@ def create_annotation(request) -> Response:
 
         if "unique_identifier" in request.data:
             annotation.unique_identifier = request.data["unique_identifier"]
+            annotation.save()
 
         # Automatically verify for owner
         annotation.verify(request.user, True)
