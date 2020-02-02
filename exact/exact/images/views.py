@@ -826,6 +826,10 @@ def create_annotation_map(request, imageset_id):
                          _('You do not have permission to edit this imageset.'))
         return redirect(reverse('images:view_imageset', args=(imageset.id,)))
 
+    if (which('convert') == None):
+        return Response({
+            'Error': "ImageMagick  not installed",
+        }, status=HTTP_404_NOT_FOUND)
 
     # delete auto generated annotations
     Verification.objects.filter(annotation__in=
@@ -948,8 +952,13 @@ def create_annotation_map(request, imageset_id):
 
             with TiffWriter(source_path, bigtiff=False) as tif:
                 tif.save(result_image, photometric='rgb') #compress=6, 
-            os.system('nice -n 19 convert {0} -define tiff:tile-geometry=254x254 ptif:{1}'
-                      .format(source_path, destination_path))
+
+            if (platform.system() == "Linux"):
+                os.system('nice -n 19 convert "{0}" -define tiff:tile-geometry=254x254 ptif:"{1}"'.format(
+                                    source_path, destination_path))
+            else:
+                os.system('convert "{0}" -define tiff:tile-geometry=254x254 ptif:"{1}"'
+                    .format(source_path, destination_path))
 
             os.remove(source_path)
 
