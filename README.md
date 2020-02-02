@@ -180,7 +180,27 @@ For **production** systems it is necessary to run the following commands after e
 ./manage.py collectstatic
 ```
 
-Our production uwisgi config can be found at https://github.com/fsinfuhh/mafiasi-rkt/blob/master/imagetagger/uwsgi-exact.ini
+Our production uwisgi config is
+```
+[uwsgi]
+socket = /tmp/exact.socket
+chmod-socket = 666
+chdir = /srv/exact/Exact/exact/
+master = true
+binary-path = /usr/bin/uwsgi
+virtualenv = /srv/exact/virtualenv/exact
+module = exact.wsgi
+uid = exact
+gid = exact
+processes = 6
+#async = 10
+threads = 1
+#logto = /var/log/exact.log
+plugins = python3,logfile
+logger = file:/var/log/exact.log
+
+
+```
 
 Example Nginx Config:
 
