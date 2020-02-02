@@ -662,9 +662,13 @@ def create_annotation(request) -> Response:
         if "unique_identifier" in request.data:
             annotation.unique_identifier = request.data["unique_identifier"]
             annotation.save()
-
+        
         # Automatically verify for owner
         annotation.verify(request.user, True)
+
+        # SlideRunner sync requires the option to set the last edit time to have it in sync with the database
+        if "last_edit_time" in request.data:
+            image.annotations.filter(id=annotation.id).update(last_edit_time=datetime.datetime.strptime(request.data["last_edit_time"], "%Y-%m-%dT%H:%M:%S.%f"))
 
     return Response({
         'annotations': serialize_annotation(annotation),
