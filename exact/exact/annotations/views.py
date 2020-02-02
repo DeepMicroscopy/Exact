@@ -882,7 +882,6 @@ def load_annotation(request) -> Response:
 
 
 
-@login_required
 @api_view(['POST'])
 def update_annotation(request) -> Response:
     try:
@@ -928,6 +927,11 @@ def update_annotation(request) -> Response:
 
         # Automatically verify for owner
         annotation.verify(request.user, True)
+
+    # SlideRunner sync requires the option to set the last edit time to have it in sync with the database
+    if "last_edit_time" in request.data:
+        annotation.image.annotations.filter(id=annotation.id).update(last_edit_time=datetime.datetime.strptime(request.data["last_edit_time"], "%Y-%m-%dT%H:%M:%S.%f"))
+
 
     return Response({
         'annotations': serialize_annotation(annotation),
