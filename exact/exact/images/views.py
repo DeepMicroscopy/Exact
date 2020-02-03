@@ -9,7 +9,7 @@ from django.db.models.expressions import F
 from django.views.decorators.http import require_http_methods
 from django.urls import reverse
 from django.http import HttpResponseForbidden, HttpResponse, HttpResponseBadRequest, JsonResponse, \
-    FileResponse
+    FileResponse, HttpRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.response import TemplateResponse
 from django.utils.translation import ugettext_lazy as _
@@ -22,7 +22,7 @@ from rest_framework.status import HTTP_403_FORBIDDEN, HTTP_200_OK, \
     HTTP_201_CREATED, HTTP_202_ACCEPTED, HTTP_204_NO_CONTENT, HTTP_404_NOT_FOUND
 from PIL import Image as PIL_Image
 
-from exact.images.serializers import ImageSetSerializer, ImageSerializer, SetTagSerializer
+from exact.images.serializers import ImageSetSerializer, ImageSerializer, SetTagSerializer, serialize_imageset
 from exact.images.forms import ImageSetCreationForm, ImageSetCreationFormWT, ImageSetEditForm
 from exact.annotations.views import api_copy_annotation
 from exact.users.forms import TeamCreationForm
@@ -105,6 +105,26 @@ def explore_imageset(request):
         'tagfilter': tagfilter,
         'query': query,
     })
+
+
+@api_view(['GET'])
+def api_index(request:HttpRequest):
+
+    if not request.user.is_authenticated:
+        return Response({},HTTP_403_FORBIDDEN)
+    userteams = Team.objects.filter(members=request.user)
+
+    imagesets = ImageSet.objects.filter(team__in=userteams).annotate(
+        image_count_agg=Count('images')
+    ).select_related('team').prefetch_related('set_tags') \
+        .order_by('-priority', '-time')
+
+    retarr = []
+    for imageset in imagesets:
+        retarr.append(serialize_imageset(imageset))
+    
+    return Response(retarr, HTTP_200_OK)
+    
 
 
 @login_required
