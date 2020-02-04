@@ -10,7 +10,14 @@ from .forms import AnnotationTypeCreationForm, AnnotationTypeEditForm, ProductCr
 from exact.annotations.models import Annotation, AnnotationType
 from exact.administration.models import Product
 from exact.users.models import Team
+from exact.administration.serializers import serialize_annotationType
 
+
+from rest_framework.decorators import api_view
+from rest_framework.exceptions import ParseError
+from rest_framework.response import Response
+from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_200_OK, \
+    HTTP_403_FORBIDDEN
 
 @staff_member_required
 def products(request):
@@ -101,6 +108,81 @@ def annotation_type(request, annotation_type_id):
         'edit_form': edit_form,
         'teams': teams
     })
+
+@api_view(['POST'])
+def api_delete_annotation_type(request) -> Response:
+    """
+            Deleting of annotation types - only SUPERUSER!
+    """
+    try:
+        annotation_type_id = request.data['annotation_type_id']
+    except (KeyError, TypeError, ValueError):
+        raise ParseError
+
+    annotation_type = get_object_or_404(AnnotationType, pk=annotation_type_id)        
+
+    number_of_annotations = Annotation.objects.filter(annotation_type=annotation_type).count()
+    if not number_of_annotations==0:
+        return Response({
+            'detail': f'Annotation type is being used. Currently {number_of_annotations} annotations with this type.',
+        }, status=HTTP_403_FORBIDDEN)
+
+    if not request.user.is_superuser:
+        return Response({
+            'detail': 'permission for deleting the annotation type is missing.',
+        }, status=HTTP_403_FORBIDDEN)
+
+    annotation_type.delete()
+
+    return Response({
+        'detail': 'OK',
+    }, status=HTTP_200_OK)    
+
+@api_view(['POST'])
+def api_create_annotation_type(request) -> Response:
+    try:
+         name = request.data['name']
+         active = request.data.get('active',True)
+         node_count = int(request.data.get('node_count',0))
+         vector_type = request.data.get('vector_type')
+         color_code = request.data.get('color_code', '#000000')
+         sort_order = int(request.data.get('enable_concealed', 0))
+         enable_blurred = request.data.get('enable_blurred', False)
+         default_width = request.data.get('default_width', 50)
+         default_height = request.data.get('default_height', 50)
+         product_id = int(request.data.get('product_id',1))
+         closed = request.data.get('closed', False)
+         area_hit_test = request.data.get('area_hit_test', True)
+
+    except (KeyError, TypeError, ValueError):
+        raise ParseError
+
+    product = get_object_or_404(Product, pk=product_id)
+#    annotation_type = get_object_or_404(AnnotationType, pk=annotation_type_id)
+
+
+    with transaction.atomic():
+        annotationType = AnnotationType.objects.create(
+            name=name,
+            active=active,
+            node_count=node_count,
+            vector_type=vector_type,
+            color_code=color_code,
+            sort_order=sort_order,
+            enable_blurred=enable_blurred,
+            default_height=default_height,
+            default_width=default_width,
+            closed=closed,
+            area_hit_test=area_hit_test,
+            product=product,
+        )
+
+        # Automatically verify for owner
+        #annotation.verify(request.user, True)
+
+    return Response({
+        'annotationType': serialize_annotationType(annotationType),
+    }, status=HTTP_201_CREATED)
 
 
 @staff_member_required

@@ -9,7 +9,7 @@ from django.db.models.expressions import F
 from django.views.decorators.http import require_http_methods
 from django.urls import reverse
 from django.http import HttpResponseForbidden, HttpResponse, HttpResponseBadRequest, JsonResponse, \
-    FileResponse
+    FileResponse, HttpRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.response import TemplateResponse
 from django.utils.translation import ugettext_lazy as _
@@ -22,7 +22,7 @@ from rest_framework.status import HTTP_403_FORBIDDEN, HTTP_200_OK, \
     HTTP_201_CREATED, HTTP_202_ACCEPTED, HTTP_204_NO_CONTENT, HTTP_404_NOT_FOUND
 from PIL import Image as PIL_Image
 
-from exact.images.serializers import ImageSetSerializer, ImageSerializer, SetTagSerializer
+from exact.images.serializers import ImageSetSerializer, ImageSerializer, SetTagSerializer, serialize_imageset
 from exact.images.forms import ImageSetCreationForm, ImageSetCreationFormWT, ImageSetEditForm
 from exact.annotations.views import api_copy_annotation
 from exact.users.forms import TeamCreationForm
@@ -105,6 +105,26 @@ def explore_imageset(request):
         'tagfilter': tagfilter,
         'query': query,
     })
+
+
+@api_view(['GET'])
+def api_index(request:HttpRequest):
+
+    if not request.user.is_authenticated:
+        return Response({},HTTP_403_FORBIDDEN)
+    userteams = Team.objects.filter(members=request.user)
+
+    imagesets = ImageSet.objects.filter(team__in=userteams).annotate(
+        image_count_agg=Count('images')
+    ).select_related('team').prefetch_related('set_tags') \
+        .order_by('-priority', '-time')
+
+    retarr = []
+    for imageset in imagesets:
+        retarr.append(serialize_imageset(imageset))
+    
+    return Response(retarr, HTTP_200_OK)
+    
 
 
 @login_required
@@ -200,8 +220,7 @@ def index(request):
     })
 
 
-@login_required
-@require_http_methods(["POST", ])
+@api_view(['POST'])
 def upload_image(request, imageset_id):
     imageset = get_object_or_404(ImageSet, id=imageset_id)
     if request.method == 'POST' \
@@ -220,6 +239,7 @@ def upload_image(request, imageset_id):
                 'zip': False,
                 'convert': False
             }
+#            file_list['test'] = str(f)
             magic_number = f.read(4)
             f.seek(0)  # reset file cursor to the beginning of the file
 
@@ -634,6 +654,33 @@ def image_closed(request, image_id):
     }, status=HTTP_200_OK)
 
 
+@api_view(['GET'])
+def download_image_api(request, image_id) -> Response:
+    image = get_object_or_404(Image, id=image_id)
+    if not image.image_set.has_perm('read', request.user):
+        return Response({'message': 'you do not have the permission to access this imageset'
+        }, status=HTTP_403_FORBIDDEN)
+
+    file_path = os.path.join(settings.IMAGE_PATH, image.path())
+    _, fname = os.path.split(file_path)
+    response = FileResponse(open(file_path, 'rb'), content_type='application/zip')
+
+    response['Content-Length'] = os.path.getsize(file_path)
+    response['Content-Disposition'] = "attachment; filename={}".format(fname)
+
+    return response
+
+@api_view(['GET'])
+def delete_images_api(request, image_id) -> Response:
+    image = get_object_or_404(Image, id=image_id)
+    if image.image_set.has_perm('delete_images', request.user) and not image.image_set.image_lock:
+        try:
+            os.remove(os.path.join(settings.IMAGE_PATH, image.path()))
+        except:
+            pass
+        image.delete()
+        return Response({}, status=HTTP_200_OK)
+    return Response({}, status=HTTP_403_FORBIDDEN)
 
 
 @login_required
@@ -1385,7 +1432,6 @@ def load_image_set(request) -> Response:
         'image_set': serialized_image_set,
     }, status=HTTP_200_OK)
 
-@login_required
 @api_view(['POST'])
 def product_image_set(request) -> Response:
     try:
