@@ -404,6 +404,7 @@ def upload_image(request, imageset_id):
             if errormessage == '':
                 json_files.append({'name': f.name,
                                    'size': f.size,
+                                   'id' : image.id,
                                    # 'url': reverse('images_imageview', args=(image.id, )),
                                    # 'thumbnailUrl': reverse('images_imageview', args=(image.id, )),
                                    # 'deleteUrl': reverse('images_imagedeleteview', args=(image.id, )),
