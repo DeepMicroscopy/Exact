@@ -604,7 +604,7 @@ class LogImageAction(models.Model):
         OPEN = 1
         CLOSED = 2
 
-    image = models.ForeignKey(Image, on_delete=models.SET_NULL, null=True)
+    image = models.ForeignKey(Image, on_delete=models.CASCADE, null=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL,
                                  on_delete=models.SET_NULL,
                                  null=True)
