@@ -7,6 +7,8 @@ This is a collaborative online tool for labeling image data.
 
 ## Features
 
+* Rest-Api https://github.com/ChristianMarzahl/EXACT-Sync 
+* Sync with the offline Tool [SlideRunner](https://github.com/maubreville/SlideRunner) 
 * team creation
 * upload image sets in the multiple formats like: [whole slide image (WSI) formats](https://openslide.org/api/python/) or .png, .jpg, .jepg, .bmp etc. 
 * bounding box
