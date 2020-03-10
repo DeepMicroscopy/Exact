@@ -105,11 +105,16 @@ docker push **************.dkr.ecr.eu-central-1.amazonaws.com/exact_nginx:latest
 docker push **************.dkr.ecr.eu-central-1.amazonaws.com/exact:latest
 ```
 
+### Windows
+
+The Server is also runnig on Windows but I would recommend to use docker in that case. 
+
 ### MacOS or Linux 
 
-Install ImageMagick and verify executing the comand `convert`:
+Install libvips and verify by executing the comand `vips`:
 ```
-https://imagemagick.org/script/download.php
+https://libvips.github.io/libvips/
+[Ubuntu](https://github.com/libvips/libvips/wiki/Build-for-Ubuntu)
 ```
 
 Checkout the latest release:

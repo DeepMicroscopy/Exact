@@ -64,6 +64,7 @@ from tifffile import *
 import openslide
 from openslide import OpenSlide, open_slide
 from PIL import Image as PIL_Image
+import pyvips
 
 # TODO: Add to cache
 image_cache = SlideCache(cache_size=10)
@@ -329,23 +330,26 @@ def upload_image(request, imageset_id):
                     except:
                         old_path = path
                         path = Path(path).with_suffix('.tiff')
-                        # TODO: Time intensive decrease priority
 
-                        if (which('convert') == None):
-                            error['convert'] = True
+                        try:
+                            vi = pyvips.Image.new_from_file(str(old_path))
+                            vi.tiffsave(str(path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
+                        except:
 
-                        if (platform.system() == "Linux"):
-                            os.system(
-                                'nice -n 19 convert "{0}" -define tiff:tile-geometry=254x254 ptif:"{1}"'.format(
-                                    old_path, path))
-                        elif (platform.system() == "Windows"):
-                            os.system('convert "{0}" -define tiff:tile-geometry=254x254 ptif:"{1}"'.format(
-                                    old_path, path))
-                        else:
-                            os.system('convert "{0}" -define tiff:tile-geometry=254x254 ptif:"{1}"'.format(
-                                    old_path, path))
+                            if (which('convert') == None):
+                                error['convert'] = True
 
-
+                            # TODO: Time intensive decrease priority
+                            if (platform.system() == "Linux"):
+                                os.system(
+                                    'nice -n 19 convert "{0}" -define tiff:tile-geometry=256x256 ptif:"{1}"'.format(
+                                        old_path, path))
+                            elif (platform.system() == "Windows"):
+                                os.system('convert "{0}" -define tiff:tile-geometry=256x256 ptif:"{1}"'.format(
+                                        old_path, path))
+                            else:
+                                os.system('convert "{0}" -define tiff:tile-geometry=256x256 ptif:"{1}"'.format(
+                                        old_path, path))
 
                     #shutil.chown(str(path), group=settings.UPLOAD_FS_GROUP)
 
@@ -657,17 +661,20 @@ def image_closed(request, image_id):
 
 @api_view(['GET'])
 def download_image_api(request, image_id) -> Response:
+    original_image = request.GET.get("original_image", None)
     image = get_object_or_404(Image, id=image_id)
     if not image.image_set.has_perm('read', request.user):
         return Response({'message': 'you do not have the permission to access this imageset'
         }, status=HTTP_403_FORBIDDEN)
 
-    file_path = os.path.join(settings.IMAGE_PATH, image.path())
-    _, fname = os.path.split(file_path)
-    response = FileResponse(open(file_path, 'rb'), content_type='application/zip')
+    file_path = Path(settings.IMAGE_PATH) / image.path()
+    if original_image is not None and 'True' == original_image:
+        file_path =  Path(file_path).parent / Path(image.name)
+
+    response = FileResponse(open(str(file_path), 'rb'), content_type='application/zip')
 
     response['Content-Length'] = os.path.getsize(file_path)
-    response['Content-Disposition'] = "attachment; filename={}".format(fname)
+    response['Content-Disposition'] = "attachment; filename={}".format(file_path.name)
 
     return response
 
@@ -874,9 +881,9 @@ def create_annotation_map(request, imageset_id):
                          _('You do not have permission to edit this imageset.'))
         return redirect(reverse('images:view_imageset', args=(imageset.id,)))
 
-    if (which('convert') == None):
+    if (which('vips') == None):
         return Response({
-            'Error': "ImageMagick  not installed",
+            'Error': "Libvips  not installed",
         }, status=HTTP_404_NOT_FOUND)
 
     # delete auto generated annotations
@@ -995,20 +1002,13 @@ def create_annotation_map(request, imageset_id):
                 result_image[y_min:y_max, x_min:x_max] = patch
 
         if annotation_count > 0:
-            source_path = os.path.join(settings.IMAGE_PATH, new_image.path()).replace(".tiff", ".tif")
             destination_path = os.path.join(settings.IMAGE_PATH, new_image.path())
 
-            with TiffWriter(source_path, bigtiff=False) as tif:
-                tif.save(result_image, photometric='rgb') #compress=6, 
+            height, width, bands = result_image.shape
+            linear = result_image.reshape(width * height * bands)
 
-            if (platform.system() == "Linux"):
-                os.system('nice -n 19 convert "{0}" -define tiff:tile-geometry=254x254 ptif:"{1}"'.format(
-                                    source_path, destination_path))
-            else:
-                os.system('convert "{0}" -define tiff:tile-geometry=254x254 ptif:"{1}"'
-                    .format(source_path, destination_path))
-
-            os.remove(source_path)
+            vi = pyvips.Image.new_from_memory(linear.data, width, height, bands, 'uchar')
+            vi.tiffsave(str(destination_path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
 
             new_image.width = x_total_size
             new_image.height = y_total_size
@@ -1217,7 +1217,6 @@ def label_upload(request, imageset_id):
         verify = 'verify' in request.POST.keys()
         for line in request.FILES['file']:
             # filter empty lines
-            print(line)
             if line in ('', "b'\n'"):
                 continue
             dec_line = line.decode().replace('\n', '').replace(',}', '}')
