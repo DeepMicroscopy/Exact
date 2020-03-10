@@ -4,7 +4,7 @@ FROM python:3.6.0
 # set work directory
 WORKDIR /usr/src/exact
 
-RUN apt-get update && apt-get install -y python3-dev python3-openslide netcat dos2unix imagemagick \
+RUN apt-get update && apt-get install -y python3-dev python3-openslide netcat dos2unix libvips libvips-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # set environment variables
