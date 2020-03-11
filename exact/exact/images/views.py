@@ -64,7 +64,6 @@ from tifffile import *
 import openslide
 from openslide import OpenSlide, open_slide
 from PIL import Image as PIL_Image
-import pyvips
 
 # TODO: Add to cache
 image_cache = SlideCache(cache_size=10)
@@ -332,6 +331,7 @@ def upload_image(request, imageset_id):
                         path = Path(path).with_suffix('.tiff')
 
                         try:
+                            import pyvips
                             vi = pyvips.Image.new_from_file(str(old_path))
                             vi.tiffsave(str(path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
                         except:
@@ -882,6 +882,12 @@ def create_annotation_map(request, imageset_id):
         return redirect(reverse('images:view_imageset', args=(imageset.id,)))
 
     if (which('vips') == None):
+        try:
+            import pyvips
+        except:
+            return Response({
+                'Error': "pip Libvips  not installed",
+            }, status=HTTP_404_NOT_FOUND)
         return Response({
             'Error': "Libvips  not installed",
         }, status=HTTP_404_NOT_FOUND)
