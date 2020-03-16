@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="32mm"
+   height="32mm"
+   viewBox="0 0 32 32"
+   version="1.1"
+   id="svg2592"
+   inkscape:version="0.92.4 (5da689c313, 2019-01-14)"
+   sodipodi:docname="XOR_down.svg"
+   inkscape:export-filename="D:\ProgProjekte\Python\Exact\doc\BoolOperations\XOR_hover.png"
+   inkscape:export-xdpi="25.114159"
+   inkscape:export-ydpi="25.114159">
+  <defs
+     id="defs2586" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="5.6"
+     inkscape:cx="-30.077027"
+     inkscape:cy="64.062403"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:pagecheckerboard="true"
+     inkscape:window-width="1920"
+     inkscape:window-height="1137"
+     inkscape:window-x="1912"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata2589">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Ebene 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-265)">
+    <rect
+       style="fill:#ff0000;fill-opacity:1;stroke:none;stroke-width:0.97600001;stroke-miterlimit:4;stroke-dasharray:2.92799996, 0.97599999000000004;stroke-dashoffset:0;stroke-opacity:1"
+       id="rect819"
+       width="32.222469"
+       height="32.364212"
+       x="-0.094494052"
+       y="264.87201"
+       inkscape:export-filename="C:\Users\c.marzahl\Downloads\BooleanLogic\XOR_hover.png"
+       inkscape:export-xdpi="25.114159"
+       inkscape:export-ydpi="25.114159" />
+    <ellipse
+       style="fill:#0000ff;fill-opacity:1;stroke:#230000;stroke-width:0.97600001;stroke-miterlimit:4;stroke-dasharray:2.92800006, 0.97600001999999997;stroke-dashoffset:0;stroke-opacity:1"
+       id="path1963"
+       cx="20.933897"
+       cy="276.98654"
+       rx="9.1205721"
+       ry="9.0203466" />
+    <rect
+       style="fill:#0000ff;fill-opacity:1;stroke:#230000;stroke-width:0.97600001;stroke-miterlimit:4;stroke-dasharray:2.92800006, 0.97600001999999997;stroke-dashoffset:0;stroke-opacity:1"
+       id="rect1961"
+       width="19.134815"
+       height="17.775541"
+       x="3.2205865"
+       y="276.18591"
+       ry="0" />
+    <path
+       style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:3.27755642;stroke-miterlimit:4;stroke-dasharray:9.83266872, 3.27755624000000001;stroke-dashoffset:0;stroke-opacity:1"
+       id="path2573"
+       transform="matrix(-0.97361703,0.22818827,0.43865209,0.89865697,0,0)"
+       sodipodi:type="arc"
+       sodipodi:cx="103.63873"
+       sodipodi:cy="280.99677"
+       sodipodi:rx="10.306353"
+       sodipodi:ry="11.110734"
+       sodipodi:start="6.0375435"
+       sodipodi:end="1.1230412"
+       d="m 113.6357,278.29487 a 10.306353,11.110734 0 0 1 -5.5349,12.71735 l -4.46207,-10.01545 z" />
+    <ellipse
+       style="fill:#ffffff;fill-opacity:0;stroke:#230000;stroke-width:0.97600001;stroke-miterlimit:4;stroke-dasharray:2.92800009, 0.97600003;stroke-dashoffset:0;stroke-opacity:1"
+       id="path1963-4"
+       cx="20.889759"
+       cy="276.99506"
+       rx="9.1205721"
+       ry="9.0203466" />
+  </g>
+</svg>

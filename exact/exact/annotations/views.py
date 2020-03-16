@@ -620,11 +620,6 @@ def api_copy_annotation(request,source_annotation_id, target_image_id) -> Respon
     }, status=HTTP_201_CREATED)
 
 
-
-
-
-
-
 @api_view(['POST'])
 def create_annotation(request) -> Response:
     try:
@@ -635,6 +630,7 @@ def create_annotation(request) -> Response:
         concealed = request.data.get('concealed', False)
         tempid = request.data.get('tempid', False)
         description = request.data.get('description', "")
+        meta_data = request.data.get('meta_data', None)
     except (KeyError, TypeError, ValueError):
         raise ParseError
 
@@ -646,6 +642,10 @@ def create_annotation(request) -> Response:
             'detail': 'permission for annotating in this image set missing.',
         }, status=HTTP_403_FORBIDDEN)
 
+    if annotation_type.validate_vector(vector) == False:
+        return Response({
+            'detail': 'the vector is not valid',
+        }, status=HTTP_400_BAD_REQUEST)
 
     with transaction.atomic():
         annotation = Annotation.objects.create(
@@ -656,7 +656,8 @@ def create_annotation(request) -> Response:
             last_editor=request.user,
             _blurred=blurred,
             _concealed=concealed,
-            description=description
+            description=description,
+            meta_data=meta_data
         )
 
         if "unique_identifier" in request.data:
@@ -880,8 +881,6 @@ def load_annotation(request) -> Response:
     }, status=HTTP_200_OK)
 
 
-
-
 @api_view(['POST'])
 def update_annotation(request) -> Response:
     try:
@@ -893,6 +892,7 @@ def update_annotation(request) -> Response:
         concealed = request.data.get('concealed', False)
         deleted = bool(request.data.get('deleted', False))
         description = request.data.get('description', "")
+        meta_data = request.data.get('meta_data', None)
     except (KeyError, TypeError, ValueError):
         raise ParseError
 
@@ -901,12 +901,19 @@ def update_annotation(request) -> Response:
     annotation_type = get_object_or_404(AnnotationType, pk=annotation_type_id)
 
     if annotation.image_id != image_id:
-        raise ParseError('the image id does not match the annotation id.')
+        return Response({
+            'detail': 'the image id does not match the annotation id.',
+        }, status=HTTP_400_BAD_REQUEST)
 
     if not annotation.image.image_set.has_perm('edit_annotation', request.user):
         return Response({
             'detail': 'permission for updating annotations in this image set missing.',
         }, status=HTTP_403_FORBIDDEN)
+
+    if annotation_type.validate_vector(vector) == False:
+        return Response({
+            'detail': 'the vector is not valid',
+        }, status=HTTP_400_BAD_REQUEST)
 
 
     with transaction.atomic():
@@ -918,6 +925,7 @@ def update_annotation(request) -> Response:
         annotation.annotation_type = annotation_type
         annotation.deleted = deleted
         annotation.description = description
+        annotation.meta_data = meta_data
         annotation.save()
 
 

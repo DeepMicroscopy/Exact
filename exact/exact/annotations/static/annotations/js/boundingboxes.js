@@ -5,6 +5,50 @@ class BoundingBoxes {
         this.selection = undefined;
 
         this.viewer = viewer;
+
+        //  Add buttons for boolean operations
+        let andButton = new OpenSeadragon.Button({
+            tooltip: 'AND',
+            srcRest: this.viewer.prefixUrl + `AND.png`,
+            srcGroup: this.viewer.prefixUrl + `AND.png`,
+            srcHover: this.viewer.prefixUrl + `AND_hover.png`,
+            srcDown: this.viewer.prefixUrl + `AND_down.png`,
+            //onClick: this.print
+          });
+        let notButton = new OpenSeadragon.Button({
+            tooltip: 'Substract the slected objects area from all other objects ',
+            name: "NOT",
+            srcRest: this.viewer.prefixUrl + `NOT.png`,
+            srcGroup: this.viewer.prefixUrl + `NOT.png`,
+            srcHover: this.viewer.prefixUrl + `NOT_hover.png`,
+            srcDown: this.viewer.prefixUrl + `NOT_down.png`,
+            onClick: this.clickPolyOperation.bind( this ),
+          });
+        let unionButton = new OpenSeadragon.Button({
+            tooltip: 'Merge all polygon objects from the same class touching the selected object',
+            name: "UNION",
+            srcRest: this.viewer.prefixUrl + `UNION.png`,
+            srcGroup: this.viewer.prefixUrl + `UNION.png`,
+            srcHover: this.viewer.prefixUrl + `UNION_hover.png`,
+            srcDown: this.viewer.prefixUrl + `UNION_down.png`,
+            onClick: this.clickPolyOperation.bind( this ),
+          });
+        let harmonizeButton = new OpenSeadragon.Button({
+            tooltip: 'Changes the class of all included objects to selected class if possible',
+            name: "HARMONIZE",
+            srcRest: this.viewer.prefixUrl + `HARMONIZE_rest.png`,
+            srcGroup: this.viewer.prefixUrl + `HARMONIZE_rest.png`,
+            srcHover: this.viewer.prefixUrl + `HARMONIZE_hover.png`,
+            srcDown: this.viewer.prefixUrl + `HARMONIZE_down.png`,
+            onClick: this.clickPolyOperation.bind( this ),
+          });
+
+        //viewer.addControl(andButton.element, { anchor: OpenSeadragon.ControlAnchor.TOP_LEFT });
+        viewer.addControl(notButton.element, { anchor: OpenSeadragon.ControlAnchor.TOP_LEFT });
+        viewer.addControl(unionButton.element, { anchor: OpenSeadragon.ControlAnchor.TOP_LEFT });
+        viewer.addControl(harmonizeButton.element, { anchor: OpenSeadragon.ControlAnchor.TOP_LEFT });
+
+
         this.overlay = this.viewer.paperjsOverlay();
         this.group = new paper.Group();
 
@@ -22,6 +66,137 @@ class BoundingBoxes {
 
         this.resetSelection();
     }
+    
+    clickPolyOperation(event) {
+        if (this.selection) {
+            this.viewer.raiseEvent('boundingboxes_PolyOperation', {name: event.eventSource.name});
+        }        
+    }
+
+    findIncludedObjectsOperation(event) {
+        var resultDict = {deleted: [], insert: [], update: [], included: []}
+
+        if (this.selection) {
+            for (var i = 0; i < this.group.children.length; i++) {
+                var el = this.group.children[i]
+
+                // TODO: check for visibility
+                if (el.name !== this.selection.item.name && el.visible === true) {
+                    if (el.intersects(this.selection.item) === true) {
+                        resultDict.included.push(el.name)
+                    }else if(this.selection.item.contains(el.firstSegment.point))
+                        resultDict.included.push(el.name)
+                }
+            }
+        }
+
+        return resultDict
+    }
+
+    polyUnionOperation(event) {
+
+        var resultDict = {deleted: [], insert: [], update: [], included: []}
+
+        if (this.selection && this.selection.item.data.type === "poly") { 
+
+            var subOptions = {insert: false}
+            for (var i = 0; i < this.group.children.length; i++) {
+                var el = this.group.children[i]
+
+                // just poly from the same class and saved annotations
+                if (el.data.type === "poly" && el.data.type_id === this.selection.item.data.type_id 
+                        && el.name.startsWith('#') && el.name !== this.selection.item.name && el.visible === true) {
+
+                    // if intersects --> merge
+                    if (el.intersects(this.selection.item) === true) {
+
+                        let result = this.selection.item.unite(el)
+                        this.selection.item.remove()
+
+                        this.selection.item = result
+
+                        resultDict.deleted.push(el.name)
+                        resultDict.update.push(this.selection.item.name)
+
+                    // no intersection but one point is inside -> delete complete element
+                    } else if (this.selection.item.contains(el.firstSegment.point)) { 
+                        resultDict.deleted.push(el.name)
+                    }
+                }
+            }
+        }
+        return resultDict
+    }
+
+    polyNotOperation(event) {
+
+        // var operations = ['unite', 'intersect', 'subtract', 'exclude', 'divide'];
+        var resultDict = {deleted: [], insert: [], update: [], included: []}
+        if (this.selection) {
+            var subOptions = {insert: false}
+
+            for (var i = 0; i < this.group.children.length; i++) {
+                var el = this.group.children[i]
+
+                // just work on saved annotations
+                if (el.name.startsWith('#') && el.name !== this.selection.item.name && el.visible === true) {
+
+                    // if intersects --> substract or divide
+                    if (el.intersects(this.selection.item) === true) {
+
+                        let result = el.subtract(this.selection.item, subOptions)
+                        
+                        if (result.children === undefined) {
+                            if (Math.ceil(result.area) !== Math.ceil(el.area)) {
+                                el.remove();
+                                this.group.addChild(result)
+                                
+                                resultDict.update.push(result.name)
+    
+                                i = 0
+                            }
+                        } else {
+                            el.remove();
+
+                            for (var child_id = 0; child_id < result.children.length; child_id++) {
+                                // add childs as new elements
+                                var old_path = result.children[child_id]
+                                var new_path = old_path.clone()
+                                new_path.data = old_path.parent.data
+                                new_path.strokeColor = old_path.parent.strokeColor
+                                new_path.strokeWidth = old_path.parent.strokeWidth
+                                new_path.fillColor = old_path.parent.fillColor
+
+                                new_path.name =  '~' + new Date().getMilliseconds() +Math.ceil(Math.random() * 100000);
+                                this.group.addChild(new_path);
+
+                                resultDict.insert.push({
+                                    annotation_type_id: new_path.data.type_id,
+                                    id: new_path.name,
+                                    vector: this.getAnnotationVector(new_path.name),
+                                    first_editor: {id: null, name: "you"},
+                                    last_editor: {id: null, name: "you"},
+                                    last_edit_time: new Date(Date.now()),
+                                    image: {id: this.imageid}
+                                })
+
+                            }
+                            result.remove()                            
+                            resultDict.deleted.push(el.name)
+
+                            i = 0
+                        }
+                    // no intersection but one point is inside -> delete complete element
+                    } else if (this.selection.item.contains(el.firstSegment.point)) { 
+                        resultDict.deleted.push(el.name)
+                    }
+
+                }     
+            }
+        }
+        return resultDict;
+    }
+
 
     getImageId() {
         return this.imageid;
@@ -381,7 +556,7 @@ class BoundingBoxes {
             this.group.getItem({name: tempName}).set({name: '#' + annotationId});
     }
 
-    updateAnnotationType(id, annotation_type) {
+    updateAnnotationType(id, annotation_type, set_as_selected = true) {
         var item = this.getItemFromID(id);
 
         if (item !== null) {
@@ -406,7 +581,7 @@ class BoundingBoxes {
                     var canvasObject = new paper.Path({
                         closed: annotation_type.closed
                     });
-                    for (var i = 0; i < item.segments.lenght; i++) {
+                    for (var i = 0; i < item.segments.length; i++) {
                         canvasObject.add(item.segments[i].point);
                     }
                     canvasObject.data.type = "poly";
@@ -430,7 +605,8 @@ class BoundingBoxes {
             canvasObject.strokeColor = annotation_type.color_code;
         }
 
-        canvasObject.selected = true;
+        if (set_as_selected)
+            canvasObject.selected = true;
         canvasObject.strokeWidth = item.strokeWidth;
         canvasObject.data.type_id = annotation_type.id;
         canvasObject.data.area_hit_test = annotation_type.area_hit_test;
@@ -446,10 +622,11 @@ class BoundingBoxes {
         this.group.addChild(canvasObject);
 
         // set object as selected
-        this.selection = {
-            type: "fill",
-            item: canvasObject
-        };
+        if (set_as_selected)
+            this.selection = {
+                type: "fill",
+                item: canvasObject
+            };
     }
 
 
@@ -634,12 +811,12 @@ class BoundingBoxes {
 
     checkIfAnnotationTypeChangeIsValid(sourceId, targetId) {
         const validConversions = {
-            1: [1, 2, 3, 4, 5, 6],
-            2: [1, 2, 6],
-            3: [1, 2, 3, 5, 6],
-            4: [1, 4, 5],
+            1: [1, 6],
+            2: [2],
+            3: [3],
+            4: [4],
             5: [5],
-            6: [1, 2, 3, 4, 5, 6],
+            6: [1, 6],
         }
 
         if (sourceId in validConversions) {
