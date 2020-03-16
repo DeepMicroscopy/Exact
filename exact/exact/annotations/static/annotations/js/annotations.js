@@ -35,7 +35,7 @@ globals = {
     var gZoomSlider;
     var gLastUpdateTimePoint = Math.floor(Date.now() / 1000);
     var gRefreshAnnotationsFromServer;
-    var gUpDateFromServerInterval = 3000000; // 300s
+    var gUpDateFromServerInterval = 30000; // 300s
     var gShiftDown;
 
     var tool;
@@ -209,6 +209,71 @@ globals = {
 
             viewer.imagingHelper.setZoomFactor(event.newValue / gImageInformation[gImageId]['objectivePower'], true);
     }
+
+    viewer.addHandler('boundingboxes_PolyOperation', function(e) {
+        var resultDict = {deleted: [], insert: [], update: [], included: []}
+        switch (e.name) {
+            case "NOT":
+                resultDict = tool.polyNotOperation(e);
+                break;
+            case "UNION":
+                resultDict = tool.polyUnionOperation(e);
+                break;
+        
+            case "HARMONIZE":
+                resultDict = tool.findIncludedObjectsOperation(e);
+            default:
+                break;
+        }
+
+        for (let item of new Set(resultDict.update)) {
+            if (item.startsWith("#"))
+                item = parseInt(item.replace('#', ''))
+
+            var annotation = globals.allAnnotations.filter(function (d) {
+                return d.id === item;
+            })[0];
+
+            saveAnnotationAtServer(annotation);
+        }
+
+        for (let id of new Set(resultDict.deleted)) {
+            if (id.startsWith("#"))
+                id = parseInt(id.replace('#', ''))
+
+            deleteAnnotation(null ,id);
+        }
+
+        for (let newAnno of resultDict.insert) {
+            newAnno.annotation_type = gAnnotationTypes[newAnno.annotation_type_id]
+            globals.allAnnotations.push(newAnno);
+            saveAnnotationAtServer(newAnno);
+        }
+
+        for (let item of new Set(resultDict.included)) {
+            if (item.startsWith("#"))
+                item = parseInt(item.replace('#', ''))
+
+            var annotation = globals.allAnnotations.filter(function (d) {
+                return d.id === item;
+            })[0];
+
+            if (gAnnotationType !== undefined) {
+                let newType = gAnnotationType
+
+                if (annotation.annotation_type.id !== newType.id ){
+                    // check if annotation type can be converted and save
+                    if(tool.checkIfAnnotationTypeChangeIsValid(annotation.annotation_type.vector_type,
+                        newType.vector_type)) {
+                            annotation.annotation_type = newType;
+                            tool.updateAnnotationType(annotation.id, gAnnotationTypes[newType.id], false);
+    
+                            saveAnnotationAtServer(annotation)
+                        }
+                }
+            }
+        }
+    })
 
     viewer.addHandler('tile-loaded', function (e) {
         //if (!e.fullScreen)

@@ -62,6 +62,8 @@ class Annotation(models.Model):
 
     unique_identifier = models.UUIDField(default=uuid.uuid4)
 
+    meta_data = JSONField(null=True)
+
     def __str__(self):
         return 'Annotation: {0}'.format(self.annotation_type.name)
 
@@ -426,6 +428,7 @@ class AnnotationType(models.Model):
         MULTI_LINE = 4
         POLYGON = 5
         FIXED_SIZE_BOUNDING_BOX = 6
+        GLOBAL = 7 #Annotations without a shape that are valid for the whole image
 
     name = models.CharField(max_length=20)
     active = models.BooleanField(default=True)

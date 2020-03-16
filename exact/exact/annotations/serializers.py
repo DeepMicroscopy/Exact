@@ -52,7 +52,8 @@ class AnnotationSerializer(ModelSerializer):
             'user',
             'deleted',
             'description',
-            'unique_identifier'
+            'unique_identifier',
+            'meta_data'
         )
 
     annotation_type = AnnotationTypeSerializer(read_only=True)
@@ -78,7 +79,8 @@ class AnnotationSerializerFast(ModelSerializer):
             'blurred',
             'deleted',
             'description',
-            'unique_identifier'
+            'unique_identifier',
+            'meta_data'
         )
         read_only_fields = fields
 
@@ -115,4 +117,5 @@ def serialize_annotation(anno: Annotation) -> Dict[str, Any]:
             'name': anno.user.username
         },
         'is_verified': Verification.objects.filter(annotation=anno, verified=True).exists(),
+        'meta_data': anno.meta_data
     }

@@ -145,7 +145,7 @@ class Plugin(ExactServerPlugin):
                                                              annotation__vector__x2__lte=x_max,
                                                              annotation__vector__y2__lte=y_max)
 
-        annotation_types = annotation_types.distinct().order_by('sort_order').annotate(count=Count('annotation'))
+        annotation_types = annotation_types.distinct().filter(product__name__contains="EIPH").order_by('sort_order').annotate(count=Count('annotation'))
 
         doucet_score = 0
         annotations_total = annotation_types.aggregate(Sum('count'))['count__sum']
