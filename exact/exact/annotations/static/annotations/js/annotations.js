@@ -55,6 +55,9 @@ globals = {
     // viewer.gestureSettingsMouse.clickToZoom = false;
 
 
+    // TODO: Seperate File!!!
+    // List of filters with their templates.
+    
     viewer.selection({
         allowRotation: false,
         restrictToImage: true,
@@ -1861,8 +1864,45 @@ globals = {
         $('.js_feedback').mouseover(function () {
             $(this).addClass('hidden');
         });
+
+
         document.getElementById("StrokeWidthSlider").oninput = function(event) {
             tool.updateStrokeWidth(event.srcElement.valueAsNumber);
+        };
+
+        document.getElementById("ContrastSlider").oninput = function(event) {
+            if (event.srcElement.valueAsNumber > 0) {
+                viewer.setFilterOptions({ filters: { processors: [] } });
+                viewer.setFilterOptions({
+                    filters: {
+                        processors: OpenSeadragon.Filters.CONTRAST(event.srcElement.valueAsNumber)
+                    }
+                });
+            } else {
+                viewer.setFilterOptions({ filters: { processors: [] } });
+            }
+        };
+
+        document.getElementById("BRIGHTNESSSlider").oninput = function(event) {
+            viewer.setFilterOptions({ filters: { processors: [] } });
+            viewer.setFilterOptions({
+                    filters: {
+                        processors: OpenSeadragon.Filters.BRIGHTNESS(event.srcElement.valueAsNumber)
+                    }
+                });
+        };
+
+        document.getElementById("ThresholdingSlider").oninput = function(event) {
+            if (event.srcElement.valueAsNumber > 0) {
+                viewer.setFilterOptions({ filters: { processors: [] } });
+                viewer.setFilterOptions({
+                    filters: {
+                        processors: OpenSeadragon.Filters.THRESHOLDING(event.srcElement.valueAsNumber)
+                    }
+                });
+            } else {
+                viewer.setFilterOptions({ filters: { processors: [] } });
+            }
         };
 
         //listen for click events from this style
