@@ -6,16 +6,8 @@ class BoundingBoxes {
 
         this.viewer = viewer;
 
-        //  Add buttons for boolean operations
-        let andButton = new OpenSeadragon.Button({
-            tooltip: 'AND',
-            srcRest: this.viewer.prefixUrl + `AND.png`,
-            srcGroup: this.viewer.prefixUrl + `AND.png`,
-            srcHover: this.viewer.prefixUrl + `AND_hover.png`,
-            srcDown: this.viewer.prefixUrl + `AND_down.png`,
-            //onClick: this.print
-          });
-        let notButton = new OpenSeadragon.Button({
+
+        this.buttons = [new OpenSeadragon.Button({
             tooltip: 'Substract the slected objects area from all other objects ',
             name: "NOT",
             srcRest: this.viewer.prefixUrl + `NOT.png`,
@@ -23,8 +15,8 @@ class BoundingBoxes {
             srcHover: this.viewer.prefixUrl + `NOT_hover.png`,
             srcDown: this.viewer.prefixUrl + `NOT_down.png`,
             onClick: this.clickPolyOperation.bind( this ),
-          });
-        let unionButton = new OpenSeadragon.Button({
+          }),
+            new OpenSeadragon.Button({
             tooltip: 'Merge all polygon objects from the same class touching the selected object',
             name: "UNION",
             srcRest: this.viewer.prefixUrl + `UNION.png`,
@@ -32,8 +24,8 @@ class BoundingBoxes {
             srcHover: this.viewer.prefixUrl + `UNION_hover.png`,
             srcDown: this.viewer.prefixUrl + `UNION_down.png`,
             onClick: this.clickPolyOperation.bind( this ),
-          });
-        let harmonizeButton = new OpenSeadragon.Button({
+          }),
+            new OpenSeadragon.Button({
             tooltip: 'Changes the class of all included objects to selected class if possible',
             name: "HARMONIZE",
             srcRest: this.viewer.prefixUrl + `HARMONIZE_rest.png`,
@@ -41,12 +33,12 @@ class BoundingBoxes {
             srcHover: this.viewer.prefixUrl + `HARMONIZE_hover.png`,
             srcDown: this.viewer.prefixUrl + `HARMONIZE_down.png`,
             onClick: this.clickPolyOperation.bind( this ),
-          });
+          })]
 
-        //viewer.addControl(andButton.element, { anchor: OpenSeadragon.ControlAnchor.TOP_LEFT });
-        viewer.addControl(notButton.element, { anchor: OpenSeadragon.ControlAnchor.TOP_LEFT });
-        viewer.addControl(unionButton.element, { anchor: OpenSeadragon.ControlAnchor.TOP_LEFT });
-        viewer.addControl(harmonizeButton.element, { anchor: OpenSeadragon.ControlAnchor.TOP_LEFT });
+        this.buttons.forEach(element => {
+            viewer.buttons.buttons.push(element);
+            viewer.buttons.element.appendChild(element.element);
+        });
 
 
         this.overlay = this.viewer.paperjsOverlay();
@@ -632,6 +624,11 @@ class BoundingBoxes {
 
     clear() {
         this.group.removeChildren();
+
+        this.buttons.forEach(element => {
+            this.viewer.buttons.buttons = this.viewer.buttons.buttons.filter(function(value, index, arr){ return value.name !== element.name;});
+            this.viewer.buttons.element.removeChild(element.element);
+        });
     }
 
     handleMouseDrag(event) {
