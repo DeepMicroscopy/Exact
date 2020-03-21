@@ -36,6 +36,8 @@
             src="https://rawgit.com/picturae/OpenSeadragonGuides/master/dist/openseadragon-guides.js"></script>
     <script type="text/javascript" src="{% static 'annotations/js/boundingboxes.js' %}"></script>
 
+    <script type="text/javascript" src="{% static 'annotations/js/openseadragon-filtering.js' %}"></script>
+
     <script type="text/javascript" src="{% static 'scripts/notify.min.js' %}"></script>
 
     <script type="text/javascript" src="{% static 'annotations/js/selection.js' %}"></script>
@@ -156,6 +158,12 @@
                                         <a class="nav-link active" id="default_search_tab" data-toggle="tab"
                                            href="#nav-item_search" role="tab" aria-controls="home">Search</a>
                                     </li>
+
+                                    <li class="nav-item" style="float: none">
+                                        <a class="nav-link active" id="default_filter_openseadragon_tab" data-toggle="tab"
+                                           href="#nav-item_openseadragon_filter" role="tab" aria-controls="home">Filter</a>
+                                    </li>
+                                    
                                 </ul>
 
                                 <div class="tab-content" id="statistics_tabs_content" style="overflow-y: scroll; max-height: 250px;">
@@ -277,6 +285,52 @@
                                             </tbody>
 
                                         </table>
+                                    </div>
+
+
+                                    <div class="tab-pane fade in" id="nav-item_openseadragon_filter">
+
+                                        <div class="row-md-sm">
+                                            <label for="BRIGHTNESSSlider">Brigthness</label>
+
+                                            <input id="BRIGHTNESSSlider" type="text"  data-slider-min="-255" data-slider-max="255" 
+                                                    data-slider-step="1" data-slider-value="0" data-slider-enabled="false"/>
+
+                                            <input id="BRIGHTNESSSlider-enabled" type="checkbox"/> 
+
+                                        </div>
+                                        <div class="row-md-sm">
+                                            <label for="ContrastSlider">Contrast</label>
+                                            <input id="ContrastSlider" type="text"  data-slider-min="0" data-slider-max="4" 
+                                                data-slider-step="0.1" data-slider-value="1" data-slider-enabled="false"/>
+                                            <input id="ContrastSlider-enabled" type="checkbox"/>
+                                        </div>
+
+                                        <div class="row-md-sm">
+                                            <label for="THRESHOLDINGSlider">Thresholding</label>
+                                            <input id="THRESHOLDINGSlider" type="text"  data-slider-min="0" data-slider-max="255" 
+                                                data-slider-step="1" data-slider-value="128" data-slider-enabled="false"/>
+                                            <input id="THRESHOLDINGSlider-enabled" type="checkbox"/> 
+                                        </div>
+
+                                        <div class="row-md">
+                                            <div class="col-md-3">
+                                                <input id="Invert-enabled" type="checkbox"/> Invert
+                                            </div>
+                                            <div class="col-md-2">
+                                                <input id="GREYSCALE-enabled" type="checkbox"/> Grey
+                                            </div>
+                                            <div class="col-md-2">
+                                                <input id="Red-enabled" type="checkbox" checked=true/> R
+                                            </div>
+                                            <div class="col-md-2">
+                                                <input id="Green-enabled" type="checkbox" checked =true/> G
+                                            </div>
+                                            <div class="col-md-2">
+                                                <input id="Blue-enabled" type="checkbox" checked=true/> B
+                                            </div>
+                                        </div>
+
                                     </div>
 
                                 </div>
