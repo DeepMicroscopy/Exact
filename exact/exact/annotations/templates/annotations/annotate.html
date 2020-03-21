@@ -290,22 +290,45 @@
 
                                     <div class="tab-pane fade in" id="nav-item_openseadragon_filter">
 
-                                        <div class="row-md-4">
+                                        <div class="row-md-sm">
+                                            <label for="BRIGHTNESSSlider">Brigthness</label>
+
+                                            <input id="BRIGHTNESSSlider" type="text"  data-slider-min="-255" data-slider-max="255" 
+                                                    data-slider-step="1" data-slider-value="0" data-slider-enabled="false"/>
+
+                                            <input id="BRIGHTNESSSlider-enabled" type="checkbox"/> 
+
+                                        </div>
+                                        <div class="row-md-sm">
                                             <label for="ContrastSlider">Contrast</label>
-                                            <input id="ContrastSlider" type="range"  class="custom-range" min="-1"
-                                                   max="255" step="0.1" value="1"/>
+                                            <input id="ContrastSlider" type="text"  data-slider-min="0" data-slider-max="4" 
+                                                data-slider-step="0.1" data-slider-value="1" data-slider-enabled="false"/>
+                                            <input id="ContrastSlider-enabled" type="checkbox"/>
                                         </div>
 
-                                        <div class="row-md-4">
-                                            <label for="BRIGHTNESSSlider">BRIGHTNESS</label>
-                                            <input id="BRIGHTNESSSlider" type="range"  class="custom-range" min="-255"
-                                                   max="255" step="1" value="0"/>
+                                        <div class="row-md-sm">
+                                            <label for="THRESHOLDINGSlider">Thresholding</label>
+                                            <input id="THRESHOLDINGSlider" type="text"  data-slider-min="0" data-slider-max="255" 
+                                                data-slider-step="1" data-slider-value="128" data-slider-enabled="false"/>
+                                            <input id="THRESHOLDINGSlider-enabled" type="checkbox"/> 
                                         </div>
-                                        
-                                        <div class="row-md-4">
-                                            <label for="ThresholdingSlider">Thresholding</label>
-                                            <input id="ThresholdingSlider" type="range"  class="custom-range" min="-1"
-                                                   max="255" step="1" value="-1"/>
+
+                                        <div class="row-md">
+                                            <div class="col-md-3">
+                                                <input id="Invert-enabled" type="checkbox"/> Invert
+                                            </div>
+                                            <div class="col-md-2">
+                                                <input id="GREYSCALE-enabled" type="checkbox"/> Grey
+                                            </div>
+                                            <div class="col-md-2">
+                                                <input id="Red-enabled" type="checkbox" checked=true/> R
+                                            </div>
+                                            <div class="col-md-2">
+                                                <input id="Green-enabled" type="checkbox" checked =true/> G
+                                            </div>
+                                            <div class="col-md-2">
+                                                <input id="Blue-enabled" type="checkbox" checked=true/> B
+                                            </div>
                                         </div>
 
                                     </div>
