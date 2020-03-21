@@ -332,6 +332,23 @@
                 callback();
             };
         },
+        DRAW_RGB: function(red=true, green=true, blue=true) {
+            return function(context, callback) {
+                var imgData = context.getImageData(
+                    0, 0, context.canvas.width, context.canvas.height);
+                var pixels = imgData.data;
+                for (var i = 0; i < pixels.length; i += 4) {
+                    if (red == false)
+                        pixels[i] = 0;
+                    if (green == false)
+                        pixels[i + 1] = 0;
+                    if (blue == false)
+                    pixels[i + 2] = 0;
+                }
+                context.putImageData(imgData, 0, 0);
+                callback();
+            };
+        },        
         GREYSCALE: function() {
             return function(context, callback) {
                 var imgData = context.getImageData(
