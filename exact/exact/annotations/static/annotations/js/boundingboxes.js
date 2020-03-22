@@ -475,7 +475,19 @@ class BoundingBoxes {
     }
 
     updateStrokeWidth(width){
-        this.strokeWidth = width;
+        if (width !== null)
+            this.strokeWidth = width;
+        else { 
+            // set stroke width to one percent of the visibile size
+            var bounds = this.viewer.viewport.getBounds(true);
+            var imageRect = this.viewer.viewport.viewportToImageRectangle(bounds);
+
+            width = Math.max(imageRect.width, imageRect.height) * 0.0025;
+            width = Math.max(1, width);
+            console.log(width)
+            this.strokeWidth =  width;
+        }
+
         this.group.children.forEach(x => { x.strokeWidth = this.strokeWidth });
     }
 
