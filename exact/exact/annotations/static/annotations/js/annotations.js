@@ -202,6 +202,8 @@ globals = {
             !== (event.zoomFactor * gImageInformation[gImageId]['objectivePower']).toFixed(3)) {
 
             gZoomSlider.setValue(gImageInformation[gImageId]['objectivePower'] * event.zoomFactor);
+
+            tool.updateStrokeWidth(null);
         }
     }
 
