@@ -158,6 +158,19 @@
                             {% endfor %}
                         </ul>
                     </div>
+
+                    <div class="panel-heading">
+                        <h2 class="panel-title">All images</h2>
+                    </div>
+                    <div class="panel-body">
+                        <ul>
+                            {% for image in imageset.images.all %}
+                                <li>
+                                    <a href="{% url 'annotations:annotate' image.id %}"> {{image.name|truncatechars:30}}</a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
                 </div>
             {% endif %}
         </div>

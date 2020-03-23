@@ -498,9 +498,14 @@ class AnnotationType(models.Model):
             return self._validate_multi_line(vector)
         if self.vector_type == AnnotationType.VECTOR_TYPE.FIXED_SIZE_BOUNDING_BOX:
             return self._validate_bounding_box(vector)
+        if self.vector_type == AnnotationType.VECTOR_TYPE.GLOBAL:
+            return self._validate_bounding_box(vector)
 
         # No valid vector type given.
         return False
+
+    def _validate_global(self, vector: dict) -> bool:
+        return False if vector is not None or len(vector.keys()) > 0 else True
 
     def _validate_bounding_box(self, vector: dict) -> bool:
         return (
