@@ -229,7 +229,7 @@ def upload_image(request, imageset_id):
         if request.FILES is None:
             return HttpResponseBadRequest('Must have files attached!')
         json_files = []
-        for f in request.FILES.getlist('files[]'):
+        for f in list(request.FILES.values()):#request.FILES.getlist('files[]'):
             error = {
                 'duplicates': 0,
                 'damaged': False,
@@ -266,7 +266,7 @@ def upload_image(request, imageset_id):
                 for filename in filenames:
 
                     file_path = os.path.join(imageset.root_path(), filename)
-                    if Image.objects.filter(Q(filename=filename)|Q(name=filename),
+                    if Image.objects.filter(Q(filename=filename)|Q(name=f.name),
                                             image_set=imageset).count() == 0:
 
                         try:
@@ -290,7 +290,7 @@ def upload_image(request, imageset_id):
                         except:
                             error['unsupported'] = True
                     else:
-                        os.remove(file_path)
+                        duplicat_count += 1
 
                 if duplicat_count > 0:
                     error['duplicates'] = duplicat_count
@@ -303,9 +303,10 @@ def upload_image(request, imageset_id):
 
                 filename = os.path.join(imageset.root_path(), f.name)
                 # tests for duplicats in  imageset
-                if Image.objects.filter(Q(filename=filename)|Q(name=filename), checksum=fchecksum,
-                                        image_set=imageset)\
-                        .count() == 0:
+                image = Image.objects.filter(Q(filename=filename)|Q(name=f.name), checksum=fchecksum,
+                                        image_set=imageset).first()
+
+                if image is None:
 
                     with open(filename, 'wb') as out:
                         for chunk in f.chunks():
@@ -313,7 +314,8 @@ def upload_image(request, imageset_id):
 
                     file_list[filename] = fchecksum
                 else:
-                    os.remove(filename)
+                    error['exists'] = True
+                    error['exists_id'] = image.id
 
             for path in file_list:
 
@@ -418,6 +420,7 @@ def upload_image(request, imageset_id):
                 json_files.append({'name': f.name,
                                    'size': f.size,
                                    'error': errormessage,
+                                   'id': error.get('exists_id', -1)
                                    })
 
         return JsonResponse({'files': json_files})
