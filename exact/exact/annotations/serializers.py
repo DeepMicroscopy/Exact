@@ -21,7 +21,8 @@ class AnnotationTypeSerializer(ModelSerializer):
             'default_height',
             'sort_order',
             'closed',
-            'area_hit_test'
+            'area_hit_test',
+            'product'
         )
 
 

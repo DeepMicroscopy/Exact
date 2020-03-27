@@ -44,6 +44,10 @@ def serialize_imageset(imageset: ImageSet) -> Dict[str, Any]:
         'name': imageset.name,
         'location': imageset.location,
         'description': imageset.description,
+        'team': {
+            'id': imageset.team.id,
+            'name': imageset.team.name
+        },
         'images': [ {
             'id': image.id,
             'name': image.name
@@ -52,7 +56,16 @@ def serialize_imageset(imageset: ImageSet) -> Dict[str, Any]:
         'products' : 
         [ 
             {'name': product.name,
-             'id' : product.id}
+             'id' : product.id,
+             'annotation_types': [{
+                 'id': annotation_type.id,
+                 'closed': annotation_type.closed,
+                 'name': annotation_type.name,
+                 'vector_type': annotation_type.vector_type,
+                 'color_code': annotation_type.color_code,
+                 'area_hit_test': annotation_type.area_hit_test
+             } for annotation_type in product.annotationtype_set.all()]
+             }
             for product in imageset.product_set.all()
         ],
         'main_annotation_type': 
