@@ -43,6 +43,9 @@ def annotate(request, image_id):
                                                          product__in=selected_image.image_set.product_set.all())\
             .order_by('sort_order')  # for the dropdown option
 
+        global_annotation_types = annotation_types.filter(vector_type=AnnotationType.VECTOR_TYPE.GLOBAL)
+        annotation_types = annotation_types.exclude(vector_type=AnnotationType.VECTOR_TYPE.GLOBAL)
+        
         total_annotations = selected_image.annotations.filter(deleted=False).count()
         imageset_lock = selected_image.image_set.image_lock
         return render(request, 'annotations/annotate.html', {
@@ -52,6 +55,7 @@ def annotate(request, image_id):
             'set_images': set_images,
             'total_annotations': total_annotations,
             'annotation_types': annotation_types,
+            'global_annotation_types': global_annotation_types
         })
     else:
         return redirect(reverse('images:view_imageset', args=(selected_image.image_set.id,)))
@@ -647,29 +651,43 @@ def create_annotation(request) -> Response:
             'detail': 'the vector is not valid',
         }, status=HTTP_400_BAD_REQUEST)
 
-    with transaction.atomic():
-        annotation = Annotation.objects.create(
-            vector=vector,
-            image=image,
-            annotation_type=annotation_type,
-            user=request.user,
-            last_editor=request.user,
-            _blurred=blurred,
-            _concealed=concealed,
-            description=description,
-            meta_data=meta_data
-        )
+    # secure that just one global annotation per type exists!
+    annotation = None
+    if annotation_type.vector_type == 7:
+        if image.image_set.collaboration_type == ImageSet.CollaborationTypes.COLLABORATIVE:
+            annotation = Annotation.objects.filter(image=image, annotation_type=annotation_type).first()
+        else:
+            annotation = Annotation.objects.filter(image=image, annotation_type=annotation_type, user=request.user).first()
 
-        if "unique_identifier" in request.data:
-            annotation.unique_identifier = request.data["unique_identifier"]
-            annotation.save()
-        
-        # Automatically verify for owner
-        annotation.verify(request.user, True)
 
-        # SlideRunner sync requires the option to set the last edit time to have it in sync with the database
-        if "last_edit_time" in request.data:
-            image.annotations.filter(id=annotation.id).update(last_edit_time=datetime.datetime.strptime(request.data["last_edit_time"], "%Y-%m-%dT%H:%M:%S.%f"))
+    if annotation is None:
+        with transaction.atomic():
+            annotation = Annotation.objects.create(
+                vector=vector,
+                image=image,
+                annotation_type=annotation_type,
+                user=request.user,
+                last_editor=request.user,
+                _blurred=blurred,
+                _concealed=concealed,
+                description=description,
+                meta_data=meta_data
+            )
+
+            if "unique_identifier" in request.data:
+                annotation.unique_identifier = request.data["unique_identifier"]
+                annotation.save()
+            
+            # Automatically verify for owner
+            annotation.verify(request.user, True)
+
+            # SlideRunner sync requires the option to set the last edit time to have it in sync with the database
+            if "last_edit_time" in request.data:
+                image.annotations.filter(id=annotation.id).update(last_edit_time=datetime.datetime.strptime(request.data["last_edit_time"], "%Y-%m-%dT%H:%M:%S.%f"))
+    elif annotation.deleted:
+        # reactivate deleted annotation
+        annotation.deleted = False
+        annotation.save()
 
     return Response({
         'annotations': serialize_annotation(annotation),
@@ -687,6 +705,7 @@ def load_annotations(request) -> Response:
         max_x = request.query_params.get('max_x', None)
         min_y = request.query_params.get('min_y', None)
         max_y = request.query_params.get('max_y', None)
+        vector_type = request.query_params.get('vector_type', None)
         include_deleted = bool(request.query_params.get('include_deleted', False))
 
     except (KeyError, TypeError, ValueError):
@@ -706,6 +725,10 @@ def load_annotations(request) -> Response:
 
     if include_deleted is False:
         annotations = annotations.filter(deleted=include_deleted)
+
+    if vector_type is not None:
+        vector_type = int(vector_type)
+        annotations = annotations.filter(annotation_type__vector_type=vector_type)
 
     if since is not None:
         annotations = annotations.filter(last_edit_time__gte=

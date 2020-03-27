@@ -730,15 +730,71 @@ globals = {
                         gAnnotationType = gAnnotationTypes[Object.keys(gAnnotationTypes)[0]];
 
 
-                    data.annotation_types.forEach(x =>
-                        $('#DrawCheckBox_'+x.id).change(handleAnnotationVisibilityChanged)
-                    );
+                    data.annotation_types.forEach(x => {
+                        if (x.vector_type == 7) 
+                            $('#GlobalAnnotation_'+x.id).change(globalAnnotationChanged)
+                        else
+                            $('#DrawCheckBox_'+x.id).change(handleAnnotationVisibilityChanged)
+                    });
                 }
             },
             error: function () {
                 displayFeedback($('#feedback_connection_error'))
             }
         })
+    }
+
+    function globalAnnotationChanged(event) {
+
+        active = $("#"+event.target.id).prop("checked")
+        anno_type_id = parseInt(event.target.getAttribute('data-annotation_type-id'));
+        if (active) {
+
+            var action = 'create';
+            var data = { 
+                annotation_type_id: anno_type_id,
+                image_id: gImageId,
+                vector: null
+            }
+
+            $.ajax(API_ANNOTATIONS_BASE_URL + 'annotation/' + action + '/', {
+                type: 'POST',
+                headers: gHeaders,
+                dataType: 'json',
+                data: JSON.stringify(data),
+                success: function (data, textStatus, jqXHR) {
+
+                    anno = data.annotations;
+                    globals.allAnnotations.push(anno)
+                    gAnnotationCache[gImageId] = globals.allAnnotations;
+                }
+            });
+
+
+        } else {
+            // delete global annotation
+            annos = globals.allAnnotations.filter(function (value, index, arr) {
+                return value.annotation_type.id === anno_type_id;
+            });
+
+            globals.allAnnotations = globals.allAnnotations.filter(function (value, index, arr) {
+                return value.annotation_type.id !== anno_type_id;
+            });
+
+            gAnnotationCache[image_id] = globals.allAnnotations;
+
+            for (anno of annos) {
+                var params = {
+                    annotation_id: anno.id,
+                    keep_deleted_element: true
+                };
+
+                $.ajax(API_ANNOTATIONS_BASE_URL + 'annotation/delete/?' + $.param(params), {
+                    type: 'DELETE',
+                    headers: gHeaders,
+                    dataType: 'json'});
+            }
+        } 
     }
 
     function handleAnnotationVisibilityChanged(event) {
@@ -752,30 +808,33 @@ globals = {
         let annotationTypeToolSelect = $('#annotation_type_id');
 
         $.each(annotationTypeList, function (key, annotationType) {
+            if (annotationType.vector_type !== 7) // filter global annotations
+            {
 
-            gAnnotationKeyToIdLookUp[key] = annotationType.id
+                gAnnotationKeyToIdLookUp[key] = annotationType.id
 
 
-            annotationTypeToolSelect.append($('<option/>', {
-                name: annotationType.name,
-                value: annotationType.id,
-                //style: "background-color: " + annotationType.color_code,
-                html: annotationType.name + ' (' + (key) + ')',
-                id: 'annotation_type_' + (key),
-                'data-vector-type': annotationType.vector_type,
-                'data-node-count': annotationType.node_count,
-                'data-blurred': annotationType.enable_blurred,
-                'data-default_width': annotationType.default_width,
-                'data-default_height': annotationType.default_height,
-                'data-concealed': annotationType.enable_concealed,
-                'data-background-color': annotationType.color_code
-            }));
+                annotationTypeToolSelect.append($('<option/>', {
+                    name: annotationType.name,
+                    value: annotationType.id,
+                    //style: "background-color: " + annotationType.color_code,
+                    html: annotationType.name + ' (' + (key) + ')',
+                    id: 'annotation_type_' + (key),
+                    'data-vector-type': annotationType.vector_type,
+                    'data-node-count': annotationType.node_count,
+                    'data-blurred': annotationType.enable_blurred,
+                    'data-default_width': annotationType.default_width,
+                    'data-default_height': annotationType.default_height,
+                    'data-concealed': annotationType.enable_concealed,
+                    'data-background-color': annotationType.color_code
+                }));
 
-            annotationTypeFilterSelect.append($('<option/>', {
-                name: annotationType.name,
-                value: annotationType.id,
-                html: annotationType.name
-            }));
+                annotationTypeFilterSelect.append($('<option/>', {
+                    name: annotationType.name,
+                    value: annotationType.id,
+                    html: annotationType.name
+                }));
+            }
         });
     }
 
@@ -1137,20 +1196,42 @@ globals = {
                 success: function (data) {
 
                     Object.keys(gAnnotationTypes).forEach(function (key) {
-                        var elem = document.getElementById(gAnnotationTypes[key].name + '_' + gAnnotationTypes[key].id);
-                        if (elem !== null)
-                            elem.innerHTML = 0;
+
+                        if (gAnnotationTypes[key].vector_type != 7) {
+                            var elem = document.getElementById(gAnnotationTypes[key].name + '_' + gAnnotationTypes[key].id);
+                            if (elem !== null)
+                                elem.innerHTML = 0;
+                        } else {
+                            var elem = document.getElementById('GlobalAnnotation_' + gAnnotationTypes[key].id);
+                            if (elem !== null)
+                                $("#GlobalAnnotation_"+gAnnotationTypes[key].id).prop("checked", false);
+                        }
                     });
 
                     var total_count = 0;
                     for (anno_type of data.statistics) {
-                        if (anno_type.id in gAnnotationTypes) {
-                            total_count += anno_type.in_image_count;
-                            document.getElementById(anno_type.name + '_' + anno_type.id).innerHTML =
-                                anno_type.in_image_count + ' / ' + anno_type.verified_count;
+                        if (anno_type.id in gAnnotationTypes ) {
+
+                            if (anno_type.vector_type !== 7) {
+                                total_count += anno_type.in_image_count;
+                                document.getElementById(anno_type.name + '_' + anno_type.id).innerHTML =
+                                    anno_type.in_image_count + ' / ' + anno_type.verified_count;
+                            } else {
+                                not_in_image = anno_type.not_in_image_count;
+                                //  if the global annotation is not in db but active on GUI
+                                // deactivate on GUI
+
+                                var elem = document.getElementById('GlobalAnnotation_'+anno_type.id);
+                                if (elem !== null) {
+                                    if (not_in_image == 0 && $("#GlobalAnnotation_"+anno_type.id).prop("checked")) {
+                                        $("#GlobalAnnotation_"+anno_type.id).prop("checked", false);
+                                    }else if (not_in_image > 0 && $("#GlobalAnnotation_"+anno_type.id).prop("checked") === false) {
+                                        $("#GlobalAnnotation_"+anno_type.id).prop("checked", true);
+                                    }
+                                }
+                            }
                         }
                     }
-
 
                     var total_elem = document.getElementById('statistics_total_annotations');
                     if (total_elem !== null)
@@ -1292,43 +1373,44 @@ globals = {
                 if (jqXHR.status === 200) {
                     var annotations = data.annotations;
 
-                    for (i = 0; i < annotations.length; i++) {
-                        var anno = annotations[i];
+                    for (anno of annotations) {
 
                         // Find solution to update annotations from old images
                         if (anno.image.id !== gImageId)
                             continue;
 
-                        if (anno.deleted) {
-                            tool.removeAnnotation(anno.id);
-                            globals.allAnnotations = globals.allAnnotations.filter(function (value, index, arr) {
-                                return value.id !== anno.id;
-                            });
-                            gAnnotationCache[gImageId] = globals.allAnnotations;
-
-                            $.notify(`Annotation ${anno.id} was deleted by ${anno.last_editor.name}`,
-                                {position: "bottom center", className: "info"});
-                        } else {
-                            var index = globals.allAnnotations.findIndex((elem) => elem.id === anno.id)
-                            className = "info";
-                            if (anno.description.includes('@') &&
-                                anno.description.includes(document.getElementById("username").innerText.trim()))
-                                className = "warn";
-
-                            if (index === -1) {
-                                globals.allAnnotations.push(anno);
-
-                                $.notify(`Annotation ${anno.id} was created by ${anno.last_editor.name}`,
-                                    {position: "bottom center", className: className});
-                            } else {
+                        if (anno.annotation_type.vector_type !== 7) {
+                            if (anno.deleted) {
                                 tool.removeAnnotation(anno.id);
-                                globals.allAnnotations[index] = anno;
+                                globals.allAnnotations = globals.allAnnotations.filter(function (value, index, arr) {
+                                    return value.id !== anno.id;
+                                });
+                                gAnnotationCache[gImageId] = globals.allAnnotations;
 
-                                $.notify(`Annotation ${anno.id} was updated by ${anno.last_editor.name}`,
-                                    {position: "bottom center", className: className});
+                                $.notify(`Annotation ${anno.id} was deleted by ${anno.last_editor.name}`,
+                                    {position: "bottom center", className: "info"});
+                            } else {
+                                var index = globals.allAnnotations.findIndex((elem) => elem.id === anno.id)
+                                className = "info";
+                                if (anno.description.includes('@') &&
+                                    anno.description.includes(document.getElementById("username").innerText.trim()))
+                                    className = "warn";
+
+                                if (index === -1) {
+                                    globals.allAnnotations.push(anno);
+
+                                    $.notify(`Annotation ${anno.id} was created by ${anno.last_editor.name}`,
+                                        {position: "bottom center", className: className});
+                                } else {
+                                    tool.removeAnnotation(anno.id);
+                                    globals.allAnnotations[index] = anno;
+
+                                    $.notify(`Annotation ${anno.id} was updated by ${anno.last_editor.name}`,
+                                        {position: "bottom center", className: className});
+                                }
+                                tool.drawAnnotation(anno);
+                                gAnnotationCache[gImageId] = globals.allAnnotations;
                             }
-                            tool.drawAnnotation(anno);
-                            gAnnotationCache[gImageId] = globals.allAnnotations;
                         }
                     }
 
@@ -1383,6 +1465,24 @@ globals = {
         }
 
         console.log("load annotations " + imageId);
+        // load global annotations first
+        var params = {image_id: imageId, 'vector_type': 7};
+        $.ajax(API_ANNOTATIONS_BASE_URL + 'annotation/load/?' + $.param(params), {
+            type: 'GET',  headers: gHeaders, dataType: 'json', success: function (data) { 
+
+                gAnnotationCache[imageId] = gAnnotationCache[imageId].concat(data.annotations);
+
+                for (anno of data.annotations) 
+                {
+                    if (anno.image.id === gImageId) {
+                        $("#GlobalAnnotation_"+anno.annotation_type.id).prop("checked", true);
+                    }
+                }
+            }
+        });
+
+
+
         x_steps.forEach(function (x) {
 
             y_steps.forEach(function (y) {
