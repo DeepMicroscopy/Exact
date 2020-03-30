@@ -12,7 +12,8 @@ class ImageSerializer(ModelSerializer):
             'height',
             'width',
             'mpp',
-            'objectivePower'
+            'objectivePower',
+            'image_type'
         )
 
 
@@ -55,7 +56,8 @@ def serialize_imageset(imageset: ImageSet) -> Dict[str, Any]:
             "height": image.height,
             "width": image.width,
             "mpp": image.mpp,
-            "objectivePower": image.objectivePower
+            "objectivePower": image.objectivePower,
+            'image_type': image.image_type
         } for image in imageset.images.all()
         ],
         'products' : 

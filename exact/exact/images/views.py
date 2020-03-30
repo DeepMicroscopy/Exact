@@ -686,7 +686,8 @@ def delete_images_api(request, image_id) -> Response:
     image = get_object_or_404(Image, id=image_id)
     if image.image_set.has_perm('delete_images', request.user) and not image.image_set.image_lock:
         try:
-            os.remove(os.path.join(settings.IMAGE_PATH, image.path()))
+            if Path(image.path()).exists(): os.remove(image.path())
+            if Path(image.original_path()).exists(): os.remove(image.original_path())
         except:
             pass
         image.delete()
@@ -698,7 +699,9 @@ def delete_images_api(request, image_id) -> Response:
 def delete_images(request, image_id):
     image = get_object_or_404(Image, id=image_id)
     if image.image_set.has_perm('delete_images', request.user) and not image.image_set.image_lock:
-        os.remove(os.path.join(settings.IMAGE_PATH, image.path()))
+        if Path(image.path()).exists(): os.remove(image.path())
+        if Path(image.original_path()).exists(): os.remove(image.original_path())
+
         image.delete()
         next_image = request.POST.get('next-image-id', '')
         if next_image == '':
