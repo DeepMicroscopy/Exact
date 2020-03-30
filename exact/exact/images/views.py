@@ -1407,8 +1407,8 @@ def load_image_set(request) -> Response:
             'detail': 'permission for reading this image set missing.',
         }, status=HTTP_403_FORBIDDEN)
 
-    serializer = ImageSetSerializer(image_set)
-    serialized_image_set = serializer.data
+    #serializer = ImageSetSerializer(image_set)
+    serialized_image_set = serialize_imageset(image_set)
     if filter_annotation_type_id is not None and filter_annotation_type_id.isdigit():
         # TODO: find a cleaner solution to filter related field set wihtin ImageSet serializer
         serialized_image_set['images'] = ImageSerializer(

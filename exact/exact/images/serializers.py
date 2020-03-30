@@ -33,6 +33,7 @@ class ImageSetSerializer(ModelSerializer):
             'location',
             'description',
             'images',
+            'products',
             'main_annotation_type'
         )
 
@@ -50,7 +51,11 @@ def serialize_imageset(imageset: ImageSet) -> Dict[str, Any]:
         },
         'images': [ {
             'id': image.id,
-            'name': image.name
+            'name': image.name,
+            "height": image.height,
+            "width": image.width,
+            "mpp": image.mpp,
+            "objectivePower": image.objectivePower
         } for image in imageset.images.all()
         ],
         'products' : 
