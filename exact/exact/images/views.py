@@ -885,15 +885,16 @@ def create_annotation_map(request, imageset_id):
         return redirect(reverse('images:view_imageset', args=(imageset.id,)))
 
     if (which('vips') == None):
-        try:
-            import pyvips
-        except:
-            return Response({
-                'Error': "pip Libvips  not installed",
-            }, status=HTTP_404_NOT_FOUND)
         return Response({
             'Error': "Libvips  not installed",
         }, status=HTTP_404_NOT_FOUND)
+    try:
+        import pyvips
+    except:
+        return Response({
+            'Error': "pip Libvips  not installed",
+        }, status=HTTP_404_NOT_FOUND)
+
 
     # delete auto generated annotations
     Verification.objects.filter(annotation__in=
@@ -919,7 +920,7 @@ def create_annotation_map(request, imageset_id):
         x_total_size = int(x_images * patch_width)
         y_total_size = int(y_images * patch_height)
 
-        result_image = np.zeros(shape=(x_total_size, y_total_size, 3), dtype=np.uint8)
+        result_image = np.zeros(shape=(y_total_size, x_total_size, 3), dtype=np.uint8)
 
         ids = list(annotations.values_list('id', flat=True))
 
@@ -1006,9 +1007,10 @@ def create_annotation_map(request, imageset_id):
                     anno.vector['y' + str(i)] = int(anno.vector['y' + str(i)] + y_min)
 
                 anno.id = None
+                
+                result_image[y_min:y_max, x_min:x_max] = patch
                 anno.save()
 
-                result_image[y_min:y_max, x_min:x_max] = patch
 
         if annotation_count > 0:
             destination_path = os.path.join(settings.IMAGE_PATH, new_image.path())
