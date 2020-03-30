@@ -149,12 +149,14 @@
                     <div class="panel-heading">
                         <h2 class="panel-title">Images to label and verify</h2>
                     </div>
-                    <div class="panel-body">
-                        <ul>
+                    <div class="panel-body" style="max-height: 250px; overflow-y: auto;">
+                        <ul> 
                             {% for image in images %}
-                                <li>
-                                    <a href="{% url 'annotations:annotate' image.id %}"> {{image.name|truncatechars:30}}</a>
-                                </li>
+                                {% if image.image_type != 1 %}
+                                    <li>
+                                        <a href="{% url 'annotations:annotate' image.id %}"> {{image.name|truncatechars:30}}</a>
+                                    </li>
+                                {% endif %}
                             {% endfor %}
                         </ul>
                     </div>
@@ -162,12 +164,29 @@
                     <div class="panel-heading">
                         <h2 class="panel-title">All images</h2>
                     </div>
-                    <div class="panel-body">
+                    <div class="panel-body" style="max-height: 250px; overflow-y: auto;">
                         <ul>
                             {% for image in imageset.images.all %}
+                                {% if image.image_type != 1 %}
                                 <li>
                                     <a href="{% url 'annotations:annotate' image.id %}"> {{image.name|truncatechars:30}}</a>
                                 </li>
+                                {% endif %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+
+                    <div class="panel-heading">
+                        <h2 class="panel-title">Computer generated images</h2>
+                    </div>
+                    <div class="panel-body" style="max-height: 250px; overflow-y: auto;">
+                        <ul>
+                            {% for image in imageset.images.all %}
+                                {% if image.image_type == 1 %}
+                                    <li>
+                                        <a href="{% url 'annotations:annotate' image.id %}"> {{image.name|truncatechars:30}}</a>
+                                    </li>
+                                {% endif %}
                             {% endfor %}
                         </ul>
                     </div>
