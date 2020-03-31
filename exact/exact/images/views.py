@@ -880,7 +880,6 @@ def create_imageset(request):
 @login_required
 def create_annotation_map(request, imageset_id):
     imageset = get_object_or_404(ImageSet, id=imageset_id)
-    context_offset = 0.15
 
     if not imageset.has_perm('edit_set', request.user):
         messages.warning(request,
@@ -911,8 +910,12 @@ def create_annotation_map(request, imageset_id):
     result_image_names = {}
     for annotation_type in AnnotationType.objects.filter(annotation__in=Annotation.objects
             .filter(image__image_set=imageset, deleted=False)).distinct():
-        annotations = Annotation.objects.filter(image__image_set=imageset, deleted=False, vector__isnull=False,
+        annotations = Annotation.objects.filter(image__image_set=imageset, deleted=False,
                                                  annotation_type=annotation_type).order_by('image')
+
+        # TODO: Offset to settings
+        context_offset = 0.15 if annotation_type.vector_type != AnnotationType.VECTOR_TYPE.GLOBAL else 0
+
         annotation_count = annotations.count()
         x_images = math.ceil(math.sqrt(annotation_count))
         y_images = math.ceil(math.sqrt(annotation_count))
@@ -927,7 +930,7 @@ def create_annotation_map(request, imageset_id):
 
         ids = list(annotations.values_list('id', flat=True))
 
-        name = '{0}_{1}.tif'.format(annotation_type.product.name, annotation_type.name)
+        name = '{0}_{1}.tiff'.format(annotation_type.product.name, annotation_type.name)
         result_image_names[name] = annotation_count
 
         new_image = imageset.images.filter(name=name,
@@ -936,7 +939,7 @@ def create_annotation_map(request, imageset_id):
             new_image = Image(
                 name = name,
                 image_set = imageset,
-                filename = name+"f",
+                filename = name,
                 image_type=Image.ImageSourceTypes.SERVER_GENERATED
             )
             new_image.save()
@@ -956,15 +959,20 @@ def create_annotation_map(request, imageset_id):
                 id = ids.pop()
                 anno = annotations.get(id=id)
 
-                file_path = os.path.join(settings.IMAGE_PATH, anno.image.path())
+                file_path = anno.image.path()
+                if Path(file_path).exists() == False:
+                    continue
                 if file_path != last_path:
                     slide = openslide.open_slide(str(file_path))
                     last_path = file_path
 
-                x_ori = anno.min_x
-                y_ori = anno.min_y
-                w_ori = anno.max_x - anno.min_x
-                h_ori = anno.max_y - anno.min_y
+                if annotation_type.vector_type != AnnotationType.VECTOR_TYPE.GLOBAL:
+                    x_ori = anno.min_x
+                    y_ori = anno.min_y
+                    w_ori = anno.max_x - anno.min_x
+                    h_ori = anno.max_y - anno.min_y
+                else:
+                    x_ori, y_ori, w_ori, h_ori = 0, 0, anno.image.width, anno.image.height
 
                 # increase patch to context_offset
                 x = int(max(0, x_ori - w_ori * context_offset))
@@ -978,14 +986,15 @@ def create_annotation_map(request, imageset_id):
 
                 scale_x = patch_width / w
                 scale_y = patch_height / h
-                for i in range(1, (len(anno.vector) // 2) + 1):
-                    #  bring to coordinate center
-                    anno.vector['x' + str(i)] = anno.vector['x' + str(i)] - x_ori + ((w - w_ori) / 2)
-                    anno.vector['y' + str(i)] = anno.vector['y' + str(i)] - y_ori + ((h - h_ori) / 2)
+                if anno.vector is not None:
+                    for i in range(1, (len(anno.vector) // 2) + 1):
+                        #  bring to coordinate center
+                        anno.vector['x' + str(i)] = anno.vector['x' + str(i)] - x_ori + ((w - w_ori) / 2)
+                        anno.vector['y' + str(i)] = anno.vector['y' + str(i)] - y_ori + ((h - h_ori) / 2)
 
-                    # scale
-                    anno.vector['x' + str(i)] *= scale_x
-                    anno.vector['y' + str(i)] *= scale_y
+                        # scale
+                        anno.vector['x' + str(i)] *= scale_x
+                        anno.vector['y' + str(i)] *= scale_y
 
                 patch = np.array(slide.read_region(location=(int(x), int(y)),
                                                    level=0, size=(w, h)))[:, :, :3]
@@ -1004,16 +1013,18 @@ def create_annotation_map(request, imageset_id):
                 anno.image_id = new_image.id
 
                 # move annotation to new location
-                for i in range(1, (len(anno.vector) // 2) + 1):
-                    #  bring to coordinate center
-                    anno.vector['x' + str(i)] = int(anno.vector['x' + str(i)] + x_min)
-                    anno.vector['y' + str(i)] = int(anno.vector['y' + str(i)] + y_min)
+                if anno.vector is not None:
+                    for i in range(1, (len(anno.vector) // 2) + 1):
+                        #  bring to coordinate center
+                        anno.vector['x' + str(i)] = int(anno.vector['x' + str(i)] + x_min)
+                        anno.vector['y' + str(i)] = int(anno.vector['y' + str(i)] + y_min)
+                else:
+                    anno.vector = {'x1': x_min, "y1": y_min, "x2": x_max, "y2": y_max}
 
                 anno.id = None
                 
                 result_image[y_min:y_max, x_min:x_max] = patch
                 anno.save()
-
 
         if annotation_count > 0:
             destination_path = os.path.join(settings.IMAGE_PATH, new_image.path())
