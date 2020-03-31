@@ -4,6 +4,7 @@ from rest_framework import serializers
 
 from .models import Annotation, AnnotationType, Verification
 from exact.images.serializers import ImageSerializer
+from exact.administration.serializers import ProductSerializer
 
 
 class AnnotationTypeSerializer(ModelSerializer):
@@ -24,6 +25,8 @@ class AnnotationTypeSerializer(ModelSerializer):
             'area_hit_test',
             'product'
         )
+
+    product = ProductSerializer(read_only=True)
 
 
 class AnnotationSerializer(ModelSerializer):

@@ -15,7 +15,7 @@ globals = {
     const ANNOTATE_URL = '/annotations/%s/';
     const IMAGE_SET_URL = '/images/imageset/%s/';
     const PRELOAD_BACKWARD = 1;
-    const PRELOAD_FORWARD = 1;
+    const PRELOAD_FORWARD = 2;
     const STATIC_ROOT = '/static/';
 
     // TODO: Find a solution for url resolvings
@@ -811,7 +811,7 @@ globals = {
             if (annotationType.vector_type !== 7) // filter global annotations
             {
 
-                gAnnotationKeyToIdLookUp[key] = annotationType.id
+                gAnnotationKeyToIdLookUp[key] = annotationType.id;
 
 
                 annotationTypeToolSelect.append($('<option/>', {
@@ -828,13 +828,14 @@ globals = {
                     'data-concealed': annotationType.enable_concealed,
                     'data-background-color': annotationType.color_code
                 }));
-
-                annotationTypeFilterSelect.append($('<option/>', {
-                    name: annotationType.name,
-                    value: annotationType.id,
-                    html: annotationType.name
-                }));
             }
+
+            annotationTypeFilterSelect.append($('<option/>', {
+                name: annotationType.name,
+                value: annotationType.id,
+                html: `${annotationType.name} (${annotationType.product.name})`
+            }));
+
         });
     }
 
@@ -1245,7 +1246,9 @@ globals = {
             updatePlugins(imageId);
         } else {
             Object.keys(gAnnotationTypes).forEach(function (key) {
-                document.getElementById(gAnnotationTypes[key].name + '_' + gAnnotationTypes[key].id).innerHTML = 0;
+                var elem = document.getElementById(gAnnotationTypes[key].name + '_' + gAnnotationTypes[key].id);
+                if (elem !== null)
+                    elem.innerHTML = 0;
             });
         }
     }
