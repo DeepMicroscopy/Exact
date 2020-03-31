@@ -343,6 +343,7 @@ class BoundingBoxes {
 
 
             case 6:
+            case 7:
                 var rect = new paper.Path.Rectangle(annotation.vector.x1, annotation.vector.y1,
                     annotation.vector.x2 - annotation.vector.x1, annotation.vector.y2 - annotation.vector.y1);
 
