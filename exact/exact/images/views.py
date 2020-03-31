@@ -735,26 +735,34 @@ def view_imageset(request, image_set_id):
         annotations = Annotation.objects.filter(
             image__image_set=imageset,
             deleted=False,
-            annotation_type__active=True).order_by("id")
+            annotation_type__active=True)\
+            .filter(~Q(image__image_type=Image.ImageSourceTypes.SERVER_GENERATED))\
+            .order_by("id")
+
         annotation_types = AnnotationType.objects.filter(annotation__image__image_set=imageset, active=True, annotation__deleted=False)\
             .distinct().order_by('sort_order')\
-            .annotate(count=Count('annotation'),
-                      in_image_count=Count('annotation', filter=Q(annotation__verifications__verified=True)),
-                      not_in_image_count=Count('annotation', filter=Q(annotation__verifications__verified=False)))
+            .annotate(count=Count('annotation', filter=~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED)),
+                      in_image_count=Count('annotation', filter=(Q(annotation__verifications__verified=True)
+                                                                 & ~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED))),
+                      not_in_image_count=Count('annotation', filter=(Q(annotation__verifications__verified=False)
+                                                                     & ~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED))))
 
     if imageset.collaboration_type == ImageSet.CollaborationTypes.COMPETITIVE:
         annotations = Annotation.objects.filter(
             image__image_set=imageset,
             deleted=False,
             user=request.user,
-            annotation_type__active=True).order_by("id")
+            annotation_type__active=True)\
+            .filter(~Q(image__image_type=Image.ImageSourceTypes.SERVER_GENERATED))\
+            .order_by("id")
+
         annotation_types = AnnotationType.objects.filter(annotation__image__image_set=imageset,
                                                          active=True,  annotation__deleted=False,
                                                          annotation__user=request.user)\
             .distinct().order_by('sort_order')\
             .annotate(count=Count('annotation'),
-                      in_image_count=Count('annotation', filter=Q(annotation__verifications__verified=True, annotation__user=request.user)),
-                      not_in_image_count=Count('annotation', filter=Q(annotation__verifications__verified=False, annotation__user=request.user)))
+                      in_image_count=Count('annotation', filter=Q(annotation__verifications__verified=True, annotation__user=request.user) & ~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED)),
+                      not_in_image_count=Count('annotation', filter=Q(annotation__verifications__verified=False, annotation__user=request.user) & ~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED)))
 
     first_annotation = annotations.first()
     user_teams = Team.objects.filter(members=request.user)
@@ -1443,6 +1451,14 @@ def load_image_set(request) -> Response:
             serialized_image_set['images'] = ImageSerializer(
                 image_set.images.filter(id__in=ids).order_by(
                 'name'), many=True).data
+        elif filter_annotation_type_id == "NoAnnotations":
+            serialized_image_set['images'] = ImageSerializer(
+                image_set.images.annotate(anno_count=Count('annotations')).filter(anno_count=0).order_by(
+                    'name'), many=True).data
+        elif filter_annotation_type_id == "ComputerGenerated":
+            serialized_image_set['images'] = ImageSerializer(
+                image_set.images.filter(image_type=Image.ImageSourceTypes.SERVER_GENERATED).order_by(
+                    'name'), many=True).data
         else:
             serialized_image_set['images'] = ImageSerializer(
                 image_set.images.order_by('name'), many=True).data
