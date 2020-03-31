@@ -1980,6 +1980,13 @@ globals = {
             else { $("#ContrastSlider").slider("disable");  updateFiltersOnImage(null);}
         });
 
+        $("#CLAHESlider").slider();
+        $("#CLAHESlider").on("change", updateFiltersOnImage);
+        $("#CLAHESlider-enabled").click(function() { 
+            if(this.checked) { $("#CLAHESlider").slider("enable");  updateFiltersOnImage(null);} 
+            else { $("#CLAHESlider").slider("disable");  updateFiltersOnImage(null);}
+        });
+
         $("#BRIGHTNESSSlider").slider();
         $("#BRIGHTNESSSlider").on("change", updateFiltersOnImage);
         $("#BRIGHTNESSSlider-enabled").click(function() { 
@@ -2025,6 +2032,9 @@ globals = {
 
             if ($("#THRESHOLDINGSlider-enabled").prop("checked"))
                 processors.push(OpenSeadragon.Filters.THRESHOLDING(parseInt($("#THRESHOLDINGSlider").val())))
+
+            if ($("#CLAHESlider-enabled").prop("checked"))
+                processors.push(OpenSeadragon.Filters.CLAHE(parseInt($("#CLAHESlider").val())))
          
             viewer.setFilterOptions({ filters: { processors: processors } });
         }
