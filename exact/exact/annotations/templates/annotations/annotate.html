@@ -36,7 +36,8 @@
             src="https://rawgit.com/picturae/OpenSeadragonGuides/master/dist/openseadragon-guides.js"></script>
     <script type="text/javascript" src="{% static 'annotations/js/boundingboxes.js' %}"></script>
 
-    <script type="text/javascript" src="{% static 'annotations/js/openseadragon-filtering.js' %}"></script>
+    <script async  type="text/javascript" src="{% static 'annotations/js/openseadragon-filtering.js' %}"></script>
+    <script async  type="text/javascript" src="{% static 'annotations/js/opencv.js' %}"></script>
 
     <script type="text/javascript" src="{% static 'scripts/notify.min.js' %}"></script>
 
@@ -304,6 +305,13 @@
                                             <input id="ContrastSlider" type="text"  data-slider-min="0" data-slider-max="4" 
                                                 data-slider-step="0.1" data-slider-value="1" data-slider-enabled="false"/>
                                             <input id="ContrastSlider-enabled" type="checkbox"/>
+                                        </div>
+
+                                        <div class="row-md-sm">
+                                            <label for="CLAHESlider">CLAHE</label>
+                                            <input id="CLAHESlider" type="text"  data-slider-min="0" data-slider-max="50" 
+                                                data-slider-step="1" data-slider-value="1" data-slider-enabled="false"/>
+                                            <input id="CLAHESlider-enabled" type="checkbox"/>
                                         </div>
 
                                         <div class="row-md-sm">

@@ -348,7 +348,37 @@
                 context.putImageData(imgData, 0, 0);
                 callback();
             };
-        },        
+        },       
+        CLAHE: function(parameter=5, tileSize=5) {
+            return function(context, callback) {
+                var imgData = context.getImageData(
+                    0, 0, context.canvas.width, context.canvas.height);
+                var mat = cv.matFromImageData(imgData);
+
+                let rgbaPlanes = new cv.MatVector();
+                cv.split(mat, rgbaPlanes);
+
+                let R = rgbaPlanes.get(0);
+                let G = rgbaPlanes.get(1);
+                let B = rgbaPlanes.get(2);
+
+                let tileGridSize = new cv.Size(tileSize, tileSize);
+                let clahe = new cv.CLAHE(parameter, tileGridSize);
+
+                //cv.equalizeHist(src, equalDst);
+                clahe.apply(R, R);
+                clahe.apply(G, G);
+                clahe.apply(B, B);
+
+                cv.merge(rgbaPlanes, mat);
+
+                let resultData = new ImageData(new Uint8ClampedArray(mat.data), mat.cols, mat.rows);
+                context.putImageData(resultData, 0, 0);
+
+                mat.delete(); rgbaPlanes.delete(); R.delete();  G.delete();  B.delete();
+                callback();
+            };
+        }, 
         GREYSCALE: function() {
             return function(context, callback) {
                 var imgData = context.getImageData(
