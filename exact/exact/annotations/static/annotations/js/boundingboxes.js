@@ -485,7 +485,6 @@ class BoundingBoxes {
 
             width = Math.max(imageRect.width, imageRect.height) * 0.0025;
             width = Math.max(1, width);
-            console.log(width)
             this.strokeWidth =  width;
         }
 
