@@ -343,6 +343,7 @@ class BoundingBoxes {
 
 
             case 6:
+            case 7:
                 var rect = new paper.Path.Rectangle(annotation.vector.x1, annotation.vector.y1,
                     annotation.vector.x2 - annotation.vector.x1, annotation.vector.y2 - annotation.vector.y1);
 
@@ -484,7 +485,6 @@ class BoundingBoxes {
 
             width = Math.max(imageRect.width, imageRect.height) * 0.0025;
             width = Math.max(1, width);
-            console.log(width)
             this.strokeWidth =  width;
         }
 
@@ -639,7 +639,8 @@ class BoundingBoxes {
 
         this.buttons.forEach(element => {
             this.viewer.buttons.buttons = this.viewer.buttons.buttons.filter(function(value, index, arr){ return value.name !== element.name;});
-            this.viewer.buttons.element.removeChild(element.element);
+            if (this.viewer.buttons.element.contains(element.element))
+                this.viewer.buttons.element.removeChild(element.element);
         });
     }
 

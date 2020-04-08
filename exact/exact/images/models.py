@@ -44,6 +44,9 @@ class Image(models.Model):
     def path(self):
         return os.path.join(self.image_set.root_path(), self.filename)
 
+    def original_path(self):
+        return os.path.join(self.image_set.root_path(), self.name)
+
     def relative_path(self):
         return os.path.join(self.image_set.path, self.filename)
 

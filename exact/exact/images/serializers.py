@@ -12,7 +12,8 @@ class ImageSerializer(ModelSerializer):
             'height',
             'width',
             'mpp',
-            'objectivePower'
+            'objectivePower',
+            'image_type'
         )
 
 
@@ -33,6 +34,7 @@ class ImageSetSerializer(ModelSerializer):
             'location',
             'description',
             'images',
+            'products',
             'main_annotation_type'
         )
 
@@ -44,15 +46,33 @@ def serialize_imageset(imageset: ImageSet) -> Dict[str, Any]:
         'name': imageset.name,
         'location': imageset.location,
         'description': imageset.description,
+        'team': {
+            'id': imageset.team.id,
+            'name': imageset.team.name
+        },
         'images': [ {
             'id': image.id,
-            'name': image.name
+            'name': image.name,
+            "height": image.height,
+            "width": image.width,
+            "mpp": image.mpp,
+            "objectivePower": image.objectivePower,
+            'image_type': image.image_type
         } for image in imageset.images.all()
         ],
         'products' : 
         [ 
             {'name': product.name,
-             'id' : product.id}
+             'id' : product.id,
+             'annotation_types': [{
+                 'id': annotation_type.id,
+                 'closed': annotation_type.closed,
+                 'name': annotation_type.name,
+                 'vector_type': annotation_type.vector_type,
+                 'color_code': annotation_type.color_code,
+                 'area_hit_test': annotation_type.area_hit_test
+             } for annotation_type in product.annotationtype_set.all()]
+             }
             for product in imageset.product_set.all()
         ],
         'main_annotation_type': 
