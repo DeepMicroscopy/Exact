@@ -144,14 +144,13 @@
     </div>
     <div class="row">
         <div class="col-md-3">
-            {% if images %}
                 <div class="panel panel-default">
                     <div class="panel-heading">
                         <h2 class="panel-title">Images to label and verify</h2>
                     </div>
                     <div class="panel-body" style="max-height: 250px; overflow-y: auto;">
                         <ul> 
-                            {% for image in images %}
+                            {% for image in images|dictsort:"name" %}
                                 {% if image.image_type != 1 %}
                                     <li>
                                         <a href="{% url 'annotations:annotate' image.id %}"> {{image.name|truncatechars:30}}</a>
@@ -166,7 +165,7 @@
                     </div>
                     <div class="panel-body" style="max-height: 250px; overflow-y: auto;">
                         <ul>
-                            {% for image in imageset.images.all %}
+                            {% for image in imageset.images.all|dictsort:"name" %}
                                 {% if image.image_type != 1 %}
                                 <li>
                                     <a href="{% url 'annotations:annotate' image.id %}"> {{image.name|truncatechars:30}}</a>
@@ -181,7 +180,7 @@
                     </div>
                     <div class="panel-body" style="max-height: 250px; overflow-y: auto;">
                         <ul>
-                            {% for image in imageset.images.all %}
+                            {% for image in imageset.images.all|dictsort:"name" %}
                                 {% if image.image_type == 1 %}
                                     <li>
                                         <a href="{% url 'annotations:annotate' image.id %}"> {{image.name|truncatechars:30}}</a>
@@ -191,7 +190,6 @@
                         </ul>
                     </div>
                 </div>
-            {% endif %}
         </div>
         <div class="col-md-6">
             <div class="row">
@@ -254,7 +252,7 @@
                                 {% endif %}
                                 <tr>
                                     <td>Image count</td>
-                                    <td>{{imageset.image_count}}</td>
+                                    <td>{{real_image_number}}</td>
                                 </tr>
                                 <tr>
                                     <td>Images to verify</td>
@@ -267,7 +265,7 @@
                                         <ul>
                                             {% for at in annotation_types %}
                                                 <li>
-                                                    {{ at.name }}: <b>{{ at.count }}</b> (<b><span class="text-success">{{ at.in_image_count }}</span></b>/<b><span class="text-danger">{{ at.not_in_image_count }}</span></b>)
+                                                   {{ at.product.name }} -> {{ at.name }}: <b>{{ at.count }}</b> (<b><span class="text-success">{{ at.in_image_count }}</span></b>/<b><span class="text-danger">{{ at.not_in_image_count }}</span></b>)
                                                 </li>
                                             {% endfor %}
                                         </ul>

@@ -430,7 +430,7 @@ class AnnotationType(models.Model):
         FIXED_SIZE_BOUNDING_BOX = 6
         GLOBAL = 7 #Annotations without a shape that are valid for the whole image
 
-    name = models.CharField(max_length=20)
+    name = models.CharField(max_length=50)
     active = models.BooleanField(default=True)
     vector_type = models.IntegerField(default=VECTOR_TYPE.BOUNDING_BOX)
     # Number of required nodes (in polygon and multiline) 0->unspecified
