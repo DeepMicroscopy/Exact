@@ -30,8 +30,8 @@ class Image(models.Model):
 
     image_set = models.ForeignKey(
         'ImageSet', on_delete=models.CASCADE, related_name='images')
-    name = models.CharField(max_length=100)
-    filename = models.CharField(max_length=100)
+    name = models.CharField(max_length=256)
+    filename = models.CharField(max_length=256)
     time = models.DateTimeField(auto_now_add=True)
     checksum = models.BinaryField()
     mpp = models.FloatField(default=0)
@@ -106,9 +106,9 @@ class ImageSet(models.Model):
         (ZipState.PROCESSING, 'processing'),
     )
 
-    path = models.CharField(max_length=100, unique=True, null=True)
-    name = models.CharField(max_length=100)
-    location = models.CharField(max_length=100, null=True, blank=True)
+    path = models.CharField(max_length=256, unique=True, null=True)
+    name = models.CharField(max_length=256)
+    location = models.CharField(max_length=256, null=True, blank=True)
     description = models.TextField(max_length=1000, null=True, blank=True)
     time = models.DateTimeField(auto_now_add=True)
     team = models.ForeignKey(

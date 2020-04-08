@@ -75,6 +75,14 @@ def serialize_imageset(imageset: ImageSet) -> Dict[str, Any]:
              }
             for product in imageset.product_set.all()
         ],
+        'tags':
+            [
+                {
+                    'name': tag.name,
+                    'id': tag.id,
+                 }
+                for tag in imageset.set_tags.all()
+            ],
         'main_annotation_type': 
         { 
             'id': imageset.main_annotation_type.id,

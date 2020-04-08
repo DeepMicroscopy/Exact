@@ -107,8 +107,17 @@ def explore_imageset(request):
     })
 
 
-@api_view(['GET'])
+@api_view(['GET', 'POST'])
 def api_index(request:HttpRequest):
+    try:
+        id = request.data.get('id', None)
+        team = request.data.get('team', None)
+        name = request.data.get('name', None)
+        description = request.data.get('description', None)
+        public = request.data.get('public', None)
+
+    except (KeyError, TypeError, ValueError):
+        raise ParseError
 
     if not request.user.is_authenticated:
         return Response({},HTTP_403_FORBIDDEN)
@@ -119,11 +128,19 @@ def api_index(request:HttpRequest):
     ).select_related('team').prefetch_related('set_tags') \
         .order_by('-priority', '-time')
 
-    retarr = []
-    for imageset in imagesets:
-        retarr.append(serialize_imageset(imageset))
-    
-    return Response(retarr, HTTP_200_OK)
+    if id is not None and id > 0:
+        imagesets = imagesets.filter(id=id)
+    if team is not None:
+        imagesets = imagesets.filter(team=team['id'])
+    if name is not None:
+        imagesets = imagesets.filter(name__contains=name)
+    if description is not None:
+        imagesets = imagesets.filter(description__contains=description)
+    if public is not None:
+        imagesets = imagesets.filter(public=public)
+
+    result = [serialize_imageset(imageset) for imageset in imagesets]
+    return Response(result, HTTP_200_OK)
     
 
 
@@ -780,6 +797,7 @@ def view_imageset(request, image_set_id):
         'image_count': images.count(),
         'annotationcount': annotations.count(),
         'imageset': imageset,
+        'real_image_number': imageset.images.filter(~Q(image_type=Image.ImageSourceTypes.SERVER_GENERATED)).count(),
         'all_products': all_products,
         'annotationtypes': annotation_types,
         'annotation_types': annotation_types,
@@ -837,6 +855,65 @@ def image_statistics(request) -> Response:
     return Response({
         'statistics': data,
     }, status=HTTP_200_OK)
+
+@api_view(['POST'])
+def create_imageset_api(request):
+    try:
+        name = request.data['name']
+        team = request.data['team']
+        location = request.data.get('location', None)
+        description = request.data.get('description', None)
+        public = request.data.get('public', False)
+        public_collaboration = request.data.get('public_collaboration', False)
+        image_lock = request.data.get('image_lock', False)
+        priority = request.data.get('priority', 0)
+        main_annotation_type = request.data.get('main_annotation_type', None)
+        collaboration_type = request.data.get('collaboration_type', 0)
+        products = request.data.get('products', None)
+    except (KeyError, TypeError, ValueError):
+        raise ParseError
+
+    team = get_object_or_404(Team, id=team['id'])
+    if not team.has_perm('create_set', request.user):
+        messages.warning(
+            request,
+            _('You do not have permission to create image sets in the team {}.')
+            .format(team.name))
+        return redirect(reverse('users:team', args=(team.id,)))
+
+    with transaction.atomic():
+        image_set = ImageSet.objects.create(
+            team = team,
+            creator = request.user,
+            location = location,
+            name = name,
+            description = description,
+            public = public,
+            public_collaboration = public_collaboration,
+            image_lock = image_lock,
+            priority = priority,
+            main_annotation_type = main_annotation_type,
+            collaboration_type  =collaboration_type,
+        )
+
+        image_set.path = '{}_{}_{}'.format(connection.settings_dict['NAME'], team.id,
+                                           image_set.id)
+
+        image_set.save()
+
+        folder_path = image_set.root_path()
+        os.makedirs(folder_path)
+
+        for product in products:
+            available_product = Product.objects.filter(id=product['id']).first()
+            if available_product is not None:
+                available_product.imagesets.add(image_set)
+                available_product.save()
+
+    serialized_image_set = serialize_imageset(image_set)
+    return Response(serialized_image_set, status=HTTP_200_OK)
+            
+    
 
 @login_required
 def create_imageset(request):
@@ -1414,13 +1491,12 @@ def api_verify_image(request) -> Response:
         'state': request.data['state'],
     }, status=HTTP_200_OK)
 
-
 @api_view(['GET'])
 def load_image_set(request) -> Response:
     try:
         image_set_id = int(request.query_params['image_set_id'])
-        filter_annotation_type_id = request.query_params.get(
-            'filter_annotation_type_id')
+        filter_annotation_type_id = request.query_params.get('filter_annotation_type_id', None)
+
     except (KeyError, TypeError, ValueError):
         raise ParseError
 
