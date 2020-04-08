@@ -5,7 +5,7 @@ services:
     build: 
         context: ./exact
         dockerfile: Dockerfile.prod    
-    command: gunicorn --workers=6 --threads=4 --graceful-timeout=3000 exact.wsgi:application --bind 0.0.0.0:8000
+    command: gunicorn --workers=6 --threads=4 --graceful-timeout=3000 -t 3000 exact.wsgi:application --bind 0.0.0.0:8000
     volumes:
       - ./exact/images:/home/app/web/images
       - static_volume:/home/app/web/static    
