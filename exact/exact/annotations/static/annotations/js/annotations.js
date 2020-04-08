@@ -15,7 +15,7 @@ globals = {
     const ANNOTATE_URL = '/annotations/%s/';
     const IMAGE_SET_URL = '/images/imageset/%s/';
     const PRELOAD_BACKWARD = 1;
-    const PRELOAD_FORWARD = 1;
+    const PRELOAD_FORWARD = 2;
     const STATIC_ROOT = '/static/';
 
     // TODO: Find a solution for url resolvings
@@ -49,8 +49,8 @@ globals = {
         maxZoomPixelRatio: 2,
         //minZoomLevel: 1,
         visibilityRatio: 1,
-        zoomPerScroll: 1.5,
-        timeout: 120000,
+        zoomPerScroll: 1.1,
+        timeout: 120000
     });
     // viewer.gestureSettingsMouse.clickToZoom = false;
 
@@ -131,7 +131,8 @@ globals = {
                     ticks: ticks_to_use,
                     scale: 'logarithmic',
                     ticks_labels: labels_to_use,
-                    tooltip: 'always'
+                    tooltip: 'always',
+                    ticks_snap_bounds: 1
                 });
                 gZoomSlider.on('change', onSliderChanged);
             } else {
@@ -811,7 +812,7 @@ globals = {
             if (annotationType.vector_type !== 7) // filter global annotations
             {
 
-                gAnnotationKeyToIdLookUp[key] = annotationType.id
+                gAnnotationKeyToIdLookUp[key] = annotationType.id;
 
 
                 annotationTypeToolSelect.append($('<option/>', {
@@ -828,13 +829,14 @@ globals = {
                     'data-concealed': annotationType.enable_concealed,
                     'data-background-color': annotationType.color_code
                 }));
-
-                annotationTypeFilterSelect.append($('<option/>', {
-                    name: annotationType.name,
-                    value: annotationType.id,
-                    html: annotationType.name
-                }));
             }
+
+            annotationTypeFilterSelect.append($('<option/>', {
+                name: annotationType.name,
+                value: annotationType.id,
+                html: `${annotationType.name} (${annotationType.product.name})`
+            }));
+
         });
     }
 
@@ -1245,7 +1247,9 @@ globals = {
             updatePlugins(imageId);
         } else {
             Object.keys(gAnnotationTypes).forEach(function (key) {
-                document.getElementById(gAnnotationTypes[key].name + '_' + gAnnotationTypes[key].id).innerHTML = 0;
+                var elem = document.getElementById(gAnnotationTypes[key].name + '_' + gAnnotationTypes[key].id);
+                if (elem !== null)
+                    elem.innerHTML = 0;
             });
         }
     }
@@ -1449,7 +1453,7 @@ globals = {
 
         var x_steps = [];
         var y_steps = [];
-        var step = 10000; //pixel
+        var step = 500; //pixel
         var num_tiles = 3;
         var stop_x = gImageInformation[gImageId]['width'];
         var stop_y = gImageInformation[gImageId]['height'];
@@ -1470,18 +1474,17 @@ globals = {
         $.ajax(API_ANNOTATIONS_BASE_URL + 'annotation/load/?' + $.param(params), {
             type: 'GET',  headers: gHeaders, dataType: 'json', success: function (data) { 
 
-                gAnnotationCache[imageId] = gAnnotationCache[imageId].concat(data.annotations);
+                if (imageId in gAnnotationCache) {
+                    gAnnotationCache[imageId] = gAnnotationCache[imageId].concat(data.annotations);
 
-                for (anno of data.annotations) 
-                {
-                    if (anno.image.id === gImageId) {
-                        $("#GlobalAnnotation_"+anno.annotation_type.id).prop("checked", true);
+                    for (anno of data.annotations) {
+                        if (anno.image.id === gImageId) {
+                            $("#GlobalAnnotation_" + anno.annotation_type.id).prop("checked", true);
+                        }
                     }
                 }
             }
         });
-
-
 
         x_steps.forEach(function (x) {
 
@@ -1500,15 +1503,17 @@ globals = {
                     headers: gHeaders,
                     dataType: 'json',
                     success: function (data) {
-                        // save the current annotations to the cache
-                        gAnnotationCache[imageId] = gAnnotationCache[imageId].concat(data.annotations);
 
-                        if (imageId === tool.getImageId())
-                        {
-                            globals.allAnnotations = gAnnotationCache[imageId];
-                            tool.drawExistingAnnotations(data.annotations);
+                        if (imageId in gAnnotationCache) {
+                            // save the current annotations to the cache
+                            gAnnotationCache[imageId] = gAnnotationCache[imageId].concat(data.annotations);
+
+                            if (imageId === tool.getImageId()) {
+                                globals.allAnnotations = gAnnotationCache[imageId];
+                                tool.drawExistingAnnotations(data.annotations);
+                            }
+                            console.log("Starting to cach annotations for", imageId);
                         }
-                        console.log("Starting to cach annotations for", imageId);
                     },
                     error: function () {
                         console.log("Unable to load annotations for image" + imageId);

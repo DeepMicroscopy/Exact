@@ -229,7 +229,7 @@ def upload_image(request, imageset_id):
         if request.FILES is None:
             return HttpResponseBadRequest('Must have files attached!')
         json_files = []
-        for f in request.FILES.getlist('files[]'):
+        for f in list(request.FILES.values()):#request.FILES.getlist('files[]'):
             error = {
                 'duplicates': 0,
                 'damaged': False,
@@ -266,7 +266,7 @@ def upload_image(request, imageset_id):
                 for filename in filenames:
 
                     file_path = os.path.join(imageset.root_path(), filename)
-                    if Image.objects.filter(Q(filename=filename)|Q(name=filename),
+                    if Image.objects.filter(Q(filename=filename)|Q(name=f.name),
                                             image_set=imageset).count() == 0:
 
                         try:
@@ -290,7 +290,7 @@ def upload_image(request, imageset_id):
                         except:
                             error['unsupported'] = True
                     else:
-                        os.remove(file_path)
+                        duplicat_count += 1
 
                 if duplicat_count > 0:
                     error['duplicates'] = duplicat_count
@@ -303,9 +303,10 @@ def upload_image(request, imageset_id):
 
                 filename = os.path.join(imageset.root_path(), f.name)
                 # tests for duplicats in  imageset
-                if Image.objects.filter(Q(filename=filename)|Q(name=filename), checksum=fchecksum,
-                                        image_set=imageset)\
-                        .count() == 0:
+                image = Image.objects.filter(Q(filename=filename)|Q(name=f.name), checksum=fchecksum,
+                                        image_set=imageset).first()
+
+                if image is None:
 
                     with open(filename, 'wb') as out:
                         for chunk in f.chunks():
@@ -313,7 +314,8 @@ def upload_image(request, imageset_id):
 
                     file_list[filename] = fchecksum
                 else:
-                    os.remove(filename)
+                    error['exists'] = True
+                    error['exists_id'] = image.id
 
             for path in file_list:
 
@@ -418,6 +420,7 @@ def upload_image(request, imageset_id):
                 json_files.append({'name': f.name,
                                    'size': f.size,
                                    'error': errormessage,
+                                   'id': error.get('exists_id', -1)
                                    })
 
         return JsonResponse({'files': json_files})
@@ -683,7 +686,8 @@ def delete_images_api(request, image_id) -> Response:
     image = get_object_or_404(Image, id=image_id)
     if image.image_set.has_perm('delete_images', request.user) and not image.image_set.image_lock:
         try:
-            os.remove(os.path.join(settings.IMAGE_PATH, image.path()))
+            if Path(image.path()).exists(): os.remove(image.path())
+            if Path(image.original_path()).exists(): os.remove(image.original_path())
         except:
             pass
         image.delete()
@@ -695,7 +699,9 @@ def delete_images_api(request, image_id) -> Response:
 def delete_images(request, image_id):
     image = get_object_or_404(Image, id=image_id)
     if image.image_set.has_perm('delete_images', request.user) and not image.image_set.image_lock:
-        os.remove(os.path.join(settings.IMAGE_PATH, image.path()))
+        if Path(image.path()).exists(): os.remove(image.path())
+        if Path(image.original_path()).exists(): os.remove(image.original_path())
+
         image.delete()
         next_image = request.POST.get('next-image-id', '')
         if next_image == '':
@@ -729,26 +735,34 @@ def view_imageset(request, image_set_id):
         annotations = Annotation.objects.filter(
             image__image_set=imageset,
             deleted=False,
-            annotation_type__active=True).order_by("id")
+            annotation_type__active=True)\
+            .filter(~Q(image__image_type=Image.ImageSourceTypes.SERVER_GENERATED))\
+            .order_by("id")
+
         annotation_types = AnnotationType.objects.filter(annotation__image__image_set=imageset, active=True, annotation__deleted=False)\
             .distinct().order_by('sort_order')\
-            .annotate(count=Count('annotation'),
-                      in_image_count=Count('annotation', filter=Q(annotation__verifications__verified=True)),
-                      not_in_image_count=Count('annotation', filter=Q(annotation__verifications__verified=False)))
+            .annotate(count=Count('annotation', filter=~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED)),
+                      in_image_count=Count('annotation', filter=(Q(annotation__verifications__verified=True)
+                                                                 & ~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED))),
+                      not_in_image_count=Count('annotation', filter=(Q(annotation__verifications__verified=False)
+                                                                     & ~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED))))
 
     if imageset.collaboration_type == ImageSet.CollaborationTypes.COMPETITIVE:
         annotations = Annotation.objects.filter(
             image__image_set=imageset,
             deleted=False,
             user=request.user,
-            annotation_type__active=True).order_by("id")
+            annotation_type__active=True)\
+            .filter(~Q(image__image_type=Image.ImageSourceTypes.SERVER_GENERATED))\
+            .order_by("id")
+
         annotation_types = AnnotationType.objects.filter(annotation__image__image_set=imageset,
                                                          active=True,  annotation__deleted=False,
                                                          annotation__user=request.user)\
             .distinct().order_by('sort_order')\
             .annotate(count=Count('annotation'),
-                      in_image_count=Count('annotation', filter=Q(annotation__verifications__verified=True, annotation__user=request.user)),
-                      not_in_image_count=Count('annotation', filter=Q(annotation__verifications__verified=False, annotation__user=request.user)))
+                      in_image_count=Count('annotation', filter=Q(annotation__verifications__verified=True, annotation__user=request.user) & ~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED)),
+                      not_in_image_count=Count('annotation', filter=Q(annotation__verifications__verified=False, annotation__user=request.user) & ~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED)))
 
     first_annotation = annotations.first()
     user_teams = Team.objects.filter(members=request.user)
@@ -874,7 +888,6 @@ def create_imageset(request):
 @login_required
 def create_annotation_map(request, imageset_id):
     imageset = get_object_or_404(ImageSet, id=imageset_id)
-    context_offset = 0.15
 
     if not imageset.has_perm('edit_set', request.user):
         messages.warning(request,
@@ -905,8 +918,12 @@ def create_annotation_map(request, imageset_id):
     result_image_names = {}
     for annotation_type in AnnotationType.objects.filter(annotation__in=Annotation.objects
             .filter(image__image_set=imageset, deleted=False)).distinct():
-        annotations = Annotation.objects.filter(image__image_set=imageset, deleted=False, vector__isnull=False,
+        annotations = Annotation.objects.filter(image__image_set=imageset, deleted=False,
                                                  annotation_type=annotation_type).order_by('image')
+
+        # TODO: Offset to settings
+        context_offset = 0.15 if annotation_type.vector_type != AnnotationType.VECTOR_TYPE.GLOBAL else 0
+
         annotation_count = annotations.count()
         x_images = math.ceil(math.sqrt(annotation_count))
         y_images = math.ceil(math.sqrt(annotation_count))
@@ -921,7 +938,7 @@ def create_annotation_map(request, imageset_id):
 
         ids = list(annotations.values_list('id', flat=True))
 
-        name = '{0}_{1}.tif'.format(annotation_type.product.name, annotation_type.name)
+        name = '{0}_{1}.tiff'.format(annotation_type.product.name, annotation_type.name)
         result_image_names[name] = annotation_count
 
         new_image = imageset.images.filter(name=name,
@@ -930,7 +947,7 @@ def create_annotation_map(request, imageset_id):
             new_image = Image(
                 name = name,
                 image_set = imageset,
-                filename = name+"f",
+                filename = name,
                 image_type=Image.ImageSourceTypes.SERVER_GENERATED
             )
             new_image.save()
@@ -950,15 +967,20 @@ def create_annotation_map(request, imageset_id):
                 id = ids.pop()
                 anno = annotations.get(id=id)
 
-                file_path = os.path.join(settings.IMAGE_PATH, anno.image.path())
+                file_path = anno.image.path()
+                if Path(file_path).exists() == False:
+                    continue
                 if file_path != last_path:
                     slide = openslide.open_slide(str(file_path))
                     last_path = file_path
 
-                x_ori = anno.min_x
-                y_ori = anno.min_y
-                w_ori = anno.max_x - anno.min_x
-                h_ori = anno.max_y - anno.min_y
+                if annotation_type.vector_type != AnnotationType.VECTOR_TYPE.GLOBAL:
+                    x_ori = anno.min_x
+                    y_ori = anno.min_y
+                    w_ori = anno.max_x - anno.min_x
+                    h_ori = anno.max_y - anno.min_y
+                else:
+                    x_ori, y_ori, w_ori, h_ori = 0, 0, anno.image.width, anno.image.height
 
                 # increase patch to context_offset
                 x = int(max(0, x_ori - w_ori * context_offset))
@@ -972,14 +994,15 @@ def create_annotation_map(request, imageset_id):
 
                 scale_x = patch_width / w
                 scale_y = patch_height / h
-                for i in range(1, (len(anno.vector) // 2) + 1):
-                    #  bring to coordinate center
-                    anno.vector['x' + str(i)] = anno.vector['x' + str(i)] - x_ori + ((w - w_ori) / 2)
-                    anno.vector['y' + str(i)] = anno.vector['y' + str(i)] - y_ori + ((h - h_ori) / 2)
+                if anno.vector is not None:
+                    for i in range(1, (len(anno.vector) // 2) + 1):
+                        #  bring to coordinate center
+                        anno.vector['x' + str(i)] = anno.vector['x' + str(i)] - x_ori + ((w - w_ori) / 2)
+                        anno.vector['y' + str(i)] = anno.vector['y' + str(i)] - y_ori + ((h - h_ori) / 2)
 
-                    # scale
-                    anno.vector['x' + str(i)] *= scale_x
-                    anno.vector['y' + str(i)] *= scale_y
+                        # scale
+                        anno.vector['x' + str(i)] *= scale_x
+                        anno.vector['y' + str(i)] *= scale_y
 
                 patch = np.array(slide.read_region(location=(int(x), int(y)),
                                                    level=0, size=(w, h)))[:, :, :3]
@@ -998,16 +1021,18 @@ def create_annotation_map(request, imageset_id):
                 anno.image_id = new_image.id
 
                 # move annotation to new location
-                for i in range(1, (len(anno.vector) // 2) + 1):
-                    #  bring to coordinate center
-                    anno.vector['x' + str(i)] = int(anno.vector['x' + str(i)] + x_min)
-                    anno.vector['y' + str(i)] = int(anno.vector['y' + str(i)] + y_min)
+                if anno.vector is not None:
+                    for i in range(1, (len(anno.vector) // 2) + 1):
+                        #  bring to coordinate center
+                        anno.vector['x' + str(i)] = int(anno.vector['x' + str(i)] + x_min)
+                        anno.vector['y' + str(i)] = int(anno.vector['y' + str(i)] + y_min)
+                else:
+                    anno.vector = {'x1': x_min, "y1": y_min, "x2": x_max, "y2": y_max}
 
                 anno.id = None
                 
                 result_image[y_min:y_max, x_min:x_max] = patch
                 anno.save()
-
 
         if annotation_count > 0:
             destination_path = os.path.join(settings.IMAGE_PATH, new_image.path())
@@ -1406,8 +1431,8 @@ def load_image_set(request) -> Response:
             'detail': 'permission for reading this image set missing.',
         }, status=HTTP_403_FORBIDDEN)
 
-    serializer = ImageSetSerializer(image_set)
-    serialized_image_set = serializer.data
+    #serializer = ImageSetSerializer(image_set)
+    serialized_image_set = serialize_imageset(image_set)
     if filter_annotation_type_id is not None and filter_annotation_type_id.isdigit():
         # TODO: find a cleaner solution to filter related field set wihtin ImageSet serializer
         serialized_image_set['images'] = ImageSerializer(
@@ -1426,6 +1451,14 @@ def load_image_set(request) -> Response:
             serialized_image_set['images'] = ImageSerializer(
                 image_set.images.filter(id__in=ids).order_by(
                 'name'), many=True).data
+        elif filter_annotation_type_id == "NoAnnotations":
+            serialized_image_set['images'] = ImageSerializer(
+                image_set.images.annotate(anno_count=Count('annotations')).filter(anno_count=0).order_by(
+                    'name'), many=True).data
+        elif filter_annotation_type_id == "ComputerGenerated":
+            serialized_image_set['images'] = ImageSerializer(
+                image_set.images.filter(image_type=Image.ImageSourceTypes.SERVER_GENERATED).order_by(
+                    'name'), many=True).data
         else:
             serialized_image_set['images'] = ImageSerializer(
                 image_set.images.order_by('name'), many=True).data
