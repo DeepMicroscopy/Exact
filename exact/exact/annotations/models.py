@@ -1,5 +1,6 @@
 import json
 import uuid
+import datetime
 from typing import Set, Union
 from enum import Enum, IntEnum
 
@@ -604,8 +605,6 @@ class ExportFormat(models.Model):
 
     def __str__(self):
         return '{}: {}'.format(self.team.name, self.name)
-
-
 class LogImageAction(models.Model):
 
     class ActionType(IntEnum):
@@ -631,3 +630,34 @@ class LogImageAction(models.Model):
         else:
             ip = request.META.get('REMOTE_ADDR')
         return ip
+
+
+def annotation_directory_path(instance, filename):
+    now = datetime.datetime.now()
+    return 'annotation/{0}/{1}/{2}/{3}/{4}/{5}'.format(now.year, now.month, now.day, now.hour, instance.annotation.id, filename)
+
+class AnnotationMediaFile(models.Model):
+
+    class Meta:
+        unique_together = [
+            'name',
+            'annotation',
+        ]
+
+    class MediaFileType(IntEnum):
+        Undefined = 1
+        Image = 2
+        Video = 3
+        Audio = 4
+
+
+    name = models.CharField(max_length=255)
+    file = models.FileField(upload_to=annotation_directory_path, null=True)
+
+    media_file_type = models.IntegerField(default=MediaFileType.Image)
+
+    annotation = models.ForeignKey(Annotation, on_delete=models.CASCADE, related_name="uploaded_media_files",
+        related_query_name="uploaded_media_file")
+
+    def __str__(self):
+        return self.name + ": " + str(self.file)

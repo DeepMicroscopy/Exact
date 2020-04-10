@@ -29,4 +29,8 @@ urlpatterns = [
     url(r'^api/annotation/verify/$', views.api_verify_annotation, name='verify_annotation'),
     url(r'^api/annotation/update/$', views.update_annotation, name='update_annotations'),
     url(r'^api/annotation/blurred_concealed/$', views.api_blurred_concealed_annotation, name='blurred_concealed_annotation'),
+
+    url(r'^api/annotation/mediafile/upload/(\d+)/(\d+)/$', views.api_create_annotation_mediafile, name='api_create_annotation_mediafile'),
+    url(r'^api/annotation/mediafile/delete/$', views.api_delete_annotation_mediafile, name='api_delete_annotation_mediafile'),
+    url(r'^api/annotation/mediafile/update/$', views.api_update_annotation_mediafile, name='api_update_annotation_mediafile'),
 ]

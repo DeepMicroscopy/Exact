@@ -514,7 +514,17 @@ class BoundingBoxes {
     resizeItem(event) {
         if (this.selection) {
             if (this.selection.item.data.type !== "fixed_rect")
-                this.selection.item.scale(1 + (event.scroll / 10));
+            {
+                // Convert pixel to viewport coordinates
+                var viewportPoint = this.viewer.viewport.pointFromPixel(event.position);
+
+                // Convert from viewport coordinates to image coordinates.
+                var point = this.viewer.viewport.viewportToImageCoordinates(viewportPoint);
+
+                var hit = this.selection.item.hitTest(point, this.hitOptions);
+                if (hit) // just resize if mouse is over element
+                    this.selection.item.scale(1 + (event.scroll / 10));
+            }
         }
     }
 
