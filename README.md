@@ -20,6 +20,20 @@ This is a collaborative online tool for labeling image data.
 * WSI [viewer](https://openseadragon.github.io/) 
 
 
+## Documentation
+
+|   Describtion   |  Video  | 
+|---|---|
+| Explains how teams, products and annotation types are created |  [![Datasets](https://img.youtube.com/vi/yr6h2OffThU/0.jpg)](https://www.youtube.com/watch?v=yr6h2OffThU)  |
+| Describes how to create, view and edit image sets and upload images.  |  [![Datasets](https://img.youtube.com/vi/Cay_ei5u7y0/0.jpg)](https://www.youtube.com/watch?v=Cay_ei5u7y0)  |
+| Describes basic viewer and plugin functions.  |  [![Datasets](https://img.youtube.com/vi/jGa80iXfHo0/0.jpg)](https://www.youtube.com/watch?v=jGa80iXfHo0)  |
+| Explains collaboratory annotation features  |  [![Datasets](https://img.youtube.com/vi/qsX7MoYhDEM/0.jpg)](https://www.youtube.com/watch?v=qsX7MoYhDEM)  |
+| Shows multiple types of datasets  |  [![Datasets](https://img.youtube.com/vi/yr6h2OffThU/0.jpg)](https://www.youtube.com/watch?v=yr6h2OffThU)  |
+| Explains the screening plugin for WSI  |  [![Datasets](https://img.youtube.com/vi/w7GHTEP2AYo/0.jpg)](https://www.youtube.com/watch?v=/w7GHTEP2AYo)  |
+| Syncronisation with the offline tool SlideRunner  |  [![Datasets](https://img.youtube.com/vi/Ch5nlnVwYcA/0.jpg)](https://www.youtube.com/watch?v=/Ch5nlnVwYcA)  |
+| Advanced polygon annotation operations  |  [![Datasets](https://img.youtube.com/vi/xVn9ghDQz1A/0.jpg)](https://www.youtube.com/watch?v=/xVn9ghDQz1A)  |
+| REST-API Example | ```pip install EXCAT-Sync``` <br> [Code](https://github.com/ChristianMarzahl/EXACT-Sync) <br> [Notebook](https://colab.research.google.com/drive/1nOTyAVwzBDMSEAdgjbdpe7isGfeVpusK) |
+
 ## Install
 
 
@@ -212,43 +226,41 @@ logger = file:/var/log/exact.log
 Example Nginx Config:
 
 ```
+upstream exact {
+    server web:8000;
+}
+
 server {
-	sendfile on;
-	tcp_nopush on;
-	tcp_nodelay on;
 
-        listen 443;
-        server_name exact.bit-bots.de;
+    listen 80;
 
-        ssl_certificate /etc/letsencrypt/certs/exact.bit-bots.de/fullchain.pem;
-        ssl_certificate_key /etc/letsencrypt/certs/exact.bit-bots.de/privkey.pem;
-        include /etc/nginx/ssl.conf;
-        include /etc/nginx/acme.conf;
-        ssl on;
+    client_max_body_size 10000M;
+    keepalive_timeout 65;
 
-        client_max_body_size 10000M;
-        keepalive_timeout 65;
+    proxy_connect_timeout       6000s;
+    proxy_send_timeout          6000s;
+    proxy_read_timeout          6000s;
+    send_timeout                6000s;
+    client_body_timeout     6000s;
 
+    location / {
+        proxy_pass http://exact;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host $host;
+        proxy_redirect off;
+    }
+	
+	location /static/ {
+        expires 1h;
+        alias /home/app/web/static/;
+    }
+	
+	
+    location /media/ {
+        expires 1h;
+        alias /home/app/web/media/;
+    }
 
-	access_log /var/log/nginx/access.log;
-	error_log /var/log/nginx/error.log;
-
-
-        location /static {
-                expires 1h;
-                alias /var/www/exact;
-        }
-
-        location /ngx_static_dn/ {
-                internal;
-                alias /srv/data/exact/storage/pictures/;
-        }
-
-        location / {
-                include uwsgi_params;
-                uwsgi_pass 127.0.0.1:4819;
-                uwsgi_read_timeout 120;
-        }
 }
 ```
 

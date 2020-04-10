@@ -171,6 +171,16 @@
                                         <a class="nav-link active" id="default_annotation_tab" data-toggle="tab"
                                            href="#nav-item_anno" role="tab" aria-controls="home">Annotation</a>
                                     </li>
+
+                                    {% if HasMediaFiles %}
+
+                                    <li class="nav-item" style="float: none">
+                                        <a class="nav-link active" id="default_media_tab" data-toggle="tab"
+                                           href="#nav-item_media" role="tab" aria-controls="home">Media</a>
+                                    </li>
+
+                                    {% endif %}
+
                                     <li class="nav-item" style="float: none">
                                         <a class="nav-link active" id="default_search_tab" data-toggle="tab"
                                            href="#nav-item_search" role="tab" aria-controls="home">Search</a>
@@ -300,13 +310,42 @@
                                                         <label id="annotationVerified"></label>
                                                     </td>
                                                 </tr>
-
-
                                             </table>
 
                                         </div>
 
                                     </div>
+
+                                    {% if HasMediaFiles %}
+
+                                    <div class="tab-pane fade in" id="nav-item_media">
+
+                                        <div id="AnnotationMediaInformation">
+
+                                            <table style="width: 100%; margin-top: 10px; text-align: center">
+                                            
+                                                <tr id="show_audio">                                                    
+                                                    <td>
+                                                        <audio id="audio" controls="controls">
+                                                            <source id="annotationAudio" src="" type="audio/mpeg">
+                                                                Your browser does not support the audio format.
+                                                        </audio>  
+                                                    </td>
+                                                    <td>
+                                                        <input type='checkbox' id='autoplay_media' name="autoplay_media" checked>
+                                                        <label for='autoplay_media'>AutoPlay</label>
+
+                                                    </td>
+                                                </tr>
+                                            
+                                            
+                                            </table>
+
+                                        </div>
+
+                                    </div>
+
+                                    {% endif %}
 
                                     <div class="tab-pane fade in" id="nav-item_search">
 

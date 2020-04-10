@@ -177,9 +177,6 @@ def api_create_annotation_type(request) -> Response:
             product=product,
         )
 
-        # Automatically verify for owner
-        #annotation.verify(request.user, True)
-
     return Response({
         'annotationType': serialize_annotationType(annotationType),
     }, status=HTTP_201_CREATED)

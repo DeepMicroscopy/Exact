@@ -1056,6 +1056,26 @@ globals = {
                 var id = event.currentTarget.innerText;
                 tool.showItem(id);
             };
+
+            if (annotation.media_files !== undefined) 
+            {
+                for (const media of annotation.media_files) {
+                    if (media.media_file_type === 4) //Audio
+                    {
+                        var audio = document.getElementById('audio');
+                        if (audio !== undefined)
+                        {
+                            var source = document.getElementById('annotationAudio');
+                            source.src = media.file
+                            audio.load(); 
+
+                            if ( $('#autoplay_media').is(':checked'))
+                                audio.play();
+                            break;
+                        }
+                    }
+                }
+            }
         }
 
 

@@ -9,7 +9,7 @@ services:
     volumes:
       - ./exact/images:/home/app/web/images
       - static_volume:/home/app/web/static    
-      - media_volume:/home/app/web/media
+      - ./exact/media:/home/app/web/media #media_volume
     expose:
       - 8000
     env_file:
@@ -28,7 +28,7 @@ services:
     build: ./nginx
     volumes:
       - static_volume:/home/app/web/static   
-      - media_volume:/home/app/web/media     
+      - ./exact/media:/home/app/web/media   #media_volume
     ports:
       - 1337:80
     depends_on:

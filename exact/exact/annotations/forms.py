@@ -1,6 +1,6 @@
 from django import forms
 
-from exact.annotations.models import ExportFormat
+from exact.annotations.models import ExportFormat, AnnotationMediaFile
 
 
 class ExportFormatCreationForm(forms.ModelForm):
@@ -41,4 +41,12 @@ class ExportFormatEditForm(forms.ModelForm):
             'image_aggregation',
             'include_blurred',
             'include_concealed',
+        ]
+
+class AnnotationMediafileForm(forms.ModelForm):
+    class Meta:
+        model = AnnotationMediaFile
+        fields = [
+            'name',
+            'file'
         ]

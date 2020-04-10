@@ -18,11 +18,11 @@ from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_2
     HTTP_403_FORBIDDEN
 
 from exact.administration.models import Product
-from exact.annotations.forms import ExportFormatCreationForm, ExportFormatEditForm
+from exact.annotations.forms import ExportFormatCreationForm, ExportFormatEditForm, AnnotationMediafileForm
 from exact.annotations.models import Annotation, AnnotationType, Export, \
-    Verification, ExportFormat, LogImageAction
+    Verification, ExportFormat, LogImageAction, AnnotationMediaFile
 from exact.annotations.serializers import AnnotationSerializer, AnnotationTypeSerializer, \
-    AnnotationSerializerFast, serialize_annotation
+    AnnotationSerializerFast, serialize_annotation, AnnotationMediaFileSerializer
 from exact.images.models import Image, ImageSet
 from exact.users.models import Team
 
@@ -39,6 +39,7 @@ def annotate(request, image_id):
     imageset_perms = selected_image.image_set.get_perms(request.user)
     if 'read' in imageset_perms:
         set_images = selected_image.image_set.images.all().order_by('name')
+        hasMediaFiles = AnnotationMediaFile.objects.filter(annotation__image__in=set_images).count() > 0
         annotation_types = AnnotationType.objects.filter(active=True,
                                                          product__in=selected_image.image_set.product_set.all())\
             .order_by('sort_order')  # for the dropdown option
@@ -55,6 +56,7 @@ def annotate(request, image_id):
             'set_images': set_images,
             'total_annotations': total_annotations,
             'annotation_types': annotation_types,
+            'HasMediaFiles': hasMediaFiles,
             'global_annotation_types': global_annotation_types
         })
     else:
@@ -560,6 +562,54 @@ def delete_exportformat(request, format_id):
     else:
         messages.error(request, _('You are not permitted to delete export formats of this team!'))
     return redirect(reverse('users:team', args=(export_format.team.id,)))
+
+
+@api_view(['POST'])
+def api_create_annotation_mediafile(request, annotation_id, media_file_type) -> Response:
+    annotation = get_object_or_404(Annotation, id=annotation_id)
+
+    if not annotation.image.image_set.has_perm('edit_annotation', request.user):
+        return Response({
+            'detail': 'permission for editing annotations in this image set missing.',
+        }, status=HTTP_403_FORBIDDEN)
+
+
+    media_files = []
+    if request.method == 'POST':
+        if request.FILES is None:
+            return HttpResponseBadRequest('Must have files attached!')
+
+
+        for f in list(request.FILES.values()):
+            media_file = AnnotationMediaFile.objects.filter(name=f.name, annotation__id=annotation.id).first()
+
+            if media_file is None:
+                media_file = AnnotationMediaFile(
+                    name = f.name,
+                    media_file_type = int(media_file_type),
+                    annotation = annotation,
+                    file = f
+                )
+
+                media_file.save()
+                media_files.append(media_file)
+
+    serializer = AnnotationMediaFileSerializer(
+        media_files,
+        context={'request': request, },
+        many=True)
+    return Response(serializer.data, status=HTTP_200_OK)
+            
+
+
+@api_view(['POST'])
+def api_delete_annotation_mediafile(request) -> Response:
+    raise NotImplementedError
+
+@api_view(['POST'])
+def api_update_annotation_mediafile(request) -> Response:
+    raise NotImplementedError
+
 
 
 @api_view(['DELETE'])

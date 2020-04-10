@@ -2,9 +2,10 @@ from typing import Dict, Any
 from rest_framework.serializers import ModelSerializer, SerializerMethodField
 from rest_framework import serializers
 
-from .models import Annotation, AnnotationType, Verification
+from .models import Annotation, AnnotationType, Verification, AnnotationMediaFile
 from exact.images.serializers import ImageSerializer
 from exact.administration.serializers import ProductSerializer
+
 
 
 class AnnotationTypeSerializer(ModelSerializer):
@@ -63,6 +64,19 @@ class AnnotationSerializer(ModelSerializer):
     annotation_type = AnnotationTypeSerializer(read_only=True)
     image = ImageSerializer(read_only=True)
 
+class AnnotationMediaFileSerializer(ModelSerializer):
+    class Meta:
+        model = AnnotationMediaFile
+        fields = (
+            'id',
+            'name',
+            'media_file_type',
+            'file',
+            'annotation'
+        )
+
+    annotation = AnnotationSerializer(read_only=True)
+
 class AnnotationSerializerFast(ModelSerializer):
     verified_by_user = SerializerMethodField('is_verified_by_user')
 
@@ -108,6 +122,16 @@ def serialize_annotation(anno: Annotation) -> Dict[str, Any]:
             'color_code': anno.annotation_type.color_code,
             'area_hit_test' : anno.annotation_type.area_hit_test
         },
+        'media_files':
+            [
+                {
+                    'name': file.name,
+                    'id': file.id,
+                    'file': file.file.url,
+                    'media_file_type': file.media_file_type
+                 }
+                for file in anno.uploaded_media_files.all()
+            ],
         'image': {
             'id': anno.image.id,
             'name': anno.image.name
