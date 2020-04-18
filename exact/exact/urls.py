@@ -39,6 +39,7 @@ urlpatterns = [
     url(r'^tools/', include('exact.tools.urls')),
 
     path('api/v1/', include(router.urls)),
+    path('api/auth/', include('djoser.urls.authtoken')),
 ] + static(settings.MEDIA_URL, document_root= settings.MEDIA_ROOT)
 
 
