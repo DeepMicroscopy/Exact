@@ -7,7 +7,8 @@ This is a collaborative online tool for labeling image data.
 
 ## Features
 
-* Rest-Api https://github.com/ChristianMarzahl/EXACT-Sync 
+* Browsable REST-API  https://exact.cs.fau.de/api/v1/ and [docu](#REST-API)
+* REST-API Client  https://github.com/ChristianMarzahl/EXACT-Sync 
 * Sync with the offline Tool [SlideRunner](https://github.com/maubreville/SlideRunner) 
 * team creation
 * upload image sets in the multiple formats like: [whole slide image (WSI) formats](https://openslide.org/api/python/) or .png, .jpg, .jepg, .bmp etc. 
@@ -282,6 +283,117 @@ Please take into account that the presence of zip files will double your storage
 Zip archive download via a script is also possible. The URL is `/images/imageset/<id>/download/`. A successful request
 returns HTTP 200 OK and the zip file. When the file generation is still in progress, HTTP 202 ACCEPTED is returned.
 For an empty image set, HTTP 204 NO CONTENT is returned instead of an empty zip archive.
+
+## REST-API
+
+### Token
+
+
+```Skript
+$ curl -X POST -d '{"username": "exact","password": "top_secret"}' -H
+'Content-Type: application/json'  http://127.0.0.1:8000/api/auth/token/login/
+
+```
+
+### Examples
+
+```
+https://github.com/rsinger86/drf-flex-fields
+https://django-filter.readthedocs.io/en/master/
+```
+
+#### All suported classes
+
+```JSON
+GET /api/v1/
+
+{
+    "users/users": "http://127.0.0.1:8000/api/v1/users/users/",
+    "users/teams": "http://127.0.0.1:8000/api/v1/users/teams/",
+    "users/team_membership": "http://127.0.0.1:8000/api/v1/users/team_membership/",
+    "images/images": "http://127.0.0.1:8000/api/v1/images/images/",
+    "images/image_sets": "http://127.0.0.1:8000/api/v1/images/image_sets/",
+    "images/set_tags": "http://127.0.0.1:8000/api/v1/images/set_tags/",
+    "images/screening_modes": "http://127.0.0.1:8000/api/v1/images/screening_modes/",
+    "annotations/annotations": "http://127.0.0.1:8000/api/v1/annotations/annotations/",
+    "annotations/annotation_types": "http://127.0.0.1:8000/api/v1/annotations/annotation_types/",
+    "annotations/annotation_media_files": "http://127.0.0.1:8000/api/v1/annotations/annotation_media_files/",
+    "annotations/verifications": "http://127.0.0.1:8000/api/v1/annotations/verifications/",
+    "annotations/log_image_actions": "http://127.0.0.1:8000/api/v1/annotations/log_image_actions/",
+    "administration/products": "http://127.0.0.1:8000/api/v1/administration/products/"
+}
+```
+
+#### Filter all image_sets with "Katze" in name and expand products and main_annotation_type
+
+```JSON
+GET /api/v1/images/image_sets/?name__contains=Katze&expand=product_set,main_annotation_type
+
+{
+    "count": 1,
+    "next": null,
+    "previous": null,
+    "results": [
+        {
+            "id": 3,
+            "name": "EIPH-Katze",
+            "path": "exact_1_3",
+            "location": null,
+            "description": "",
+            "images": [
+                17,
+                20,
+                22,
+                23,
+                26,
+                27,
+                30
+            ],
+            "product_set": [
+                {
+                    "id": 2,
+                    "name": "EIPH",
+                    "description": "",
+                    "team": 1,
+                    "creator": 1,
+                    "imagesets": [
+                        2,
+                        3,
+                        16
+                    ],
+                    "annotationtype_set": [
+                        10,
+                        11,
+                        12,
+                        13,
+                        14
+                    ]
+                }
+            ],
+            "main_annotation_type": {
+                "id": 10,
+                "name": "0",
+                "vector_type": 1,
+                "node_count": 0,
+                "enable_concealed": false,
+                "enable_blurred": false,
+                "color_code": "#0000FF",
+                "default_width": 120,
+                "default_height": 120,
+                "sort_order": 0,
+                "closed": true,
+                "area_hit_test": true,
+                "product": 2
+            },
+            "set_tags": [],
+            "team": 1,
+            "creator": 1
+        }
+    ]
+}
+
+```
+
 
 ## Used dependencies
 
