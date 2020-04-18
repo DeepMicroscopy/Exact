@@ -1,6 +1,6 @@
 from rest_framework.serializers import ModelSerializer
 
-from exact.images.models import ImageSet, Image, SetTag
+from exact.images.models import ImageSet, Image, SetTag, ScreeningMode
 from typing import Dict, Any
 
 class ImageSerializer(ModelSerializer):
@@ -9,11 +9,14 @@ class ImageSerializer(ModelSerializer):
         fields = (
             'id',
             'name',
+            'filename',
+            'time',
             'height',
             'width',
             'mpp',
             'objectivePower',
-            'image_type'
+            'image_type',
+            'image_set'
         )
 
 
@@ -21,8 +24,25 @@ class SetTagSerializer(ModelSerializer):
     class Meta:
         model = SetTag
         fields = (
+            'id',
             'name',
         )
+
+class ScreeningModeSerializer(ModelSerializer):
+    class Meta:
+        model = ScreeningMode
+        fields = (
+            'id',
+            'image',
+            'user',
+            'screening_tiles',
+            'x_steps',
+            'y_steps',
+            'x_resolution',
+            'y_resolution',
+            'current_index'
+        )
+
 
 
 class ImageSetSerializer(ModelSerializer):
@@ -31,14 +51,16 @@ class ImageSetSerializer(ModelSerializer):
         fields = (
             'id',
             'name',
+            'path',
             'location',
             'description',
             'images',
-            'products',
-            'main_annotation_type'
+            'product_set',
+            'main_annotation_type',
+            'set_tags'
         )
 
-    images = ImageSerializer(many=True)
+    #images = ImageSerializer(many=True)
 
 def serialize_imageset(imageset: ImageSet) -> Dict[str, Any]:
     return {

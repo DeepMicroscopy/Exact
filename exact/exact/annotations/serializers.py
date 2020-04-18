@@ -2,7 +2,7 @@ from typing import Dict, Any
 from rest_framework.serializers import ModelSerializer, SerializerMethodField
 from rest_framework import serializers
 
-from .models import Annotation, AnnotationType, Verification, AnnotationMediaFile
+from .models import Annotation, AnnotationType, Verification, LogImageAction, AnnotationMediaFile
 from exact.images.serializers import ImageSerializer
 from exact.administration.serializers import ProductSerializer
 
@@ -27,7 +27,31 @@ class AnnotationTypeSerializer(ModelSerializer):
             'product'
         )
 
-    product = ProductSerializer(read_only=True)
+    #product = ProductSerializer(read_only=True)
+
+class VerificationSerializer(ModelSerializer):
+    class Meta:
+        model = Verification
+        fields = (
+            'id',
+            'annotation',
+            'user',
+            'time',
+            'verified',
+            'enable_blurred',
+        )
+
+class LogImageActionSerializer(ModelSerializer):
+    class Meta:
+        model = LogImageAction
+        fields = (
+            'id',
+            'image',
+            'user',
+            'time',
+            'action',
+            'ip',
+        )
 
 
 class AnnotationSerializer(ModelSerializer):
@@ -61,8 +85,8 @@ class AnnotationSerializer(ModelSerializer):
             'meta_data'
         )
 
-    annotation_type = AnnotationTypeSerializer(read_only=True)
-    image = ImageSerializer(read_only=True)
+    #annotation_type = AnnotationTypeSerializer(read_only=True)
+    #image = ImageSerializer(read_only=True)
 
 class AnnotationMediaFileSerializer(ModelSerializer):
     class Meta:
@@ -75,7 +99,7 @@ class AnnotationMediaFileSerializer(ModelSerializer):
             'annotation'
         )
 
-    annotation = AnnotationSerializer(read_only=True)
+    #annotation = AnnotationSerializer(read_only=True)
 
 class AnnotationSerializerFast(ModelSerializer):
     verified_by_user = SerializerMethodField('is_verified_by_user')

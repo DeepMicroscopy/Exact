@@ -14,13 +14,14 @@ Including another URLconf
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
 from django.conf.urls import url, include
+from django.urls import path
 from django.contrib import admin
 from django.shortcuts import render
 from django.conf import settings
 from django.conf.urls.static import static
 from django_registration.backends.activation.views import RegistrationView
 
-
+from .api import router
 from .users.forms import UserRegistrationForm
 
 urlpatterns = [
@@ -36,6 +37,8 @@ urlpatterns = [
     url(r'^users/', include('exact.users.urls')),
     url(r'^tagger_messages/', include('exact.tagger_messages.urls')),
     url(r'^tools/', include('exact.tools.urls')),
+
+    path('api/v1/', include(router.urls)),
 ] + static(settings.MEDIA_URL, document_root= settings.MEDIA_ROOT)
 
 

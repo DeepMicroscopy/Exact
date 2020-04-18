@@ -1,5 +1,5 @@
 import datetime
-import time;
+import time
 import pytz
 
 from django.contrib import messages

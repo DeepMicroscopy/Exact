@@ -7,6 +7,7 @@
 
 confusable-homoglyphs==3.2.0
 django-friendly-tag-loader==1.3.1
+django-filter
 django-widget-tweaks==1.4.3
 django==3
 -e git+git://github.com/ubernostrum/django-registration.git#egg=django-registration
@@ -23,3 +24,4 @@ openslide-python==1.1.1
 uWSGI==2.0.18
 tifffile
 pyvips
+
