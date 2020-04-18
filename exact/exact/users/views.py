@@ -20,7 +20,7 @@ from exact.administration.models import Product
 from exact.images.models import ImageSet
 from exact.users.forms import TeamCreationForm
 from .models import Team, User
-
+from .serializers import TeamSerializer
 
 @login_required
 def create_team(request):
@@ -305,3 +305,21 @@ def user_autocomplete(request) -> Response:
         'query': username_query,
         'suggestions': user_suggestions,
     }, status=HTTP_200_OK)
+
+
+@api_view(['GET'])
+def api_filter_teams(request) -> Response:
+    try:
+        name = request.data.get('name', None)
+        id = int(request.data.get('id',-1))
+    except (KeyError, TypeError, ValueError):
+        raise ParseError
+
+    teams = Team.objects.filter(members=request.user)
+    if name is not None:
+        teams = teams.filter(name=name)
+    if id > 0:
+        teams = teams.filter(id=id)
+    serializer = TeamSerializer(teams, many=True, context={'request': request, })
+    return Response(serializer.data, status=HTTP_200_OK)
+
