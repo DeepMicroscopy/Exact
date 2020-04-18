@@ -14,6 +14,7 @@ class UserViewset(viewsets.ModelViewSet):
        'is_staff': ['exact'],
        'is_active': ['exact'],
        'last_login': ['exact'],
+       'team': ['exact'],
    }
 
 class TeamViewset(viewsets.ModelViewSet):
@@ -29,7 +30,7 @@ class TeamViewset(viewsets.ModelViewSet):
     
 class TeamMembershipViewset(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
-    queryset = models.TeamMembership.objects.all()
+    queryset = models.TeamMembership.objects.all().select_related('team', 'user')
     serializer_class = serializers.TeamMembershipSerializer
     filterset_fields = {
        'id': ['exact'],

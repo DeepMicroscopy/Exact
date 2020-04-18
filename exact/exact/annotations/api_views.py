@@ -44,14 +44,14 @@ class AnnotationFilterSet(django_filters.FilterSet):
 
 class AnnotationViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
-    queryset = models.Annotation.objects.all()
+    queryset = models.Annotation.objects.all().select_related('annotation_type', 'image', 'user', 'last_editor')
     serializer_class = serializers.AnnotationSerializer
     filterset_class = AnnotationFilterSet
 
 
 class AnnotationTypeViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
-    queryset = models.AnnotationType.objects.all()
+    queryset = models.AnnotationType.objects.all().select_related('product')
     serializer_class = serializers.AnnotationTypeSerializer
     filterset_fields = {
        'id': ['exact'],
@@ -82,14 +82,14 @@ class AnnotationMediaFileFilterSet(django_filters.FilterSet):
 
 class AnnotationMediaFileViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
-    queryset = models.AnnotationMediaFile.objects.all()
+    queryset = models.AnnotationMediaFile.objects.all().select_related('annotation')
     serializer_class = serializers.AnnotationMediaFileSerializer
     filterset_class = AnnotationMediaFileFilterSet
 
 
 class VerificationViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
-    queryset = models.Verification.objects.all()
+    queryset = models.Verification.objects.all().select_related('annotation', 'user')
     serializer_class = serializers.VerificationSerializer
     filterset_fields = {
         'id': ['exact'],
@@ -121,6 +121,6 @@ class LogImageActionFilterSet(django_filters.FilterSet):
 
 class LogImageActionViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
-    queryset = models.LogImageAction.objects.all()
+    queryset = models.LogImageAction.objects.all().select_related('image', 'user')
     serializer_class = serializers.LogImageActionSerializer
     filterset_class = LogImageActionFilterSet

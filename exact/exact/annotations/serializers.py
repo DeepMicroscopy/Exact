@@ -1,14 +1,16 @@
 from typing import Dict, Any
 from rest_framework.serializers import ModelSerializer, SerializerMethodField
 from rest_framework import serializers
+from rest_flex_fields import FlexFieldsModelSerializer
 
 from .models import Annotation, AnnotationType, Verification, LogImageAction, AnnotationMediaFile
 from exact.images.serializers import ImageSerializer
 from exact.administration.serializers import ProductSerializer
+from exact.users.serializers import UserSerializer
 
 
 
-class AnnotationTypeSerializer(ModelSerializer):
+class AnnotationTypeSerializer(FlexFieldsModelSerializer):
     class Meta:
         model = AnnotationType
         fields = (
@@ -27,34 +29,11 @@ class AnnotationTypeSerializer(ModelSerializer):
             'product'
         )
 
-    #product = ProductSerializer(read_only=True)
+        expandable_fields = {
+            "product": (ProductSerializer, {'read_only': True}),
+        }
 
-class VerificationSerializer(ModelSerializer):
-    class Meta:
-        model = Verification
-        fields = (
-            'id',
-            'annotation',
-            'user',
-            'time',
-            'verified',
-            'enable_blurred',
-        )
-
-class LogImageActionSerializer(ModelSerializer):
-    class Meta:
-        model = LogImageAction
-        fields = (
-            'id',
-            'image',
-            'user',
-            'time',
-            'action',
-            'ip',
-        )
-
-
-class AnnotationSerializer(ModelSerializer):
+class AnnotationSerializer(FlexFieldsModelSerializer):
     verified_by_user = SerializerMethodField('is_verified_by_user')
     is_verified = SerializerMethodField('is_verified')
 
@@ -82,13 +61,52 @@ class AnnotationSerializer(ModelSerializer):
             'deleted',
             'description',
             'unique_identifier',
+            'uploaded_media_files',
             'meta_data'
         )
 
-    #annotation_type = AnnotationTypeSerializer(read_only=True)
-    #image = ImageSerializer(read_only=True)
+        expandable_fields = {
+            "uploaded_media_files": ('exact.annotations.serializers.AnnotationMediaFileSerializer', {'read_only': True, 'many': True}),
+            "annotation_type": (AnnotationTypeSerializer, {'read_only': True}),
+            "image": (ImageSerializer, {'read_only': True}),
+            "user": (UserSerializer, {'read_only': True}),
+            "last_editor": (UserSerializer, {'read_only': True}),
+        }
 
-class AnnotationMediaFileSerializer(ModelSerializer):
+class VerificationSerializer(FlexFieldsModelSerializer):
+    class Meta:
+        model = Verification
+        fields = (
+            'id',
+            'annotation',
+            'user',
+            'time',
+            'verified',
+        )
+
+        expandable_fields = {
+            "annotation": (AnnotationSerializer, {'read_only': True}),
+            "user": (UserSerializer, {'read_only': True}),
+        }
+
+class LogImageActionSerializer(FlexFieldsModelSerializer):
+    class Meta:
+        model = LogImageAction
+        fields = (
+            'id',
+            'image',
+            'user',
+            'time',
+            'action',
+            'ip',
+        )
+
+        expandable_fields = {
+            "image": (ImageSerializer, {'read_only': True}),
+            "user": (UserSerializer, {'read_only': True}),
+        }
+
+class AnnotationMediaFileSerializer(FlexFieldsModelSerializer):
     class Meta:
         model = AnnotationMediaFile
         fields = (
@@ -99,7 +117,9 @@ class AnnotationMediaFileSerializer(ModelSerializer):
             'annotation'
         )
 
-    #annotation = AnnotationSerializer(read_only=True)
+        expandable_fields = {
+            "annotation": (AnnotationSerializer, {'read_only': True}),
+        }
 
 class AnnotationSerializerFast(ModelSerializer):
     verified_by_user = SerializerMethodField('is_verified_by_user')
@@ -128,7 +148,6 @@ class AnnotationSerializerFast(ModelSerializer):
 
     annotation_type = AnnotationTypeSerializer(read_only=True)
     image = ImageSerializer(read_only=True)
-
 
 def serialize_annotation(anno: Annotation) -> Dict[str, Any]:
     return {
