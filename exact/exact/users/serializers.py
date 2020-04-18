@@ -1,9 +1,10 @@
 from rest_framework.serializers import ModelSerializer
+from rest_flex_fields import FlexFieldsModelSerializer
 
 from exact.users.models import Team, User, TeamMembership
 
 
-class TeamSerializer(ModelSerializer):
+class TeamSerializer(FlexFieldsModelSerializer):
     class Meta:
         model = Team
         fields = (
@@ -12,7 +13,11 @@ class TeamSerializer(ModelSerializer):
             'members'
         )
 
-class UserSerializer(ModelSerializer):
+        expandable_fields = {
+            "members": ('exact.users.serializers.UserSerializer', {'read_only': True, 'many': True}),
+        }
+
+class UserSerializer(FlexFieldsModelSerializer):
     class Meta:
         model = User
         fields = (
@@ -22,10 +27,15 @@ class UserSerializer(ModelSerializer):
             'is_staff',
             'is_active',
             'last_login',
+            'team_set'
         )
 
+        expandable_fields = {
+            "team_set": (TeamSerializer, {'read_only': True, 'many': True}),
+        }
 
-class TeamMembershipSerializer(ModelSerializer):
+
+class TeamMembershipSerializer(FlexFieldsModelSerializer):
     class Meta:
         model = TeamMembership
         fields = (
@@ -34,3 +44,8 @@ class TeamMembershipSerializer(ModelSerializer):
             'team',
             'user',
         )
+
+        expandable_fields = {
+            "team": (TeamSerializer, {'read_only': True}),
+            "user": (UserSerializer, {'read_only': True}),
+        }

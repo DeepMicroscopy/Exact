@@ -24,7 +24,7 @@ class ImageFilterSet(django_filters.FilterSet):
 
 class ImageViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
-    queryset = models.Image.objects.all()
+    queryset = models.Image.objects.all().select_related('image_set')
     serializer_class = serializers.ImageSerializer
     filterset_class = ImageFilterSet
 
@@ -67,7 +67,7 @@ class ImageSetFilterSet(django_filters.FilterSet):
 
 class ImageSetViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
-    queryset = models.ImageSet.objects.all()
+    queryset = models.ImageSet.objects.all().select_related('team', 'creator', 'main_annotation_type')
     serializer_class = serializers.ImageSetSerializer
     filterset_class = ImageSetFilterSet
 
@@ -82,7 +82,7 @@ class SetTagViewSet(viewsets.ModelViewSet):
 
 class ScreeningModeViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
-    queryset = models.ScreeningMode.objects.all()
+    queryset = models.ScreeningMode.objects.all().select_related('image', 'user')
     serializer_class = serializers.ScreeningModeSerializer
     filterset_fields = {
        'id': ['exact'],

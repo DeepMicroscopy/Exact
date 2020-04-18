@@ -1,9 +1,12 @@
 from rest_framework.serializers import ModelSerializer
 
+from exact.administration.serializers import ProductSerializer
+from exact.users.serializers import UserSerializer, TeamSerializer
 from exact.images.models import ImageSet, Image, SetTag, ScreeningMode
 from typing import Dict, Any
+from rest_flex_fields import FlexFieldsModelSerializer
 
-class ImageSerializer(ModelSerializer):
+class ImageSerializer(FlexFieldsModelSerializer):
     class Meta:
         model = Image
         fields = (
@@ -16,19 +19,30 @@ class ImageSerializer(ModelSerializer):
             'mpp',
             'objectivePower',
             'image_type',
-            'image_set'
+            'image_set',
+            'annotations'
         )
 
+        expandable_fields = {
+            "imagesets": ('exact.images.serializers.ImageSetSerializer', {'read_only': True}),
+            "annotations": ('exact.annotations.serializers.AnnotationSerializer', {'read_only': True}),
+        }
 
-class SetTagSerializer(ModelSerializer):
+
+class SetTagSerializer(FlexFieldsModelSerializer):
     class Meta:
         model = SetTag
         fields = (
             'id',
             'name',
+            'imagesets'
         )
 
-class ScreeningModeSerializer(ModelSerializer):
+        expandable_fields = {
+            "imagesets": ('exact.images.serializers.ImageSetSerializer', {'read_only': True, 'many': True}),
+        }
+
+class ScreeningModeSerializer(FlexFieldsModelSerializer):
     class Meta:
         model = ScreeningMode
         fields = (
@@ -43,9 +57,14 @@ class ScreeningModeSerializer(ModelSerializer):
             'current_index'
         )
 
+        expandable_fields = {
+            "image": (ImageSerializer, {'read_only': True}),
+            "user": (UserSerializer, {'read_only': True}),
+        }
 
 
-class ImageSetSerializer(ModelSerializer):
+
+class ImageSetSerializer(FlexFieldsModelSerializer):
     class Meta:
         model = ImageSet
         fields = (
@@ -57,10 +76,19 @@ class ImageSetSerializer(ModelSerializer):
             'images',
             'product_set',
             'main_annotation_type',
-            'set_tags'
+            'set_tags',
+            'team',
+            'creator'
         )
 
-    #images = ImageSerializer(many=True)
+        expandable_fields = {
+            "team": (TeamSerializer, {'read_only': True}),
+            "creator": (UserSerializer, {'read_only': True}),
+            "images": (ImageSerializer, {'read_only': True, 'many': True}),
+            "product_set": (ProductSerializer, {'read_only': True, 'many': True}),
+            "set_tags": (SetTagSerializer, {'read_only': True, 'many': True}),
+            "main_annotation_type": ('exact.annotations.serializers.AnnotationTypeSerializer', {'read_only': True}),
+        }
 
 def serialize_imageset(imageset: ImageSet) -> Dict[str, Any]:
     return {
