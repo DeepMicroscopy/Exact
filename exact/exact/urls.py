@@ -23,6 +23,16 @@ from django_registration.backends.activation.views import RegistrationView
 
 from .api import router
 from .users.forms import UserRegistrationForm
+from rest_framework.schemas import get_schema_view
+
+schema_view = get_schema_view(
+        title="EXACT - API",
+        description="API to interact with the EXACT Server",
+        version="1.0.0",
+        url=r"/api/v1/",
+        patterns=router.urls,
+        urlconf='exact.urls'
+    )
 
 urlpatterns = [
     url(r'^user/', include('django.contrib.auth.urls')),
@@ -39,6 +49,8 @@ urlpatterns = [
     url(r'^tools/', include('exact.tools.urls')),
 
     path('api/v1/', include(router.urls)),
+    path('api/v1/openapi', schema_view, name='openapi-schema'),
+
     #path('auth/', include('djoser.urls.authtoken')),
 ] + static(settings.MEDIA_URL, document_root= settings.MEDIA_ROOT)
 

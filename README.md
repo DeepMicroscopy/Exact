@@ -8,11 +8,12 @@ This is a collaborative online tool for labeling image data.
 ## Features
 
 * Browsable REST-API  https://exact.cs.fau.de/api/v1/ and [docu](#REST-API)
-* REST-API Client  https://github.com/ChristianMarzahl/EXACT-Sync 
+> * REST-API Client  https://github.com/ChristianMarzahl/EXACT-Sync 
+> * Dynamic [OpenAPI](https://swagger.io/docs/specification/about/) client generation with [Swagger](https://editor.swagger.io/) and [EXACT-API.yml](./exact/EXACT-API.yml)
 * Sync with the offline Tool [SlideRunner](https://github.com/maubreville/SlideRunner) 
 * team creation
 * upload image sets in the multiple formats like: [whole slide image (WSI) formats](https://openslide.org/api/python/) or .png, .jpg, .jepg, .bmp etc. 
-* bounding box
+* bounding box, circle and polygon support
 * export format creation
 * label export
 * image preloading for labeling and verification
@@ -286,12 +287,10 @@ For an empty image set, HTTP 204 NO CONTENT is returned instead of an empty zip 
 
 ## REST-API
 
-### Token
-
+### OpenAPI-Schema
 
 ```Skript
-$ curl -X POST -d '{"username": "exact","password": "top_secret"}' -H
-'Content-Type: application/json'  http://127.0.0.1:8000/api/auth/token/login/
+GET /api/v1/openapi
 
 ```
 
@@ -300,6 +299,15 @@ $ curl -X POST -d '{"username": "exact","password": "top_secret"}' -H
 ```
 https://github.com/rsinger86/drf-flex-fields
 https://django-filter.readthedocs.io/en/master/
+```
+
+### Token
+
+
+```Skript
+$ curl -X POST -d '{"username": "exact","password": "top_secret"}' -H
+'Content-Type: application/json'  http://127.0.0.1:8000/api/auth/token/login/
+
 ```
 
 #### All suported classes
