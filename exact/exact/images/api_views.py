@@ -24,9 +24,12 @@ class ImageFilterSet(django_filters.FilterSet):
 
 class ImageViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
-    queryset = models.Image.objects.all().select_related('image_set')
     serializer_class = serializers.ImageSerializer
     filterset_class = ImageFilterSet
+
+    def get_queryset(self):
+        user = self.request.user
+        return  models.Image.objects.filter(image_set__team__in=user.team_set.all()).select_related('image_set')
 
 
 class ImageSetFilterSet(django_filters.FilterSet):
@@ -67,25 +70,38 @@ class ImageSetFilterSet(django_filters.FilterSet):
 
 class ImageSetViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
-    queryset = models.ImageSet.objects.all().select_related('team', 'creator', 'main_annotation_type')
+    #queryset = models.ImageSet.objects.all().select_related('team', 'creator', 'main_annotation_type')
     serializer_class = serializers.ImageSetSerializer
     filterset_class = ImageSetFilterSet
 
+    def get_queryset(self):
+        user = self.request.user
+        return  models.ImageSet.objects.filter(team__in=user.team_set.all()).select_related('team', 'creator', 'main_annotation_type')
+
 class SetTagViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
-    queryset = models.SetTag.objects.all()
+    
     serializer_class = serializers.SetTagSerializer
     filterset_fields = {
        'id': ['exact'],
        'name': ['exact', 'contains'],
-   }
+       'imagesets': ['exact'],
+    }
+
+    def get_queryset(self):
+        user = self.request.user
+        return  models.SetTag.objects.filter(imagesets__team__in=user.team_set.all()).select_related('imagesets')
 
 class ScreeningModeViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
-    queryset = models.ScreeningMode.objects.all().select_related('image', 'user')
+    #queryset = models.ScreeningMode.objects.all().select_related('image', 'user')
     serializer_class = serializers.ScreeningModeSerializer
     filterset_fields = {
        'id': ['exact'],
        'image': ['exact'],
        'user': ['exact'],
-   }
+    }
+
+    def get_queryset(self):
+        user = self.request.user
+        return  models.ScreeningMode.objects.filter(image__image_set__team__in=user.team_set.all()).select_related('image', 'user')

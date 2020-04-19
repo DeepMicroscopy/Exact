@@ -5,7 +5,6 @@ from . import serializers
 
 class ProductViewset(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
-    queryset = models.Product.objects.all().select_related('creator', 'team')
     serializer_class = serializers.ProductSerializer 
     filterset_fields = {
        'id': ['exact'],
@@ -16,3 +15,7 @@ class ProductViewset(viewsets.ModelViewSet):
        'imagesets': ['exact'],
        'annotationtype': ['exact'], 
    }
+
+    def get_queryset(self):
+        user = self.request.user
+        return  models.Product.objects.filter(team__in=user.team_set.all()).select_related('creator', 'team')
