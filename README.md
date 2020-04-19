@@ -394,6 +394,48 @@ GET /api/v1/images/image_sets/?name__contains=Katze&expand=product_set,main_anno
 
 ```
 
+#### Include(fields) or Exclude(omit) fields
+
+```JSON
+GET /api/v1/images/image_sets/?name__contains=Katze&fields=name
+
+{
+    "count": 1,
+    "next": null,
+    "previous": null,
+    "results": [
+        {
+            "name": "EIPH-Katze"
+        }
+    ]
+}
+
+```
+
+```JSON
+GET /api/v1/images/image_sets/?name__contains=Katze&omit=images,product_set
+
+{
+    "count": 1,
+    "next": null,
+    "previous": null,
+    "results": [
+        {
+            "id": 3,
+            "name": "EIPH-Katze",
+            "path": "exact_1_3",
+            "location": null,
+            "description": "",
+            "main_annotation_type": 10,
+            "set_tags": [],
+            "team": 1,
+            "creator": 1
+        }
+    ]
+}
+
+```
+
 
 ## Used dependencies
 
