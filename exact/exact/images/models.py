@@ -69,6 +69,9 @@ class Image(models.Model):
     def __str__(self):
         return u'Image: {0}'.format(self.name)
 
+    def __repr__(self):
+        return u'Image: {0}'.format(self.name)
+
 
 class ImageSet(models.Model):
     class Meta:
@@ -300,6 +303,9 @@ class SetTag(models.Model):
     name = models.CharField(max_length=100, unique=True)
     imagesets = models.ManyToManyField(ImageSet, related_name='set_tags')
 
+    def __str__(self):
+        return u'Tag: {0} '.format(self.name)
+
 
 class ScreeningMode(models.Model):
     class Meta:
@@ -322,3 +328,6 @@ class ScreeningMode(models.Model):
     y_resolution = models.IntegerField(default=0)
 
     current_index = models.IntegerField(default=0)
+
+    def __str__(self):
+        return u'ScreeningMode: {0} '.format(self.image.name, self.user.username)

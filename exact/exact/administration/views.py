@@ -5,12 +5,13 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
 from django.db import transaction
 from django.core.files.storage import FileSystemStorage
+from django.core.paginator import Paginator
 
 from .forms import AnnotationTypeCreationForm, AnnotationTypeEditForm, ProductCreationForm, ProductEditForm
 from exact.annotations.models import Annotation, AnnotationType
 from exact.administration.models import Product
 from exact.users.models import Team
-from exact.administration.serializers import serialize_annotationType
+from exact.administration.serializers import serialize_annotationType, ProductSerializer
 
 
 from rest_framework.decorators import api_view
@@ -137,6 +138,54 @@ def api_delete_annotation_type(request) -> Response:
     return Response({
         'detail': 'OK',
     }, status=HTTP_200_OK)    
+
+
+@api_view(['POST'])
+def api_create_product(request) -> Response:
+    try:
+        name = request.data['name']
+        team = request.data['team']
+        description = request.data.get('description', None)
+    except (KeyError, TypeError, ValueError):
+        raise ParseError
+
+    team = get_object_or_404(Team, id=team['id'])
+    product = Product.objects.filter(name=name, team__id=team['id']).first()
+    if product is None:
+        product = Product.objects.create(
+            team = team,
+            name = name,
+            description = description
+        )
+        product.save()
+
+    serializer = ProductSerializer(product)
+    return Response(serializer.data, status=HTTP_201_CREATED)
+
+
+@api_view(['GET'])
+def api_filter_products(request) -> Response:
+    try:
+        name = request.QUERY_PARAMS.get('name', None)
+        id = int(request.QUERY_PARAMS.get('id', -1))
+        team = request.QUERY_PARAMS.get('team', None)
+        limit = request.QUERY_PARAMS.get('limit', 50)
+        offset = request.QUERY_PARAMS.get('offset', 50)
+
+    except (KeyError, TypeError, ValueError):
+        raise ParseError
+
+    products = Product.objects.filter(team__in=request.user.team_set.all())
+    if name is not None:
+        products = products.filter(name=name)
+    if id > 0:
+        products = products.filter(id=id)
+    if team is not None:
+        products = products.filter(team__id=team['id'])
+        
+    serializer = ProductSerializer(products, many=True, context={'request': request})
+    return Response(serializer.data, status=HTTP_200_OK)
+
 
 @api_view(['POST'])
 def api_create_annotation_type(request) -> Response:

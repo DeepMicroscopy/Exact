@@ -43,12 +43,33 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'djoser',
+    'rest_framework.authtoken',
+    'django_filters',
     'widget_tweaks',
     'friendlytagloader',
     'plugins',
     'util',
     'django_registration'
 ]
+
+REST_FRAMEWORK = {
+    #"DEFAULT_SCHEMA_CLASS": "rest_framework.schemas.coreapi.AutoSchema",
+
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ),
+    'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend',),
+
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+    'PAGE_SIZE': 50,
+}
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

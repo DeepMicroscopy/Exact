@@ -414,7 +414,6 @@ class Annotation(models.Model):
 
         return False
 
-
 class AnnotationType(models.Model):
     class Meta:
         unique_together = [
@@ -568,7 +567,6 @@ class Export(models.Model):
     def deprecated(self):
         return self.format is None or self.time < self.format.last_change_time
 
-
 class Verification(models.Model):
     class Meta:
         unique_together = [
@@ -605,8 +603,9 @@ class ExportFormat(models.Model):
 
     def __str__(self):
         return '{}: {}'.format(self.team.name, self.name)
-class LogImageAction(models.Model):
 
+
+class LogImageAction(models.Model):
     class ActionType(IntEnum):
         OPEN = 1
         CLOSED = 2

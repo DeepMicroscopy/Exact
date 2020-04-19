@@ -6,6 +6,8 @@ from . import views
 app_name = 'users'
 urlpatterns = [
     url(r'^api/user/autocomplete/$', views.user_autocomplete, name='user_autocomplete'),
+    url(r'^api/team/filter/$', views.api_filter_teams, name='api_filter_teams'),
+    
     url(r'^team/(\d+)/$', views.view_team, name='team'),
     url(r'^team/create/$', views.create_team, name='create_team'),
     url(r'^team/explore/$', views.explore_team, name='explore_team'),
