@@ -44,14 +44,18 @@ class AnnotationFilterSet(django_filters.FilterSet):
 
 class AnnotationViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
-    queryset = models.Annotation.objects.all().select_related('annotation_type', 'image', 'user', 'last_editor')
     serializer_class = serializers.AnnotationSerializer
     filterset_class = AnnotationFilterSet
 
+    def get_queryset(self):
+        user = self.request.user
+        return  models.Annotation.objects.filter(image__image_set__team__in=user.team_set.all()).select_related('annotation_type', 'image', 'user', 'last_editor')
+
+    # def perform_create(self, serializer):
 
 class AnnotationTypeViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
-    queryset = models.AnnotationType.objects.all().select_related('product')
+    #queryset = models.AnnotationType.objects.all().select_related('product')
     serializer_class = serializers.AnnotationTypeSerializer
     filterset_fields = {
        'id': ['exact'],
@@ -60,6 +64,10 @@ class AnnotationTypeViewSet(viewsets.ModelViewSet):
        'active': ['exact'],
        'product': ['exact'],
    }
+
+    def get_queryset(self):
+        user = self.request.user
+        return  models.AnnotationType.objects.filter(product__team__in=user.team_set.all()).select_related('product')
 
 class AnnotationMediaFileFilterSet(django_filters.FilterSet):
     MEDIA_FILE_TYPE_CHOICES = (
@@ -78,18 +86,21 @@ class AnnotationMediaFileFilterSet(django_filters.FilterSet):
             'name': ['exact', 'contains'],
             'media_file_type': [],
             'annotation': ['exact'],
-        }
+        }      
 
 class AnnotationMediaFileViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
-    queryset = models.AnnotationMediaFile.objects.all().select_related('annotation')
     serializer_class = serializers.AnnotationMediaFileSerializer
     filterset_class = AnnotationMediaFileFilterSet
+
+    def get_queryset(self):
+        user = self.request.user
+        return  models.AnnotationMediaFile.objects.filter(annotation__image__image_set__team__in=user.team_set.all()).select_related('annotation')  
 
 
 class VerificationViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
-    queryset = models.Verification.objects.all().select_related('annotation', 'user')
+    #queryset = models.Verification.objects.all().select_related('annotation', 'user')
     serializer_class = serializers.VerificationSerializer
     filterset_fields = {
         'id': ['exact'],
@@ -98,6 +109,10 @@ class VerificationViewSet(viewsets.ModelViewSet):
         'time': ['exact', 'lte', 'gte', 'range'],
         'verified': ['exact'],  
    }
+
+    def get_queryset(self):
+        user = self.request.user
+        return  models.Verification.objects.filter(annotation__image__image_set__team__in=user.team_set.all()).select_related('annotation', 'user')  
 
 
 class LogImageActionFilterSet(django_filters.FilterSet):
@@ -121,6 +136,10 @@ class LogImageActionFilterSet(django_filters.FilterSet):
 
 class LogImageActionViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
-    queryset = models.LogImageAction.objects.all().select_related('image', 'user')
+    #queryset = models.LogImageAction.objects.all().select_related('image', 'user')
     serializer_class = serializers.LogImageActionSerializer
     filterset_class = LogImageActionFilterSet
+
+    def get_queryset(self):
+        user = self.request.user
+        return  models.LogImageAction.objects.filter(image__image_set__team__in=user.team_set.all()).select_related('image', 'user')  
