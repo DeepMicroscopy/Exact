@@ -75,6 +75,7 @@ exact/images
 exact/tools
 exact/static
 exact/media
+doc/.ipynb_checkpoints/*
 
 categories.json
 confusables.json
