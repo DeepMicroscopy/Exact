@@ -19,3 +19,11 @@ class ProductViewset(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         return  models.Product.objects.filter(team__in=user.team_set.all()).select_related('creator', 'team')
+
+
+    def create(self, request):
+        user = self.request.user
+        if "creator" not in request.data:
+            request.data["creator"] = user.id
+        response = super().create(request)
+        return response

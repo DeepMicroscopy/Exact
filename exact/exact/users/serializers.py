@@ -7,13 +7,13 @@ from exact.users.models import Team, User, TeamMembership
 class TeamSerializer(FlexFieldsModelSerializer):
     class Meta:
         model = Team
-        fields = (
+        fields = [
             'id',
             'name',
             'members',
-            'image_sets',
+            'image_sets', 
             'product_set'
-        )
+        ]
 
         expandable_fields = {
             "members": ('exact.users.serializers.UserSerializer', {'read_only': True, 'many': True}),

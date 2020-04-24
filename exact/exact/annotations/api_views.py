@@ -1,4 +1,6 @@
 from rest_framework import viewsets, permissions
+from django.shortcuts import get_object_or_404
+from rest_framework.response import Response
 from . import models
 from . import serializers
 import django_filters
@@ -51,7 +53,28 @@ class AnnotationViewSet(viewsets.ModelViewSet):
         user = self.request.user
         return  models.Annotation.objects.filter(image__image_set__team__in=user.team_set.all()).select_related('annotation_type', 'image', 'user', 'last_editor')
 
-    # def perform_create(self, serializer):
+    def create(self, request):
+        user = self.request.user
+        if "user" not in request.data:
+            request.data["user"] = user.id
+        if "last_editor" not in request.data:
+            request.data["last_editor"] = user.id
+        response = super().create(request)
+        return response
+
+    def partial_update(self, request, *args, **kwargs):
+        user = self.request.user
+        if "last_editor" not in request.data:
+            request.data["last_editor"] = user.id
+        response = super().partial_update(request, *args, **kwargs)
+        return response
+
+    def update(self, request, *args, **kwargs):
+        user = self.request.user
+        if "last_editor" not in request.data:
+            request.data["last_editor"] = user.id
+        response = super().update(request, *args, **kwargs)
+        return response
 
 class AnnotationTypeViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
@@ -96,6 +119,36 @@ class AnnotationMediaFileViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         return  models.AnnotationMediaFile.objects.filter(annotation__image__image_set__team__in=user.team_set.all()).select_related('annotation')  
+
+    def create(self, request):
+        media_file_type = int(request.POST.get('media_file_type', 0))
+        annotation_id = int(request.POST.get('annotation', 0))        
+        annotation = get_object_or_404(models.Annotation, id=annotation_id)
+
+        media_files = []
+        for f in list(request.FILES.values()):
+            media_file = models.AnnotationMediaFile.objects.filter(name=f.name, annotation__id=annotation.id).first()
+
+            if media_file is None:
+                name = request.POST.get('name', f.name)
+                media_file = models.AnnotationMediaFile(
+                    name = f.name,
+                    media_file_type = media_file_type,
+                    annotation = annotation,
+                    file = f
+                )
+
+                media_file.save()
+                media_files.append(media_file)
+
+        queryset = self.get_queryset().filter(id__in=[media_file.id for media_file in media_files])
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 
 class VerificationViewSet(viewsets.ModelViewSet):
