@@ -1,8 +1,22 @@
+import os
+from django.shortcuts import get_object_or_404
+from django.http import HttpResponseBadRequest
+from rest_framework.response import Response
 from rest_framework import viewsets, permissions
+from django.db.models import Q, Count
+from django.db import transaction, connection
 from . import models
 from . import serializers
 import django_filters
 
+
+import openslide
+from openslide import OpenSlide, open_slide
+import string
+import random
+import zipfile
+import hashlib
+from pathlib import Path
 
 class ImageFilterSet(django_filters.FilterSet):
     image_type = django_filters.ChoiceFilter(choices=models.Image.SOURCE_TYPES)
@@ -31,6 +45,163 @@ class ImageViewSet(viewsets.ModelViewSet):
         user = self.request.user
         return  models.Image.objects.filter(image_set__team__in=user.team_set.all()).select_related('image_set')
 
+
+    def create(self, request):
+        image_type = int(request.POST.get('image_type', 0))
+        image_set_id = int(request.POST.get('image_set', 0))
+
+        imageset = get_object_or_404(models.ImageSet, id=image_set_id)
+        if request.FILES is None:
+            return HttpResponseBadRequest('Must have files attached!')
+
+        images = []
+        errors = []
+        for f in list(request.FILES.values()):
+            error = {
+                'duplicates': 0,
+                'damaged': False,
+                'directories': False,
+                'exists': False,
+                'unsupported': False,
+                'zip': False,
+                'convert': False
+            }
+
+            magic_number = f.read(4)
+            f.seek(0)  # reset file cursor to the beginning of the file
+
+            file_list = {}
+            if magic_number == b'PK\x03\x04':
+                zipname = ''.join(random.choice(string.ascii_uppercase +
+                                                string.ascii_lowercase +
+                                                string.digits)
+                                  for _ in range(6)) + '.zip'
+                with open(os.path.join(imageset.root_path(), zipname), 'wb') as out:
+                    for chunk in f.chunks():
+                        out.write(chunk)
+                # unpack zip-file
+                zip_ref = zipfile.ZipFile(os.path.join(imageset.root_path(), zipname), 'r')
+                zip_ref.extractall(os.path.join(imageset.root_path()))
+                zip_ref.close()
+                # delete zip-file
+                os.remove(os.path.join(imageset.root_path(), zipname))
+                filenames = [f for f in os.listdir(os.path.join(imageset.root_path()))]
+                filenames.sort()
+
+                for filename in filenames:
+                    file_path = os.path.join(imageset.root_path(), filename)
+                    if models.Image.objects.filter(Q(filename=filename)|Q(name=f.name),
+                                                                image_set=imageset).count() == 0:
+                        try:
+                            if open_slide(file_path):
+                                # creates a checksum for image
+                                fchecksum = hashlib.sha512()
+                                with open(file_path, 'rb') as fil:
+                                    while True:
+                                        buf = fil.read(10000)
+                                        if not buf:
+                                            break
+                                        fchecksum.update(buf)
+                                fchecksum = fchecksum.digest()
+
+                                file_list[file_path] = fchecksum
+                            else:
+                                error['unsupported'] = True
+
+                        except IsADirectoryError:
+                            error['directories'] = True
+                        except:
+                            error['unsupported'] = True
+                    else:
+                        duplicat_count += 1
+
+                if duplicat_count > 0:
+                    error['duplicates'] = duplicat_count
+            else:
+                # creates a checksum for image
+                fchecksum = hashlib.sha512()
+                for chunk in f.chunks():
+                    fchecksum.update(chunk)
+                fchecksum = fchecksum.digest()
+
+                filename = os.path.join(imageset.root_path(), f.name)
+                # tests for duplicats in  imageset
+                image = models.Image.objects.filter(Q(filename=filename)|Q(name=f.name), checksum=fchecksum,
+                                        image_set=imageset).first()
+                if image is None:
+                    with open(filename, 'wb') as out:
+                        for chunk in f.chunks():
+                            out.write(chunk)
+
+                    file_list[filename] = fchecksum
+                else:
+                    error['exists'] = True
+                    error['exists_id'] = image.id
+            for path in file_list:
+                try:
+                    fchecksum = file_list[path]
+
+                    path = Path(path)
+                    name = path.name
+                    # check if the file can be opened by OpenSlide if not convert it
+                    try:
+                        osr = OpenSlide(str(path))
+                    except:
+                        old_path = path
+                        path = Path(path).with_suffix('.tiff')
+
+                        try:
+                            import pyvips
+                            vi = pyvips.Image.new_from_file(str(old_path))
+                            vi.tiffsave(str(path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
+                        except:
+                            error['unsupported'] = True
+
+                    image = models.Image(
+                        name=name,
+                        image_set=imageset,
+                        filename=path.name,
+                        checksum=fchecksum)
+
+
+                    osr = OpenSlide(image.path())
+                    image.width, image.height = osr.level_dimensions[0]
+                    try:
+                        mpp_x = osr.properties[openslide.PROPERTY_NAME_MPP_X]
+                        mpp_y = osr.properties[openslide.PROPERTY_NAME_MPP_Y]
+                        image.mpp = (float(mpp_x) + float(mpp_y)) / 2
+                    except (KeyError, ValueError):
+                        image.mpp = 0
+                    try:
+                        image.objectivePower = osr.properties[openslide.PROPERTY_NAME_OBJECTIVE_POWER]
+                    except (KeyError, ValueError):
+                        image.objectivePower = 1
+                    image.save()
+
+                    images.append(image)
+                except:
+                    error['unsupported'] = True
+                    os.remove(str(path))
+
+                errors.append(error)
+
+        queryset = self.get_queryset().filter(id__in=[image.id for image in images])
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def destroy(self, request, pk=None):
+        image = get_object_or_404(models.Image, id=pk)
+        # remove image from file system
+        if Path(image.path()).exists(): os.remove(image.path())
+        if Path(image.original_path()).exists(): os.remove(image.original_path())
+        # remove image from db
+        return super().destroy(request, pk)
+        
 
 class ImageSetFilterSet(django_filters.FilterSet):
     collaboration_type = django_filters.ChoiceFilter(choices=models.ImageSet.COLLABORATION_TYPES)
@@ -67,6 +238,22 @@ class ImageSetFilterSet(django_filters.FilterSet):
                 return queryset.filter(images__id=value.id)
         return queryset
 
+    def create(self, request):
+        user = self.request.user
+        if "creator" not in request.data:
+            request.data["creator"] = user.id
+        response = super().create(request)
+        # add path and creator
+        with transaction.atomic():
+            image_set = models.ImageSet.objects.filter(id=response.data['id']).first()
+            image_set.path = '{}_{}_{}'.format(connection.settings_dict['NAME'], image_set.team.id,
+                                           image_set.id)
+            image_set.save()
+            folder_path = image_set.root_path()
+            os.makedirs(folder_path)
+        return response
+
+
 
 class ImageSetViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
@@ -77,6 +264,22 @@ class ImageSetViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         return  models.ImageSet.objects.filter(team__in=user.team_set.all()).select_related('team', 'creator', 'main_annotation_type')
+
+
+    def create(self, request):
+        user = self.request.user
+        if "creator" not in request.data:
+            request.data["creator"] = user.id
+        response = super().create(request)
+        # add path and creator
+        with transaction.atomic():
+            image_set = models.ImageSet.objects.filter(id=response.data['id']).first()
+            image_set.path = '{}_{}_{}'.format(connection.settings_dict['NAME'], image_set.team.id,
+                                           image_set.id)
+            image_set.save()
+            folder_path = image_set.root_path()
+            os.makedirs(folder_path)
+        return response
 
 class SetTagViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
@@ -90,7 +293,7 @@ class SetTagViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return  models.SetTag.objects.filter(imagesets__team__in=user.team_set.all()).select_related('imagesets')
+        return  models.SetTag.objects.filter(imagesets__team__in=user.team_set.all())
 
 class ScreeningModeViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]

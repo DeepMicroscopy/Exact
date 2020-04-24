@@ -6,6 +6,8 @@ info:
 paths:
   /api/v1/users/users/:
     get:
+      tags: 
+      -  "users"
       operationId: listUsers
       description: ''
       parameters:
@@ -123,6 +125,8 @@ paths:
                       - username
           description: ''
     post:
+      tags: 
+      -  "users"
       operationId: createUser
       description: ''
       parameters: []
@@ -200,6 +204,8 @@ paths:
           description: ''
   /api/v1/users/users/{id}/:
     get:
+      tags: 
+      -  "users"
       operationId: retrieveUser
       description: ''
       parameters:
@@ -297,6 +303,8 @@ paths:
                 - username
           description: ''
     put:
+      tags: 
+      -  "users"
       operationId: updateUser
       description: ''
       parameters:
@@ -427,6 +435,8 @@ paths:
                 - username
           description: ''
     patch:
+      tags: 
+      -  "users"
       operationId: partial_updateUser
       description: ''
       parameters:
@@ -555,6 +565,8 @@ paths:
                 - username
           description: ''
     delete:
+      tags: 
+      -  "users"
       operationId: destroyUser
       description: ''
       parameters:
@@ -617,6 +629,8 @@ paths:
           description: ''
   /api/v1/users/teams/:
     get:
+      tags: 
+      -  "teams"
       operationId: listTeams
       description: ''
       parameters:
@@ -708,6 +722,8 @@ paths:
                       - product_set
           description: ''
     post:
+      tags: 
+      -  "teams"
       operationId: createTeam
       description: ''
       parameters: []
@@ -769,6 +785,8 @@ paths:
           description: ''
   /api/v1/users/teams/{id}/:
     get:
+      tags: 
+      -  "teams"
       operationId: retrieveTeam
       description: ''
       parameters:
@@ -840,6 +858,8 @@ paths:
                 - product_set
           description: ''
     put:
+      tags: 
+      -  "teams"
       operationId: updateTeam
       description: ''
       parameters:
@@ -936,6 +956,8 @@ paths:
                 - product_set
           description: ''
     patch:
+      tags: 
+      -  "teams"
       operationId: partial_updateTeam
       description: ''
       parameters:
@@ -1028,6 +1050,8 @@ paths:
                 - product_set
           description: ''
     delete:
+      tags: 
+      -  "teams"
       operationId: destroyTeam
       description: ''
       parameters:
@@ -1072,6 +1096,8 @@ paths:
           description: ''
   /api/v1/users/team_membership/:
     get:
+      tags: 
+      -  "team_membership"
       operationId: listTeamMemberships
       description: ''
       parameters:
@@ -1145,6 +1171,8 @@ paths:
                       - user
           description: ''
     post:
+      tags: 
+      -  "team_membership"
       operationId: createTeamMembership
       description: ''
       parameters: []
@@ -1187,6 +1215,8 @@ paths:
           description: ''
   /api/v1/users/team_membership/{id}/:
     get:
+      tags: 
+      -  "team_membership"
       operationId: retrieveTeamMembership
       description: ''
       parameters:
@@ -1240,6 +1270,8 @@ paths:
                 - user
           description: ''
     put:
+      tags: 
+      -  "team_membership"
       operationId: updateTeamMembership
       description: ''
       parameters:
@@ -1311,6 +1343,8 @@ paths:
                 - user
           description: ''
     patch:
+      tags: 
+      -  "team_membership"
       operationId: partial_updateTeamMembership
       description: ''
       parameters:
@@ -1379,6 +1413,8 @@ paths:
                 - user
           description: ''
     delete:
+      tags: 
+      -  "team_membership"
       operationId: destroyTeamMembership
       description: ''
       parameters:
@@ -1417,6 +1453,8 @@ paths:
           description: ''
   /api/v1/images/images/:
     get:
+      tags: 
+      -  "images"
       operationId: listImages
       description: ''
       parameters:
@@ -1599,6 +1637,8 @@ paths:
                       - annotations
           description: ''
     post:
+      tags: 
+      -  "images"
       operationId: createImage
       description: ''
       parameters: []
@@ -1699,6 +1739,8 @@ paths:
           description: ''
   /api/v1/images/images/{id}/:
     get:
+      tags: 
+      -  "images"
       operationId: retrieveImage
       description: ''
       parameters:
@@ -1861,6 +1903,8 @@ paths:
                 - annotations
           description: ''
     put:
+      tags: 
+      -  "images"
       operationId: updateImage
       description: ''
       parameters:
@@ -2068,6 +2112,8 @@ paths:
                 - annotations
           description: ''
     patch:
+      tags: 
+      -  "images"
       operationId: partial_updateImage
       description: ''
       parameters:
@@ -2270,6 +2316,8 @@ paths:
                 - annotations
           description: ''
     delete:
+      tags: 
+      -  "images"
       operationId: destroyImage
       description: ''
       parameters:
@@ -2386,6 +2434,8 @@ paths:
           description: ''
   /api/v1/images/image_sets/:
     get:
+      tags: 
+      -  "image_sets"
       operationId: listImageSets
       description: ''
       parameters:
@@ -2594,6 +2644,8 @@ paths:
                       - team
           description: ''
     post:
+      tags: 
+      -  "image_sets"
       operationId: createImageSet
       description: ''
       parameters: []
@@ -2702,6 +2754,8 @@ paths:
           description: ''
   /api/v1/images/image_sets/{id}/:
     get:
+      tags: 
+      -  "image_sets"
       operationId: retrieveImageSet
       description: ''
       parameters:
@@ -2890,6 +2944,8 @@ paths:
                 - team
           description: ''
     put:
+      tags: 
+      -  "image_sets"
       operationId: updateImageSet
       description: ''
       parameters:
@@ -3129,6 +3185,8 @@ paths:
                 - team
           description: ''
     patch:
+      tags: 
+      -  "image_sets"
       operationId: partial_updateImageSet
       description: ''
       parameters:
@@ -3362,6 +3420,8 @@ paths:
                 - team
           description: ''
     delete:
+      tags: 
+      -  "image_sets"
       operationId: destroyImageSet
       description: ''
       parameters:
@@ -3502,6 +3562,8 @@ paths:
           description: ''
   /api/v1/images/set_tags/:
     get:
+      tags: 
+      -  "set_tags"
       operationId: listSetTags
       description: ''
       parameters:
@@ -3576,6 +3638,8 @@ paths:
                       - imagesets
           description: ''
     post:
+      tags: 
+      -  "set_tags"
       operationId: createSetTag
       description: ''
       parameters: []
@@ -3620,6 +3684,8 @@ paths:
           description: ''
   /api/v1/images/set_tags/{id}/:
     get:
+      tags: 
+      -  "set_tags"
       operationId: retrieveSetTag
       description: ''
       parameters:
@@ -3674,6 +3740,8 @@ paths:
                 - imagesets
           description: ''
     put:
+      tags: 
+      -  "set_tags"
       operationId: updateSetTag
       description: ''
       parameters:
@@ -3747,6 +3815,8 @@ paths:
                 - imagesets
           description: ''
     patch:
+      tags: 
+      -  "set_tags"
       operationId: partial_updateSetTag
       description: ''
       parameters:
@@ -3817,6 +3887,8 @@ paths:
                 - imagesets
           description: ''
     delete:
+      tags: 
+      -  "set_tags"
       operationId: destroySetTag
       description: ''
       parameters:
@@ -3855,6 +3927,8 @@ paths:
           description: ''
   /api/v1/images/screening_modes/:
     get:
+      tags: 
+      -  "screening_modes"
       operationId: listScreeningModes
       description: ''
       parameters:
@@ -3944,6 +4018,8 @@ paths:
                       - user
           description: ''
     post:
+      tags: 
+      -  "screening_modes"
       operationId: createScreeningMode
       description: ''
       parameters: []
@@ -4030,6 +4106,8 @@ paths:
           description: ''
   /api/v1/images/screening_modes/{id}/:
     get:
+      tags: 
+      -  "screening_modes"
       operationId: retrieveScreeningMode
       description: ''
       parameters:
@@ -4099,6 +4177,8 @@ paths:
                 - user
           description: ''
     put:
+      tags: 
+      -  "screening_modes"
       operationId: updateScreeningMode
       description: ''
       parameters:
@@ -4208,6 +4288,8 @@ paths:
                 - user
           description: ''
     patch:
+      tags: 
+      -  "screening_modes"
       operationId: partial_updateScreeningMode
       description: ''
       parameters:
@@ -4314,6 +4396,8 @@ paths:
                 - user
           description: ''
     delete:
+      tags: 
+      -  "screening_modes"
       operationId: destroyScreeningMode
       description: ''
       parameters:
@@ -4346,6 +4430,8 @@ paths:
           description: ''
   /api/v1/annotations/annotations/:
     get:
+      tags: 
+      -  "annotations"
       operationId: listAnnotations
       description: ''
       parameters:
@@ -4529,6 +4615,8 @@ paths:
                       - uploaded_media_files
           description: ''
     post:
+      tags: 
+      -  "annotations"
       operationId: createAnnotation
       description: ''
       parameters: []
@@ -4626,6 +4714,8 @@ paths:
           description: ''
   /api/v1/annotations/annotations/{id}/:
     get:
+      tags: 
+      -  "annotations"
       operationId: retrieveAnnotation
       description: ''
       parameters:
@@ -4789,6 +4879,8 @@ paths:
                 - uploaded_media_files
           description: ''
     put:
+      tags: 
+      -  "annotations"
       operationId: updateAnnotation
       description: ''
       parameters:
@@ -4993,6 +5085,8 @@ paths:
                 - uploaded_media_files
           description: ''
     patch:
+      tags: 
+      -  "annotations"
       operationId: partial_updateAnnotation
       description: ''
       parameters:
@@ -5193,6 +5287,8 @@ paths:
                 - uploaded_media_files
           description: ''
     delete:
+      tags: 
+      -  "annotations"
       operationId: destroyAnnotation
       description: ''
       parameters:
@@ -5309,6 +5405,8 @@ paths:
           description: ''
   /api/v1/annotations/annotation_types/:
     get:
+      tags: 
+      -  "annotation_types"
       operationId: listAnnotationTypes
       description: ''
       parameters:
@@ -5443,6 +5541,8 @@ paths:
                       - product
           description: ''
     post:
+      tags: 
+      -  "annotation_types"
       operationId: createAnnotationType
       description: ''
       parameters: []
@@ -5547,6 +5647,8 @@ paths:
           description: ''
   /api/v1/annotations/annotation_types/{id}/:
     get:
+      tags: 
+      -  "annotation_types"
       operationId: retrieveAnnotationType
       description: ''
       parameters:
@@ -5661,6 +5763,8 @@ paths:
                 - product
           description: ''
     put:
+      tags: 
+      -  "annotation_types"
       operationId: updateAnnotationType
       description: ''
       parameters:
@@ -5824,6 +5928,8 @@ paths:
                 - product
           description: ''
     patch:
+      tags: 
+      -  "annotation_types"
       operationId: partial_updateAnnotationType
       description: ''
       parameters:
@@ -5984,6 +6090,8 @@ paths:
                 - product
           description: ''
     delete:
+      tags: 
+      -  "annotation_types"
       operationId: destroyAnnotationType
       description: ''
       parameters:
@@ -6052,6 +6160,8 @@ paths:
           description: ''
   /api/v1/annotations/annotation_media_files/:
     get:
+      tags: 
+      -  "annotation_media_files"
       operationId: listAnnotationMediaFiles
       description: ''
       parameters:
@@ -6138,6 +6248,8 @@ paths:
                       - annotation
           description: ''
     post:
+      tags: 
+      -  "annotation_media_files"
       operationId: createAnnotationMediaFile
       description: ''
       parameters: []
@@ -6194,6 +6306,8 @@ paths:
           description: ''
   /api/v1/annotations/annotation_media_files/{id}/:
     get:
+      tags: 
+      -  "annotation_media_files"
       operationId: retrieveAnnotationMediaFile
       description: ''
       parameters:
@@ -6260,6 +6374,8 @@ paths:
                 - annotation
           description: ''
     put:
+      tags: 
+      -  "annotation_media_files"
       operationId: updateAnnotationMediaFile
       description: ''
       parameters:
@@ -6351,6 +6467,8 @@ paths:
                 - annotation
           description: ''
     patch:
+      tags: 
+      -  "annotation_media_files"
       operationId: partial_updateAnnotationMediaFile
       description: ''
       parameters:
@@ -6439,6 +6557,8 @@ paths:
                 - annotation
           description: ''
     delete:
+      tags: 
+      -  "annotation_media_files"
       operationId: destroyAnnotationMediaFile
       description: ''
       parameters:
@@ -6483,6 +6603,8 @@ paths:
           description: ''
   /api/v1/annotations/verifications/:
     get:
+      tags: 
+      -  "verifications"
       operationId: listVerifications
       description: ''
       parameters:
@@ -6585,6 +6707,8 @@ paths:
                       - user
           description: ''
     post:
+      tags: 
+      -  "verifications"
       operationId: createVerification
       description: ''
       parameters: []
@@ -6633,6 +6757,8 @@ paths:
           description: ''
   /api/v1/annotations/verifications/{id}/:
     get:
+      tags: 
+      -  "verifications"
       operationId: retrieveVerification
       description: ''
       parameters:
@@ -6715,6 +6841,8 @@ paths:
                 - user
           description: ''
     put:
+      tags: 
+      -  "verifications"
       operationId: updateVerification
       description: ''
       parameters:
@@ -6816,6 +6944,8 @@ paths:
                 - user
           description: ''
     patch:
+      tags: 
+      -  "verifications"
       operationId: partial_updateVerification
       description: ''
       parameters:
@@ -6914,6 +7044,8 @@ paths:
                 - user
           description: ''
     delete:
+      tags: 
+      -  "verifications"
       operationId: destroyVerification
       description: ''
       parameters:
@@ -6976,6 +7108,8 @@ paths:
           description: ''
   /api/v1/annotations/log_image_actions/:
     get:
+      tags: 
+      -  "log_image_actions"
       operationId: listLogImageActions
       description: ''
       parameters:
@@ -7093,6 +7227,8 @@ paths:
                           nullable: true
           description: ''
     post:
+      tags: 
+      -  "log_image_actions"
       operationId: createLogImageAction
       description: ''
       parameters: []
@@ -7147,6 +7283,8 @@ paths:
           description: ''
   /api/v1/annotations/log_image_actions/{id}/:
     get:
+      tags: 
+      -  "log_image_actions"
       operationId: retrieveLogImageAction
       description: ''
       parameters:
@@ -7244,6 +7382,8 @@ paths:
                     nullable: true
           description: ''
     put:
+      tags: 
+      -  "log_image_actions"
       operationId: updateLogImageAction
       description: ''
       parameters:
@@ -7363,6 +7503,8 @@ paths:
                     nullable: true
           description: ''
     patch:
+      tags: 
+      -  "log_image_actions"
       operationId: partial_updateLogImageAction
       description: ''
       parameters:
@@ -7482,6 +7624,8 @@ paths:
                     nullable: true
           description: ''
     delete:
+      tags: 
+      -  "log_image_actions"
       operationId: destroyLogImageAction
       description: ''
       parameters:
@@ -7556,6 +7700,8 @@ paths:
           description: ''
   /api/v1/administration/products/:
     get:
+      tags: 
+      -  "products"
       operationId: listProducts
       description: ''
       parameters:
@@ -7676,6 +7822,8 @@ paths:
                       - annotationtype_set
           description: ''
     post:
+      tags: 
+      -  "products"
       operationId: createProduct
       description: ''
       parameters: []
@@ -7752,6 +7900,8 @@ paths:
           description: ''
   /api/v1/administration/products/{id}/:
     get:
+      tags: 
+      -  "products"
       operationId: retrieveProduct
       description: ''
       parameters:
@@ -7852,6 +8002,8 @@ paths:
                 - annotationtype_set
           description: ''
     put:
+      tags: 
+      -  "products"
       operationId: updateProduct
       description: ''
       parameters:
@@ -7987,6 +8139,8 @@ paths:
                 - annotationtype_set
           description: ''
     patch:
+      tags: 
+      -  "products"
       operationId: partial_updateProduct
       description: ''
       parameters:
@@ -8117,6 +8271,8 @@ paths:
                 - annotationtype_set
           description: ''
     delete:
+      tags: 
+      -  "products"
       operationId: destroyProduct
       description: ''
       parameters:
@@ -8183,3 +8339,12 @@ paths:
       responses:
         '204':
           description: ''
+          
+components:
+  securitySchemes:
+    basicAuth:     # <-- arbitrary name for the security scheme
+      type: http
+      scheme: basic
+      
+security:
+  - basicAuth: []  # <-- use the same name here
