@@ -1,3 +1,6 @@
+from django.template.response import TemplateResponse
+from django.core.paginator import Paginator
+from rest_framework.settings import api_settings
 from rest_framework import viewsets, permissions
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
@@ -76,6 +79,27 @@ class AnnotationViewSet(viewsets.ModelViewSet):
         response = super().update(request, *args, **kwargs)
         return response
 
+    def list(self, request, *args, **kwargs):
+        if "api" in request.META['PATH_INFO']:
+            return super(AnnotationViewSet, self).list(request, *args, **kwargs)
+        else:
+            annotations = self.filter_queryset(self.get_queryset()).order_by('image')
+
+            query = request.GET.get('query')
+            get_query = ''
+            paginator = Paginator(annotations, api_settings.PAGE_SIZE)
+            page = request.GET.get('page')
+            page = paginator.get_page(page)
+
+            return TemplateResponse(request, 'base/explore.html', {
+                'mode': 'annotations',
+                'annotations': page,  # to separate what kind of stuff is displayed in the view
+                'paginator': page,  # for page stuff
+                'get_query': get_query,
+                'query': query,
+                #'filter': self.filterset_class
+            })
+
 class AnnotationTypeViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
     #queryset = models.AnnotationType.objects.all().select_related('product')
@@ -91,6 +115,29 @@ class AnnotationTypeViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         return  models.AnnotationType.objects.filter(product__team__in=user.team_set.all()).select_related('product')
+
+
+    def list(self, request, *args, **kwargs):
+        if "api" in request.META['PATH_INFO']:
+            return super(AnnotationTypeViewSet, self).list(request, *args, **kwargs)
+        else:
+            annotation_types = self.filter_queryset(self.get_queryset()).order_by('product')
+
+            query = request.GET.get('query')
+            get_query = ''
+            paginator = Paginator(annotation_types, api_settings.PAGE_SIZE)
+            page = request.GET.get('page')
+            page = paginator.get_page(page)
+
+            return TemplateResponse(request, 'base/explore.html', {
+                'mode': 'annotation_types',
+                'annotation_types': page,  # to separate what kind of stuff is displayed in the view
+                'paginator': page,  # for page stuff
+                'get_query': get_query,
+                'query': query,
+                #'filter': self.filterset_class
+            })
+
 
 class AnnotationMediaFileFilterSet(django_filters.FilterSet):
     MEDIA_FILE_TYPE_CHOICES = (

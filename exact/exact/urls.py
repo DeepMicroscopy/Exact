@@ -21,7 +21,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django_registration.backends.activation.views import RegistrationView
 
-from .api import router
+from .api import router, router_api
 from .users.forms import UserRegistrationForm
 from rest_framework.schemas import get_schema_view
 
@@ -48,7 +48,9 @@ urlpatterns = [
     url(r'^tagger_messages/', include('exact.tagger_messages.urls')),
     url(r'^tools/', include('exact.tools.urls')),
 
-    path('api/v1/', include(router.urls)),
+    url('', include(router.urls)),
+
+    path('api/v1/', include(router_api.urls)),
     path('api/v1/openapi', schema_view, name='openapi-schema'),
 
     #path('auth/', include('djoser.urls.authtoken')),

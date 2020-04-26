@@ -1,3 +1,6 @@
+from django.template.response import TemplateResponse
+from rest_framework.settings import api_settings
+from django.core.paginator import Paginator
 from rest_framework import viewsets, permissions
 
 from . import models
@@ -27,3 +30,24 @@ class ProductViewset(viewsets.ModelViewSet):
             request.data["creator"] = user.id
         response = super().create(request)
         return response
+
+    def list(self, request, *args, **kwargs):
+        if "api" in request.META['PATH_INFO']:
+            return super(ProductViewset, self).list(request, *args, **kwargs)
+        else:
+            products = self.filter_queryset(self.get_queryset()).order_by('team')
+
+            query = request.GET.get('query')
+            get_query = ''
+            paginator = Paginator(products, api_settings.PAGE_SIZE)
+            page = request.GET.get('page')
+            page = paginator.get_page(page)
+
+            return TemplateResponse(request, 'base/explore.html', {
+                'mode': 'products',
+                'products': page,  # to separate what kind of stuff is displayed in the view
+                'paginator': page,  # for page stuff
+                'get_query': get_query,
+                'query': query,
+                #'filter': self.filterset_class
+            })
