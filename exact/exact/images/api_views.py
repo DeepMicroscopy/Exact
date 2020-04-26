@@ -1,8 +1,11 @@
 import os
+from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponseBadRequest
+from django.template.response import TemplateResponse
 from rest_framework.response import Response
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, permissions, renderers
+from rest_framework.settings import api_settings
 from django.db.models import Q, Count
 from django.db import transaction, connection
 from . import models
@@ -202,6 +205,28 @@ class ImageViewSet(viewsets.ModelViewSet):
         # remove image from db
         return super().destroy(request, pk)
         
+    def list(self, request, *args, **kwargs):
+        if "api" in request.META['PATH_INFO']:
+            return super(ImageViewSet, self).list(request, *args, **kwargs)
+        else:
+            images = self.filter_queryset(self.get_queryset()).order_by('image_set')
+
+            query = request.GET.get('query')
+            get_query = ''
+            paginator = Paginator(images, api_settings.PAGE_SIZE)
+            page = request.GET.get('page')
+            page = paginator.get_page(page)
+
+            return TemplateResponse(request, 'base/explore.html', {
+                'mode': 'images',
+                'images': page,  # to separate what kind of stuff is displayed in the view
+                'paginator': page,  # for page stuff
+                'get_query': get_query,
+                'query': query,
+                #'filter': self.filterset_class
+            })
+
+
 
 class ImageSetFilterSet(django_filters.FilterSet):
     collaboration_type = django_filters.ChoiceFilter(choices=models.ImageSet.COLLABORATION_TYPES)
@@ -260,6 +285,7 @@ class ImageSetViewSet(viewsets.ModelViewSet):
     #queryset = models.ImageSet.objects.all().select_related('team', 'creator', 'main_annotation_type')
     serializer_class = serializers.ImageSetSerializer
     filterset_class = ImageSetFilterSet
+    #renderer_classes = (renderers.JSONRenderer, renderers.TemplateHTMLRenderer)
 
     def get_queryset(self):
         user = self.request.user
@@ -280,6 +306,27 @@ class ImageSetViewSet(viewsets.ModelViewSet):
             folder_path = image_set.root_path()
             os.makedirs(folder_path)
         return response
+
+    def list(self, request, *args, **kwargs):
+        if "api" in request.META['PATH_INFO']:
+            return super(ImageSetViewSet, self).list(request, *args, **kwargs)
+        else:
+            imagesets = self.filter_queryset(self.get_queryset()).order_by('team')
+
+            query = request.GET.get('query')
+            get_query = ''
+            paginator = Paginator(imagesets, api_settings.PAGE_SIZE)
+            page = request.GET.get('page')
+            page = paginator.get_page(page)
+
+            return TemplateResponse(request, 'base/explore.html', {
+                'mode': 'imageset',
+                'imagesets': page,  # to separate what kind of stuff is displayed in the view
+                'paginator': page,  # for page stuff
+                'get_query': get_query,
+                'query': query,
+                #'filter': self.filterset_class
+            })
 
 class SetTagViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]

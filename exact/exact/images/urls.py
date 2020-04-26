@@ -1,6 +1,7 @@
 from django.conf.urls import url
 
 from . import views
+from . import api_views
 
 app_name = 'images'
 urlpatterns = [
@@ -43,6 +44,9 @@ urlpatterns = [
 
     url(r'^imageset/(\d+)/$', views.view_imageset, name='view_imageset'),
     url(r'^imageset/(\d+)/download/$', views.download_imageset_zip, name='download_imageset'),
+
+    url(r'^imageset/explore_new/$', api_views.ImageSetViewSet.as_view({'get': 'list'}), name='explore_imageset_new'),
+
     url(r'^imageset/explore/$', views.explore_imageset, name='explore_imageset'),
     url(r'^imageset/exact_dl_script.py$', views.dl_script, name='dl_script'),
     url(r'^api/imageset/create/$', views.create_imageset_api, name='create_imageset_api'),

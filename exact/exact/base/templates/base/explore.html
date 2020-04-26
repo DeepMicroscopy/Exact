@@ -8,87 +8,297 @@
 <div class="container-fluid">
     <div class="row">
         <div class="col-md-12">
-            <h1>Explore {{mode}}s</h1>
+            <h1>Explore </h1>
         </div>
     </div>
     <div class="row">
-        <div class="col-md-3">
+        <div class="col-md-2">
             <div class="list-group">
-                <a class="list-group-item{% if mode == 'imageset' %} active{% endif %}" href="{% url 'images:explore_imageset' %}">Imagesets</a>
-                <a class="list-group-item{% if mode == 'team' %} active{% endif %}" href="{% url 'users:explore_team' %}">Teams</a>
-                <a class="list-group-item{% if mode == 'user' %} active{% endif %}" href="{% url 'users:explore_user' %}">Users</a>
+                <a class="list-group-item{% if mode == 'imageset' %} active{% endif %}" href="{% url 'ImageSetView-list' %}">Imagesets  {% if mode == 'imageset' %} ({{paginator.paginator.count}}) {% endif %}</a>
+                <a class="list-group-item{% if mode == 'images' %} active{% endif %}" href="{% url 'ImageView-list' %}">Images {% if mode == 'images' %} ({{paginator.paginator.count}}) {% endif %}</a>
+                <a class="list-group-item{% if mode == 'annotations' %} active{% endif %}" href="{% url 'AnnotationView-list' %}">Annotations {% if mode == 'annotations' %} ({{paginator.paginator.count}}) {% endif %}</a>
+                <a class="list-group-item{% if mode == 'annotation_types' %} active{% endif %}" href="{% url 'AnnotationTypeView-list' %}">Annotation Types {% if mode == 'annotation_types' %} ({{paginator.paginator.count}}) {% endif %}</a>
+                <a class="list-group-item{% if mode == 'products' %} active{% endif %}" href="{% url 'ProductView-list' %}">Products {% if mode == 'products' %} ({{paginator.paginator.count}}) {% endif %}</a>
             </div>
         </div>
-        <div class="col-md-9">
+        <div class="col-md-7">
             <div class="panel panel-default">
                 <div class="panel-body">
                     <div class="row">
                         <div class="col-md-12">
-                            <form action="{{ request.get_full_path }}" method="GET">
-                                <div class="input-group {% if mode == 'imageset' %}set-search{% endif %}" role="group" aria-label="input-group">
-                                    <input class="form-control" id="searchbox" type="text" name="query" placeholder="Search for {{mode}}s" {% if query %}value="{{ query }}"{% endif %}>
-                                    {% if mode == 'imageset' %}<input class="form-control" id="tagbox" type="text" name="tags" placeholder="Search for comma-separated tags" {% if tagfilter %}value="{{ tagfilter }}"{% endif %} autocomplete="off">{% endif %}
-                                    <span class="input-group-btn">
-                                        <button class="btn btn-primary" type="submit">
-                                            <span class="glyphicon glyphicon-search" aria-hidden="true"></span> Search
-                                        </button>
-                                    </span>
-                                </div>
-                            </form>
-                            <hr>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-12">
                             <dl>
-                                <table class="table table-striped">
-                                {% for imageset in imagesets %}
-                                    <tr>
-                                        <td>
-                                            <dt>
-                                                {% if imageset.team %}
-                                                    <a href="{% url 'users:team' imageset.team.id %}">{{imageset.team.name}}</a>/<a href="{% url 'images:view_imageset' imageset.id %}">{{imageset.name}}</a>
-                                                {% else %}
-                                                    <a href="{% url 'images:view_imageset' imageset.id %}">{{imageset.name}}</a>
-                                                {% endif %}
-                                            </dt>
-                                            <dt>
-                                                {% for tag in imageset.set_tags.all %}
-                                                    <a href="{% url 'images:explore_imageset' %}?tags={{ tag.name }}, " class="label label-info">{{ tag.name }}</a>
-                                                {% endfor %}
-                                            </dt>
-                                            <dd>
-                                                {{ imageset.location }}
-                                            </dd>
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                                {% for team in teams %}
-                                    <tr>
-                                        <td>
-                                            <dt>
-                                                <a href="{% url 'users:team' team.id %}">{{team.name}}</a>
-                                            </dt>
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                                {% for user in users %}
-                                    <tr>
-                                        <td>
-                                            <dt>
-                                                <a href="{% url 'users:user' user.id %}">{{user.username}}</a>
-                                            </dt>
-                                        </td>
-                                        <td class="align-right">
-                                            {% if user.points %}
-                                                {{ user.points }}
-                                            {% else %}
-                                                0
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                                </table>
+                                {% if mode == 'imageset' %}
+                                    <table class="table table-striped">
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Tags</th>
+                                            <th>Products</th>
+                                            <th>Statistics</th>
+                                        </tr>
+
+                                        {% for imageset in imagesets %}
+                                            <tr>
+                                                <th>
+                                                    <dt>
+                                                        {% if imageset.team %}
+                                                            <a href="{% url 'users:team' imageset.team.id %}">{{imageset.team.name}}</a> /
+                                                            <a href="{% url 'images:view_imageset' imageset.id %}">{{imageset.name}}</a>
+                                                        {% else %}
+                                                            <a href="{% url 'images:view_imageset' imageset.id %}">{{imageset.name}}</a>
+                                                        {% endif %}
+                                                    </dt>
+                                                </th>
+                                                <th>
+                                                    <dt> 
+                                                        {% for tag in imageset.set_tags.all %}
+                                                            {{ tag.name }}<a href="{% url 'ImageSetView-list' %}?set_tags={{ tag.id }}"><span class="glyphicon glyphicon-filter"> </span></a> /
+                                                        {% endfor %}
+                                                    </dt>
+                                                </th>
+                                            
+                                                <th>
+                                                    <dt>
+                                                        {% for product in imageset.product_set.all %}
+                                                            <a href="{% url 'administration:product' product.id %}"> {{ product.name }}</a>
+                                                            <a href="{% url 'ImageSetView-list' %}?product={{ product.id }}"><span class="glyphicon glyphicon-filter"> </span></a> 
+                                                            <a href="{% url 'ProductView-list' %}?id={{ product.id }}"><span class="glyphicon glyphicon-new-window"> </span></a> /
+                                                        {% endfor %}
+                                                    </dt>
+                                                </th>
+                                                
+                                                <th>
+                                                    <ul>
+                                                        <li>
+                                                            Images: {{ imageset.images.count }}
+                                                            <a href="{% url 'ImageView-list' %}?image_set={{ imageset.id }}"> 
+                                                                <span class="glyphicon glyphicon-new-window"></span> 
+                                                            </a>
+                                                        </li>
+                                                        {% if imageset.location is not None %}
+                                                            <li>                                                    
+                                                                {{ imageset.location }}                                                    
+                                                            </li>
+                                                        {% endif %}
+                                                    </ul>
+                                                </th>                                        
+                                            </tr>
+                                        {% endfor %}
+                                    </table>
+                                {% endif %}
+
+                                {% if mode == 'images' %}
+                                    <table class="table table-striped">
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Type</th>
+                                            <th>Properties</th>
+                                            <th>Statistics</th>
+                                        </tr>
+
+                                        {% for image in images %}
+                                        <tr>
+                                            <th>
+                                                <dt>
+                                                    <a href="{% url 'users:team' image.image_set.team.id %}">{{image.image_set.team.name}}</a> /
+                                                    <a href="{% url 'images:view_imageset' image.image_set.id %}">{{image.image_set.name}}</a> 
+                                                    <a href="{% url 'ImageView-list' %}?image_set={{ image.image_set.id }}"><span class="glyphicon glyphicon-filter"> </span></a>
+                                                    <a href="{% url 'ImageSetView-list' %}?id={{ image.image_set.id }}"><span class="glyphicon glyphicon-new-window"> </span></a> /
+                                                    <a href="{% url 'annotations:annotate' image.id %}">{{image.name}}</a>
+                                                </dt>
+                                            </th>
+
+                                            <th>
+                                                <dt>
+                                                    {% if image.image_type == 0 %} DEFAULT {% endif %}
+                                                    {% if image.image_type == 1 %} SERVER_GENERATED {% endif %}
+                                                    {% if image.image_type == 2 %} FILE_LINK {% endif %}
+                                                    <a href="{% url 'ImageView-list' %}?image_type={{ image.image_type }}"><span class="glyphicon glyphicon-filter"> </span></a>
+                                                </dt>
+                                            </th>
+
+                                            <th>
+                                                <dt>
+                                                    <ul>
+                                                        <li> Width: {{image.width}}<a href="{% url 'ImageView-list' %}?width={{ image.width }}"><span class="glyphicon glyphicon-filter"> </span></a> </li>
+                                                        <li> Height: {{image.height}}<a href="{% url 'ImageView-list' %}?height={{ image.height }}"><span class="glyphicon glyphicon-filter"> </span></a> </li>
+                                                        <li> MPP: {{image.mpp}}<a href="{% url 'ImageView-list' %}?mpp={{ image.mpp }}"><span class="glyphicon glyphicon-filter"> </span></a> </li>
+                                                        <li> Objective Power: {{image.objectivePower}}<a href="{% url 'ImageView-list' %}?objectivePower={{ image.objectivePower }}"><span class="glyphicon glyphicon-filter"> </span></a> </li>
+                                                        <li> Upload: {{image.time}}<a href="{% url 'ImageView-list' %}?time={{ image.time }}"><span class="glyphicon glyphicon-filter"> </span></a> </li>
+                                                    </ul>                                                    
+                                                </dt>
+                                            </th>
+
+                                            <th>
+                                                <dt>
+                                                    <ul>
+                                                        <li> Annotations: {{image.annotations.count}} <a href="{% url 'AnnotationView-list' %}?image={{ image.id }}"><span class="glyphicon glyphicon-new-window"></span></a> </li>
+                                                    </ul>                                                    
+                                                </dt>
+                                            </th>
+                                        </tr>
+
+                                        {% endfor %}
+
+                                    </table>
+                                {% endif %}
+
+
+                                {% if mode == 'annotations' %}
+                                    <table class="table table-striped">
+                                        <tr>
+                                            <th>Annotation</th>
+                                            <th>Type</th>
+                                            <th>History</th>
+                                            <th>Properties</th>
+                                        </tr>
+
+                                        {% for annotation in annotations %}
+                                            <tr>
+                                                <th>
+                                                    <dt>
+                                                        <a href="{% url 'users:team' annotation.image.image_set.team.id %}">{{annotation.image.image_set.team.name}}</a> /
+                                                        <a href="{% url 'images:view_imageset' annotation.image.image_set.id %}">{{annotation.image.image_set.name}}</a> 
+                                                        <a href="{% url 'ImageSetView-list' %}?id={{ annotation.image.image_set.id }}"><span class="glyphicon glyphicon-new-window"> </span></a>                                                        /
+                                                        <a href="{% url 'annotations:annotate' annotation.image.id %}">{{annotation.image.name}}</a><!--TODO: Fix Link --> 
+                                                        <a href="{% url 'AnnotationView-list' %}?image={{ annotation.image.id }}"><span class="glyphicon glyphicon-filter"> </span></a>
+                                                        <a href="{% url 'ImageView-list' %}?id={{ annotation.image.id }}"><span class="glyphicon glyphicon-new-window"> </span></a>
+                                                    </dt>
+                                                </th>
+
+                                                <th>
+                                                    <dt>
+                                                        <a href="{% url 'administration:annotation_type' annotation.annotation_type.id %}">{{annotation.annotation_type.name}}</a> 
+                                                        <a href="{% url 'AnnotationView-list' %}?annotation_type={{ annotation.annotation_type.id }}"><span class="glyphicon glyphicon-filter"> </span></a>
+                                                        <a href="{% url 'AnnotationTypeView-list' %}?id={{ annotation.annotation_type.id }}"><span class="glyphicon glyphicon-new-window"> </span></a>
+                                                    </dt>
+                                                    <dt>
+                                                        {% if annotation.annotation_type.vector_type == 1 %} BOUNDING_BOX {% endif %}
+                                                        {% if annotation.annotation_type.vector_type == 2 %} POINT {% endif %}
+                                                        {% if annotation.annotation_type.vector_type == 3 %} LINE {% endif %}
+                                                        {% if annotation.annotation_type.vector_type == 4 %} MULTI_LINE {% endif %}
+                                                        {% if annotation.annotation_type.vector_type == 5 %} POLYGON {% endif %}
+                                                        {% if annotation.annotation_type.vector_type == 6 %} FIXED_SIZE_BOUNDING_BOX {% endif %}
+                                                        {% if annotation.annotation_type.vector_type == 7 %} GLOBAL {% endif %}
+                                                        <a href="{% url 'AnnotationView-list' %}?annotation_type.vector_type={{ annotation.annotation_type.vector_type }}"><span class="glyphicon glyphicon-filter"> </span></a>                                                        
+                                                    </dt>
+                                                </th>
+
+                                                <th>
+                                                    <dt>
+                                                        <ul>
+                                                            <li> User: {{annotation.user.username}}<a href="{% url 'AnnotationView-list' %}?user={{ annotation.user.id }}"><span class="glyphicon glyphicon-filter"> </span></a> </li>
+                                                            <li> Last Editor: {{annotation.last_editor.username}}<a href="{% url 'AnnotationView-list' %}?last_editor={{ annotation.last_editor.id }}"><span class="glyphicon glyphicon-filter"> </span></a> </li>
+                                                            <li> Deleted: {{annotation.deleted}}<a href="{% url 'AnnotationView-list' %}?deleted={{ annotation.deleted }}"><span class="glyphicon glyphicon-filter"> </span></a> </li>
+                                                        </ul>                                                    
+                                                    </dt>
+                                                </th>
+
+                                                <th>
+                                                    <dt>
+                                                        <ul>
+                                                            <li> UUID: {{annotation.unique_identifier}}<a href="{% url 'AnnotationView-list' %}?unique_identifier={{ annotation.unique_identifier }}"><span class="glyphicon glyphicon-filter"> </span></a> </li>
+                                                            <li> Description: {{annotation.description}}<a href="{% url 'AnnotationView-list' %}?description={{ annotation.description }}"><span class="glyphicon glyphicon-filter"></span></a> </li>
+                                                        </ul>
+                                                    </dt>
+
+                                                </th>
+
+                                            </tr>
+                                        {% endfor %}
+                                    </table>
+                                {% endif %}
+
+                                {% if mode == 'annotation_types' %}
+                                    <table class="table table-striped">
+                                        <tr>
+                                            <th>Annotation Type</th>
+                                            <th>Properties</th>
+                                            <th>Statistics</th>
+                                            <th>Image</th>
+                                        </tr>
+
+                                        {% for annotation_type in annotation_types %}
+                                            <tr>
+                                                <th>
+                                                    <dt>
+                                                        <a href="{% url 'users:team' annotation_type.product.team.id %}">{{annotation_type.product.team.name}}</a> /
+                                                        <a href="{% url 'administration:product' annotation_type.product.id %}"> {{ annotation_type.product.name }} 
+                                                        <a href="{% url 'AnnotationTypeView-list' %}?product={{ annotation_type.product.id }} "><span class="glyphicon glyphicon-filter"> </span></a>
+                                                        <a href="{% url 'ProductView-list' %}?id={{ annotation_type.product.id }} "><span class="glyphicon glyphicon-new-window"> </span></a> /
+                                                        <a href="{% url 'administration:annotation_type' annotation_type.id %}">{{annotation_type.name}}</a>
+                                                        <a href="{% url 'AnnotationTypeView-list' %}?id={{ annotation_type.id }}"><span class="glyphicon glyphicon-filter"> </span></a> 
+                                                    </dt>
+                                                </th>
+
+                                                <th>
+                                                    <dt>
+                                                        <ul>
+                                                            <li> Active: {{annotation_type.active}}<a href="{% url 'AnnotationTypeView-list' %}?active={{ annotation_type.active }}"><span class="glyphicon glyphicon-filter"> </span></a> </li>
+                                                            <li>                                                                 
+                                                                Width: {{annotation_type.default_width}} <a href="{% url 'AnnotationTypeView-list' %}?default_width={{ annotation_type.default_width }}"><span class="glyphicon glyphicon-filter"> </span></a> / 
+                                                                Height: {{annotation_type.default_height}}<a href="{% url 'AnnotationTypeView-list' %}?default_width={{ annotation_type.default_height }}"><span class="glyphicon glyphicon-filter"> </span></a> 
+                                                            </li>
+                                                        </ul>                                                    
+                                                    </dt>
+                                                </th>
+
+                                                
+                                                <th>
+                                                    <dt>
+                                                        <ul>
+                                                            <li> Annotations: {{annotation_type.annotation_set.count}} <a href="{% url 'AnnotationView-list' %}?annotation_type={{ annotation_type.id }}"><span class="glyphicon glyphicon-new-window"></span></a> </li>
+                                                        </ul>                                                    
+                                                    </dt>
+                                                </th>
+
+                                                <th>
+                                                    <img src="{{ annotation_type.image_file }}" style="widows: 50px; height: 50px">
+                                                </th>
+                                            </tr>
+                                        {% endfor %}
+                                    </table>
+                                {% endif %}
+
+                                {% if mode == 'products' %}
+                                    <table class="table table-striped">
+                                        <tr>
+                                            <th>Product</th>
+                                            <th>Image Sets</th>
+                                            <th>Annotation Types</th>
+                                        </tr>
+
+                                        {% for product in products %}
+                                            <tr>
+                                                <th>
+                                                    <dt>
+                                                        <a href="{% url 'users:team' product.team.id %}">{{product.team.name}}</a> /
+                                                        <a href="{% url 'administration:product' product.id %}"> {{ product.name }} 
+                                                    </dt>
+                                                </th>
+
+                                                <th>
+                                                    <dt>
+                                                        {% for imageset in product.imagesets.all %}
+                                                            <a href="{% url 'images:view_imageset' imageset.id %}">{{imageset.name}}</a>
+                                                            <a href="{% url 'ProductView-list' %}?imagesets={{ imageset.id }} "><span class="glyphicon glyphicon-filter"> </span></a>
+                                                            <a href="{% url 'ImageSetView-list' %}?id={{ imageset.id }} "><span class="glyphicon glyphicon-new-window"> </span></a> /
+                                                        {% endfor %}
+                                                    </dt>
+                                                </th>
+
+                                                <th>
+                                                    <dt>
+                                                        {% for annotation_type in product.annotationtype_set.all %}
+                                                            <a href="{% url 'administration:annotation_type' annotation_type.id %}">{{annotation_type.name}}</a> 
+                                                            <a href="{% url 'ProductView-list' %}?annotationtype={{ annotation_type.id }} "><span class="glyphicon glyphicon-filter"> </span></a>
+                                                            <a href="{% url 'AnnotationTypeView-list' %}?id={{ annotation_type.id }} "><span class="glyphicon glyphicon-new-window"> </span></a> /
+                                                        {% endfor %}
+                                                    </dt>
+                                                </th>
+                                            </tr>
+                                        {% endfor %}
+                                    </table>
+                                {% endif %}
                             </dl>
                             {% if paginator.has_other_pages %}
                                 <div class="pagination">
@@ -96,15 +306,15 @@
                                     <span class="step-links">
                                         <div class="btn-group" role="group" aria-label="btn-group">
                                             {% if paginator.has_previous %}
-                                                <a class="btn btn-default" href="?page=1{{ get_query }}{{ get_tagfilter }}">&laquo; first</a>
-                                                <a class="btn btn-default" href="?page={{ paginator.previous_page_number }}{{ get_query }}{{ get_tagfilter }}">previous</a>
+                                                <a class="btn btn-default" href="?page=1{{ get_query }}">&laquo; first</a>
+                                                <a class="btn btn-default" href="?page={{ paginator.previous_page_number }}{{ get_query }}">previous</a>
                                             {% endif %}
                                                 <span class="current btn btn-default">
                                                     Page {{ paginator.number }} of {{ paginator.paginator.num_pages }}
                                                 </span>
                                             {% if paginator.has_next %}
-                                                <a class="btn btn-default" href="?page={{ paginator.next_page_number }}{{ get_query }}{{ get_tagfilter }}">next</a>
-                                                <a class="btn btn-default" href="?page={{ paginator.paginator.num_pages }}{{ get_query }}{{ get_tagfilter }}">last &raquo;</a>
+                                                <a class="btn btn-default" href="?page={{ paginator.next_page_number }}{{ get_query }}">next</a>
+                                                <a class="btn btn-default" href="?page={{ paginator.paginator.num_pages }}{{ get_query }}">last &raquo;</a>
                                             {% endif %}
                                         </div>
                                     </span>
@@ -114,6 +324,20 @@
                     </div>
                 </div>
             </div>
+        </div>
+
+        <div class="col-md-3">
+            <h3>
+                Filters
+            </h3>
+            {% block filter %}
+                {% if filter %}
+                    <form method="get">
+                        {{ filter.form.as_p }}
+                        <input type="submit" />
+                    </form>           
+                {% endif %}         
+            {% endblock %}
         </div>
     </div>
 </div>

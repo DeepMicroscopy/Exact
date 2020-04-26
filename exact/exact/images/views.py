@@ -22,6 +22,9 @@ from rest_framework.status import HTTP_403_FORBIDDEN, HTTP_200_OK, \
     HTTP_201_CREATED, HTTP_202_ACCEPTED, HTTP_204_NO_CONTENT, HTTP_404_NOT_FOUND
 from PIL import Image as PIL_Image
 
+from rest_framework.settings import api_settings
+
+from exact.images.api_views import ImageSetViewSet
 from exact.images.serializers import ImageSetSerializer, ImageSerializer, SetTagSerializer, serialize_imageset
 from exact.images.forms import ImageSetCreationForm, ImageSetCreationFormWT, ImageSetEditForm
 from exact.annotations.views import api_copy_annotation
@@ -65,16 +68,20 @@ import openslide
 from openslide import OpenSlide, open_slide
 from PIL import Image as PIL_Image
 
+
 # TODO: Add to cache
 image_cache = SlideCache(cache_size=10)
 plugin_finder = PluginFinder(image_cache)
 
 
 @login_required
-def explore_imageset(request):
-    imagesets = ImageSet.objects.select_related('team').order_by(
-        'team__name', 'name').filter(
-        Q(team__members=request.user) | Q(public=True)).distinct()
+def explore_imageset(request, *args, **kwargs):
+    # TODO: depricated
+    if hasattr(request, 'query_params') ==  False:
+        request.query_params = request.GET
+    view_set = ImageSetViewSet(request=request)
+
+    imagesets = view_set.filter_queryset(view_set.get_queryset()).order_by('team')
 
     query = request.GET.get('query')
     tagfilter = request.GET.get('tags')
@@ -91,7 +98,7 @@ def explore_imageset(request):
                 imagesets = imagesets.filter(set_tags__name=tag_name)
         get_tagfilter = '&tags=' + str(tagfilter)
 
-    paginator = Paginator(imagesets, 25)
+    paginator = Paginator(imagesets, api_settings.PAGE_SIZE)
     page = request.GET.get('page')
     page_imagesets = paginator.get_page(page)
 
