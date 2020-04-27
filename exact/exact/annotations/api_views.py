@@ -1,5 +1,6 @@
 from django.template.response import TemplateResponse
 from django.core.paginator import Paginator
+from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.settings import api_settings
 from rest_framework import viewsets, permissions
 from django.shortcuts import get_object_or_404
@@ -85,18 +86,34 @@ class AnnotationViewSet(viewsets.ModelViewSet):
         else:
             annotations = self.filter_queryset(self.get_queryset()).order_by('image')
 
-            query = request.GET.get('query')
-            get_query = ''
-            paginator = Paginator(annotations, api_settings.PAGE_SIZE)
-            page = request.GET.get('page')
-            page = paginator.get_page(page)
+            current_query = request.META['QUERY_STRING']
+            if "page" not in request.query_params:
+                current_query += "&page=1"
+                page_id = 1
+            else:
+                page_id = int(request.query_params.get('page', 1))
+            
+            limit = int(request.query_params.get('limit', api_settings.PAGE_SIZE))
+           
+            paginator = Paginator(annotations, limit)
+            page = paginator.get_page(page_id)
+
+            previous_query = first_query = current_query.replace("&page="+str(page_id), "&page=1")
+            if page.has_previous():
+                previous_query = current_query.replace("&page="+str(page_id), "&page={}".format(page.previous_page_number()))
+            
+            next_query = last_query = current_query.replace("&page="+str(page_id), "&page={}".format(paginator.num_pages))
+            if page.has_next():
+                next_query = current_query.replace("&page="+str(page_id), "&page={}".format(page.next_page_number()))
 
             return TemplateResponse(request, 'base/explore.html', {
                 'mode': 'annotations',
                 'annotations': page,  # to separate what kind of stuff is displayed in the view
                 'paginator': page,  # for page stuff
-                'get_query': get_query,
-                'query': query,
+                'first_query': first_query,
+                'previous_query': previous_query,
+                'next_query': next_query,
+                'last_query': last_query,
                 #'filter': self.filterset_class
             })
 
@@ -122,19 +139,36 @@ class AnnotationTypeViewSet(viewsets.ModelViewSet):
             return super(AnnotationTypeViewSet, self).list(request, *args, **kwargs)
         else:
             annotation_types = self.filter_queryset(self.get_queryset()).order_by('product')
+            
+            current_query = request.META['QUERY_STRING']
+            if "page" not in request.query_params:
+                current_query += "&page=1"
+                page_id = 1
+            else:
+                page_id = int(request.query_params.get('page', 1))            
+            limit = int(request.query_params.get('limit', api_settings.PAGE_SIZE))
 
-            query = request.GET.get('query')
-            get_query = ''
-            paginator = Paginator(annotation_types, api_settings.PAGE_SIZE)
-            page = request.GET.get('page')
-            page = paginator.get_page(page)
+            paginator = Paginator(annotation_types, limit)
+            page = paginator.get_page(page_id)
+
+
+            previous_query = first_query = current_query.replace("&page="+str(page_id), "&page=1")
+            if page.has_previous():
+                previous_query = current_query.replace("&page="+str(page_id), "&page={}".format(page.previous_page_number()))
+            
+            next_query = last_query = current_query.replace("&page="+str(page_id), "&page={}".format(paginator.num_pages))
+            if page.has_next():
+                next_query = current_query.replace("&page="+str(page_id), "&page={}".format(page.next_page_number()))
+
 
             return TemplateResponse(request, 'base/explore.html', {
                 'mode': 'annotation_types',
                 'annotation_types': page,  # to separate what kind of stuff is displayed in the view
                 'paginator': page,  # for page stuff
-                'get_query': get_query,
-                'query': query,
+                'first_query': first_query,
+                'previous_query': previous_query,
+                'next_query': next_query,
+                'last_query': last_query,
                 #'filter': self.filterset_class
             })
 
