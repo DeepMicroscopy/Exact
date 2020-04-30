@@ -93,6 +93,7 @@
                                             <th>Type</th>
                                             <th>Properties</th>
                                             <th>Statistics</th>
+                                            <th>Image</th>
                                         </tr>
 
                                         {% for image in images %}
@@ -134,6 +135,10 @@
                                                         <li> Annotations: {{image.annotations.count}} <a href="{% url 'AnnotationView-list' %}?image={{ image.id }}"><span class="glyphicon glyphicon-new-window"></span></a> </li>
                                                     </ul>                                                    
                                                 </dt>
+                                            </th>
+
+                                            <th>
+                                                <img id="image" src="{% url 'images:view_thumbnail' image.id %}" alt="Thumbnail {{image.name}} not found!" style="float:right; width:128px;height:128px;" data-imageid="{{ image.id }}">
                                             </th>
                                         </tr>
 
