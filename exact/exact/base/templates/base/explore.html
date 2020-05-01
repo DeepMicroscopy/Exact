@@ -133,7 +133,7 @@
                                                 <dt>
                                                     <ul>
                                                         <li> Annotations: {{image.annotations.count}} <a href="{% url 'AnnotationView-list' %}?image={{ image.id }}"><span class="glyphicon glyphicon-new-window"></span></a> </li>
-                                                    </ul>                                                    
+                                                    </ul> 
                                                 </dt>
                                             </th>
 
@@ -205,8 +205,13 @@
                                                             <li> Description: {{annotation.description}}<a href="{% url 'AnnotationView-list' %}?{{ first_query }}&description={{ annotation.description }}"><span class="glyphicon glyphicon-filter"></span></a> </li>
                                                         </ul>
                                                     </dt>
-
                                                 </th>
+
+                                                {% if annotation.annotation_type.vector_type == 7 %}
+                                                    <th>
+                                                        <img id="image" src="{% url 'images:view_thumbnail' annotation.image.id %}" alt="Thumbnail {{annotation.image.name}} not found!" style="float:right; width:128px;height:128px;" data-imageid="{{ annotation.image.id }}">
+                                                    </th>
+                                                {% endif %}
 
                                             </tr>
                                         {% endfor %}
@@ -242,6 +247,20 @@
                                                             <li>                                                                 
                                                                 Width: {{annotation_type.default_width}} <a href="{% url 'AnnotationTypeView-list' %}?{{ first_query }}&default_width={{ annotation_type.default_width }}"><span class="glyphicon glyphicon-filter"> </span></a> / 
                                                                 Height: {{annotation_type.default_height}}<a href="{% url 'AnnotationTypeView-list' %}?{{ first_query }}&default_width={{ annotation_type.default_height }}"><span class="glyphicon glyphicon-filter"> </span></a> 
+                                                            </li>
+
+                                                            <li>
+                                                                Type:
+                                                                <dt>
+                                                                    {% if annotation_type.vector_type == 1 %} BOUNDING_BOX {% endif %}
+                                                                    {% if annotation_type.vector_type == 2 %} POINT {% endif %}
+                                                                    {% if annotation_type.vector_type == 3 %} LINE {% endif %}
+                                                                    {% if annotation_type.vector_type == 4 %} MULTI_LINE {% endif %}
+                                                                    {% if annotation_type.vector_type == 5 %} POLYGON {% endif %}
+                                                                    {% if annotation_type.vector_type == 6 %} FIXED_SIZE_BOUNDING_BOX {% endif %}
+                                                                    {% if annotation_type.vector_type == 7 %} GLOBAL {% endif %}
+                                                                    <a href="{% url 'AnnotationTypeView-list' %}?{{ first_query }}&vector_type={{ annotation_type.vector_type }}"><span class="glyphicon glyphicon-filter"> </span></a>                                                        
+                                                                </dt>
                                                             </li>
                                                         </ul>                                                    
                                                     </dt>
@@ -336,14 +355,15 @@
             <h3>
                 Filters
             </h3>
-            {% block filter %}
+
+            <!--{% block filter %}
                 {% if filter %}
                     <form method="get">
                         {{ filter.form.as_p }}
                         <input type="submit" />
                     </form>           
                 {% endif %}         
-            {% endblock %}
+            {% endblock %}--->
         </div>
     </div>
 </div>
