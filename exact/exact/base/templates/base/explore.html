@@ -19,6 +19,8 @@
                 <a class="list-group-item{% if mode == 'annotations' %} active{% endif %}" href="{% url 'AnnotationView-list' %}">Annotations {% if mode == 'annotations' %} ({{paginator.paginator.count}}) {% endif %}</a>
                 <a class="list-group-item{% if mode == 'annotation_types' %} active{% endif %}" href="{% url 'AnnotationTypeView-list' %}">Annotation Types {% if mode == 'annotation_types' %} ({{paginator.paginator.count}}) {% endif %}</a>
                 <a class="list-group-item{% if mode == 'products' %} active{% endif %}" href="{% url 'ProductView-list' %}">Products {% if mode == 'products' %} ({{paginator.paginator.count}}) {% endif %}</a>
+                <a class="list-group-item{% if mode == 'versions' %} active{% endif %}" href="{% url 'VersionView-list' %}">Versions {% if mode == 'versions' %} ({{paginator.paginator.count}}) {% endif %}</a>
+                <a class="list-group-item{% if mode == 'annotation_versions' %} active{% endif %}" href="{% url 'AnnotationVersionView-list' %}">Annotation Versions {% if mode == 'annotation_versions' %} ({{paginator.paginator.count}}) {% endif %}</a>
             </div>
         </div>
         <div class="col-md-7">
@@ -32,6 +34,7 @@
                                         <tr>
                                             <th>Name</th>
                                             <th>Tags</th>
+                                            <th>Versions</th>
                                             <th>Products</th>
                                             <th>Statistics</th>
                                         </tr>
@@ -48,11 +51,26 @@
                                                         {% endif %}
                                                     </dt>
                                                 </th>
+
                                                 <th>
                                                     <dt> 
                                                         {% for tag in imageset.set_tags.all %}
                                                             {{ tag.name }}<a href="{% url 'ImageSetView-list' %}?set_tags={{ tag.id }}"><span class="glyphicon glyphicon-filter"> </span></a> /
                                                         {% endfor %}
+                                                    </dt>
+                                                </th>
+
+                                                <th>
+                                                    <dt> 
+                                                        <ul>
+                                                            {% for version in imageset.set_versions.all %}
+                                                            <li>
+                                                                {{ version.name }} ({{version.annotationversion_set.count}})
+                                                                <a href="{% url 'ImageSetView-list' %}?set_versions={{ version.id }}"><span class="glyphicon glyphicon-filter"> </span></a> 
+                                                                <a href="{% url 'AnnotationVersionView-list' %}?version={{ version.id }}"><span class="glyphicon glyphicon-new-window"> </span></a> 
+                                                            </li>
+                                                            {% endfor %}
+                                                        </ul>
                                                     </dt>
                                                 </th>
                                             
@@ -147,7 +165,6 @@
                                     </table>
                                 {% endif %}
 
-
                                 {% if mode == 'annotations' %}
                                     <table class="table table-striped">
                                         <tr>
@@ -155,6 +172,7 @@
                                             <th>Type</th>
                                             <th>History</th>
                                             <th>Properties</th>
+                                            <th>Versions</th>
                                         </tr>
 
                                         {% for annotation in annotations %}
@@ -206,6 +224,23 @@
                                                         </ul>
                                                     </dt>
                                                 </th>
+
+                                                <th>
+                                                    <dt>
+                                                        <ul>
+                                                            {% for anno_version in annotation.annotationversion_set.all %}
+                                                            <li>
+                                                                {% if anno_version.has_changes == True %} 
+                                                                    <span class="glyphicon glyphicon-exclamation-sign" style="background-color: yellow;"> </span> 
+                                                                {% endif %}
+                                                                {{ anno_version.version.name }}
+                                                                <a href="{% url 'AnnotationVersionView-list' %}?annotation={{ annotation.id }}"><span class="glyphicon glyphicon-new-window"> </span></a> 
+                                                            </li>
+                                                            {% endfor %}
+                                                        </ul>
+                                                    </dt>
+                                                </th>
+
 
                                                 {% if annotation.annotation_type.vector_type == 7 %}
                                                     <th>
@@ -323,6 +358,146 @@
                                         {% endfor %}
                                     </table>
                                 {% endif %}
+
+                                {% if mode == 'versions' %}
+                                    <table class="table table-striped">
+                                        <tr>
+                                            <th>Version</th>
+                                            <th>Image Sets</th>
+                                            <th>Properties</th>
+                                        </tr>
+
+                                        {% for version in versions %}
+                                            <tr>
+                                                <th>
+                                                    <dt> {{version.name}} </dt> {{version.time}}                                                    
+                                                </th>
+
+                                                <th>
+                                                    <dt>
+                                                        {% for imageset in version.imagesets.all %}
+                                                            <a href="{% url 'images:view_imageset' imageset.id %}">{{imageset.name}}</a>
+                                                            <a href="{% url 'ImageSetView-list' %}?id={{ imageset.id }} "><span class="glyphicon glyphicon-new-window"> </span></a> /
+                                                        {% endfor %}
+                                                    </dt>
+                                                </th>
+
+                                                <th>
+                                                    <dt>
+                                                        <ul>
+                                                            <li>
+                                                                Annotations: ({{version.annotationversion_set.count}})
+                                                                <a href="{% url 'AnnotationVersionView-list' %}?version={{ version.id }}"><span class="glyphicon glyphicon-new-window"> </span></a> 
+                                                            </li>
+                                                            <li>
+                                                                File: {{version.file}}
+                                                            </li>
+                                                            <li>
+                                                                File Upload:
+                                                                <form method="Patch" enctype="multipart/form-data">
+                                                                    <input type="file" name="file" />
+                                                                    <input type="submit" name="submit" value="Upload" />
+                                                                </form>
+                                                            </li> 
+                                                        </ul>
+                                                    </dt>
+                                                </th>
+                                            </tr>
+                                        {% endfor %}
+                                    </table>
+                                {% endif %}
+
+                                {% if mode == 'annotation_versions' %}
+                                <table class="table table-striped">
+                                    <tr>
+                                        <th>Annotation</th>
+                                        <th>Version</th>
+                                        <th>Old</th>
+                                        <th>New</th>
+                                    </tr>
+                                    {% for anno_version in annotation_versions %}
+                                    <tr>
+                                        <th>
+                                            <dt>
+                                                <a href="{% url 'users:team' anno_version.image.image_set.team.id %}">{{anno_version.image.image_set.team.name}}</a> /
+                                                <a href="{% url 'images:view_imageset' anno_version.image.image_set.id %}">{{anno_version.image.image_set.name}}</a> 
+                                                <a href="{% url 'ImageSetView-list' %}?id={{ anno_version.image.image_set.id }}"><span class="glyphicon glyphicon-new-window"> </span></a>                                                        /
+                                                <a href="{% url 'annotations:annotate' anno_version.image.id %}">{{anno_version.image.name}}</a><!--TODO: Fix Link --> 
+                                                <a href="{% url 'AnnotationVersionView-list' %}?{{ first_query }}&image={{ anno_version.image.id }}"><span class="glyphicon glyphicon-filter"> </span></a>
+                                                <a href="{% url 'ImageView-list' %}?id={{ anno_version.image.id }}"><span class="glyphicon glyphicon-new-window"> </span></a>
+                                            </dt>
+                                        </th>
+
+                                        <th>
+                                            <ul>
+                                                <li>
+                                                    {% if anno_version.has_changes == True %} 
+                                                        <span class="glyphicon glyphicon-exclamation-sign" style="background-color: yellow;"> </span> 
+                                                    {% endif %}
+                                                    Changes: {{anno_version.has_changes}} <a href="{% url 'AnnotationVersionView-list' %}?{{ first_query }}&has_changes={{ anno_version.has_changes }}"><span class="glyphicon glyphicon-filter"> </span></a>
+                                                </li>
+                                                <li>
+                                                    Name: {{anno_version.version.name}} <a href="{% url 'AnnotationVersionView-list' %}?{{ first_query }}&version={{ anno_version.version.id }}"><span class="glyphicon glyphicon-filter"> </span></a>
+                                                </li>
+
+                                                <li> Date: {{anno_version.version.time}} </li>
+                                            </ul>
+                                        </th>
+
+                                        <th>
+                                            <ul>
+                                                <li>
+                                                    User: {{anno_version.annotation.user.username}}
+                                                </li>
+                                                <li>
+                                                    Type: {{anno_version.annotation_type.name}} <a href="{% url 'AnnotationVersionView-list' %}?{{ first_query }}&annotation_type={{ anno_version.annotation_type.id }}"><span class="glyphicon glyphicon-filter"> </span></a>
+                                                </li>
+                                                <li>
+                                                    Deleted: {{anno_version.deleted}} <a href="{% url 'AnnotationVersionView-list' %}?{{ first_query }}&deleted={{ anno_version.deleted }}"><span class="glyphicon glyphicon-filter"> </span></a>
+                                                </li>
+                                                <li>
+                                                    Vector: 
+                                                    <input type="text" style="max-width: fit-content;" value="{{anno_version.vector}} " readonly>
+                                                </li>
+                                            </ul>
+
+                                        </th>
+
+                                        <th>
+                                            <ul>
+                                                <li>
+                                                    User: {{anno_version.annotation.last_editor.username}}
+                                                </li>
+                                                <li>
+                                                    {% if anno_version.annotation_type.id != anno_version.annotation.annotation_type.id %} 
+                                                        <span class="glyphicon glyphicon-exclamation-sign" style="background-color: yellow;"> </span> 
+                                                    {% endif %}
+                                                    Type: {{anno_version.annotation.annotation_type.name}} <a href="{% url 'AnnotationVersionView-list' %}?{{ first_query }}&annotation_type={{ anno_version.annotation.annotation_type.id }}"><span class="glyphicon glyphicon-filter"> </span></a>
+                                                </li>
+                                                <li>
+                                                    {% if anno_version.deleted != anno_version.annotation.deleted %} 
+                                                        <span class="glyphicon glyphicon-exclamation-sign" style="background-color: yellow;"> </span> 
+                                                    {% endif %}
+                                                    Deleted: {{anno_version.annotation.deleted}} <a href="{% url 'AnnotationVersionView-list' %}?{{ first_query }}&deleted={{ anno_version.annotation.deleted }}"><span class="glyphicon glyphicon-filter"> </span></a>
+                                                </li>
+                                                <li>
+                                                    {% if anno_version.vector != anno_version.annotation.vector %} 
+                                                        <span class="glyphicon glyphicon-exclamation-sign" style="background-color: yellow;"> </span> 
+                                                    {% endif %}
+                                                    Vector: 
+                                                    <input type="text" style="max-width: fit-content;" value="{{anno_version.annotation.vector}} " readonly>
+                                                </li>
+                                            </ul>
+                                        </th>
+
+                                    </tr>
+
+
+                                    {% endfor %}
+
+                                </table>
+                                {% endif %}
+
                             </dl>
 
                             {% if paginator.has_other_pages %}

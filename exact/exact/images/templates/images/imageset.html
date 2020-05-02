@@ -121,12 +121,22 @@
 <script src="{% static 'scripts/pub_coll.js' %}"></script>
 <script type="text/javascript" src="{% static 'scripts/tags.js' %}"></script>
 <script type="text/javascript" src="{% static 'scripts/products.js' %}"></script>
+<script type="text/javascript" src="{% static 'scripts/versions.js' %}"></script>
 <script type="text/javascript" src="{% static 'scripts/notify.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'scripts/jquery.autocomplete.js' %}"></script>
 <![endif]-->
 {% endblock additional_js %}
 {% block bodyblock %}
 <div class="container-fluid">
+    <div id="feedback_version_added" class="js_feedback alert alert-success hidden">
+        {% trans 'The version was added successfully. Please press F5' %}
+    </div>
+    <div id="feedback_empty_version_name" class="js_feedback alert alert-success hidden">
+        {% trans 'The version name is empty.' %}
+    </div>
+    <div id="feedback_version_exists" class="js_feedback alert alert-info hidden">
+        {% trans 'The imageset already has the version.' %}
+    </div>
     <div id="feedback_tag_added" class="js_feedback alert alert-success hidden">
         {% trans 'The tag was added successfully.' %}
     </div>
@@ -214,7 +224,7 @@
                                     </tr>
                                 {% endif %}
                                 <tr>
-                                    <td><b>Products</b></td>
+                                    <td>Products</td>
                                     <td class="tag-container">
                                         {% for product in imageset.product_set.all %}
                                             <a href="{% url 'administration:product' product.id %}"> {{ product }}&nbsp;</a>&#8203;
@@ -230,6 +240,21 @@
                                             {% endfor %}
                                         </td>
                                     </tr>
+
+                                <tr>
+                                    <td>Versions:</td>
+                                    <td>
+                                        <ul>
+                                            {% for version in imageset.set_versions.all %}
+                                            <li>
+                                                {{ version.name }} ({{version.annotationversion_set.count}})
+                                                <a href="{% url 'AnnotationVersionView-list' %}?version={{ version.id }}"><span class="glyphicon glyphicon-new-window"> </span></a> 
+                                            </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </td>
+                                </tr>
+
                                 {% if user.is_superuser %}
                                     <tr>
                                         <td>Location</td>
@@ -397,6 +422,34 @@
                                                 </div>
                                             </td>
                                         </tr>
+
+                                        <tr>
+                                            <td>
+                                                <b>Versions:</b>
+                                            </td>
+                                            <td>
+                                                <ul>
+                                                {% for version in imageset.set_versions.all %}
+                                                    <li>
+                                                        {{ version.name }} ({{version.annotationversion_set.count}})
+                                                        <a href="{% url 'AnnotationVersionView-list' %}?version={{ version.id }}"><span class="glyphicon glyphicon-new-window"> </span></a> 
+                                                    </li>
+                                                {% endfor %}
+                                                </ul>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><b>Add Version</b></td>
+                                            <td>
+                                                <div class="input-group" role="group" aria-label="team_creation">
+                                                    <input id="new_version_name_field" type="text" class="form-control">
+                                                    <span class="input-group-btn">
+                                                        <input id="add_version_btn" class="btn btn-primary" type="button" value="Add">
+                                                    </span>
+                                                </div>
+                                            </td>
+                                        </tr>
+
                                         <tr>
                                             <td>
                                                 <label for="id_location">{{ edit_form.location.label }}</label>
