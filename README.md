@@ -4,6 +4,22 @@ This is a collaborative online tool for labeling image data.
 
 ![ScreenShot](./doc/ExactBeispiel.png "Example annotation of a complete WSI")
 
+## Reference
+
+This paper describes the EXACT-Server in depth. Please cite if you use this tool in your research:
+
+Marzahl et al. [EXACT: A collaboration toolset for algorithm-aided annotation of almost everything](https://arxiv.org/abs/2004.14595) 
+
+```
+@misc{marzahl2020exact,
+    title={EXACT: A collaboration toolset for algorithm-aided annotation of almost everything},
+    author={Christian Marzahl and Marc Aubreville and Christof A. Bertram and Jennifer Maier and Christian Bergler and Christine Kröger and Jörn Voigt and Robert Klopfleisch and Andreas Maier},
+    year={2020},
+    eprint={2004.14595},
+    archivePrefix={arXiv},
+    primaryClass={cs.HC}
+}
+```
 
 ## Features
 
@@ -481,7 +497,7 @@ The exact relies on the following plugins, libraries and frameworks:
 We are grateful to the maintainers and contributors of the respective projects.
 
 
-## Reference
+## ImageTagger Reference
 
 This paper describes the Bit-Bots imagetagger we build on in depth. Please cite if you use this tool in your research:
 
