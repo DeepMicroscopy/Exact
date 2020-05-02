@@ -3,12 +3,33 @@ from rest_framework.serializers import ModelSerializer, SerializerMethodField
 from rest_framework import serializers
 from rest_flex_fields import FlexFieldsModelSerializer
 
-from .models import Annotation, AnnotationType, Verification, LogImageAction, AnnotationMediaFile
-from exact.images.serializers import ImageSerializer
+from .models import Annotation, AnnotationType, Verification, LogImageAction, AnnotationMediaFile, AnnotationVersion
+from exact.images.serializers import ImageSerializer, SetVersionSerializer
 from exact.administration.serializers import ProductSerializer
 from exact.users.serializers import UserSerializer
 
+class AnnotationVersionSerializer(FlexFieldsModelSerializer):
+    has_changes = serializers.BooleanField()
 
+    class Meta:
+        model = AnnotationVersion
+        fields = (
+            'id',
+            'version',
+            'annotation',
+            'image',
+            'annotation_type',
+            'deleted',
+            'vector',
+            'has_changes'
+        )
+
+        expandable_fields = {
+            'version': (SetVersionSerializer, {'read_only': True}),
+            'annotation': ('AnnotationSerializer', {'read_only': True}),
+            "annotation_type": ('AnnotationTypeSerializer', {'read_only': True}),
+            "image": (ImageSerializer, {'read_only': True}),
+        }
 
 class AnnotationTypeSerializer(FlexFieldsModelSerializer):
     class Meta:
@@ -62,10 +83,12 @@ class AnnotationSerializer(FlexFieldsModelSerializer):
             'description',
             'unique_identifier',
             'uploaded_media_files',
-            'meta_data'
+            'meta_data',
+            'annotationversion_set'
         )
 
         expandable_fields = {
+            "annotationversion_set": ('exact.annotations.serializers.AnnotationVersionSerializer', {'read_only': True, 'many': True}),
             "uploaded_media_files": ('exact.annotations.serializers.AnnotationMediaFileSerializer', {'read_only': True, 'many': True}),
             "annotation_type": (AnnotationTypeSerializer, {'read_only': True}),
             "image": (ImageSerializer, {'read_only': True}),

@@ -12,7 +12,7 @@ from django.db.models import Subquery, F, IntegerField, OuterRef, Count
 from django.db.models.functions import Coalesce
 from django.utils.functional import cached_property
 
-from exact.images.models import Image, ImageSet
+from exact.images.models import Image, ImageSet, SetVersion
 from exact.users.models import Team
 from exact.annotations.fields import NonStrippingTextField
 from exact.administration.models import Product
@@ -34,6 +34,25 @@ class AnnotationQuerySet(models.QuerySet):
                 output_field=IntegerField()), 0)).annotate(
             verification_difference=F(
                 'positive_verifications_count') - F('negative_verifications_count'))
+
+class AnnotationVersion(models.Model):
+    class Meta:
+        unique_together = [
+            'version',
+            'annotation',
+        ]
+
+    version = models.ForeignKey(SetVersion, on_delete=models.CASCADE)
+    annotation = models.ForeignKey('Annotation', on_delete=models.PROTECT)
+    image = models.ForeignKey(Image, on_delete=models.CASCADE)
+    annotation_type = models.ForeignKey('AnnotationType', on_delete=models.PROTECT)
+
+    deleted = models.BooleanField(default=False)
+    vector = JSONField(null=True)
+
+    @cached_property
+    def has_changes(self):
+        return self.annotation_type != self.annotation.annotation_type or self.vector != self.annotation.vector or self.deleted != self.annotation.deleted
 
 
 class Annotation(models.Model):

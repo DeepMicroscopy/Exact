@@ -9,6 +9,7 @@ from django.db.models import Count, Q, Sum
 from django.db.models.expressions import F
 
 import os
+from datetime import datetime
 from pathlib import Path
 
 from exact.users.models import Team
@@ -306,6 +307,18 @@ class SetTag(models.Model):
     def __str__(self):
         return u'Tag: {0} '.format(self.name)
 
+
+def version_directory_path(instance, filename):
+    return 'versions/{0}_{1}/{2}'.format(instance.name, instance.id, filename)
+
+class SetVersion(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    imagesets = models.ManyToManyField(ImageSet, related_name='set_versions')
+    time = models.DateTimeField(default=datetime.now)
+    file = models.FileField(upload_to=version_directory_path, null=True)
+
+    def __str__(self):
+        return u'Version: {0} '.format(self.name)
 
 class ScreeningMode(models.Model):
     class Meta:

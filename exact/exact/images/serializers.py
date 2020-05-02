@@ -2,7 +2,7 @@ from rest_framework.serializers import ModelSerializer
 
 from exact.administration.serializers import ProductSerializer
 from exact.users.serializers import UserSerializer, TeamSerializer
-from exact.images.models import ImageSet, Image, SetTag, ScreeningMode
+from exact.images.models import ImageSet, Image, SetTag, ScreeningMode, SetVersion
 from typing import Dict, Any
 from rest_flex_fields import FlexFieldsModelSerializer
 
@@ -39,6 +39,23 @@ class SetTagSerializer(FlexFieldsModelSerializer):
         )
 
         expandable_fields = {
+            "imagesets": ('exact.images.serializers.ImageSetSerializer', {'read_only': True, 'many': True}),
+        }
+
+class SetVersionSerializer(FlexFieldsModelSerializer):
+    class Meta:
+        model = SetVersion
+        fields = (
+            'id',
+            'name',
+            'imagesets',
+            'time',
+            'annotationversion_set',
+            'file'
+        )
+
+        expandable_fields = {
+            "annotationversion_set": ('exact.annotations.serializers.AnnotationVersionSerializer', {'read_only': True, 'many': True}),
             "imagesets": ('exact.images.serializers.ImageSetSerializer', {'read_only': True, 'many': True}),
         }
 

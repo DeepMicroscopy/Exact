@@ -8,6 +8,7 @@ from rest_framework import viewsets, permissions, renderers
 from rest_framework.settings import api_settings
 from django.db.models import Q, Count
 from django.db import transaction, connection
+from exact.annotations.models import Annotation, AnnotationVersion
 from . import models
 from . import serializers
 import django_filters
@@ -267,6 +268,7 @@ class ImageSetFilterSet(django_filters.FilterSet):
             'main_annotation_type': ['exact'],
             'images': [],
             'set_tags': ['exact'],
+            'set_versions': ['exact'],
             'product': ['exact'],
 
             'collaboration_type': [],
@@ -375,6 +377,86 @@ class SetTagViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         return  models.SetTag.objects.filter(imagesets__team__in=user.team_set.all())
+
+class SetVersionViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.DjangoModelPermissions]
+    
+    serializer_class = serializers.SetVersionSerializer
+    filterset_fields = {
+       'id': ['exact'],
+       'name': ['exact', 'contains'],
+       'imagesets': ['exact'],
+    }
+
+    def get_queryset(self):
+        user = self.request.user
+        return  models.SetVersion.objects.filter(imagesets__team__in=user.team_set.all())
+
+    def create(self, request):
+        response = super().create(request)
+        # add path and creator
+        with transaction.atomic():
+
+            version = models.SetVersion.objects.filter(id=response.data['id']).first()
+
+            if version is not None:
+                with transaction.atomic():
+                    anno_versions = []
+                    for anno in Annotation.objects.filter(image__image_set__in=version.imagesets.all()):
+
+                        anno_version = AnnotationVersion()
+                        anno_version.version = version
+                        anno_version.annotation = anno
+                        anno_version.image = anno.image
+                        anno_version.annotation_type = anno.annotation_type
+
+                        anno_version.deleted = anno.deleted
+                        anno_version.vector = anno.vector
+
+                        anno_versions.append(anno_version)
+                    
+                    AnnotationVersion.objects.bulk_create(anno_versions, 512)
+
+        return response
+
+
+    def list(self, request, *args, **kwargs):
+        if "api" in request.META['PATH_INFO']:
+            return super(SetVersionViewSet, self).list(request, *args, **kwargs)
+        else:
+            versions = self.filter_queryset(self.get_queryset()).order_by('imagesets')
+
+            current_query = request.META['QUERY_STRING']
+            if "page" not in request.query_params:
+                current_query += "&page=1"
+                page_id = 1
+            else:
+                page_id = int(request.query_params.get('page', 1))
+            
+            limit = int(request.query_params.get('limit', api_settings.PAGE_SIZE))
+           
+            paginator = Paginator(versions, limit)
+            page = paginator.get_page(page_id)
+
+            previous_query = first_query = current_query.replace("&page="+str(page_id), "&page=1")
+            if page.has_previous():
+                previous_query = current_query.replace("&page="+str(page_id), "&page={}".format(page.previous_page_number()))
+            
+            next_query = last_query = current_query.replace("&page="+str(page_id), "&page={}".format(paginator.num_pages))
+            if page.has_next():
+                next_query = current_query.replace("&page="+str(page_id), "&page={}".format(page.next_page_number()))
+
+            return TemplateResponse(request, 'base/explore.html', {
+                'mode': 'versions',
+                'versions': page,  # to separate what kind of stuff is displayed in the view
+                'paginator': page,  # for page stuff
+                'first_query': first_query,
+                'previous_query': previous_query,
+                'next_query': next_query,
+                'last_query': last_query,
+                #'filter': self.filterset_class
+            })
+
 
 class ScreeningModeViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
