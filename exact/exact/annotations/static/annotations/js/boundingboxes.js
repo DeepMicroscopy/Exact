@@ -97,18 +97,22 @@ class BoundingBoxes {
 
                 // just poly from the same class and saved annotations
                 if (el.data.type === "poly" && el.data.type_id === this.selection.item.data.type_id 
-                        && el.name.startsWith('#') && el.name !== this.selection.item.name && el.visible === true) {
+                        && el.name !== this.selection.item.name && el.visible === true) {
 
                     // if intersects --> merge
                     if (el.intersects(this.selection.item) === true) {
 
                         let result = this.selection.item.unite(el)
-                        this.selection.item.remove()
+                        // error occurce if the result can not represented as one poly
+                        if (result.children === undefined) {
 
-                        this.selection.item = result
+                            this.selection.item.remove();
 
-                        resultDict.deleted.push(el.name)
-                        resultDict.update.push(this.selection.item.name)
+                            this.selection.item = result;
+    
+                            resultDict.deleted.push(el.name);
+                            resultDict.update.push(this.selection.item.name);
+                        }
 
                     // no intersection but one point is inside -> delete complete element
                     } else if (this.selection.item.contains(el.firstSegment.point)) { 
@@ -131,7 +135,7 @@ class BoundingBoxes {
                 var el = this.group.children[i]
 
                 // just work on saved annotations
-                if (el.name.startsWith('#') && el.name !== this.selection.item.name && el.visible === true) {
+                if (el.name !== this.selection.item.name && el.visible === true) {
 
                     // if intersects --> substract or divide
                     if (el.intersects(this.selection.item) === true) {
@@ -159,18 +163,19 @@ class BoundingBoxes {
                                 new_path.strokeWidth = old_path.parent.strokeWidth
                                 new_path.fillColor = old_path.parent.fillColor
 
-                                new_path.name =  '~' + new Date().getMilliseconds() +Math.ceil(Math.random() * 100000);
+                                new_path.name =  self.uuidv4();
                                 this.group.addChild(new_path);
 
                                 resultDict.insert.push({
-                                    annotation_type_id: new_path.data.type_id,
-                                    id: new_path.name,
+                                    annotation_type: selected_annotation_type,
+                                    id: -1,
                                     vector: this.getAnnotationVector(new_path.name),
-                                    first_editor: {id: null, name: "you"},
-                                    last_editor: {id: null, name: "you"},
-                                    last_edit_time: new Date(Date.now()),
-                                    image: {id: this.imageid}
-                                })
+                                    user: {id: null, username: "you"},
+                                    last_editor: {id: null, username: "you"},
+                                    image: this.imageid,
+                                    unique_identifier: canvasObject.name,
+                                    deleted: false
+                                });
 
                             }
                             result.remove()                            
@@ -189,14 +194,20 @@ class BoundingBoxes {
         return resultDict;
     }
 
+    uuidv4() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+          var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+          return v.toString(16);
+        });
+      }
 
     getImageId() {
         return this.imageid;
     }
 
-    getAnnotationVector(id) {
+    getAnnotationVector(unique_identifier) {
 
-        var item = this.getItemFromID(id);
+        var item = this.getItemFromUUID(unique_identifier);
         if (item === undefined)
             return null;
 
@@ -212,6 +223,8 @@ class BoundingBoxes {
                 vector["y2"] = Math.round(item.bounds.getBottomRight().y);
                 break;
             default:
+                if (item.segments === undefined)
+                    console.log("ERORORORO")
                 var length = item.segments.length;
                 for (var i = 1; i <= length; i++) {
                     vector["x" + i] = Math.round(item.segments[i - 1].point.x);
@@ -279,7 +292,7 @@ class BoundingBoxes {
         canvasObject.selected = true;
         canvasObject.strokeColor = selected_annotation_type.color_code;
         canvasObject.strokeWidth = this.strokeWidth;
-        canvasObject.name = '~' + new Date().getMilliseconds();
+        canvasObject.name = this.uuidv4();
         canvasObject.data.type_id = selected_annotation_type.id;
         canvasObject.data.area_hit_test = selected_annotation_type.area_hit_test;
 
@@ -310,17 +323,18 @@ class BoundingBoxes {
         // return temp annotation
         return {
             annotation_type: selected_annotation_type,
-            id: canvasObject.name,
+            id: -1,
             vector: this.getAnnotationVector(canvasObject.name),
-            first_editor: {id: null, name: "you"},
-            last_editor: {id: null, name: "you"},
-            last_edit_time: new Date(Date.now()),
-            image: {id: this.imageid}
+            user: {id: null, username: "you"},
+            last_editor: {id: null, username: "you"},
+            image: this.imageid,
+            unique_identifier: canvasObject.name,
+            deleted: false
         }
     }
 
     drawAnnotation(annotation) {
-        if (annotation.vector === null) {
+        if (annotation.vector === null || annotation.deleted) {
             return;
         }
 
@@ -331,7 +345,7 @@ class BoundingBoxes {
 
                 rect.strokeColor = annotation.annotation_type.color_code;
                 rect.strokeWidth = this.strokeWidth;
-                rect.name = '#' + annotation.id;
+                rect.name = annotation.unique_identifier;
                 if (annotation.annotation_type.area_hit_test)
                     rect.fillColor = new paper.Color(0, 0, 0, 0.000001);
                 rect.data.type = "rect";
@@ -349,7 +363,7 @@ class BoundingBoxes {
 
                 rect.strokeColor = annotation.annotation_type.color_code;
                 rect.strokeWidth = this.strokeWidth;
-                rect.name = '#' + annotation.id;
+                rect.name = annotation.unique_identifier;
                 if (annotation.annotation_type.area_hit_test)
                     rect.fillColor = new paper.Color(0, 0, 0, 0.000001);
                 rect.data.type = "fixed_rect";
@@ -366,7 +380,7 @@ class BoundingBoxes {
 
                 ellipse.strokeColor = annotation.annotation_type.color_code;
                 ellipse.strokeWidth = this.strokeWidth;
-                ellipse.name = '#' + annotation.id;
+                ellipse.name = annotation.unique_identifier;
                 if (annotation.annotation_type.area_hit_test)
                     ellipse.fillColor = new paper.Color(0, 0, 0, 0.000001);
                 ellipse.data.type = "circle";
@@ -382,7 +396,7 @@ class BoundingBoxes {
 
                 line.strokeColor = annotation.annotation_type.color_code;
                 line.strokeWidth = this.strokeWidth;
-                line.name = '#' + annotation.id;
+                line.name = annotation.unique_identifier;
                 line.data.type = "line";
                 line.data.type_id = annotation.annotation_type.id;
                 line.data.area_hit_test = annotation.annotation_type.area_hit_test;
@@ -395,7 +409,7 @@ class BoundingBoxes {
                 var poly = new paper.Path({
                     strokeColor: annotation.annotation_type.color_code,
                     strokeWidth: this.strokeWidth,
-                    name: '#' + annotation.id,
+                    name: annotation.unique_identifier,//'#' + annotation.id,
                     closed: annotation.annotation_type.closed,
                 });
                 if (annotation.annotation_type.area_hit_test)
@@ -440,11 +454,9 @@ class BoundingBoxes {
             return;
         }
 
-        for (var a in annotations) {
+        for (var annotation of annotations) {
 
-            var annotation = annotations[a];
-
-            if (annotation.vector === null || this.getItemFromID(annotation.id) !== undefined) {
+            if (annotation.vector === null || this.getItemFromUUID(annotation.unique_identifier) !== undefined) {
                 continue;
             }
 
@@ -455,23 +467,15 @@ class BoundingBoxes {
         this.overlay.resizecanvas();
     }
 
-    removeAnnotation(annotationid) {
-        var item = this.getItemFromID(annotationid);
+    removeAnnotation(unique_identifier) {
+        var item = this.getItemFromUUID(unique_identifier);
         if (item !== undefined) {
             item.remove();
         }
     }
 
-    getItemFromID(annotationid) {
-        var item = undefined;
-        if (typeof annotationid === 'number')
-            item = this.group.children['#' + annotationid];
-        if (typeof annotationid === 'string') {
-            if (!isNaN(parseInt(annotationid)))
-                item = this.group.children['#' + annotationid];
-            else
-                item = this.group.children[annotationid];
-        }
+    getItemFromUUID(unique_identifier) {
+        var item = this.group.children[unique_identifier];
         return item;
     }
 
@@ -491,8 +495,10 @@ class BoundingBoxes {
         this.group.children.forEach(x => { x.strokeWidth = this.strokeWidth });
     }
 
-    showItem(annotationid) {
-        var item = this.getItemFromID(annotationid);
+    showItem(annotation) {
+        if (annotation === undefined)
+            return
+        var item = this.getItemFromUUID(annotation.unique_identifier);
         // if annotation was found zoom to annotation
         if (item !== undefined) {
             const vpRect = this.viewer.viewport.imageToViewportRectangle(new OpenSeadragon.Rect(
@@ -534,7 +540,7 @@ class BoundingBoxes {
     resetSelection() {
         //$('.annotation_value').val(0);
 
-        globals.editedAnnotationsId = undefined;
+        globals.editedAnnotation = undefined;
         $('.annotation').removeClass('alert-info');
         globals.editActiveContainer.addClass('hidden');
 
@@ -558,22 +564,15 @@ class BoundingBoxes {
             if (hit.item.visible === false)
                 return undefined;
 
-            if (hit.item.name.startsWith('~'))
-                return hit.item.name;
-            return parseInt(hit.item.name.replace('#', ''));
+            return hit.item.name;
         }
         return undefined;
     }
 
-    updateName(tempName, annotationId) {
-        if (this.group.getItem({name: tempName}) !== null)
-            this.group.getItem({name: tempName}).set({name: '#' + annotationId});
-    }
+    updateAnnotationType(unique_identifier, annotation_type, set_as_selected = true) {
+        var item = this.getItemFromUUID(unique_identifier);
 
-    updateAnnotationType(id, annotation_type, set_as_selected = true) {
-        var item = this.getItemFromID(id);
-
-        if (item !== null) {
+        if (item !== undefined) {
 
             // TODO: Zeiche annotation mit neuem vector typ
             switch (annotation_type.vector_type) {
@@ -808,7 +807,7 @@ class BoundingBoxes {
                 }
             }
 
-            return parseInt(hitResult.item.name.replace('#', ''));
+            return hitResult.item.name;
         }
 
         return undefined;
