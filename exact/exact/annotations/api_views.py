@@ -20,6 +20,7 @@ class AnnotationFilterSet(django_filters.FilterSet):
        fields = {'vector_y': [], 'vector_x': [],        
         'id': ['exact'],
         'time': ['exact', 'lte', 'gte', 'range'],
+        'last_edit_time': ['exact', 'lte', 'gte', 'range'],
         'unique_identifier': ['exact', 'contains'],
         'description': ['exact', 'contains'],
         'deleted': ['exact'],
@@ -65,6 +66,10 @@ class AnnotationViewSet(viewsets.ModelViewSet):
             request.data["user"] = user.id
         if "last_editor" not in request.data:
             request.data["last_editor"] = user.id
+        if "uploaded_media_files" not in request.data:
+            request.data["uploaded_media_files"] = []
+        if "annotationversion_set" not in request.data:
+            request.data["annotationversion_set"] = []
         response = super().create(request)
         return response
 

@@ -614,6 +614,7 @@ def api_update_annotation_mediafile(request) -> Response:
 
 @api_view(['DELETE'])
 def api_delete_annotation(request) -> Response:
+    #TODO Depricated
     try:
         annotation_id = int(request.query_params['annotation_id'])
         keep_deleted_element = bool(request.query_params.get('keep_deleted_element', False))
@@ -676,6 +677,7 @@ def api_copy_annotation(request,source_annotation_id, target_image_id) -> Respon
 
 @api_view(['POST'])
 def create_annotation(request) -> Response:
+    #TODO Depricated
     try:
         image_id = int(request.data['image_id'])
         annotation_type_id = int(request.data['annotation_type_id'])
@@ -748,6 +750,7 @@ def create_annotation(request) -> Response:
 #@login_required
 @api_view(['GET'])
 def load_annotations(request) -> Response:
+    #TODO Depricated
     try:
         image_id = int(request.query_params['image_id'])
         since = request.query_params.get('since', None)
@@ -895,6 +898,7 @@ def load_set_annotation_types(request) -> Response:
 @login_required
 @api_view(['GET'])
 def load_filtered_set_annotations(request) -> Response:
+    #TODO Depricated
     try:
         imageset_id = int(request.query_params['imageset_id'])
         verified = request.query_params['verified'] == 'true'
@@ -932,6 +936,7 @@ def load_filtered_set_annotations(request) -> Response:
 @login_required
 @api_view(['GET'])
 def load_annotation(request) -> Response:
+    #TODO Depricated
     try:
         annotation_id = int(request.query_params['annotation_id'])
     except (KeyError, TypeError, ValueError):
@@ -956,6 +961,7 @@ def load_annotation(request) -> Response:
 
 @api_view(['POST'])
 def update_annotation(request) -> Response:
+    #TODO Depricated
     try:
         annotation_id = int(request.data['annotation_id'])
         image_id = int(request.data['image_id'])
