@@ -12,6 +12,8 @@ globals = {
     const API_1_ADMINISTRATION_BASE_URL = '/api/v1/administration/';
     
     const API_1_IMAGES_BASE_URL = '/api/v1/images/';
+    const API_1_IMAGES_FIELDS = 'fields=id,name&';
+
 
     const API_1_ANNOTATIONS_BASE_URL = '/api/v1/annotations/';
     const API_1_ANNOTATION_EXPAND = 'expand=user,last_editor,uploaded_media_files&';
@@ -45,7 +47,7 @@ globals = {
     var gZoomSlider;
     var gLastUpdateTimePoint = new Date(Date.now());
     var gRefreshAnnotationsFromServer;
-    var gUpDateFromServerInterval = 3000; // 300s
+    var gUpDateFromServerInterval = 30000; // 300s
     var gShiftDown;
 
     var tool;
@@ -1252,34 +1254,40 @@ globals = {
     /**
      * Load the image list from tye server applying a new filter.
      */
-    function loadImageList() {
+    function loadImageList(filter_type = "ALL") {
 
-        let params = {
-            image_set_id: gImageSetId,
-            filter_annotation_type_id: gFilterType
-        };
+        url = API_1_IMAGES_BASE_URL + "images/?limit=10000&" 
+        url += API_1_IMAGES_FIELDS
 
-        $.ajax(API_IMAGES_BASE_URL + 'imageset/load/?' + $.param(params), {
-            type: 'GET',
-            headers: gHeaders,
-            dataType: 'json',
-            success: function (data, textStatus, jqXHR) {
-                if (data.image_set.images.length === 0) {
+        filter = `image_set=${gImageSetId}&`;
+        if (filter_type === "NoAnnotations")
+            filter += `num_annotations_max=0&`;
+        if (filter_type == "ComputerGenerated")
+            filter += `image_type=1&`;
+        if (filter_type == "Verified")
+            filter += `verified=True&`;
+        if (filter_type == "Unverified")
+            filter += `verified=False&`;
+        if (isNaN(parseInt(filter_type)) === false)
+            filter += `annotation_type=${parseInt(filter_type)}&`;
+
+        url += filter;
+        
+        $.ajax(url, {type: 'GET', headers: gHeaders, dataType: 'json',
+            success: function (images, textStatus, jqXHR) {
+
+                if (images.count === 0) {
                     // redirect to image set view.
-                    if (gFilterType ===  "Unverified") {
+                    if (filter_type ===  "Unverified") {
                         $("#filter_annotation_type").notify("All images are verified. :)",
                             {position: "top", className: "error", autoHide: false});
 
                     } else {
                         $("#filter_annotation_type").notify("The image set is empty with that filter applied.",
                             {position: "top", className: "error"});
-                        //$('#filter_annotation_type').val('All');
                     }
                 }
-                displayImageList(data.image_set.images);
-            },
-            error: function () {
-                displayFeedback($('#feedback_connection_error'));
+                displayImageList(images.results);
             }
         });
     }
@@ -1597,7 +1605,7 @@ globals = {
 
     function CancelEdit(annotation) {
         // delete temp annotation
-        if (annotation.id === -1) {
+        if (annotation !== undefined && annotation.id === -1) {
             tool.removeAnnotation(annotation.unique_identifier);
 
             globals.allAnnotations = globals.allAnnotations.filter(function (value, index, arr) {
@@ -1735,6 +1743,8 @@ globals = {
 
                 for (product of image_set.product_set) {
                     for (annotation_type of product.annotationtype_set) {
+                        annotation_type.product = {id: product.id, name: product.name}
+
                         gAnnotationTypes[annotation_type.id] = annotation_type;
 
                         if (annotation_type.vector_type == 7)
@@ -1790,12 +1800,12 @@ globals = {
 
         });
         $('select#filter_annotation_type').on('change', function (event) {
-            gFilterType = $('#filter_annotation_type').children(':selected').val();
-            loadImageList();
+            var filter_type = $('#filter_annotation_type').children(':selected').val();
+            loadImageList(filter_type);
         });
         $('#filter_update_btn').on('click', function (event) {
-            gFilterType = $('#filter_annotation_type').children(':selected').val();
-            loadImageList();
+            var filter_type = $('#filter_annotation_type').children(':selected').val();
+            loadImageList(filter_type);
         });
 
         $('#search_update_btn').on('click', function (event) {

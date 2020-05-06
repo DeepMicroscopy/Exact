@@ -9,6 +9,7 @@ from django.db.models import Q, F
 from . import models
 from . import serializers
 import django_filters
+from rest_framework import filters
 
 
 class AnnotationFilterSet(django_filters.FilterSet):

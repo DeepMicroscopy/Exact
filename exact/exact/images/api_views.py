@@ -24,6 +24,9 @@ from pathlib import Path
 
 class ImageFilterSet(django_filters.FilterSet):
     image_type = django_filters.ChoiceFilter(choices=models.Image.SOURCE_TYPES)
+    annotation_type = django_filters.NumberFilter(field_name='annotations', method='filter_annotation_type')
+    num_annotations = django_filters.RangeFilter(field_name='annotations', method='filter_num_annotations')
+    verified = django_filters.BooleanFilter(field_name='annotations', method='filter_verified')
 
     class Meta:
         model = models.Image
@@ -39,6 +42,47 @@ class ImageFilterSet(django_filters.FilterSet):
             'image_type': [],
             'image_set': ['exact'],
         }
+
+    def filter_verified(self, queryset, field_name, value):
+        if value is not None:
+
+            if value: # all verified
+                queryset = queryset.filter(annotations__annotation_type__active=True, annotations__deleted=False,
+                                 annotations__verifications__verified=True).distinct()
+            else: # all un verified
+                queryset = queryset.annotate(anno_count=Count('annotations', filter=Q(annotations__deleted=False, annotations__annotation_type__active=True)))
+
+                queryset = queryset.filter(Q(annotations__annotation_type__active=True, annotations__deleted=False,
+                                       annotations__verifications__verified=False) |
+                                       Q(annotations__annotation_type__active=True, annotations__deleted=False,
+                                       annotations__verifications=None) | Q(anno_count__lte=0)).distinct()
+        return queryset
+
+    def filter_num_annotations(self, queryset, field_name, value):
+        """
+        `num_annotations` check if the number of annotations is in range
+        """
+        if value:
+            queryset = queryset.annotate(anno_count=Count('annotations', filter=Q(annotations__deleted=False, annotations__annotation_type__active=True)))
+            if value.start is not None:
+                queryset = queryset.filter(anno_count__gte=value.start)
+            if value.stop is not None:
+                queryset = queryset.filter(anno_count__lte=value.stop)
+
+        return queryset
+
+    def filter_annotation_type(self, queryset, field_name, value):
+        """
+        `use_annotation_type` check if a given annotation type is assignet to the image
+        """
+        if value:
+            queryset = queryset.filter(
+                annotations__deleted=False, annotations__annotation_type__active=True,
+                annotations__annotation_type__id=value).distinct()
+
+        return queryset
+
+
 
 class ImageViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
