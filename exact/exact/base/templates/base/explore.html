@@ -17,6 +17,7 @@
                 <a class="list-group-item{% if mode == 'imageset' %} active{% endif %}" href="{% url 'ImageSetView-list' %}">Imagesets  {% if mode == 'imageset' %} ({{paginator.paginator.count}}) {% endif %}</a>
                 <a class="list-group-item{% if mode == 'images' %} active{% endif %}" href="{% url 'ImageView-list' %}">Images {% if mode == 'images' %} ({{paginator.paginator.count}}) {% endif %}</a>
                 <a class="list-group-item{% if mode == 'annotations' %} active{% endif %}" href="{% url 'AnnotationView-list' %}">Annotations {% if mode == 'annotations' %} ({{paginator.paginator.count}}) {% endif %}</a>
+                <a class="list-group-item{% if mode == 'media_files' %} active{% endif %}" href="{% url 'AnnotationMediaFileView-list' %}">Media Files {% if mode == 'media_files' %} ({{paginator.paginator.count}}) {% endif %}</a>
                 <a class="list-group-item{% if mode == 'annotation_types' %} active{% endif %}" href="{% url 'AnnotationTypeView-list' %}">Annotation Types {% if mode == 'annotation_types' %} ({{paginator.paginator.count}}) {% endif %}</a>
                 <a class="list-group-item{% if mode == 'products' %} active{% endif %}" href="{% url 'ProductView-list' %}">Products {% if mode == 'products' %} ({{paginator.paginator.count}}) {% endif %}</a>
                 <a class="list-group-item{% if mode == 'versions' %} active{% endif %}" href="{% url 'VersionView-list' %}">Versions {% if mode == 'versions' %} ({{paginator.paginator.count}}) {% endif %}</a>
@@ -252,6 +253,66 @@
                                         {% endfor %}
                                     </table>
                                 {% endif %}
+
+                                {% if mode == 'media_files' %}
+                                    <table class="table table-striped">
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Type</th>
+                                            <th>Player</th>
+                                            <th>Annotation</th>
+                                        </tr>
+
+                                        {% for media_file in media_files %}
+                                            <tr>
+                                                <th>
+                                                    <dt>                                                     
+                                                        <a href="{% url 'annotations:annotate' media_file.annotation.image.id %}">{{media_file.annotation.image.name}}</a><!--TODO: Fix Link --> 
+                                                        <a href="{% url 'AnnotationMediaFileView-list' %}?{{ first_query }}&annotation={{ media_file.annotation.id }}"><span class="glyphicon glyphicon-filter"> </span></a>
+                                                         / {{ media_file.name }}
+                                                    </dt>
+                                                </th>
+
+                                                <th>
+                                                    <dt>
+                                                        {% if media_file.media_file_type == 1 %} Undefined {% endif %}
+                                                        {% if media_file.media_file_type == 2 %} Image {% endif %}
+                                                        {% if media_file.media_file_type == 3 %} Video {% endif %}
+                                                        {% if media_file.media_file_type == 4 %} Audio {% endif %}
+                                                        <a href="{% url 'AnnotationMediaFileView-list' %}?{{ first_query }}&media_file_type={{ media_file.media_file_type }}"><span class="glyphicon glyphicon-filter"> </span></a>                                                        
+                                                    </dt>
+                                                </th>
+
+                                                <th>
+                                                    {% if media_file.media_file_type == 2 %}
+                                                        <a href="{{ media_file.file.url }}">
+                                                            <img src="{{ media_file.file.url }}" style="widows: 150px; height: 150px">
+                                                        </a>
+                                                    {% endif %}
+                                                    {% if media_file.media_file_type == 3 %}
+                                                        <video width="150" height="150" controls>
+                                                            <source src="{{ media_file.file.url }}" type="video/mp4">
+                                                        Your browser does not support the video tag.
+                                                        </video>
+                                                    {% endif %}
+                                                    {% if media_file.media_file_type == 4 %}
+                                                        <audio controls>
+                                                            <source src="{{ media_file.file.url }}" type="audio/mpeg">
+                                                                Your browser does not support the audio element.
+                                                        </audio>
+                                                    {% endif %}
+                                                    <a  href="{{ media_file.file.url }}" download> Download </a>
+                                                </th>
+
+                                                <th>
+                                                    <a href="{% url 'AnnotationView-list' %}?{{ first_query }}&id={{ media_file.annotation.id }}"><span class="glyphicon glyphicon-new-window"> </span></a>
+                                                </th>
+
+                                            </tr>
+                                        {% endfor %}
+                                    </table>
+                                {% endif %}
+
 
                                 {% if mode == 'annotation_types' %}
                                     <table class="table table-striped">

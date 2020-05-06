@@ -957,9 +957,9 @@ globals = {
                 tool.showItem(annotation);
             };
 
-            if (annotation.media_files !== undefined) 
+            if (annotation.uploaded_media_files !== undefined) 
             {
-                for (const media of annotation.media_files) {
+                for (const media of annotation.uploaded_media_files) {
                     if (media.media_file_type === 4) //Audio
                     {
                         var audio = document.getElementById('audio');
