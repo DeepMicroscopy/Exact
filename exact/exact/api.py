@@ -36,6 +36,7 @@ router.register(r'images/versions_explore', images_views.SetVersionViewSet, base
 
 router.register(r'annotations/annotation_types_explore', annotations_views.AnnotationTypeViewSet, basename='AnnotationTypeView')
 router.register(r'annotations/annotations_explore', annotations_views.AnnotationViewSet, basename='AnnotationView')
+router.register(r'annotations/annotations_media_files_explore', annotations_views.AnnotationMediaFileViewSet, basename='AnnotationMediaFileView')
 router.register(r'annotations/annotation_versions_explore', annotations_views.AnnotationVersionViewSet, basename='AnnotationVersionView')
 
 

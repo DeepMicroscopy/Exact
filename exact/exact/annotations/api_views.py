@@ -306,6 +306,45 @@ class AnnotationMediaFileViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
+    def list(self, request, *args, **kwargs):
+        if "api" in request.META['PATH_INFO']:
+            return super(AnnotationMediaFileViewSet, self).list(request, *args, **kwargs)
+        else:
+            media_files = self.filter_queryset(self.get_queryset()).order_by('annotation')
+
+            current_query = request.META['QUERY_STRING']
+            if "page" not in request.query_params:
+                current_query += "&page=1"
+                page_id = 1
+            else:
+                page_id = int(request.query_params.get('page', 1))            
+            limit = int(request.query_params.get('limit', api_settings.PAGE_SIZE))
+
+
+            paginator = Paginator(media_files, limit)
+            page = paginator.get_page(page_id)
+
+            previous_query = first_query = current_query.replace("&page="+str(page_id), "&page=1")
+            if page.has_previous():
+                previous_query = current_query.replace("&page="+str(page_id), "&page={}".format(page.previous_page_number()))
+            
+            next_query = last_query = current_query.replace("&page="+str(page_id), "&page={}".format(paginator.num_pages))
+            if page.has_next():
+                next_query = current_query.replace("&page="+str(page_id), "&page={}".format(page.next_page_number()))
+
+
+            return TemplateResponse(request, 'base/explore.html', {
+                'mode': 'media_files',
+                'media_files': page,  # to separate what kind of stuff is displayed in the view
+                'paginator': page,  # for page stuff
+                'first_query': first_query,
+                'previous_query': previous_query,
+                'next_query': next_query,
+                'last_query': last_query,
+                #'filter': self.filterset_class
+            })
+
+
 
 class VerificationViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
