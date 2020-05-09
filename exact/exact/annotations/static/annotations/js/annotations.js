@@ -1300,8 +1300,9 @@ globals = {
                 if (jqXHR.status === 200) {
 
                     for (anno of data.results) {
-                        if (anno.user.username === document.getElementById("username").innerText.trim())
-                            continue
+                        if (anno.user.username === document.getElementById("username").innerText.trim() ||
+                            anno.last_editor.username === document.getElementById("username").innerText.trim())
+                            continue;
 
                         anno.annotation_type = gAnnotationTypes[anno.annotation_type]
 
@@ -1339,7 +1340,7 @@ globals = {
                     }
 
                     if (data.count > 0)
-                        loadStatistics(gImageId)
+                        loadStatistics(gImageId);
 
                     if (data.next !== null) {
                         loadAnnotationsWithConditions(API_1_ANNOTATIONS_BASE_URL + data.next.split(API_1_ANNOTATIONS_BASE_URL)[1], imageId)
@@ -1365,17 +1366,18 @@ globals = {
 
                         if (anno.image === tool.getImageId()) {
 
-                            if (anno.annotation_type.vector_type === 7) 
+                            if (anno.annotation_type.vector_type === 7)
                                 $("#GlobalAnnotation_" + anno.annotation_type.id).prop("checked", true);
                             else {
                                 tool.drawExistingAnnotations(data.results);
                             }
                         }
                     }
+                    gAnnotationCache[imageId] = gAnnotationCache[imageId].concat(data.results);
+
                     if (imageId === tool.getImageId())
                         globals.allAnnotations = gAnnotationCache[imageId];
 
-                    gAnnotationCache[imageId] = gAnnotationCache[imageId].concat(data.results);
                 }
 
                 if (data.next !== null) {
