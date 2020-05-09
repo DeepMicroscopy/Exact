@@ -46,7 +46,7 @@ from plugins.pluginFinder import PluginFinder
 from plugins.ExactServerPlugin import UpdatePolicy, ViewPolicy, NavigationViewOverlayStatus
 
 import platform
-import os
+import os, stat
 import shutil
 from shutil import which
 import string
@@ -910,6 +910,7 @@ def create_imageset_api(request):
 
         folder_path = image_set.root_path()
         os.makedirs(folder_path)
+        os.chmod(folder_path, stat.S_IROTH | stat.S_IWOTH | stat.S_IRGRP | stat.S_IWGRP )
 
         for product in products:
             available_product = Product.objects.filter(id=product['id']).first()
@@ -956,6 +957,7 @@ def create_imageset(request):
                     # create a folder to store the images of the set
                     folder_path = form.instance.root_path()
                     os.makedirs(folder_path)
+                    os.chmod(folder_path, stat.S_IROTH | stat.S_IWOTH | stat.S_IRGRP | stat.S_IWGRP )
                     #shutil.chown(folder_path, group=settings.UPLOAD_FS_GROUP)
 
                 messages.success(request,

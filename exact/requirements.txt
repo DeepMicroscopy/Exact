@@ -12,7 +12,7 @@ django-widget-tweaks==1.4.3
 drf-flex-fields
 djoser==2.0.3
 django==3
--e git+git://github.com/ubernostrum/django-registration.git#egg=django-registration
+django-registration==3.1
 djangorestframework==3.11.0
 uritemplate==3.0.1
 fasteners==0.14.1

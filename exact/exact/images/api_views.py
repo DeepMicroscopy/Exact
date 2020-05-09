@@ -1,4 +1,4 @@
-import os
+import os, stat
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponseBadRequest
@@ -135,7 +135,7 @@ class ImageViewSet(viewsets.ModelViewSet):
                 os.remove(os.path.join(imageset.root_path(), zipname))
                 filenames = [f for f in os.listdir(os.path.join(imageset.root_path()))]
                 filenames.sort()
-
+                duplicat_count = 0
                 for filename in filenames:
                     file_path = os.path.join(imageset.root_path(), filename)
                     if models.Image.objects.filter(Q(filename=filename)|Q(name=f.name),
@@ -326,23 +326,6 @@ class ImageSetFilterSet(django_filters.FilterSet):
                 return queryset.filter(images__id=value.id)
         return queryset
 
-    def create(self, request):
-        user = self.request.user
-        if "creator" not in request.data:
-            request.data["creator"] = user.id
-        response = super().create(request)
-        # add path and creator
-        with transaction.atomic():
-            image_set = models.ImageSet.objects.filter(id=response.data['id']).first()
-            image_set.path = '{}_{}_{}'.format(connection.settings_dict['NAME'], image_set.team.id,
-                                           image_set.id)
-            image_set.save()
-            folder_path = image_set.root_path()
-            os.makedirs(folder_path)
-        return response
-
-
-
 class ImageSetViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
     #queryset = models.ImageSet.objects.all().select_related('team', 'creator', 'main_annotation_type')
@@ -367,7 +350,7 @@ class ImageSetViewSet(viewsets.ModelViewSet):
                                            image_set.id)
             image_set.save()
             folder_path = image_set.root_path()
-            os.makedirs(folder_path)
+            os.chmod(folder_path, stat.S_IROTH | stat.S_IWOTH | stat.S_IRGRP | stat.S_IWGRP )
         return response
 
     def list(self, request, *args, **kwargs):
