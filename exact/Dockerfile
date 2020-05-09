@@ -1,10 +1,10 @@
 # pull official base image
-FROM python:3.6.0
+FROM ubuntu:18.04 as builder
 
 # set work directory
 WORKDIR /usr/src/exact
 
-RUN apt-get update && apt-get install -y python3-dev python3-openslide netcat dos2unix libvips libvips-dev \
+RUN apt-get update && apt-get install -y python3-pip dos2unix python3-openslide libvips libvips-dev netcat\
     && rm -rf /var/lib/apt/lists/*
 
 # set environment variables
@@ -12,10 +12,10 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
 # install dependencies
-RUN pip install --upgrade pip
+RUN pip3 install --upgrade pip
 COPY ./requirements.txt /usr/src/exact/requirements.txt
 
-RUN pip install -r requirements.txt
+RUN pip3 install -r requirements.txt
 
 # copy entrypoint.sh and convert to linux format 
 COPY ./entrypoint.sh /usr/src/exact/entrypoint.sh
@@ -30,7 +30,7 @@ RUN dos2unix /usr/src/exact/entrypoint.sh
 RUN chmod +x /usr/src/exact/entrypoint.sh
 #RUN cat /usr/src/exact/entrypoint.sh
 
-RUN pip install --upgrade git+git://github.com/ubernostrum/django-registration.git#egg=django-registration
+#RUN pip install --upgrade git+git://github.com/ubernostrum/django-registration.git#egg=django-registration
 RUN pip list
 
 # copy project

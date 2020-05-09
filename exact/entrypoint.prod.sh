@@ -7,13 +7,13 @@ then
 	echo "Waiting for postgres..."
 
     while ! nc -z $SQL_HOST $SQL_PORT; do
-      sleep 0.1
+      sleep 5
     done
 
     echo "PostgreSQL started"
 fi
 
-python manage.py migrate
-python manage.py collectstatic --no-input --clear
+python3 manage.py migrate
+python3 manage.py collectstatic --no-input --clear
 
 exec "$@"

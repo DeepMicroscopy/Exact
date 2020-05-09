@@ -4,13 +4,14 @@
 
 
 # pull official base image
-FROM python:3.6.0 as builder
+FROM ubuntu:18.04 as builder
 
 # set work directory
 WORKDIR /usr/src/app
 
-RUN apt-get update && apt-get install -y python3-dev python3-openslide netcat dos2unix libvips libvips-dev \
+RUN apt-get update && apt-get install -y python3-pip dos2unix\
     && rm -rf /var/lib/apt/lists/*
+
 
 # set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
@@ -18,8 +19,8 @@ ENV PYTHONUNBUFFERED 1
 
 
 # lint
-RUN pip install --upgrade pip
-RUN pip install flake8
+RUN pip3 install --upgrade pip
+RUN pip3 install flake8
 COPY . /usr/src/app/
 
 # Just build if code is valid!!!
@@ -28,8 +29,7 @@ COPY . /usr/src/app/
 # install dependencies
 COPY ./requirements.txt .
 RUN pip3 install wheel
-RUN pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requirements.txt
-RUN pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels git+git://github.com/ubernostrum/django-registration.git#egg=django-registration
+RUN pip3 wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requirements.txt
 
 
 # copy entrypoint.sh and convert to linux format 
@@ -46,7 +46,7 @@ RUN chmod +x /usr/src/app/entrypoint.prod.sh
 #########
 
 
-FROM python:3.6.0
+FROM ubuntu:18.04
 
 # create directory for the app user
 RUN mkdir -p /home/app
@@ -66,13 +66,14 @@ WORKDIR $APP_HOME
 
 
 # install dependencies
-RUN apt-get update && apt-get install -y python3-openslide netcat
+RUN apt-get update && apt-get install -y python3-pip python3-openslide libvips libvips-dev netcat \
+    && rm -rf /var/lib/apt/lists/*
 
 
 COPY --from=builder /usr/src/app/wheels /wheels
 COPY --from=builder /usr/src/app/requirements.txt .
-RUN pip install --upgrade pip
-RUN pip install --no-cache /wheels/*
+RUN pip3 install --upgrade pip
+RUN pip3 install --no-cache /wheels/*
 
 
 # copy entrypoint-prod.sh
