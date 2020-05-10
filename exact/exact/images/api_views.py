@@ -209,6 +209,7 @@ class ImageViewSet(viewsets.ModelViewSet):
                         name=name,
                         image_set=imageset,
                         filename=path.name,
+                        image_type=image_type,
                         checksum=fchecksum)
 
 
