@@ -910,7 +910,7 @@ def create_imageset_api(request):
 
         folder_path = image_set.root_path()
         os.makedirs(folder_path)
-        os.chmod(folder_path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH| stat.S_IWOTH)
+        os.chmod(folder_path, 0o777)
 
         for product in products:
             available_product = Product.objects.filter(id=product['id']).first()
@@ -957,7 +957,7 @@ def create_imageset(request):
                     # create a folder to store the images of the set
                     folder_path = form.instance.root_path()
                     os.makedirs(folder_path)
-                    os.chmod(folder_path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH| stat.S_IWOTH)
+                    os.chmod(folder_path, 0o777)
                     #shutil.chown(folder_path, group=settings.UPLOAD_FS_GROUP)
 
                 messages.success(request,
