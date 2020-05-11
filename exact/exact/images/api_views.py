@@ -351,7 +351,7 @@ class ImageSetViewSet(viewsets.ModelViewSet):
                                            image_set.id)
             image_set.save()
             folder_path = image_set.root_path()
-            os.chmod(folder_path, stat.S_IROTH | stat.S_IWOTH | stat.S_IRGRP | stat.S_IWGRP )
+            os.chmod(folder_path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH| stat.S_IWOTH)
         return response
 
     def list(self, request, *args, **kwargs):
