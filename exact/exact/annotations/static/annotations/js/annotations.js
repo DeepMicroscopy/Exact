@@ -742,13 +742,12 @@ globals = {
         let annotationTypeToolSelect = $('#annotation_type_id');
 
         let key = 0
-        for (annotationType of annotationTypeList) {
+        for (annotationType of annotationTypeList.sort(function(a, b){
+                return a.sort_order - b.sort_order;})) {
             if (annotationType.vector_type !== 7) // filter global annotations
             {
 
                 gAnnotationKeyToIdLookUp[key] = annotationType.id;
-                key += 1;
-
 
                 annotationTypeToolSelect.append($('<option/>', {
                     name: annotationType.name,
@@ -764,6 +763,8 @@ globals = {
                     'data-concealed': annotationType.enable_concealed,
                     'data-background-color': annotationType.color_code
                 }));
+
+                key += 1;
             }
 
             annotationTypeFilterSelect.append($('<option/>', {
@@ -1754,9 +1755,8 @@ globals = {
                         else
                             $('#DrawCheckBox_'+annotation_type.id).change(handleAnnotationVisibilityChanged)
                     }
-
-                    displayAnnotationTypeOptions(product.annotationtype_set);
                 }
+                displayAnnotationTypeOptions(Object.values(gAnnotationTypes));
 
                 if (Object.keys(gAnnotationTypes).length > 0) {
                     viewer.selection({
