@@ -50,7 +50,7 @@ Marzahl et al. [EXACT: A collaboration toolset for algorithm-aided annotation of
 | Explains the screening plugin for WSI  |  [![Datasets](https://img.youtube.com/vi/w7GHTEP2AYo/0.jpg)](https://www.youtube.com/watch?v=/w7GHTEP2AYo)  |
 | Syncronisation with the offline tool SlideRunner  |  [![Datasets](https://img.youtube.com/vi/Ch5nlnVwYcA/0.jpg)](https://www.youtube.com/watch?v=/Ch5nlnVwYcA)  |
 | Advanced polygon annotation operations  |  [![Datasets](https://img.youtube.com/vi/xVn9ghDQz1A/0.jpg)](https://www.youtube.com/watch?v=/xVn9ghDQz1A)  |
-| REST-API Example | ```pip install EXCAT-Sync``` <br> [Code](https://github.com/ChristianMarzahl/EXACT-Sync) <br> [Notebook](https://colab.research.google.com/drive/1nOTyAVwzBDMSEAdgjbdpe7isGfeVpusK) |
+| REST-API Example | ```pip install EXCAT-Sync``` <br> [Code](https://github.com/ChristianMarzahl/EXACT-Sync) <br> [Notebook](https://colab.research.google.com/drive/1nOTyAVwzBDMSEAdgjbdpe7isGfeVpusK)  <br> [Notebook](https://colab.research.google.com/drive/1klUiGOQSeBJ7xifeOprUpwEKaeQ_9XSQ?usp=sharing)|
 
 ## Install
 

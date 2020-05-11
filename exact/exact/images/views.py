@@ -284,7 +284,7 @@ def upload_image(request, imageset_id):
                 zip_ref.close()
                 # delete zip-file
                 os.remove(os.path.join(imageset.root_path(), zipname))
-                filenames = [f for f in os.listdir(os.path.join(imageset.root_path()))]
+                filenames = [f.filename for f in zip_ref.filelist]
                 filenames.sort()
                 duplicat_count = 0
                 for filename in filenames:
@@ -305,7 +305,13 @@ def upload_image(request, imageset_id):
                                         fchecksum.update(buf)
                                 fchecksum = fchecksum.digest()
 
-                                file_list[file_path] = fchecksum
+                                # check if vms is in any images then just save the vms files
+                                # else for each jpg a new image will be created in the databse
+                                if any(".vms" in f for f in filenames) and ".vms" in filename:
+                                    file_list[file_path] = fchecksum
+                                elif(any(".vms" in f for f in filenames) == False):
+                                    file_list[file_path] = fchecksum
+                                
                             else:
                                 error['unsupported'] = True
 
