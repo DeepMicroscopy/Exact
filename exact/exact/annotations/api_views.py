@@ -15,7 +15,9 @@ from rest_framework import filters
 class AnnotationFilterSet(django_filters.FilterSet):
     vector_x = django_filters.RangeFilter(method='get_vector_x_filter', field_name='vector', label="Vector-X-Range")
     vector_y = django_filters.RangeFilter(method='get_vector_y_filter', field_name='vector', label="Vector-Y-Range")
-    
+    meta_data__isnull =  django_filters.BooleanFilter(method='get_meta_data_isnull_filter', field_name='meta_data')
+    vector__isnull =  django_filters.BooleanFilter(method='get_vector_isnull_filter', field_name='vector')
+
     class Meta:
        model = models.Annotation
        fields = {'vector_y': [], 'vector_x': [],        
@@ -31,7 +33,15 @@ class AnnotationFilterSet(django_filters.FilterSet):
         'annotation_type': ['exact'], #, 'range'
         'verified_by': ['exact', 'range'], #, 'range'
         'annotationversion': ['exact'],
+        'meta_data__isnull': [],
+        'vector__isnull': []
        }
+
+    def get_vector_isnull_filter(self, queryset, field_name, value):
+        return queryset.filter(vector__isnull=value)
+
+    def get_meta_data_isnull_filter(self, queryset, field_name, value):
+        return queryset.filter(meta_data__isnull=value)
 
     def get_vector_x_filter(self, queryset, field_name, value):
         if value:
