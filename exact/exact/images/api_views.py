@@ -410,7 +410,7 @@ class SetTagViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return  models.SetTag.objects.filter(imagesets__team__in=user.team_set.all())
+        return  models.SetTag.objects.filter(imagesets__team__in=user.team_set.all()).distinct()
 
 class SetVersionViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
