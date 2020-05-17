@@ -1421,7 +1421,7 @@ globals = {
                 filter += "deleted=False&"
             }
 
-            let url = API_1_ANNOTATIONS_BASE_URL+ 'annotations/?limit=50&' + filter + API_1_ANNOTATION_EXPAND + API_1_ANNOTATION_FIELDS
+            let url = API_1_ANNOTATIONS_BASE_URL+ 'annotations/?limit=250&' + filter + API_1_ANNOTATION_EXPAND + API_1_ANNOTATION_FIELDS
             loadAnnotations(url, imageId)
         }
     }
