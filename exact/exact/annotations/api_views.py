@@ -69,7 +69,7 @@ class AnnotationViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return  models.Annotation.objects.filter(image__image_set__team__in=user.team_set.all()).select_related('annotation_type', 'image', 'user', 'last_editor')
+        return  models.Annotation.objects.filter(image__image_set__team__in=user.team_set.all()).select_related('annotation_type', 'image', 'user', 'last_editor').order_by('id')
 
     def create(self, request):
         user = self.request.user
@@ -102,7 +102,7 @@ class AnnotationViewSet(viewsets.ModelViewSet):
         if "api" in request.META['PATH_INFO']:
             return super(AnnotationViewSet, self).list(request, *args, **kwargs)
         else:
-            annotations = self.filter_queryset(self.get_queryset()).order_by('image')
+            annotations = self.filter_queryset(self.get_queryset()).order_by('image', 'id')
 
             current_query = request.META['QUERY_STRING']
             if "page" not in request.query_params:
@@ -163,13 +163,13 @@ class AnnotationVersionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return  models.AnnotationVersion.objects.filter(image__image_set__team__in=user.team_set.all()).select_related('annotation', 'image', 'annotation_type', 'version')
+        return  models.AnnotationVersion.objects.filter(image__image_set__team__in=user.team_set.all()).select_related('annotation', 'image', 'annotation_type', 'version').order_by('id')
 
     def list(self, request, *args, **kwargs):
         if "api" in request.META['PATH_INFO']:
             return super(AnnotationVersionViewSet, self).list(request, *args, **kwargs)
         else:
-            anno_versions = self.filter_queryset(self.get_queryset()).order_by('version')
+            anno_versions = self.filter_queryset(self.get_queryset()).order_by('version', 'id')
 
             current_query = request.META['QUERY_STRING']
             if "page" not in request.query_params:
@@ -216,14 +216,14 @@ class AnnotationTypeViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return  models.AnnotationType.objects.filter(product__team__in=user.team_set.all()).select_related('product')
+        return  models.AnnotationType.objects.filter(product__team__in=user.team_set.all()).select_related('product').order_by('id')
 
 
     def list(self, request, *args, **kwargs):
         if "api" in request.META['PATH_INFO']:
             return super(AnnotationTypeViewSet, self).list(request, *args, **kwargs)
         else:
-            annotation_types = self.filter_queryset(self.get_queryset()).order_by('product')
+            annotation_types = self.filter_queryset(self.get_queryset()).order_by('product', 'id')
             
             current_query = request.META['QUERY_STRING']
             if "page" not in request.query_params:
@@ -284,7 +284,7 @@ class AnnotationMediaFileViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return  models.AnnotationMediaFile.objects.filter(annotation__image__image_set__team__in=user.team_set.all()).select_related('annotation')  
+        return  models.AnnotationMediaFile.objects.filter(annotation__image__image_set__team__in=user.team_set.all()).select_related('annotation').order_by('id')
 
     def create(self, request):
         media_file_type = int(request.POST.get('media_file_type', 0))
@@ -320,7 +320,7 @@ class AnnotationMediaFileViewSet(viewsets.ModelViewSet):
         if "api" in request.META['PATH_INFO']:
             return super(AnnotationMediaFileViewSet, self).list(request, *args, **kwargs)
         else:
-            media_files = self.filter_queryset(self.get_queryset()).order_by('annotation')
+            media_files = self.filter_queryset(self.get_queryset()).order_by('annotation', 'id')
 
             current_query = request.META['QUERY_STRING']
             if "page" not in request.query_params:
@@ -370,7 +370,7 @@ class VerificationViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return  models.Verification.objects.filter(annotation__image__image_set__team__in=user.team_set.all()).select_related('annotation', 'user')  
+        return  models.Verification.objects.filter(annotation__image__image_set__team__in=user.team_set.all()).select_related('annotation', 'user').order_by('id')
 
 
 class LogImageActionFilterSet(django_filters.FilterSet):

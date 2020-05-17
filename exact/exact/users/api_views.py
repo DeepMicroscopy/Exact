@@ -21,7 +21,7 @@ class UserViewset(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return  models.User.objects.filter(team__in=user.team_set.all()).distinct()
+        return  models.User.objects.filter(team__in=user.team_set.all()).distinct().order_by('id')
 
 class TeamViewset(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
@@ -36,7 +36,7 @@ class TeamViewset(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return models.Team.objects.filter(id__in=user.team_set.all())
+        return models.Team.objects.filter(id__in=user.team_set.all()).order_by('id')
 
     def create(self, request):
         user = self.request.user
@@ -62,4 +62,4 @@ class TeamMembershipViewset(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return models.TeamMembership.objects.filter(team__in=user.team_set.all()).select_related('team', 'user')
+        return models.TeamMembership.objects.filter(team__in=user.team_set.all()).select_related('team', 'user').order_by('id')

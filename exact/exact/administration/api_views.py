@@ -21,7 +21,7 @@ class ProductViewset(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return  models.Product.objects.filter(team__in=user.team_set.all()).select_related('creator', 'team')
+        return  models.Product.objects.filter(team__in=user.team_set.all()).select_related('creator', 'team').order_by('id')
 
 
     def create(self, request):
@@ -35,7 +35,7 @@ class ProductViewset(viewsets.ModelViewSet):
         if "api" in request.META['PATH_INFO']:
             return super(ProductViewset, self).list(request, *args, **kwargs)
         else:
-            products = self.filter_queryset(self.get_queryset()).order_by('team')
+            products = self.filter_queryset(self.get_queryset()).order_by('team', 'id')
             
             current_query = request.META['QUERY_STRING']
             if "page" not in request.query_params:

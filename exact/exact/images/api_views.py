@@ -261,7 +261,7 @@ class ImageViewSet(viewsets.ModelViewSet):
         if "api" in request.META['PATH_INFO']:
             return super(ImageViewSet, self).list(request, *args, **kwargs)
         else:
-            images = self.filter_queryset(self.get_queryset()).order_by('image_set')
+            images = self.filter_queryset(self.get_queryset()).order_by('image_set', 'id')
 
             current_query = request.META['QUERY_STRING']
             if "page" not in request.query_params:
@@ -342,7 +342,7 @@ class ImageSetViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return  models.ImageSet.objects.filter(team__in=user.team_set.all()).select_related('team', 'creator', 'main_annotation_type')
+        return  models.ImageSet.objects.filter(team__in=user.team_set.all()).select_related('team', 'creator', 'main_annotation_type').order_by('id')
 
 
     def create(self, request):
@@ -364,7 +364,7 @@ class ImageSetViewSet(viewsets.ModelViewSet):
         if "api" in request.META['PATH_INFO']:
             return super(ImageSetViewSet, self).list(request, *args, **kwargs)
         else:
-            imagesets = self.filter_queryset(self.get_queryset()).order_by('team')
+            imagesets = self.filter_queryset(self.get_queryset()).order_by('team', 'id')
 
             current_query = request.META['QUERY_STRING']
             if "page" not in request.query_params:
@@ -410,7 +410,7 @@ class SetTagViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return  models.SetTag.objects.filter(imagesets__team__in=user.team_set.all()).distinct()
+        return  models.SetTag.objects.filter(imagesets__team__in=user.team_set.all()).distinct().order_by('id')
 
 class SetVersionViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
@@ -424,7 +424,7 @@ class SetVersionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return  models.SetVersion.objects.filter(imagesets__team__in=user.team_set.all())
+        return  models.SetVersion.objects.filter(imagesets__team__in=user.team_set.all()).order_by('id')
 
     def create(self, request):
         response = super().create(request)
@@ -458,7 +458,7 @@ class SetVersionViewSet(viewsets.ModelViewSet):
         if "api" in request.META['PATH_INFO']:
             return super(SetVersionViewSet, self).list(request, *args, **kwargs)
         else:
-            versions = self.filter_queryset(self.get_queryset()).order_by('imagesets')
+            versions = self.filter_queryset(self.get_queryset()).order_by('imagesets', 'id')
 
             current_query = request.META['QUERY_STRING']
             if "page" not in request.query_params:
@@ -504,4 +504,4 @@ class ScreeningModeViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return  models.ScreeningMode.objects.filter(image__image_set__team__in=user.team_set.all()).select_related('image', 'user')
+        return  models.ScreeningMode.objects.filter(image__image_set__team__in=user.team_set.all()).select_related('image', 'user').order_by('id')
