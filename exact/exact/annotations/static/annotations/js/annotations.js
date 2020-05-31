@@ -1706,7 +1706,18 @@ globals = {
             vpRect.width,
             vpRect.height
         ));
+    }
 
+    function changeAnnotationTypeByButton(event) {
+        var annotationTypeId = parseInt(event.target.dataset.type_id);
+
+        if (!OpenSeadragon.isFullScreen()) {
+            $('#annotation_type_id').val(annotationTypeId);
+        }
+
+        gAnnotationType = gAnnotationTypes[annotationTypeId];
+
+        handleAnnotationTypeChange(globals.editedAnnotation, gAnnotationType);
     }
 
     $(function () {
@@ -1752,8 +1763,11 @@ globals = {
 
                         if (annotation_type.vector_type == 7)
                             $('#GlobalAnnotation_'+annotation_type.id).change(globalAnnotationChanged)
-                        else
+                        else {
                             $('#DrawCheckBox_'+annotation_type.id).change(handleAnnotationVisibilityChanged)
+                            $('#annotation_type_id_button_'+annotation_type.id).click(changeAnnotationTypeByButton)
+
+                        }
                     }
                 }
                 displayAnnotationTypeOptions(Object.values(gAnnotationTypes));

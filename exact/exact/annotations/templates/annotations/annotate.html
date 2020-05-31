@@ -214,7 +214,9 @@
 
                                             {% for annotation_type in annotation_types %}
                                                 <tr>
-                                                    <td>{{ annotation_type.name }}</td>
+                                                    <td id="annotation_type_id_button_{{ annotation_type.id }}" data-type_id={{ annotation_type.id }}>
+                                                        {{ annotation_type.name }}
+                                                    </td>
                                                     <td>{{ forloop.counter0 }}</td>
                                                     <td id="{{ annotation_type.name }}_{{ annotation_type.id }}">{{ annotation_type.node_count }}</td>
                                                     <td style="background-color: {{ annotation_type.color_code }}">

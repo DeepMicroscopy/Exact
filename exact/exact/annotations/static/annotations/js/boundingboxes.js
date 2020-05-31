@@ -51,10 +51,13 @@ class BoundingBoxes {
             tolerance: 2
         };
 
+
+
         this.imageid = imageid;
         this.image_width = imageSize["width"];
         this.image_hight = imageSize["height"];
         this.strokeWidth = 3;
+        this.polyStrokeWidth = 1;
 
         this.resetSelection();
     }
@@ -528,8 +531,23 @@ class BoundingBoxes {
                 var point = this.viewer.viewport.viewportToImageCoordinates(viewportPoint);
 
                 var hit = this.selection.item.hitTest(point, this.hitOptions);
-                if (hit) // just resize if mouse is over element
+                if (hit && this.selection.item.data.type !== "poly") // just resize if mouse is over element
                     this.selection.item.scale(1 + (event.scroll / 10));
+                else if (hit && this.selection.item.data.type === "poly")
+                {
+                    this.polyStrokeWidth += event.scroll;
+                    this.polyStrokeWidth = Math.max(this.polyStrokeWidth, 1)
+
+                    if (this.polyBrush !== undefined)
+                        this.polyBrush.remove()
+
+                    this.polyBrush = new paper.Path.Circle({
+                        center: point,
+                        radius: this.polyStrokeWidth,
+                        strokeColor: this.selection.item.strokeColor,
+                    });
+                    this.polyBrush.strokeWidth = this.strokeWidth
+                }
             }
         }
     }
@@ -654,6 +672,8 @@ class BoundingBoxes {
     }
 
     handleMouseDrag(event) {
+        if (this.polyBrush !== undefined)
+            this.polyBrush.remove()
 
         if (this.selection) {
             // Convert pixel to viewport coordinates
@@ -662,55 +682,86 @@ class BoundingBoxes {
             // Convert from viewport coordinates to image coordinates.
             var imagePoint = new paper.Point(this.viewer.viewport.viewportToImageCoordinates(viewportPoint));
 
-            if (!event.shift) {
+             
 
-                switch (this.selection.item.data.type) {
-                    case 'poly':
+            switch (this.selection.item.data.type) {
+                                                
+                                
+                case 'poly':
+                    // if shift is pressed add circle diameter to poly
+                    // else move poly
+
+                    if(event.shift) {
+                        var path = new paper.Path.Circle({
+                            center: imagePoint,
+                            radius: this.polyStrokeWidth,
+                            strokeColor: 'red',
+                        });
+            
+                        var result = this.selection.item.unite(path)
+                        path.remove()
+
+                        if (result.children === undefined) {
+                            this.selection.item.remove()
+
+                            this.selection.item = result
+                        } else {
+                            result.remove()
+                        }
+
+                    } else {
                         if (this.selection.type == 'new') {
                             this.selection.item.add(imagePoint);
                         }
-                        //else if (this.selection.type == 'stroke' &&
-                        //    this.selection.item.data.type == 'poly' &&
-                        //    this.selection.item.segments.length > 3) {
-                        //    var location = this.selection.location;
-                        //    if (this.selection.location !== undefined) {
-                        //        this.selection.item.insert(location.index + 1, imagePoint);
-                        //    }
-                        //}
                         else if (this.selection.type == 'fill') {
 
                             var tempRect = this.selection.item.bounds.clone();
                             tempRect.center = imagePoint;
-
+        
                             if (this.isPointInImage(tempRect.getTopLeft()) && this.isPointInImage(tempRect.getBottomRight()))
                                 this.selection.item.position = imagePoint;
+                                
                         }
                         if (this.selection.type == 'segment') {
+    
                             this.selection.segment.point = this.fixPointToImage(imagePoint);
                         }
-                        break;
+                    }
+                    break;
 
-                    case 'line':
+                case 'line':
 
-                        if (this.selection.item.segments.length == 1) {
-                            this.selection.item.add(imagePoint);
+                    if (this.selection.item.segments.length == 1) {
+                        this.selection.item.add(imagePoint);
 
+                    } else {
+                        // check if mouse is near to first, second or center point and move that one
+                        if (this.selection.item.segments[0].point.getDistance(imagePoint)
+                            < this.selection.item.position.getDistance(imagePoint)) {
+                            this.selection.item.segments[0].point = imagePoint;
+
+                        } else if (this.selection.item.segments[1].point.getDistance(imagePoint)
+                            < this.selection.item.position.getDistance(imagePoint)) {
+                            this.selection.item.segments[1].point = imagePoint;
                         } else {
-                            // check if mouse is near to first, second or center point and move that one
-                            if (this.selection.item.segments[0].point.getDistance(imagePoint)
-                                < this.selection.item.position.getDistance(imagePoint)) {
-                                this.selection.item.segments[0].point = imagePoint;
-
-                            } else if (this.selection.item.segments[1].point.getDistance(imagePoint)
-                                < this.selection.item.position.getDistance(imagePoint)) {
-                                this.selection.item.segments[1].point = imagePoint;
-                            } else {
-                                this.selection.item.position = imagePoint;
-                            }
+                            this.selection.item.position = imagePoint;
                         }
-                        break;
+                    }
+                    break;
 
-                    case 'fixed_rect':
+                case 'fixed_rect':
+
+                    var tempRect = this.selection.item.bounds.clone();
+                    tempRect.center = imagePoint;
+
+                    if (this.isPointInImage(tempRect.getTopLeft()) && this.isPointInImage(tempRect.getBottomRight()))
+                        this.selection.item.position = imagePoint;
+
+                    break;
+
+                default:
+
+                    if (this.selection.type == 'fill') {
 
                         var tempRect = this.selection.item.bounds.clone();
                         tempRect.center = imagePoint;
@@ -718,48 +769,33 @@ class BoundingBoxes {
                         if (this.isPointInImage(tempRect.getTopLeft()) && this.isPointInImage(tempRect.getBottomRight()))
                             this.selection.item.position = imagePoint;
 
+                    } else {
 
-                        break;
+                        var offset = imagePoint.add(this.selection.item.data.offset_point);
+                        var min_x = Math.min(this.selection.item.data.from.x, offset.x);
+                        var min_y = Math.min(this.selection.item.data.from.y, offset.y);
+                        var max_x = Math.max(this.selection.item.data.from.x, offset.x);
+                        var max_y = Math.max(this.selection.item.data.from.y, offset.y);
 
-                    default:
+                        if (max_x - min_x < 10) max_x = min_x + 10;
+                        if (max_y - min_y < 10) max_y = min_y + 10;
 
-                        if (this.selection.type == 'fill') {
+                        // fix annotation to image
+                        var topLeft = this.fixPointToImage(new paper.Point(min_x, min_y));
+                        var bottomRight = this.fixPointToImage(new paper.Point(max_x, max_y));
 
-                            var tempRect = this.selection.item.bounds.clone();
-                            tempRect.center = imagePoint;
+                        this.selection.item.bounds = new paper.Rectangle(topLeft, bottomRight);
+                    }
 
-                            if (this.isPointInImage(tempRect.getTopLeft()) && this.isPointInImage(tempRect.getBottomRight()))
-                                this.selection.item.position = imagePoint;
-
-                        } else {
-
-                            var offset = imagePoint.add(this.selection.item.data.offset_point);
-                            var min_x = Math.min(this.selection.item.data.from.x, offset.x);
-                            var min_y = Math.min(this.selection.item.data.from.y, offset.y);
-                            var max_x = Math.max(this.selection.item.data.from.x, offset.x);
-                            var max_y = Math.max(this.selection.item.data.from.y, offset.y);
-
-                            if (max_x - min_x < 10) max_x = min_x + 10;
-                            if (max_y - min_y < 10) max_y = min_y + 10;
-
-                            // fix annotation to image
-                            var topLeft = this.fixPointToImage(new paper.Point(min_x, min_y));
-                            var bottomRight = this.fixPointToImage(new paper.Point(max_x, max_y));
-
-                            this.selection.item.bounds = new paper.Rectangle(topLeft, bottomRight);
-                        }
-
-                        break;
-                }
-            } else {
-                // TODO: erase on the fly
-
+                    break;
             }
         }
 
     }
 
     handleMousePress(event) {
+        if (this.polyBrush !== undefined)
+            this.polyBrush.remove()
 
         // Convert pixel to viewport coordinates
         var viewportPoint = this.viewer.viewport.pointFromPixel(event.position);
@@ -814,7 +850,8 @@ class BoundingBoxes {
     }
 
     handleMouseUp(event) {
-
+        if (this.polyBrush !== undefined)
+            this.polyBrush.remove()
     }
 
     handleEscape() {

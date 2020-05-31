@@ -609,11 +609,11 @@ class ExportFormat(models.Model):
     team = models.ForeignKey(Team, on_delete=models.PROTECT,
                              related_name='export_formats')
     public = models.BooleanField(default=False)
-    base_format = NonStrippingTextField()  # more general, has a placeholder for the list of annotation_formats, can contain header, footer etc.
+    base_format = NonStrippingTextField(default='%%content')  # more general, has a placeholder for the list of annotation_formats, can contain header, footer etc.
     image_format = NonStrippingTextField(null=True, blank=True, default=None)
-    annotation_format = NonStrippingTextField()  # used for every annotation in export (coordinates, type, image)
-    vector_format = NonStrippingTextField(default='x%%count1: %%x%%bry%%count1: %%y%%br')
-    not_in_image_format = NonStrippingTextField()
+    annotation_format = NonStrippingTextField(default='%%imagename|%%type|{%%vector}|')  # used for every annotation in export (coordinates, type, image)
+    vector_format = NonStrippingTextField(default=r'"x%%count1": %%x,"y%%count1": %%y,')
+    not_in_image_format = NonStrippingTextField(default='image name|annotation type|not in image')
     name_format = models.CharField(default='export_%%exportid.txt', max_length=200)
     min_verifications = models.IntegerField(default=0)
     image_aggregation = models.BooleanField(default=False)
