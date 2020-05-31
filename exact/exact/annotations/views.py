@@ -333,6 +333,7 @@ def export_format(export_format_name, imageset):
                             '%%first_editor': annotation.last_editor.username,
                             '%%last_timepoint': annotation.last_edit_time,
                             '%%UUID': annotation.unique_identifier,
+                            '%%meta_data': annotation.meta_data,
                             '%%deleted': annotation.deleted,
 
                             # absolute values
@@ -360,7 +361,7 @@ def export_format(export_format_name, imageset):
                         }
                     for key, value in placeholders_annotation.items():
                         formatted_annotation = formatted_annotation\
-                            .replace(key, str(value))
+                            .replace(key, str(value)).replace(',}', '}')
                     annotation_content += formatted_annotation + '\n'
 
                 formatted_image = export_format.image_format
@@ -437,6 +438,7 @@ def export_format(export_format_name, imageset):
                     '%%last_editor': annotation.last_editor.username,
                     '%%last_timepoint': annotation.last_edit_time,
                     '%%UUID': annotation.unique_identifier,
+                    '%%meta_data': annotation.meta_data,
                     '%%deleted': annotation.deleted,
 
                     # absolute values
@@ -463,7 +465,7 @@ def export_format(export_format_name, imageset):
                     '%%relheight': annotation.relative_height,
                 }
             for key, value in placeholders_annotation.items():
-                formatted_annotation = formatted_annotation.replace(key, str(value))
+                formatted_annotation = formatted_annotation.replace(key, str(value)).replace(',}', '}')
             annotation_content = annotation_content + formatted_annotation + '\n'
         formatted_content = annotation_content
     base_format = export_format.base_format
