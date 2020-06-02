@@ -24,7 +24,6 @@ gunicorn==20.0.4
 numpy==1.17.4
 opencv-python==4.1.2.30
 openslide-python==1.1.1
-uWSGI==2.0.18
 tifffile
 pyvips
 PyYAML
