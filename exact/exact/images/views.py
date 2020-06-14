@@ -39,7 +39,9 @@ from .forms import LabelUploadForm, CopyImageSetForm
 from exact.annotations.models import Annotation, Export, ExportFormat, \
     AnnotationType, Verification, LogImageAction
 from exact.tagger_messages.models import Message, TeamMessage, GlobalMessage
+
 from util.slide_server import SlideCache, SlideFile, PILBytesIO
+from util.cellvizio import ReadableCellVizioMKTDataset # just until data access is pip installable
 
 
 from plugins.pluginFinder import PluginFinder
@@ -322,51 +324,59 @@ def upload_image(request, imageset_id):
 
                     path = Path(path)
                     name = path.name
-                    # check if the file can be opened by OpenSlide if not convert it
-                    try:
-                        osr = OpenSlide(str(path))
-                    except:
-                        old_path = path
-                        path = Path(path).with_suffix('.tiff')
-
-                        try:
-                            import pyvips
-                            vi = pyvips.Image.new_from_file(str(old_path))
-                            vi.tiffsave(str(path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
-                        except:
-
-                            if (which('convert') == None):
-                                error['convert'] = True
-
-                            # TODO: Time intensive decrease priority
-                            if (platform.system() == "Linux"):
-                                os.system(
-                                    'nice -n 19 convert "{0}" -define tiff:tile-geometry=256x256 ptif:"{1}"'.format(
-                                        old_path, path))
-                            elif (platform.system() == "Windows"):
-                                os.system('convert "{0}" -define tiff:tile-geometry=256x256 ptif:"{1}"'.format(
-                                        old_path, path))
-                            else:
-                                os.system('convert "{0}" -define tiff:tile-geometry=256x256 ptif:"{1}"'.format(
-                                        old_path, path))
-
-                    #shutil.chown(str(path), group=settings.UPLOAD_FS_GROUP)
 
                     image = Image(
                         name=name,
                         image_set=imageset,
-                        filename=path.name,
                         checksum=fchecksum)
 
+                    # check if the file can be opened by OpenSlide if not try to convert it
+                    try:
+                        osr = OpenSlide(str(path))
+                    except:
+                        import pyvips
+                        old_path = path
 
+                        #check if it is a CellVizio MKT file by suffix and save each frame to a seperate file
+                        if Path(path).suffix.lower().endswith(".mkt"):
+                            reader = ReadableCellVizioMKTDataset(str(path))
+                            image.frames = reader.numberOfFrames
+                            image.channels = 1
+                            image.mpp = (float(reader.mpp_x) + float(reader.mpp_y)) / 2
+                            # create sub dir to save frames
+                            folder_path = Path(imageset.root_path()) / path.stem
+                            os.makedirs(str(folder_path), exist_ok =True)
+                            os.chmod(str(folder_path), 0o777)
+                            for frame_id in range(image.frames):
+                                height, width = reader.dimensions 
+                                np_image = np.array(reader.read_region(location=(0,0), size=(reader.dimensions), level=0, zLevel=frame_id))[:,:,0]
+                                linear = np_image.reshape(width * height * image.channels)
+                                vi = pyvips.Image.new_from_memory(np.ascontiguousarray(linear.data), width, height, image.channels, 'uchar')
+
+                                target_file = folder_path / "{}_{}_{}".format(1, frame_id + 1, path.name) #z-axis frame image
+                                vi.tiffsave(str(target_file), tile=True, compression='lzw', bigtiff=True, pyramid=True,  tile_width=256, tile_height=256)
+
+                                # save first frame as default file for thumbnail etc.
+                                if frame_id == 0:
+                                    image.filename = str(Path(path.stem) / target_file.name)
+
+                        else:                            
+                            path = Path(path).with_suffix('.tiff')
+
+                            vi = pyvips.Image.new_from_file(str(old_path))
+                            vi.tiffsave(str(path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
+                            image.filename = path.name
+
+                    #shutil.chown(str(path), group=settings.UPLOAD_FS_GROUP)
                     osr = OpenSlide(image.path())
                     image.width, image.height = osr.level_dimensions[0]
-                    try:
-                        mpp_x = osr.properties[openslide.PROPERTY_NAME_MPP_X]
-                        mpp_y = osr.properties[openslide.PROPERTY_NAME_MPP_Y]
-                        image.mpp = (float(mpp_x) + float(mpp_y)) / 2
-                    except (KeyError, ValueError):
-                        image.mpp = 0
+                    if image.mpp == 0:
+                        try:
+                            mpp_x = osr.properties[openslide.PROPERTY_NAME_MPP_X]
+                            mpp_y = osr.properties[openslide.PROPERTY_NAME_MPP_Y]
+                            image.mpp = (float(mpp_x) + float(mpp_y)) / 2
+                        except (KeyError, ValueError):
+                            image.mpp = 0
                     try:
                         image.objectivePower = osr.properties[openslide.PROPERTY_NAME_OBJECTIVE_POWER]
                     except (KeyError, ValueError):
@@ -430,27 +440,23 @@ def upload_image(request, imageset_id):
 #         return HttpResponse(f.read(), content_type="image/jpeg")
 
 @login_required
-def view_image(request, image_id):
+def view_image(request, image_id, z_dimension:int=1, frame:int=1):
     """
     This view is to authenticate direct access to the images via nginx auth_request directive
 
     it will return forbidden on if the user is not authenticated
     """
+    z_dimension, frame = int(z_dimension), int(frame)
     image = get_object_or_404(Image, id=image_id)
     if not image.image_set.has_perm('read', request.user):
         return HttpResponseForbidden()
 
-    #image_cache = cache.get('SlideCache')
-    #if image_cache is None:
-    #    image_cache = SlideCache(cache_size=10)
-    #    cache.set('SlideCache', image_cache)
-    #image_cache = SlideCache(cache_size=10)
-
-    file_path = os.path.join(settings.IMAGE_PATH, image.path())
+    file_path = os.path.join(settings.IMAGE_PATH, image.path(z_dimension, frame))
     slide = image_cache.get(file_path)
 
     response = HttpResponse(slide.get_dzi("jpeg"), content_type='application/xml')
     return response
+
 
 @login_required
 def view_thumbnail(request, image_id):
@@ -543,18 +549,17 @@ def navigator_overlay_status(request) -> Response:
 
 
 @login_required
-def view_image_navigator_overlay_tile(request, tile_path):
+def view_image_navigator_overlay_tile(request, z_dimension, frame, tile_path):
     """
     This view is to authenticate direct access to the images via nginx auth_request directive
 
     it will return forbidden on if the user is not authenticated
     """
-    results = re.search("((\d+)_(\D+)/(\d+)/(\d+)_(\d+).(png|jpeg))", tile_path)
-    image_id = int(results.group(2))
-    level = int(results.group(4))
-    col = int(results.group(5))
-    row = int(results.group(6))
-    format = results.group(7)
+    image_id, z_dimension, frame, level = int(image_id), int(z_dimension), int(frame), int(level)
+    results = re.search(r"(\d+)_(\d+).(png|jpeg)", tile_path)
+    col = int(results.group(1))
+    row = int(results.group(2))
+    format = results.group(3)
 
     image = get_object_or_404(Image, id=image_id)
     if not image.image_set.has_perm('read', request.user):
@@ -577,34 +582,37 @@ def view_image_navigator_overlay_tile(request, tile_path):
     return response
 
 @login_required
-def view_image_tile(request, tile_path):
+def view_image_tile(request, image_id, z_dimension, frame, level, tile_path):
     """
     This view is to authenticate direct access to the images via nginx auth_request directive
 
     it will return forbidden on if the user is not authenticated
     """
-    results = re.search("((\d+)_(\D+)/(\d+)/(\d+)_(\d+).(png|jpeg))", tile_path)
-    image_id = int(results.group(2))
-    level = int(results.group(4))
-    col = int(results.group(5))
-    row = int(results.group(6))
-    format = results.group(7)
+    image_id, z_dimension, frame, level = int(image_id), int(z_dimension), int(frame), int(level)
+    results = re.search(r"(\d+)_(\d+).(png|jpeg)", tile_path)
+    col = int(results.group(1))
+    row = int(results.group(2))
+    format = results.group(3)
 
     image = get_object_or_404(Image, id=image_id)
     if not image.image_set.has_perm('read', request.user):
         return HttpResponseForbidden()
 
-    file_path = os.path.join(settings.IMAGE_PATH, image.path())
+    file_path = os.path.join(settings.IMAGE_PATH, image.path(z_dimension, frame))
     slide = image_cache.get(file_path)
 
 
     tile = slide.get_tile(level, (col, row))
 
-    buf = PILBytesIO()
-    tile.save(buf, format, quality=90)
-    response = HttpResponse(buf.getvalue(), content_type='image/%s' % format)
+    try:
+        buf = PILBytesIO()
+        tile.save(buf, format, quality=90)
+        response = HttpResponse(buf.getvalue(), content_type='image/%s' % format)
 
-    return response
+        return response
+    except:
+        return HttpResponseBadRequest()
+
 
 @api_view(['GET'])
 def list_images(request, image_set_id):
