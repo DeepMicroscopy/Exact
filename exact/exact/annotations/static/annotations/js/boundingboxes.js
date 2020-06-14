@@ -449,10 +449,10 @@ class BoundingBoxes {
     }
 
 
-    drawExistingAnnotations(annotations) {
+    drawExistingAnnotations(annotations, drawAnnotations=true) {
         if (annotations === undefined ||
             annotations.length === 0 ||
-            !globals.drawAnnotations) {
+            !drawAnnotations) {
 
             return;
         }

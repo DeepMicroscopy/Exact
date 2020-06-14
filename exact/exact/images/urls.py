@@ -17,9 +17,10 @@ urlpatterns = [
 
     url(r'^image/setfree/(\d+)/$', views.set_free, name='setfree_imageset'),
     url(r'^image/upload/(\d+)/$', views.upload_image, name='upload_image'),
-    url(r'^image/(\d+)/$', views.view_image, name='view_image'),
+    url(r'^image/(\d+)/(\d+)/(\d+)/tile/$', views.view_image, name='view_image'),
     url(r'^image/view_thumbnail(\d+)/$', views.view_thumbnail, name='view_thumbnail'),
-    url(r'^image/(\d+_files/\d+/\d+_\d+.(?:png|jpeg))/$', views.view_image_tile, name='view_image_tile'),
+    url(r'^image/(\d+)/(\d+)/(\d+)/tile_files/(\d+)/(\d+_\d+.(?:png|jpeg))/$', views.view_image_tile, name='view_image_tile'),
+    #url(r'^image/(\d+)/(\d+)/(\d+)/(tile_files/\d+/\d+_\d+.(?:png|jpeg))/$', views.view_image_tile, name='view_image_tile'),
     url(r'^api/image/verify/$', views.api_verify_image, name='verify_image'),
 
     url(r'^api/image/plugins/$', views.image_plugins, name='plugins'),

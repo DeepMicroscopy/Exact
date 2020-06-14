@@ -37,25 +37,36 @@ class Image(models.Model):
     checksum = models.BinaryField()
     mpp = models.FloatField(default=0)
     objectivePower = models.FloatField(default=1)
-    width = models.IntegerField(default=800)
-    height = models.IntegerField(default=600)
+    
+    width = models.IntegerField(default=800) #x
+    height = models.IntegerField(default=600) #y
+    depth = models.IntegerField(default=1) #z
+    frames = models.IntegerField(default=1) #z
+    channels = models.IntegerField(default=3) 
+    
 
     image_type = models.IntegerField(choices=SOURCE_TYPES, default=ImageSourceTypes.DEFAULT)
 
-    def path(self):
-        return os.path.join(self.image_set.root_path(), self.filename)
+    def get_file_name(self, depth=1, frame=1): 
+        if (depth > 1 or frame > 1):
+            return str(Path(self.filename).parent / "{}_{}_{}".format(depth, frame, self.name))
+        else:
+            return self.filename
+
+    def path(self, depth=1, frame=1):
+        return os.path.join(self.image_set.root_path(), self.get_file_name(depth, frame))
 
     def original_path(self):
         return os.path.join(self.image_set.root_path(), self.name)
 
-    def relative_path(self):
-        return os.path.join(self.image_set.path, self.filename)
+    def relative_path(self, depth=1, frame=1):
+        return os.path.join(self.image_set.path, self.get_file_name(depth, frame))
 
-    def thumbnail_path(self):
-        return os.path.join(self.image_set.root_path(), Path(self.filename).stem + self.thumbnail_extension )
+    def thumbnail_path(self, depth=1, frame=1):
+        return os.path.join(self.image_set.root_path(), Path(self.get_file_name(depth, frame)).stem + self.thumbnail_extension )
 
-    def thumbnail_relative_path(self):
-        return os.path.join(self.image_set.root_path(), Path(self.filename).stem + self.thumbnail_extension )
+    def thumbnail_relative_path(self, depth=1, frame=1):
+        return os.path.join(self.image_set.root_path(), Path(self.get_file_name(depth, frame)).stem + self.thumbnail_extension )
 
     def delete(self, *args, **kwargs):
         self.image_set.zip_state = ImageSet.ZipState.INVALID

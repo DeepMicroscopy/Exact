@@ -9,7 +9,7 @@ from threading import Lock
 
 SLIDE_CACHE_SIZE = 10
 DEEPZOOM_FORMAT = 'jpeg'
-DEEPZOOM_TILE_SIZE = 254
+DEEPZOOM_TILE_SIZE = 256
 DEEPZOOM_OVERLAP = 1
 DEEPZOOM_LIMIT_BOUNDS = True
 DEEPZOOM_TILE_QUALITY = 75
@@ -19,6 +19,7 @@ DEEPZOOM_TILE_QUALITY = 75
 class PILBytesIO(BytesIO):
     def fileno(self):
         '''Classic PIL doesn't understand io.UnsupportedOperation.'''
+        # TODO: Check this exception out!!!
         raise AttributeError('Not supported')
 
 
