@@ -1,11 +1,77 @@
 // JS file for sync annotations with the EXACT Server
 
+class EXACTImageSync {
+    constructor(imageId, gHeaders, viewer) {
+
+        this.viewer = viewer;
+        this.imageId = imageId;
+        this.gHeaders = gHeaders;
+
+        this.API_IMAGES_BASE_URL = '/images/api/'; // TODO: Repleace with V1 version
+
+    }
+
+    imageOpend() {
+
+        // notify server that the image was opend 
+        $.ajax(this.API_IMAGES_BASE_URL + 'image/opened/' + this.imageId, {
+            type: 'GET',
+            headers: this.gHeaders
+        });
+    }
+
+    imageClosed() {
+
+        // notify server that the image was opend 
+        $.ajax(this.API_IMAGES_BASE_URL + 'image/closed/' + this.imageId, {
+            type: 'GET',
+            headers: this.gHeaders
+        });
+    }
+
+
+    loadStatistics(success_function, context) {
+        $.ajax(this.API_IMAGES_BASE_URL + 'image/statistics/', {
+            type: 'GET', headers: this.gHeaders, dataType: 'json', data: { image_id: this.imageId },
+            success: function (data) {
+                success_function(data, context)
+            },
+            error: function () {
+
+            }
+        });
+    }
+
+    // Check if navigator overlay exists or is supported
+    navigatorOverlayAvailable(success_function, context) {
+
+        $.ajax(this.API_IMAGES_BASE_URL + 'image/navigator_overlay_status/', {
+            type: 'GET',
+            headers: this.gHeaders,
+            dataType: 'json',
+            data: { image_id: this.imageId },
+            success: function (data, textStatus, jqXHR) {
+                // Navigator overlay exists and can be set
+                if (jqXHR.status === 200) {
+                    success_function(true, context)
+                } else {
+                    success_function(false, context)
+                }
+            },
+            error: function () {
+
+            }
+        });
+    }
+}
 
 
 class EXACTAnnotationSync {
 
     constructor(annotationTypes, imageId, gHeaders,
         viewer, username, limit = 250, updateInterval = 30000) {
+
+        this.exact_image_sync = new EXACTImageSync(imageId, gHeaders, viewer);
 
         this.interruptLoading = false; // Stop loading annotations
         this.username = username; // document.getElementById("username").innerText.trim() 
@@ -45,6 +111,13 @@ class EXACTAnnotationSync {
 
             context.loadAnnotationsWithConditions(url, imageId, context);
         }, this.upDateFromServerInterval, this);
+    }
+
+    getUUIDV4() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+            var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
     }
 
     initLoadAnnotations(annotationTypes, imageId, limit = 250) {
@@ -134,12 +207,14 @@ class EXACTAnnotationSync {
 
                         // annotation to update
                         if (anno.unique_identifier in context.annotations) {
-                            context.viewer.raiseEvent('sync_AnnotationUpdated', { anno });
+
                             if (anno.deleted) {
                                 context.synchronisationNotifications(className, anno, "AnnotationDeleted")
+                                context.viewer.raiseEvent('sync_AnnotationDeleted', { anno });
                             }
                             else {
                                 context.synchronisationNotifications(className, anno, "AnnotationUpdated")
+                                context.viewer.raiseEvent('sync_AnnotationUpdated', { anno });
                             }
                         } else {
                             let annotations = [anno];
@@ -166,23 +241,80 @@ class EXACTAnnotationSync {
         });
     }
 
-    loadStatistics(imageId, context) {
-        let data = {
-            image_id: imageId
+    getAnnotation(unique_identifier) {
+        return this.annotations[unique_identifier]
+    }
+
+    addAnnotationToCache(annotation) {
+        this.annotations[annotation.unique_identifier] = annotation
+    }
+
+    getStatistics(data, context) {
+        for (let anno_type of data.statistics) {
+            if (anno_type.id in context.annotationTypes) {
+                context.statistics[anno_type.id].total = anno_type.in_image_count;
+                context.statistics[anno_type.id].verified = anno_type.verified_count;
+            }
+        }
+    }
+
+    deleteAnnotation(unique_identifier) {
+
+        let annotation = this.annotations[unique_identifier];
+
+        // if annotation was not in sync with the server
+        if (annotation.id === -1) {
+            delete this.annotations[unique_identifier];
+        } else {
+            annotation.deleted = true;
+            this.saveAnnotation(annotation);
+        }
+    }
+
+    saveAnnotation(annotation) {
+
+        var action = 'POST';
+        var url = this.API_1_ANNOTATIONS_BASE_URL + "annotations/";
+
+        var data = {
+            deleted: annotation.deleted,
+            annotation_type: annotation.annotation_type.id,
+            image: annotation.image,
+            vector: annotation.vector,
+            unique_identifier: annotation.unique_identifier
         };
 
-        $.ajax(API_IMAGES_BASE_URL + 'image/statistics/', {
-            type: 'GET', headers: context.gHeaders, dataType: 'json', data: data,
-            success: function (data) {
-                for (anno_type of data.statistics) {
-                    if (anno_type.id in gAnnotationTypes) {
-                        context.statistics[anno_type].total = anno_type.in_image_count;
-                        context.statistics[anno_type].verified = anno_type.verified_count;
+        // edit instead of create
+        if (annotation.id !== -1) {
+
+            action = 'PATCH';
+            data.id = annotation.id;
+            url = url + annotation.id + "/";
+        }
+
+        url = url + "?" + this.API_1_ANNOTATION_EXPAND + this.API_1_ANNOTATION_FIELDS;
+
+        let context = this;
+        $.ajax(url, {
+            type: action, headers: this.gHeaders, dataType: 'json',
+            data: JSON.stringify(data), success: function (anno, textStatus, jqXHR) {
+                if (jqXHR.status === 200) {
+                    if (anno.deleted === true) {
+                        context.synchronisationNotifications("info", anno, "AnnotationDeleted")
+                    } else {
+                        context.synchronisationNotifications("info", anno, "AnnotationUpdated")
                     }
+
+                } else if (jqXHR.status === 201) {
+                    context.synchronisationNotifications("info", anno, "AnnotationCreated")
                 }
+                anno.annotation_type = context.annotationTypes[anno.annotation_type]
+                context.annotations[anno.unique_identifier] = anno
+
+                context.exact_image_sync.loadStatistics(context.getStatistics, context);
             },
             error: function () {
-
+                $.notify(`Server ERR_CONNECTION_REFUSED`, { position: "bottom center", className: "error" });
             }
         });
     }
@@ -211,11 +343,12 @@ class EXACTAnnotationSync {
     }
 }
 
-class EXACTGloabalAnnotationSync extends EXACTAnnotationSync {
+class EXACTGlobalAnnotationSync extends EXACTAnnotationSync {
 
     initLoadAnnotations(annotationTypes, imageId, limit = 250) {
 
-        let filter = 'image=' + imageId + '&' + "deleted=False&";
+        //  get all global types
+        let filter = 'image=' + imageId + '&' + "vector_type=7&";
 
         for (annotation_type of Object.values(annotationTypes)) {
 
@@ -224,8 +357,6 @@ class EXACTGloabalAnnotationSync extends EXACTAnnotationSync {
                 loaded: false,
                 verified: 0
             }
-
-            filter += 'annotation_type=' + annotation_type.id + '&';
         }
 
         let url = `${this.API_1_ANNOTATIONS_BASE_URL}annotations/?limit=${limit}&${filter}${this.API_1_ANNOTATION_EXPAND}${this.API_1_ANNOTATION_FIELDS}`
@@ -237,22 +368,19 @@ class EXACTGloabalAnnotationSync extends EXACTAnnotationSync {
             type: 'GET', headers: context.gHeaders, dataType: 'json',
             success: function (data) {
 
-                for (let anno of data.results) {
+                for (let annotation of data.results) {
                     // set annoation type
-                    anno.annotation_type = context.annotationTypes[anno.annotation_type];
+                    annotation.annotation_type = context.annotationTypes[annotation.annotation_type];
 
                     //  New global Annotations Added                
-                    context.annotations[anno.annotation_type.id] = anno;
-                    context.statistics[annotation_type.id].loaded = true;
-                }
+                    context.annotations[annotation.annotation_type.id] = annotation;
+                    context.statistics[annotation.annotation_type.id].loaded = true;
 
-                if (data.results.length > 0) {
-                    context.viewer.raiseEvent('sync_GlobalAnnotations', { anno });
+                    context.viewer.raiseEvent('sync_GlobalAnnotations', { annotation });
                 }
             }
         });
     }
-
 
     loadAnnotationsWithConditions(url, imageId, context) {
 
@@ -260,44 +388,115 @@ class EXACTGloabalAnnotationSync extends EXACTAnnotationSync {
             type: 'GET', headers: context.gHeaders, dataType: 'json',
             success: function (data, textStatus, jqXHR) {
 
-                for (let anno of data.results) {
-                    if (anno.user.username === context.username ||
-                        anno.last_editor.username === context.username)
+                for (let annotation of data.results) {
+                    if (annotation.user.username === context.username ||
+                        annotation.last_editor.username === context.username)
                         continue;
 
-                    anno.annotation_type = context.annotationTypes[anno.annotation_type]
+                    annotation.annotation_type = context.annotationTypes[annotation.annotation_type]
 
                     className = "info";
-                    if (anno.description.includes('@') && anno.description.includes(context.username)) {
+                    if (annotation.description.includes('@') && annotation.description.includes(context.username)) {
                         className = "warn";
                     }
 
                     // annotation to update
-                    if (anno.annotation_type.id in context.annotations) {
+                    if (annotation.annotation_type.id in context.annotations) {
                         if (anno.deleted) {
-                            context.synchronisationNotifications(className, anno, "GlobalAnnotationDeleted")
+                            context.synchronisationNotifications(className, annotation, "GlobalAnnotationDeleted")
                         }
                         else {
-                            context.synchronisationNotifications(className, anno, "GlobalAnnotationUpdated")
+                            context.synchronisationNotifications(className, annotation, "GlobalAnnotationUpdated")
                         }
                     } else {
-                        context.synchronisationNotifications(className, anno, "GlobalAnnotationCreated")
+                        context.synchronisationNotifications(className, annotation, "GlobalAnnotationCreated")
                     }
 
                     // set annotation to values form Server
-                    context.annotations[anno.annotation_type.id] = anno;
-                    context.viewer.raiseEvent('sync_GloablAnnotationUpdated', { anno });
+                    context.annotations[annotation.annotation_type.id] = annotation;
+                    context.viewer.raiseEvent('sync_GlobalAnnotations', { annotation });
                 }
-
-                if (data.count > 0) {
-                    context.viewer.raiseEvent('sync_UpdateStatistics', { new_annos });
-                }
-
             },
             error: function (request, status, error) {
                 $.notify(`Server ERR_CONNECTION_REFUSED`, { position: "bottom center", className: "error" });
             }
         });
+    }
+
+    saveAnnotation(annotation) {
+
+        var action = 'POST';
+        var url = this.API_1_ANNOTATIONS_BASE_URL + "annotations/";
+
+        var data = {
+            deleted: annotation.deleted,
+            annotation_type: annotation.annotation_type.id,
+            image: annotation.image,
+            vector: annotation.vector,
+            unique_identifier: annotation.unique_identifier
+        };
+
+        // edit instead of create
+        if (annotation.id !== -1) {
+
+            action = 'PATCH';
+            data.id = annotation.id;
+            url = url + annotation.id + "/";
+        }
+
+        url = url + "?" + this.API_1_ANNOTATION_EXPAND + this.API_1_ANNOTATION_FIELDS;
+
+        let context = this;
+        $.ajax(url, {
+            type: action, headers: this.gHeaders, dataType: 'json',
+            data: JSON.stringify(data), success: function (anno, textStatus, jqXHR) {
+                if (jqXHR.status === 200) {
+                    if (anno.deleted === true) {
+                        context.synchronisationNotifications("info", anno, "GlobalAnnotationUpdated")
+                    } else {
+                        context.synchronisationNotifications("info", anno, "GlobalAnnotationDeleted")
+                    }
+
+                } else if (jqXHR.status === 201) {
+                    context.synchronisationNotifications("info", anno, "GlobalAnnotationCreated")
+                }
+                anno.annotation_type = context.annotationTypes[anno.annotation_type]
+                context.annotations[anno.annotation_type.id] = anno
+
+                context.exact_image_sync.loadStatistics(context.getStatistics, context);
+            },
+            error: function () {
+                $.notify(`Server ERR_CONNECTION_REFUSED`, { position: "bottom center", className: "error" });
+            }
+        });
+    }
+
+    getAnnotation(annotation_type_id) {
+        return this.annotations[annotation_type_id]
+    }
+
+    changeGlobalAnnotation(annotation_type_id, active) {
+
+        let annotation = this.getAnnotation(annotation_type_id);
+        if (annotation === undefined) {
+            annotation = {
+                annotation_type: this.annotationTypes[annotation_type_id],
+                id: -1,
+                vector: null,
+                user: { id: null, username: "you" },
+                last_editor: { id: null, username: "you" },
+                image: this.imageId,
+                unique_identifier: this.getUUIDV4()
+            }
+        }
+
+        if (active) {
+            annotation.deleted = false;
+        } else {
+            // set global annotation as deleted
+            annotation.deleted = true;
+        }
+        this.saveAnnotation(annotation)
     }
 
     synchronisationNotifications(className, anno, mode) {

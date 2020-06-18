@@ -333,6 +333,7 @@ def upload_image(request, imageset_id):
                     # check if the file can be opened by OpenSlide if not try to convert it
                     try:
                         osr = OpenSlide(str(path))
+                        image.filename = path.name
                     except:
                         import pyvips
                         old_path = path

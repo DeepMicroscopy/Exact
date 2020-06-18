@@ -68,7 +68,7 @@ class BoundingBoxes {
         }        
     }
 
-    findIncludedObjectsOperation(event) {
+    findIncludedObjectsOperation() {
         var resultDict = {deleted: [], insert: [], update: [], included: []}
 
         if (this.selection) {
@@ -88,7 +88,7 @@ class BoundingBoxes {
         return resultDict
     }
 
-    polyUnionOperation(event) {
+    polyUnionOperation() {
 
         var resultDict = {deleted: [], insert: [], update: [], included: []}
 
@@ -127,7 +127,7 @@ class BoundingBoxes {
         return resultDict
     }
 
-    polyNotOperation(event) {
+    polyNotOperation() {
 
         // var operations = ['unite', 'intersect', 'subtract', 'exclude', 'divide'];
         var resultDict = {deleted: [], insert: [], update: [], included: []}
@@ -434,7 +434,7 @@ class BoundingBoxes {
 
     updateVisbility(annotation_type_id, visibility ) {
 
-        this.group.children.filter(function (el) {return el.data.type_id === annotation_type_id})
+        this.group.children.filter(function (el) {return el.data.type_id === parseInt(annotation_type_id)})
             .forEach(function (el) {
                 if (visibility === true && el.data.area_hit_test === true) {
                     el.fillColor = new paper.Color(0, 0, 0, 0.000001);
@@ -473,6 +473,11 @@ class BoundingBoxes {
     removeAnnotation(unique_identifier) {
         var item = this.getItemFromUUID(unique_identifier);
         if (item !== undefined) {
+            // if the current item is removed reset selection
+            if (this.selection !== undefined && 
+                unique_identifier === this.selection.item.name) {
+                this.resetSelection();    
+            }
             item.remove();
         }
     }
@@ -556,14 +561,6 @@ class BoundingBoxes {
      * Delete current selection.
      */
     resetSelection() {
-        //$('.annotation_value').val(0);
-
-        globals.editedAnnotation = undefined;
-        $('.annotation').removeClass('alert-info');
-        globals.editActiveContainer.addClass('hidden');
-
-        $('#AnnotationInformation').hide();
-        $('#annotation_buttons').hide();
 
         if (this.selection !== undefined) {
             this.selection.item.selected = false;

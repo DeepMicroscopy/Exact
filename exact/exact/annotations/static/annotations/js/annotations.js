@@ -48,15 +48,6 @@ globals = {
     var tool;
     var exact_viewer;
 
-    function finishAnnotation(annotation) {
-
-        if (annotation !== undefined) {
-
-            saveAnnotationAtServer(annotation);
-            exact_viewer.tool.resetSelection();
-        }
-    }
-
     function shorten(string, length) {
         let threshold = length || 30;
         if (string.length < threshold) {
@@ -202,95 +193,10 @@ globals = {
         }
     }
 
-    /**
-     * Create an annotation using the form data from the current page.
-     * If an annotation is currently edited, an update is triggered instead.
-     *
-     * @param event
-     * @param successCallback a function to be executed on success
-     * @param markForRestore
-     */
-    function saveAnnotationAtServer(annotation) {
-
-        if (annotation === undefined)
-            return;
-
-        var action = 'POST';
-        var url = API_1_ANNOTATIONS_BASE_URL + "annotations/";
-
-        var data = {
-            deleted: annotation.deleted,
-            annotation_type: annotation.annotation_type.id,
-            image: annotation.image,
-            vector: tool.getAnnotationVector(annotation.unique_identifier),
-            unique_identifier: annotation.unique_identifier
-        };
-
-        if (!OpenSeadragon.isFullScreen())
-            data.description = document.getElementById('annotationRemark').value;
-
-        if (annotation.id !== -1) {
-            // edit instead of create
-            action = 'PATCH';
-            data.id = annotation.id;
-
-            url = url + annotation.id + "/";
-        }
-
-        url = url + "?" + API_1_ANNOTATION_EXPAND + API_1_ANNOTATION_FIELDS;
-
-        $('.js_feedback').stop().addClass('hidden');
-        $.ajax(url, {  type: action, headers: gHeaders, dataType: 'json', data: JSON.stringify(data), success: function (annotation, textStatus, jqXHR) {
-                if (jqXHR.status === 200) {
-                    displayFeedback($('#feedback_annotation_updated'));
-                } else if (jqXHR.status === 201) {
-                    displayFeedback($('#feedback_annotation_created'));
-                }
-
-                syncAnnotationFromServer(annotation);
-
-                loadStatistics(gImageId);
-            },
-            error: function () {
-                displayFeedback($('#feedback_connection_error'));
-            }
-        });
-    }
-
-    function globalAnnotationChanged(event) {
-
-        active = $("#"+event.target.id).prop("checked")
-        anno_type_id = parseInt(event.target.getAttribute('data-annotation_type-id'));
-
-        annotation = globals.allAnnotations.filter(function (value, index, arr) {
-            return value.annotation_type.id === anno_type_id;
-        })[0];
-
-        // create new global annotation
-        if (annotation === undefined) {
-            annotation = {
-                annotation_type: gAnnotationTypes[anno_type_id],
-                id: -1,
-                vector: null,
-                user: {id: null, username: "you"},
-                last_editor: {id: null, username: "you"},
-                image: gImageId,
-                unique_identifier: tool.uuidv4()
-            }
-        }
-
-        if (active) {
-            annotation.deleted = false;
-        } else {
-            // delete global annotation
-            annotation.deleted = true;
-        } 
-        saveAnnotationAtServer(annotation);
-    }
 
     function handleAnnotationVisibilityChanged(event) {
         var annotation_type_id = parseInt(event.target.getAttribute('data-annotation_type-id'));
-        tool.updateVisbility(annotation_type_id, event.currentTarget.checked);
+        exact_viewer.changeAnnotationTypeVisibility(annotation_type_id, event.currentTarget.checked);
     }
 
     function displayAnnotationTypeOptions(annotationTypeList) {
@@ -330,27 +236,6 @@ globals = {
                 html: `${annotationType.name} (${annotationType.product.name})`
             }));            
         }
-    }
-
-    /**
-     * Delete an annotation.
-     *
-     * @param event
-     * @param annotationId
-     */
-    function deleteAnnotation(event, annotation) {
-        //  if annotation was not send to server stop now
-        if (annotation.id === -1) {
-            displayFeedback($('#feedback_annotation_deleted'));
-        } else {
-            $('.js_feedback').stop().addClass('hidden');
-
-            annotation.deleted = true;
-            saveAnnotationAtServer(annotation);
-        }
-
-        tool.removeAnnotation(annotation.unique_identifier);
-        tool.resetSelection();
     }
 
     /**
@@ -425,8 +310,6 @@ globals = {
 
                 event.preventDefault();
 
-                CancelEdit(globals.editedAnnotation);
-
                 image_id = $(this).data('imageid');
 
                 if (image_id !== gImageId)
@@ -459,6 +342,7 @@ globals = {
      * @param elem
      */
     function displayFeedback(elem) {
+        // TODO: Remove
         if (gHideFeedbackTimeout !== undefined) {
             clearTimeout(gHideFeedbackTimeout);
         }
@@ -478,6 +362,8 @@ globals = {
      * @param annotationId
      */
     function enableAnnotationEditing(annotation) {
+        // ToDo: Remove
+
         //annotationElem = $(annotationElem);
         //let annotationTypeId = annotation.annotation_type.id;
         //$('#annotation_type_id').val(annotationTypeId);
@@ -569,21 +455,10 @@ globals = {
      * @param event
      */
     function handleShowAnnotationsToggle(event) {
-        globals.drawAnnotations = $('#draw_annotations').is(':checked');
-        if (globals.drawAnnotations) {
-            tool.drawExistingAnnotations(globals.allAnnotations);
-        } else {
-            tool.clear();
-        }
+        let drawAnnotations = $('#draw_annotations').is(':checked');
+        exact_viewer.annotationVisibility(drawAnnotations);
     }
 
-    /**
-     * Handle a selection using the mouse.
-     *
-     * @param event
-     */
-    function handleSelection(event) {
-    }
 
     function updatePlugins(imageId) {
         return;
@@ -871,59 +746,23 @@ globals = {
      * Check if annotation type change is valid
      */
 
-    function handleAnnotationTypeChange(annotation, newType) {
+    function handleAnnotationTypeChange(new_annotation_tpye_id) {
 
-        if (viewer.selectionInstance.isSelecting
-            && globals.editedAnnotation !== undefined) {
-
-            // check if annotation type needs to be changed
-            if (newType !== undefined && newType.id  != -1) {
-
-                if (annotation.annotation_type.id !== newType.id ) {
-                    // check if annotation type can be converted and save
-                    if(tool.checkIfAnnotationTypeChangeIsValid(annotation.annotation_type.vector_type,
-                        newType.vector_type)) {
-
-                        annotation.annotation_type = newType;
-                        tool.updateAnnotationType(annotation.unique_identifier, gAnnotationTypes[newType.id]);
-
-                        saveAnnotationAtServer(annotation)
-                    } else { // reset annotation type on gui
-                        $("#annotation_type_id").notify("Conversion to this type is not allowed.",
-                            {position: "right", className: "error"});
-
-                        document.getElementById('annotation_type_id').value = annotation.annotation_type.id;
-                    }
-                }
-            } else {
-                $("#annotation_type_id").notify("You have to choose a type for the annotation.",
-                                            {position: "right", className: "error"});
-            }
+        if (new_annotation_tpye_id !== -1) {
+            exact_viewer.changeAnnotationType(new_annotation_tpye_id);
         }
-    }
-
-
-    // handle DEL key press
-    function handleDelete(event) {
-        if (globals.editedAnnotation === undefined)
-            return;
-
-        deleteAnnotation(event, globals.editedAnnotation);
     }
 
     function selectAnnotationType(annotationTypeNumber) {
         if (typeof annotationTypeNumber == "undefined")
             return
 
-
         var annotationTypeId = gAnnotationKeyToIdLookUp[annotationTypeNumber];
         if (!OpenSeadragon.isFullScreen()) {
             $('#annotation_type_id').val(annotationTypeId);
         }
-        gAnnotationType = gAnnotationTypes[annotationTypeId];
 
-
-        handleAnnotationTypeChange(globals.editedAnnotation, gAnnotationType);
+        handleAnnotationTypeChange(annotationTypeId);
     }
 
     function handleResize() {
@@ -943,56 +782,9 @@ globals = {
         }
     }
 
-    function syncAnnotationFromServer(anno) {
-        // update current annotations
-
-        url = API_1_ANNOTATIONS_BASE_URL + "annotations/" + anno.id + "/?" + API_1_ANNOTATION_EXPAND + API_1_ANNOTATION_FIELDS;
-        $.ajax(url,  {type: 'GET',  headers: gHeaders, dataType: 'json', success: function (anno) {
-
-            anno.annotation_type = gAnnotationTypes[anno.annotation_type]
-            if (anno.image === gImageId) {
-                var index = globals.allAnnotations.findIndex((elem) => elem.unique_identifier === anno.unique_identifier);
-                if (index === -1) {
-                    globals.editedAnnotation = anno;
-    
-                    globals.allAnnotations.push(anno)
-                } else {
-                    globals.allAnnotations[index] = anno;
-                }
-    
-                gAnnotationCache[gImageId] = globals.allAnnotations;
-            } else if (anno.image in gAnnotationCache) {
-                image_id = anno.image;
-    
-                var index = gAnnotationCache[image_id].findIndex((elem) => elem.unique_identifier === anno.unique_identifier);
-                if (index === -1) {
-                    gAnnotationCache[image_id].push(anno)
-                } else {
-                    gAnnotationCache[image_id][index] = anno;
-                }
-            }
-        }});
-    }
-
-    function CancelEdit(annotation) {
-        // delete temp annotation
-        if (annotation !== undefined && annotation.id === -1 && 
-            exact_viewer !== undefined) {
-            exact_viewer.tool.removeAnnotation(annotation.unique_identifier);
-
-            globals.allAnnotations = globals.allAnnotations.filter(function (value, index, arr) {
-                return value.unique_identifier !== annotation.unique_identifier;
-            });
-            gAnnotationCache[gImageId] = globals.allAnnotations;
-        }
-        if (exact_viewer !== undefined)
-            exact_viewer.tool.handleEscape();
-    }
-
     function verifyAndLoadNext() {
         // Save current annotation first
-        if (globals.editedAnnotation !== undefined)
-            finishAnnotation(globals.editedAnnotation);
+        exact_viewer.finishAnnotation();
 
         if (globals.allAnnotations.length == 0) {
 
@@ -1066,10 +858,8 @@ globals = {
         if (!OpenSeadragon.isFullScreen()) {
             $('#annotation_type_id').val(annotationTypeId);
         }
-
-        gAnnotationType = gAnnotationTypes[annotationTypeId];
-
-        handleAnnotationTypeChange(globals.editedAnnotation, gAnnotationType);
+        
+        handleAnnotationTypeChange(annotationTypeId);
     }
 
     $(function () {
@@ -1113,13 +903,11 @@ globals = {
 
                         gAnnotationTypes[annotation_type.id] = annotation_type;
 
-                        if (annotation_type.vector_type == 7)
-                            $('#GlobalAnnotation_'+annotation_type.id).change(globalAnnotationChanged)
-                        else {
-                            $('#DrawCheckBox_'+annotation_type.id).change(handleAnnotationVisibilityChanged)
-                            $('#annotation_type_id_button_'+annotation_type.id).click(changeAnnotationTypeByButton)
 
-                        }
+                        $('#DrawCheckBox_'+annotation_type.id).change(handleAnnotationVisibilityChanged)
+                        $('#annotation_type_id_button_'+annotation_type.id).click(changeAnnotationTypeByButton)
+
+               
                     }
                 }
                 displayAnnotationTypeOptions(Object.values(gAnnotationTypes));
@@ -1184,18 +972,16 @@ globals = {
 
             annotationTypeId = $('#annotation_type_id').children(':selected').val();
 
-            gAnnotationType = gAnnotationTypes[annotationTypeId];
-
-            handleAnnotationTypeChange(globals.editedAnnotation, gAnnotationType);
+            handleAnnotationTypeChange(annotationTypeId);
 
         });
 
         // register click events
         $('#cancel_edit_button').click(function () {
-            CancelEdit(globals.editedAnnotation);
+            exact_viewer.cancelEditAnnotation();
         });
         $('#delete_annotation_button').click(function () {
-            deleteAnnotation(undefined, globals.editedAnnotation);
+            exact_viewer.deleteAnnotation();
         });
         $('#verify_annotation_button').click(function () {
             event.preventDefault();
@@ -1222,11 +1008,11 @@ globals = {
         });
         $('#save_button').click(function () {
             event.preventDefault();
-            finishAnnotation(globals.editedAnnotation);
+            exact_viewer.finishAnnotation();
         });
         $('#reset_button').click(function () {
             event.preventDefault();
-            tool.resetSelection();
+            exact_viewer.tool.resetSelection();
         });
         $('#last_button').click(function (event) {
             event.preventDefault();
@@ -1235,13 +1021,11 @@ globals = {
         $('#back_button').click(function (event) {
             event.preventDefault();
 
-            CancelEdit(globals.editedAnnotation);
             loadAdjacentImage(-1);
         });
         $('#skip_button').click(function (event) {
             event.preventDefault();
 
-            CancelEdit(globals.editedAnnotation);
             loadAdjacentImage(1);
         });
         $('#next_button').click(function (event) {
@@ -1255,7 +1039,7 @@ globals = {
 
 
         document.getElementById("StrokeWidthSlider").oninput = function(event) {
-            tool.updateStrokeWidth(event.srcElement.valueAsNumber);
+            exact_viewer.tool.updateStrokeWidth(event.srcElement.valueAsNumber);
         };
 
 
@@ -1344,7 +1128,6 @@ globals = {
             tool.showItem( globals.allAnnotations[index]);
         });
 
-        $(document).on('mousemove touchmove', handleSelection);
         $(window).on('resize', handleResize);
 
         window.onpopstate = function (event) {
@@ -1354,10 +1137,7 @@ globals = {
         };
 
         window.onbeforeunload = function (event) {
-            $.ajax(API_IMAGES_BASE_URL + 'image/closed/' + gImageId, {
-                type: 'GET',
-                headers: gHeaders
-            });
+            exact_viewer.imageClosed();
         };
 
         $(document).keydown(function (event) {
@@ -1370,8 +1150,7 @@ globals = {
                     gShiftDown = true;
                     break;
                 case 27: // Escape
-                    CancelEdit(globals.editedAnnotation);
-
+                    exact_viewer.cancelEditAnnotation();
                     break;
                 case 73: //i
                     break;
@@ -1450,10 +1229,10 @@ globals = {
 
             switch (event.keyCode) {
                 case 8: //'DEL'
-                    handleDelete(event);
+                    exact_viewer.deleteAnnotation();
                     break;
                 case 13: //'enter'
-                    finishAnnotation(globals.editedAnnotation);
+                    exact_viewer.finishAnnotation();
                     break;
                 case 16: // Shift
                     break;
@@ -1461,12 +1240,10 @@ globals = {
                     verifyAndLoadNext();
                     break;
                 case 69: //e load next image
-                    CancelEdit(globals.editedAnnotation);
                     loadAdjacentImage(1);
 
                     break;
                 case 81: //q load last image
-                    CancelEdit(globals.editedAnnotation);
                     loadAdjacentImage(-1);
 
                     break;
@@ -1496,15 +1273,15 @@ globals = {
                     $('#reset_button').click();
                     break;
                 case 86: //'v'
-                    finishAnnotation(globals.editedAnnotation);
+                    exact_viewer.finishAnnotation();
                     break;
                 case 46: //'DEL'
-                    handleDelete(event);
+                    exact_viewer.deleteAnnotation();
                     break;
                 case 66: //b
                     break;
                 case 67: //c
-                    viewer.selectionInstance.toggleState();
+                    exact_viewer.viewer.selectionInstance.toggleState();
                     break;
             }
         });
