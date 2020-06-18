@@ -69,7 +69,7 @@ target/
 .idea
 db.sqlite3
 
-
+exact/iSyntax/*pathologysdk*
 exact/data
 exact/images
 exact/tools
