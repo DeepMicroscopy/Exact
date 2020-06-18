@@ -1006,9 +1006,18 @@ globals = {
     function handleShowAnnotationsToggle(event) {
         globals.drawAnnotations = $('#draw_annotations').is(':checked');
         if (globals.drawAnnotations) {
-            tool.drawExistingAnnotations(globals.allAnnotations);
+            tool.drawExistingAnnotations(globals.allAnnotations);            
         } else {
-            tool.clear();
+            tool.clear();            
+        }
+    }
+
+    function handleShowNavigatorToggle(event) {
+        let show_navigator = $('#show_navigator').is(':checked');
+        if (show_navigator) {
+            viewer.navigator.element.style.display = "inline-block";
+        } else {
+            viewer.navigator.element.style.display = "none";            
         }
     }
 
@@ -1833,6 +1842,7 @@ globals = {
         $('select').on('change', function () {
             document.activeElement.blur();
         });
+        $('#show_navigator').on('change', handleShowNavigatorToggle);
         $('#draw_annotations').on('change', handleShowAnnotationsToggle);
         $('select#annotation_type_id').on('change', function (event){
 
@@ -2154,6 +2164,14 @@ globals = {
                     break;
                 case 86: //'v'
                     finishAnnotation(globals.editedAnnotation);
+                    break;
+                case 89: // 'y'
+                    if ($('#draw_annotations').is(':checked') == true){
+                        $('#draw_annotations').prop("checked", false);
+                    } else {
+                        $('#draw_annotations').prop("checked", true);
+                    }
+                    handleShowAnnotationsToggle();
                     break;
                 case 46: //'DEL'
                     handleDelete(event);

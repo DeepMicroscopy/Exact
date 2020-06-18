@@ -433,18 +433,24 @@
                                 </div>
 
                                 <div class="row">
-                                    <div class="col-md-4">
-                                        <label for="StrokeWidthSlider">Stroke Width</label>
+                                    <div class="col-md-4">                                        
                                         <input id="StrokeWidthSlider" type="range"  class="custom-range" min="1"
                                                max="500" step="1" value="5"/>
+                                        <label for="StrokeWidthSlider">Stroke Width</label>
+
                                     </div>
 
-                                    <div class="col-md-3" style="margin-top: 22px">
+                                    <div class="col-md-2">
                                         <input type='checkbox' id='draw_annotations' name="draw_annotations" checked>
                                         <label for='draw_annotations'>Draw</label>
                                     </div>
 
-                                    <div class="col-md-3" style="margin-top: 22px">
+                                    <div class="col-md-2">
+                                        <input type='checkbox' id='show_navigator' name="show_navigator" checked>
+                                        <label for='show_navigator'>Nav</label>
+                                    </div>
+
+                                    <div class="col-md-2">
                                         <label for='statistics_total_annotations' title="Total Annotations">Total:</label>
                                         <label id="statistics_total_annotations" title="Total Annotations">{{ total_annotations }}</label>
 
