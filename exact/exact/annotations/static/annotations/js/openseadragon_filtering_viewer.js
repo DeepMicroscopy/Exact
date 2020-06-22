@@ -5,18 +5,39 @@ class OpenseadragonFilteringViewer {
     constructor(viewer) {
 
         this.viewer = viewer;
+        this.sliderNames = ['#ContrastSlider', '#CLAHESlider', 
+            '#BRIGHTNESSSlider', '#THRESHOLDINGSlider']
 
         this.initUiEvents();
     }
 
     initUiEvents() {
 
+        for (const sliderName of this.sliderNames) {
 
-        $("#Invert-enabled").click(updateFiltersOnImage);
-        $("#GREYSCALE-enabled").click(updateFiltersOnImage);
-        $("#Red-enabled").click(updateFiltersOnImage);
-        $("#Green-enabled").click(updateFiltersOnImage);
-        $("#Blue-enabled").click(updateFiltersOnImage);
+            $(sliderName).slider();
+            $(sliderName).on("change", this.updateFiltersOnImage.bind(this));
+            $(sliderName + "-enabled").click(this.sliderActiveToogle.bind(this));            
+        }
+
+        $("#Invert-enabled").click(this.updateFiltersOnImage.bind(this));
+        $("#GREYSCALE-enabled").click(this.updateFiltersOnImage.bind(this));
+        $("#Red-enabled").click(this.updateFiltersOnImage.bind(this));
+        $("#Green-enabled").click(this.updateFiltersOnImage.bind(this));
+        $("#Blue-enabled").click(this.updateFiltersOnImage.bind(this));
+    }
+
+    sliderActiveToogle(event) {
+
+        for (const sliderName of this.sliderNames) {
+            if ($(sliderName + "-enabled").prop("checked")) {
+                $(sliderName).slider("enable");
+            } else {
+                $(sliderName).slider("disable");
+            }
+        }
+
+        this.updateFiltersOnImage(null);
     }
 
     updateFiltersOnImage(event) {
