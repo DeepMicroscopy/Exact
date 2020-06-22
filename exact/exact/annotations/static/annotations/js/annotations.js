@@ -478,66 +478,6 @@ globals = {
             $(this).addClass('hidden');
         });
 
-        $("#ContrastSlider").slider();
-        $("#ContrastSlider").on("change", updateFiltersOnImage);
-        $("#ContrastSlider-enabled").click(function () {
-            if (this.checked) { $("#ContrastSlider").slider("enable"); updateFiltersOnImage(null); }
-            else { $("#ContrastSlider").slider("disable"); updateFiltersOnImage(null); }
-        });
-
-        $("#CLAHESlider").slider();
-        $("#CLAHESlider").on("change", updateFiltersOnImage);
-        $("#CLAHESlider-enabled").click(function () {
-            if (this.checked) { $("#CLAHESlider").slider("enable"); updateFiltersOnImage(null); }
-            else { $("#CLAHESlider").slider("disable"); updateFiltersOnImage(null); }
-        });
-
-        $("#BRIGHTNESSSlider").slider();
-        $("#BRIGHTNESSSlider").on("change", updateFiltersOnImage);
-        $("#BRIGHTNESSSlider-enabled").click(function () {
-            if (this.checked) { $("#BRIGHTNESSSlider").slider("enable"); updateFiltersOnImage(null); }
-            else { $("#BRIGHTNESSSlider").slider("disable"); updateFiltersOnImage(null); }
-        });
-
-        $("#THRESHOLDINGSlider").slider();
-        $("#THRESHOLDINGSlider").on("change", updateFiltersOnImage);
-        $("#THRESHOLDINGSlider-enabled").click(function () {
-            if (this.checked) { $("#THRESHOLDINGSlider").slider("enable"); updateFiltersOnImage(null); }
-            else { $("#THRESHOLDINGSlider").slider("disable"); updateFiltersOnImage(null); }
-        });
-
-        function updateFiltersOnImage(event) {
-
-            let processors = []
-
-            if ($("#Red-enabled").prop("checked") == false ||
-                $("#Green-enabled").prop("checked") == false ||
-                $("#Blue-enabled").prop("checked") == false)
-                processors.push(OpenSeadragon.Filters.DRAW_RGB($("#Red-enabled").prop("checked"),
-                    $("#Green-enabled").prop("checked"),
-                    $("#Blue-enabled").prop("checked")))
-
-            if ($("#Invert-enabled").prop("checked"))
-                processors.push(OpenSeadragon.Filters.INVERT())
-
-            if ($("#GREYSCALE-enabled").prop("checked"))
-                processors.push(OpenSeadragon.Filters.GREYSCALE())
-
-            if ($("#BRIGHTNESSSlider-enabled").prop("checked"))
-                processors.push(OpenSeadragon.Filters.BRIGHTNESS(parseInt($("#BRIGHTNESSSlider").val())))
-
-            if ($("#ContrastSlider-enabled").prop("checked"))
-                processors.push(OpenSeadragon.Filters.CONTRAST(parseFloat($("#ContrastSlider").val())))
-
-            if ($("#THRESHOLDINGSlider-enabled").prop("checked"))
-                processors.push(OpenSeadragon.Filters.THRESHOLDING(parseInt($("#THRESHOLDINGSlider").val())))
-
-            if ($("#CLAHESlider-enabled").prop("checked"))
-                processors.push(OpenSeadragon.Filters.CLAHE(parseInt($("#CLAHESlider").val())))
-
-            viewer.setFilterOptions({ filters: { processors: processors } });
-        }
-
 
         //listen for click events from this style
         $(document).on('click', '.notifyjs-bootstrap-info', function (event) {

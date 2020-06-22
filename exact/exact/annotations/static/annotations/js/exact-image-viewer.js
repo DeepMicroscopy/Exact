@@ -12,6 +12,9 @@ class EXACTViewer {
         this.exact_image_sync = new EXACTImageSync(this.imageId, this.gHeaders, this.viewer);
 
         this.initViewerEventHandler(this.viewer, imageInformation);
+
+        this.filterImage = new OpenseadragonFilteringViewer(this.viewer);
+
         console.log(`${this.constructor.name} loaded for id ${this.imageId}`);
     }
 
