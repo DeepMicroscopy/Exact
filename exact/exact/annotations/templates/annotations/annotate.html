@@ -51,48 +51,14 @@
     <script type="text/javascript" src="{% static 'annotations/js/screeningTool.js' %}"></script>
     <script type="text/javascript" src="{% static 'annotations/js/exact-sync.js' %}"></script>
     <script type="text/javascript" src="{% static 'annotations/js/exact-image-viewer.js' %}"></script>
+    <script type="text/javascript" src="{% static 'annotations/js/exact-imageset-viewer.js' %}"></script> 
+    <script type="text/javascript" src="{% static 'annotations/js/openseadragon_filtering_viewer.js' %}"></script> 
     <script type="text/javascript" src="{% static 'annotations/js/annotations.js' %}"></script>
 
     <script type="text/javascript" src="{% static 'annotations/js/bootstrap-slider.min.js' %}"></script>
 {% endblock additional_annotation_js %}
 {% block bodyblock %}
     <div class="container-fluid">
-        <div id="feedback_annotation_created" class="js_feedback alert alert-success hidden">
-            {% trans 'The annotation was successfully created.' %}
-        </div>
-        <div id="feedback_annotation_deleted" class="js_feedback alert alert-success hidden">
-            {% trans 'The annotation was successfully deleted.' %}
-        </div>
-        <div id="feedback_annotation_exists" class="js_feedback alert alert-info hidden">
-            {% trans 'A similar annotation exists already.' %}
-        </div>
-        <div id="feedback_annotation_exists_deleted" class="js_feedback alert alert-warning hidden">
-            {% trans 'A similar annotation exists already. The edited annotation was deleted.' %}
-        </div>
-        <div id="feedback_annotation_invalid" class="js_feedback alert alert-warning hidden">
-            {% trans 'The annotation is invalid.' %}
-        </div>
-        <div id="feedback_annotation_type_missing" class="js_feedback alert alert-warning hidden">
-            {% trans 'You have to choose a type for the annotation.' %}
-        </div>
-        <div id="feedback_connection_error" class="js_feedback alert alert-danger hidden">
-            {% trans 'There was an unhandled error during the connection.' %}
-        </div>
-        <div id="feedback_save_successful" class="js_feedback alert alert-success hidden">
-            {% trans 'The annotation was successfully saved.' %}
-        </div>
-        <div id="feedback_annotation_updated" class="js_feedback alert alert-success hidden">
-            {% trans 'The annotation was successfully updated.' %}
-        </div>
-        <div id="feedback_image_set_empty" class="js_feedback alert alert-danger hidden">
-            {% trans 'The image set is empty with that filter applied.' %}
-        </div>
-        <div id="feedback_multiline_information" class="js_feedback alert alert-info hidden">
-            {% trans 'Press ESC to end the line.' %}
-        </div>
-        <div id="feedback_annotation_type_can_not_be_set" class="js_feedback alert alert-info hidden">
-            {% trans 'The current annotation type can not be converted to the new one.' %}
-        </div>
         <div class="row">
 
 
@@ -105,7 +71,7 @@
                         </div>
                         <div class="panel-body">
                             <div class="input-group">
-                                <select id="filter_annotation_type" class="form-control">
+                                <select id="filter_images" class="form-control">
                                     <option value="All" name="All"
                                             class="bold">{% trans 'Show All' %}</option>
                                     <option value="Unverified" name="Unverified"
@@ -116,6 +82,21 @@
                                             class="bold">{% trans 'No Annotations' %}</option>
                                     <option value="ComputerGenerated" name="ComputerGenerated"
                                             class="bold">{% trans 'Computer Generated' %}</option>
+
+                                    {% for annotation_type in annotation_types %}
+
+                                        <option value="{{ annotation_type.id }}" name="{{ annotation_type.name }}">
+                                            {{ annotation_type.name }} ({{annotation_type.product.name}}) </option>
+
+                                    {% endfor %}
+
+                                    {% for annotation_type in global_annotation_types %}
+
+                                        <option value="{{ annotation_type.id }}" name="{{ annotation_type.name }}">
+                                            {{ annotation_type.name }} ({{annotation_type.product.name}}) </option>
+
+                                    {% endfor %}
+
                                 </select>
                                 <span class="input-group-btn">
                                       <button class="btn btn-primary" id="filter_update_btn"><span
@@ -126,11 +107,9 @@
                             <div id="image_list">
                                 {% for set_image in set_images %}
                                     <a id="annotate_image_link_{{ set_image.id }}"
-                                       href="
-
-                                               {% url 'annotations:annotate' set_image.id %}{% if filtered is not None %}?selected_annotation_type={{ filtered }}{% endif %}"
+                                       href="{% url 'annotations:annotate' set_image.id %}{% if filtered is not None %}?selected_annotation_type={{ filtered }}{% endif %}"
                                        class="annotate_image_link {% if set_image.id == selected_image.id %}active{% endif %}"
-                                       data-imageid="{{ set_image.id }}">
+                                       data-image_id="{{ set_image.id }}">
                                         {{ set_image.name }}
                                     </a>
                                 {% endfor %}
@@ -195,7 +174,8 @@
                                     
                                 </ul>
 
-                                <div class="tab-content" id="statistics_tabs_content" style="overflow-y: scroll; max-height: 250px;">
+                                <div class="tab-content" id="statistics_tabs_content" 
+                                    style="overflow-y: scroll; max-height: 250px;">
                                     
                                     {% if annotation_types %}
                                     <div class="tab-pane fade in active" id="home">
@@ -216,14 +196,15 @@
 
                                             {% for annotation_type in annotation_types %}
                                                 <tr>
-                                                    <td id="annotation_type_id_button_{{ annotation_type.id }}" data-type_id={{ annotation_type.id }}>
+                                                    <td id="annotation_type_id_button_{{ annotation_type.id }}" 
+                                                        data-annotation_type_id={{ annotation_type.id }}>
                                                         {{ annotation_type.name }}
                                                     </td>
                                                     <td>{{ forloop.counter0 }}</td>
                                                     <td id="{{ annotation_type.name }}_{{ annotation_type.id }}">{{ annotation_type.node_count }}</td>
                                                     <td style="background-color: {{ annotation_type.color_code }}">
                                                         <input type="checkbox" id="DrawCheckBox_{{ annotation_type.id }}"
-                                                               data-annotation_type-id={{ annotation_type.id }} checked>
+                                                               data-annotation_type_id={{ annotation_type.id }} checked>
                                                     </td>
                                                     <td>
                                                         <a href="{{ annotation_type.image_file}}">
@@ -252,7 +233,7 @@
                                                 <td>{{ annotation_type.name }}</td>
                                                 <td>
                                                     <input type="checkbox" id="GlobalAnnotation_{{ annotation_type.id }}"
-                                                           data-annotation_type-id={{ annotation_type.id }}>
+                                                           data-annotation_type_id={{ annotation_type.id }}>
                                                 </td>
                                             </tr>
 
@@ -427,26 +408,38 @@
 
                                 </div>
 
-                                <div class="row" style="margin-top: 15px;margin-bottom: 15px;">
-                                    <select id="annotation_type_id" name="selected_annotation_type"
-                                            class="form-control">
-                                        <!--<option value="-1">{% trans 'Annotation Type' %}</option> -->
+                                <div class="row">
+                                    <select id="annotation_type_id" name="selected_annotation_type" class="form-control">
+                                        {% for annotation_type in annotation_types %}
+
+                                            <option value="{{ annotation_type.id }}" name="{{ annotation_type.name }}" 
+                                                        id="annotation_type_{{ annotation_type.id }}" data-annotation_type_key={{ forloop.counter0 }}>
+                                                {{ annotation_type.name }} ({{forloop.counter0}}) 
+                                            </option>
+
+                                        {% endfor %}
                                     </select>
                                 </div>
 
                                 <div class="row">
                                     <div class="col-md-4">
-                                        <label for="StrokeWidthSlider">Stroke Width</label>
+                                        
                                         <input id="StrokeWidthSlider" type="range"  class="custom-range" min="1"
                                                max="500" step="1" value="5"/>
+                                        <label for="StrokeWidthSlider">Stroke Width</label>
                                     </div>
 
-                                    <div class="col-md-3" style="margin-top: 22px">
+                                    <div class="col-md-2">
                                         <input type='checkbox' id='draw_annotations' name="draw_annotations" checked>
                                         <label for='draw_annotations'>Draw</label>
                                     </div>
 
-                                    <div class="col-md-3" style="margin-top: 22px">
+                                    <div class="col-md-2">
+                                        <input type='checkbox' id='show_navigator' name="show_navigator" checked>
+                                        <label for='show_navigator'>Nav</label>
+                                    </div>
+
+                                    <div class="col-md-2">
                                         <label for='statistics_total_annotations' title="Total Annotations">Total:</label>
                                         <label id="statistics_total_annotations" title="Total Annotations">{{ total_annotations }}</label>
 
@@ -473,7 +466,7 @@
 
                                             <div class="col-sm-12"><p></p></div>
                                             <div class="col-md-6">
-                                                <button type="submit" class="annotate_button btn btn-default btn-block"
+                                                <button type="button" class="annotate_button btn btn-default btn-block"
                                                         id="save_button">
                                                     <span class="glyphicon glyphicon-floppy-save"
                                                           aria-hidden="true"></span>Save
@@ -546,23 +539,10 @@
                 </div>
             </div>
 
-
-            <div id="edit_active" class="alert alert-warning hidden">
-                <p>
-                    {% trans 'You are currently editing an annotation.' %}
-                </p>
-                <button id="cancel_edit_button" class="btn btn-danger">{% trans 'Cancel' %}</button>
-            </div>
-
             <div class="col-md-8">
-                <div class="col-md" id="openseadragon1" style="width: 85vh; height: 600px;"/>
+                <div class="col-md" id="openseadragon1" style="width: 85vh; height: 600px;"></div>
 
-                <div id="annotations_loading" class="alert alert-info hidden">
-                    <p> {% trans 'Loading Annotations ...' %} </p>
-                </div>
-
-                <div style="width: 100%" id="zoomSlider">
-                </div>
+                <div style="width: 100%" id="zoomSlider"></div>
 
             </div>
 

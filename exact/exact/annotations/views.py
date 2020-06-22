@@ -46,7 +46,7 @@ def annotate(request, image_id):
 
         global_annotation_types = annotation_types.filter(vector_type=AnnotationType.VECTOR_TYPE.GLOBAL)
         annotation_types = annotation_types.exclude(vector_type=AnnotationType.VECTOR_TYPE.GLOBAL)
-        
+
         total_annotations = selected_image.annotations.filter(deleted=False).count()
         imageset_lock = selected_image.image_set.image_lock
         return render(request, 'annotations/annotate.html', {
