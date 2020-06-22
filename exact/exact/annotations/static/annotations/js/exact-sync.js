@@ -1,5 +1,85 @@
 // JS file for sync annotations with the EXACT Server
 
+class EXACTImageSetSync {
+    constructor(imageSetId, gHeaders) {
+        this.imageSetId = imageSetId;
+        this.gHeaders = gHeaders;
+
+        this.annotation_types = {};
+        this.imageInformation = {};
+        this.main_annotation_type;
+
+        this.API_1_IMAGES_BASE_URL = '/api/v1/images/';
+    }
+
+    // load needed imageset information like:
+    // images, annotation types  
+    loadImageSetInformation(success_notification, context) {
+
+        $.ajax(this.API_1_IMAGES_BASE_URL + 'image_sets/' + this.imageSetId +
+            '/?expand=product_set.annotationtype_set,images' +
+            '&omit=product_set.imagesets,description,location,path,images.annotations,images.time', {
+            type: 'GET',
+            headers: this.gHeaders,
+            dataType: 'json',
+            success: function (image_set, textStatus, jqXHR) {
+
+                for (let product of image_set.product_set) {
+                    for (let annotation_type of product.annotationtype_set) {
+                        annotation_type.product = { id: product.id, name: product.name }
+
+                        context.annotation_types[annotation_type.id] = annotation_type;
+                    }
+                }
+
+                if (image_set.main_annotation_type !== undefined) {
+                    context.main_annotation_type = context.annotation_types[image_set.main_annotation_type];
+                }
+
+
+                for (let image of image_set.images) {
+                    context.imageInformation[image.id] = {
+                        "id": image.id, "name": image.name, "width": image.width, "height": image.height,
+                        "mpp": image.mpp, "objectivePower": image.objectivePower, 'depth': image.depth, 'frames': image.frames
+                    }
+                }
+
+                success_notification();
+            },
+            error: function () {
+            }
+        });
+    }
+
+    filterImageList(filter_type, success_function) {
+
+        let url = this.API_1_IMAGES_BASE_URL + "images/?limit=10000&"
+        url += 'fields=id&';
+
+        let filter = `image_set=${this.imageSetId}&`;
+        if (filter_type === "NoAnnotations")
+            filter += `num_annotations_max=0&`;
+        if (filter_type == "ComputerGenerated")
+            filter += `image_type=1&`;
+        if (filter_type == "Verified")
+            filter += `verified=True&`;
+        if (filter_type == "Unverified")
+            filter += `verified=False&`;
+        if (isNaN(parseInt(filter_type)) === false)
+            filter += `annotation_type=${parseInt(filter_type)}&`;
+
+        url += filter;
+
+        $.ajax(url, {
+            type: 'GET', headers: this.gHeaders, dataType: 'json',
+            success: function (images, textStatus, jqXHR) {
+                success_function(images.results);
+            }
+        });
+    }
+
+}
+
 class EXACTImageSync {
     constructor(imageId, gHeaders, viewer) {
 
@@ -8,7 +88,6 @@ class EXACTImageSync {
         this.gHeaders = gHeaders;
 
         this.API_IMAGES_BASE_URL = '/images/api/'; // TODO: Repleace with V1 version
-
     }
 
     imageOpend() {
@@ -28,7 +107,6 @@ class EXACTImageSync {
             headers: this.gHeaders
         });
     }
-
 
     loadStatistics(success_function, context) {
         $.ajax(this.API_IMAGES_BASE_URL + 'image/statistics/', {
@@ -63,6 +141,27 @@ class EXACTImageSync {
             }
         });
     }
+
+    verifyImage() {
+
+        let data = {
+            image_id: this.imageId,
+            state: 'accept'
+        };
+
+        $.ajax(this.API_IMAGES_BASE_URL + 'image/verify/', {
+            type: 'POST',
+            headers: this.gHeaders,
+            dataType: 'json',
+            data: JSON.stringify(data),
+            success: function (data) {
+
+            },
+            error: function () {
+
+            }
+        });
+    }
 }
 
 
@@ -88,6 +187,7 @@ class EXACTAnnotationSync {
         this.refreshAnnotationsFromServer;
         this.upDateFromServerInterval = updateInterval;
 
+        this.API_ANNOTATIONS_BASE_URL = '/annotations/api/';
         this.API_1_ANNOTATIONS_BASE_URL = '/api/v1/annotations/';
         this.API_1_ANNOTATION_EXPAND = 'expand=user,last_editor,uploaded_media_files&';
         this.API_1_ANNOTATION_FIELDS = 'fields=image,annotation_type,id,vector,deleted,description,verified_by_user,uploaded_media_files,unique_identifier,user.id,user.username,last_editor.id,last_editor.username&';
@@ -121,7 +221,7 @@ class EXACTAnnotationSync {
     }
 
     initLoadAnnotations(annotationTypes, imageId, limit = 250) {
-        for (annotation_type of Object.values(annotationTypes)) {
+        for (let annotation_type of Object.values(annotationTypes)) {
 
             this.statistics[annotation_type.id] = {
                 total: 0,
@@ -319,6 +419,28 @@ class EXACTAnnotationSync {
         });
     }
 
+    verifyAnnotation(annotation) {
+
+        let data_val = {
+            annotation_id: annotation.id,
+            state: 'accept',
+        };
+
+        let context = this;
+        $.ajax(this.API_ANNOTATIONS_BASE_URL + 'annotation/verify/', {
+            type: 'POST',
+            headers: this.gHeaders,
+            dataType: 'json',
+            data: JSON.stringify(data_val),
+            success: function (data) {
+                context.synchronisationNotifications("info", data.annotation, "AnnotationVerified")
+            },
+            error: function () {
+
+            }
+        })
+    }
+
     synchronisationNotifications(className, anno, mode) {
 
         switch (mode) {
@@ -332,6 +454,10 @@ class EXACTAnnotationSync {
                 break;
             case "AnnotationUpdated":
                 $.notify(`Annotation ${anno.id} was updated by ${anno.last_editor.username}`,
+                    { position: "bottom center", className: className });
+                break;
+            case "AnnotationVerified":
+                $.notify(`Annotation ${anno.id} is now verified`,
                     { position: "bottom center", className: className });
                 break;
         }
@@ -350,7 +476,7 @@ class EXACTGlobalAnnotationSync extends EXACTAnnotationSync {
         //  get all global types
         let filter = 'image=' + imageId + '&' + "vector_type=7&";
 
-        for (annotation_type of Object.values(annotationTypes)) {
+        for (let annotation_type of Object.values(annotationTypes)) {
 
             this.statistics[annotation_type.id] = {
                 total: 0,

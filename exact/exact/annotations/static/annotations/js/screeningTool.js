@@ -1,7 +1,7 @@
 
 class ScreeningTool {
 
-    constructor(imageid, screeningTiles, x_steps, y_steps, currentIndex) {
+    constructor(imageid, screeningTiles, x_steps, y_steps, currentIndex, overlap=0.1) {
 
         this.x_steps = x_steps;
         this.y_steps = y_steps;
@@ -10,10 +10,26 @@ class ScreeningTool {
 
         this.currentIndex = currentIndex;
         this.imageid = imageid;
+
+        this.screeningOverlap = overlap;
     }
 
     getCurrentIndx() {
         return this.currentIndex;
+    }
+
+    calcOverlap(tile) {
+        let width_overlap = (tile.x_max - tile.x_min) * this.screeningOverlap;
+        let height_overlap = (tile.y_max - tile.y_min) * this.screeningOverlap;
+
+        let result = {
+            x_min: tile.x_min - width_overlap,
+            x_max: tile.x_max + width_overlap,
+            y_min: tile.y_min - height_overlap,
+            y_max: tile.y_max + height_overlap,
+        };
+
+        return result;
     }
 
     getTiles(screened) {
@@ -41,7 +57,7 @@ class ScreeningTool {
     }
 
     getCurrentPosition() {
-        return this.screeningTiles[this.currentIndex];
+        return this.calcOverlap(this.screeningTiles[this.currentIndex]);
     }
 
     movePosition(point) {
@@ -53,7 +69,7 @@ class ScreeningTool {
         if (Object.keys(positions).length > 0)
             this.currentIndex = parseInt(Object.keys(positions)[0]);
 
-        return this.screeningTiles[this.currentIndex];
+        return this.calcOverlap(this.screeningTiles[this.currentIndex]);
     }
 
     moveUp() {
@@ -63,7 +79,7 @@ class ScreeningTool {
         if (this.currentIndex - this.x_steps >= 0)
             this.currentIndex = this.currentIndex - this.x_steps;
 
-        return this.screeningTiles[this.currentIndex];
+        return this.calcOverlap(this.screeningTiles[this.currentIndex]);
     }
 
     moveDown() {
@@ -73,7 +89,7 @@ class ScreeningTool {
         if (this.currentIndex + this.x_steps < this.x_steps * this.y_steps)
             this.currentIndex = this.currentIndex + this.x_steps;
 
-        return this.screeningTiles[this.currentIndex];
+        return this.calcOverlap(this.screeningTiles[this.currentIndex]);
     }
 
     moveLeft() {
@@ -83,7 +99,7 @@ class ScreeningTool {
         if (this.currentIndex - 1 >= 0)
             this.currentIndex = this.currentIndex - 1;
 
-        return this.screeningTiles[this.currentIndex];
+        return this.calcOverlap(this.screeningTiles[this.currentIndex]);
     }
 
     moveRight() {
@@ -93,6 +109,6 @@ class ScreeningTool {
         if (this.currentIndex + 1 < this.x_steps * this.y_steps)
             this.currentIndex = this.currentIndex + 1;
 
-        return this.screeningTiles[this.currentIndex];
+        return this.calcOverlap(this.screeningTiles[this.currentIndex]);
     }
 }

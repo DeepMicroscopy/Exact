@@ -10,7 +10,7 @@ globals = {
 
 (function () {
     const API_1_ADMINISTRATION_BASE_URL = '/api/v1/administration/';
-    
+
     const API_1_IMAGES_BASE_URL = '/api/v1/images/';
     const API_1_IMAGES_FIELDS = 'fields=id,name&';
 
@@ -42,20 +42,11 @@ globals = {
     var gAnnotationKeyToIdLookUp = {};
     let gAnnotationCache = {};
     let gImageInformation = {};
-    
+
     var gShiftDown;
 
-    var tool;
     var exact_viewer;
-
-    function shorten(string, length) {
-        let threshold = length || 30;
-        if (string.length < threshold) {
-            return string;
-        } else {
-            return string.substr(0, threshold / 2 - 1) + '...' + string.substr(-threshold / 2 + 2, threshold / 2 - 2);
-        }
-    }
+    var exact_imageset_viewer;
 
     function updateSearch() {
 
@@ -69,7 +60,7 @@ globals = {
         }
 
 
-        if(searchText) {
+        if (searchText) {
 
             var searchFields = ['@id', '@label', '@first editor', '@last editor', '@remark']
 
@@ -79,7 +70,7 @@ globals = {
 
                 var search_requests = searchText.split(';');
 
-                search_requests.forEach(function(item, index) {
+                search_requests.forEach(function (item, index) {
                     if (item.includes(':')) {
 
                         var field = item.split(':')[0];
@@ -90,38 +81,38 @@ globals = {
                                 if (!isNaN(parseInt(value)))
                                     value = parseInt(value);
 
-                                all_annotations = all_annotations.filter(function(item) {
-                                   return item.id === value;
+                                all_annotations = all_annotations.filter(function (item) {
+                                    return item.id === value;
                                 });
                                 break;
 
                             case "@label":
-                                all_annotations = all_annotations.filter(function(item) {
-                                   return item.annotation_type.name.toLowerCase() === value;
+                                all_annotations = all_annotations.filter(function (item) {
+                                    return item.annotation_type.name.toLowerCase() === value;
                                 });
                                 break;
 
                             case "@first editor":
-                                all_annotations = all_annotations.filter(function(item) {
-                                   return item.user.toLowerCase() === value;
+                                all_annotations = all_annotations.filter(function (item) {
+                                    return item.user.toLowerCase() === value;
                                 });
                                 break;
 
                             case "@last editor":
-                                all_annotations = all_annotations.filter(function(item) {
-                                   return item.last_editor.toLowerCase() === value;
+                                all_annotations = all_annotations.filter(function (item) {
+                                    return item.last_editor.toLowerCase() === value;
                                 });
                                 break;
 
                             case "@verified":
-                                all_annotations = all_annotations.filter(function(item) {
-                                   item.is_verified.toString() === value;
+                                all_annotations = all_annotations.filter(function (item) {
+                                    item.is_verified.toString() === value;
                                 });
                                 break;
 
                             case "@verified":
-                                all_annotations = all_annotations.filter(function(item) {
-                                   return item.remark.toLowerCase().includes(value);
+                                all_annotations = all_annotations.filter(function (item) {
+                                    return item.remark.toLowerCase().includes(value);
                                 });
                                 break;
 
@@ -193,167 +184,6 @@ globals = {
         }
     }
 
-
-    function handleAnnotationVisibilityChanged(event) {
-        var annotation_type_id = parseInt(event.target.getAttribute('data-annotation_type-id'));
-        exact_viewer.changeAnnotationTypeVisibility(annotation_type_id, event.currentTarget.checked);
-    }
-
-    function displayAnnotationTypeOptions(annotationTypeList) {
-        // TODO: empty the options?
-        let annotationTypeFilterSelect = $('#filter_annotation_type');
-        let annotationTypeToolSelect = $('#annotation_type_id');
-
-        let key = 0
-        for (annotationType of annotationTypeList.sort(function(a, b){
-                return a.sort_order - b.sort_order;})) {
-            if (annotationType.vector_type !== 7) // filter global annotations
-            {
-
-                gAnnotationKeyToIdLookUp[key] = annotationType.id;
-
-                annotationTypeToolSelect.append($('<option/>', {
-                    name: annotationType.name,
-                    value: annotationType.id,
-                    //style: "background-color: " + annotationType.color_code,
-                    html: annotationType.name + ' (' + (key) + ')',
-                    id: 'annotation_type_' + (key),
-                    'data-vector-type': annotationType.vector_type,
-                    'data-node-count': annotationType.node_count,
-                    'data-blurred': annotationType.enable_blurred,
-                    'data-default_width': annotationType.default_width,
-                    'data-default_height': annotationType.default_height,
-                    'data-concealed': annotationType.enable_concealed,
-                    'data-background-color': annotationType.color_code
-                }));
-
-                key += 1;
-            }
-
-            annotationTypeFilterSelect.append($('<option/>', {
-                name: annotationType.name,
-                value: annotationType.id,
-                html: `${annotationType.name} (${annotationType.product.name})`
-            }));            
-        }
-    }
-
-    /**
-     * Highlight one annotation in a different color
-     * @param annotationTypeId
-     * @param annotationId
-     */
-
-    /**
-     * Display an image from the image cache or the server.
-     *
-     * @param imageId
-     */
-    function displayImage(imageId) {
-        imageId = parseInt(imageId);
-
-        //if new imageid equals old image id do nothing
-        if (exact_viewer !== undefined 
-                && exact_viewer.imageId === imageId)
-            return
-
-        if (exact_viewer !== undefined)
-            exact_viewer.destroy();
-
-        // return if imageid is not valid
-        if (gImageList.indexOf(imageId) === -1) {
-            return
-        } 
-
-        gImageId = imageId;
-        imageInformation = gImageInformation[imageId]
-
-        const options = { };
-
-        let image_url = window.location.origin;
-        let username = document.getElementById("username").innerText.trim();
-        exact_viewer = EXACTViewer.factoryCreateViewer(image_url, imageId, options, imageInformation, gAnnotationTypes, gHeaders, username);
-
-        // register callbacks
-    }
-
-    /**
-     * Display the images of an image list.
-     *
-     * @param imageList
-     */
-    function displayImageList(imageList) {
-        var oldImageList = $('#image_list');
-        var result = $('<div>');
-        var imageContained = false;
-
-        oldImageList.html('');
-
-        var newImageList = [];
-
-        for (var i = 0; i < imageList.length; i++) {
-            var image = imageList[i];
-
-            newImageList.push(image.id);
-
-            var link = $('<a>');
-            link.attr('id', 'annotate_image_link_' + image.id);
-            link.attr('href', ANNOTATE_URL.replace('%s', image.id));
-            link.addClass('annotate_image_link');
-            if (image.id === gImageId) {
-                link.addClass('active');
-                imageContained = true;
-            }
-            link.text(image.name);
-            link.data('imageid', image.id);
-            link.click(function (event) {
-
-                event.preventDefault();
-
-                image_id = $(this).data('imageid');
-
-                if (image_id !== gImageId)
-                    loadAnnotateView(image_id);
-
-            });
-
-            result.append(link);
-        }
-
-        oldImageList.attr('id', '');
-        result.attr('id', 'image_list');
-        oldImageList.replaceWith(result);
-
-
-        gImageList = newImageList;
-
-        // load first image if current image is not within image set
-        if (imageList.length > 0) {
-            //loadAnnotateView(imageList[0].id);
-            //scrollImageList();
-        } else {
-            loadAnnotateView(-1);
-        }
-    }
-
-    /**
-     * Display a feedback element for a few seconds.
-     *
-     * @param elem
-     */
-    function displayFeedback(elem) {
-        // TODO: Remove
-        if (gHideFeedbackTimeout !== undefined) {
-            clearTimeout(gHideFeedbackTimeout);
-        }
-
-        elem.removeClass('hidden');
-
-        gHideFeedbackTimeout = setTimeout(function () {
-            $('.js_feedback').addClass('hidden');
-        }, FEEDBACK_DISPLAY_TIME);
-    }
-
     /**
      * Edit an annotation.
      *
@@ -367,7 +197,6 @@ globals = {
         //annotationElem = $(annotationElem);
         //let annotationTypeId = annotation.annotation_type.id;
         //$('#annotation_type_id').val(annotationTypeId);
-        //handleAnnotationTypeChange();
         //$('#annotation_type_id').val(annotationTypeId);
 
         $('#annotation_type_id').val(annotation.annotation_type.id);
@@ -409,19 +238,17 @@ globals = {
                 tool.showItem(annotation);
             };
 
-            if (annotation.uploaded_media_files !== undefined) 
-            {
+            if (annotation.uploaded_media_files !== undefined) {
                 for (const media of annotation.uploaded_media_files) {
                     if (media.media_file_type === 4) //Audio
                     {
                         var audio = document.getElementById('audio');
-                        if (audio !== undefined)
-                        {
+                        if (audio !== undefined) {
                             var source = document.getElementById('annotationAudio');
                             source.src = media.file
-                            audio.load(); 
+                            audio.load();
 
-                            if ( $('#autoplay_media').is(':checked'))
+                            if ($('#autoplay_media').is(':checked'))
                                 audio.play();
                             break;
                         }
@@ -434,32 +261,6 @@ globals = {
         //$('.annotate_button').prop('disabled', true);
     }
 
-    /**
-     * Get the image list from all .annotate_image_link within #image_list.
-     */
-    function getImageList() {
-        var imageList = [];
-        $('#image_list').find('.annotate_image_link').each(function (key, elem) {
-            var imageId = parseInt($(elem).data('imageid'));
-            if (imageList.indexOf(imageId) === -1) {
-                imageList.push(imageId);
-            }
-        });
-
-        return imageList;
-    }
-
-    /**
-     * Handle toggle of the draw annotations checkbox.
-     *
-     * @param event
-     */
-    function handleShowAnnotationsToggle(event) {
-        let drawAnnotations = $('#draw_annotations').is(':checked');
-        exact_viewer.annotationVisibility(drawAnnotations);
-    }
-
-
     function updatePlugins(imageId) {
         return;
 
@@ -469,10 +270,10 @@ globals = {
         let data = {
             image_id: imageId,
             options: {
-                min_x:  Math.round(imageRect.x),
-                min_y:  Math.round(imageRect.y),
-                max_x:  Math.round(imageRect.x + imageRect.width),
-                max_y:  Math.round(imageRect.y + imageRect.height)
+                min_x: Math.round(imageRect.x),
+                min_y: Math.round(imageRect.y),
+                max_x: Math.round(imageRect.x + imageRect.width),
+                max_y: Math.round(imageRect.y + imageRect.height)
             }
 
         };
@@ -486,14 +287,14 @@ globals = {
             type: 'GET',
             headers: gHeaders,
             dataType: 'json',
-            data: {'values': JSON.stringify(data)},
+            data: { 'values': JSON.stringify(data) },
             success: function (data) {
                 var el = document.getElementById('statistics_tabs');
                 if (el) {
                     for (plugin of data.plugins) {
                         var tab_name = plugin.id;
 
-                        if (document.getElementById(tab_name + "_tab") === null){
+                        if (document.getElementById(tab_name + "_tab") === null) {
 
                             var node = document.createElement("li");
                             node.setAttribute('class', 'nav-item');
@@ -569,13 +370,13 @@ globals = {
                         } else {
                             var elem = document.getElementById('GlobalAnnotation_' + gAnnotationTypes[key].id);
                             if (elem !== null)
-                                $("#GlobalAnnotation_"+gAnnotationTypes[key].id).prop("checked", false);
+                                $("#GlobalAnnotation_" + gAnnotationTypes[key].id).prop("checked", false);
                         }
                     });
 
                     var total_count = 0;
                     for (anno_type of data.statistics) {
-                        if (anno_type.id in gAnnotationTypes ) {
+                        if (anno_type.id in gAnnotationTypes) {
 
                             if (anno_type.vector_type !== 7) {
                                 total_count += anno_type.in_image_count;
@@ -586,12 +387,12 @@ globals = {
                                 //  if the global annotation is not in db but active on GUI
                                 // deactivate on GUI
 
-                                var elem = document.getElementById('GlobalAnnotation_'+anno_type.id);
+                                var elem = document.getElementById('GlobalAnnotation_' + anno_type.id);
                                 if (elem !== null) {
-                                    if (not_in_image == 0 && $("#GlobalAnnotation_"+anno_type.id).prop("checked")) {
-                                        $("#GlobalAnnotation_"+anno_type.id).prop("checked", false);
-                                    }else if (not_in_image > 0 && $("#GlobalAnnotation_"+anno_type.id).prop("checked") === false) {
-                                        $("#GlobalAnnotation_"+anno_type.id).prop("checked", true);
+                                    if (not_in_image == 0 && $("#GlobalAnnotation_" + anno_type.id).prop("checked")) {
+                                        $("#GlobalAnnotation_" + anno_type.id).prop("checked", false);
+                                    } else if (not_in_image > 0 && $("#GlobalAnnotation_" + anno_type.id).prop("checked") === false) {
+                                        $("#GlobalAnnotation_" + anno_type.id).prop("checked", true);
                                     }
                                 }
                             }
@@ -617,157 +418,10 @@ globals = {
         }
     }
 
-    /**
-     * Load the annotation view for another image.
-     *
-     * @param imageId
-     * @param fromHistory
-     */
-    function loadAnnotateView(imageId) {
-        globals.editedAnnotation = undefined;
-
-        imageId = parseInt(imageId);
-
-        if (imageId > 0) {
-            if (gAnnotationType !== undefined)
-                $('#annotation_type_id').val(gAnnotationType.id);
-
-            loadStatistics(imageId);
-            displayImage(imageId);
-
-            $('#annotation_buttons').hide();
-            $('#AnnotationInformation').hide();
-
-            scrollImageList();
-
-            $('.annotate_image_link').removeClass('active');
-            var link = $('#annotate_image_link_' + imageId);
-            link.addClass('active');
-            $('#active_image_name').text(link.text().trim());
-
-            let next_image_id = gImageList[gImageList.indexOf(imageId) + 1];
-            if (gImageList.length !== 1 && next_image_id === undefined) {
-                next_image_id = gImageList[0];
-            }
-            $('#next-image-id').attr('value', next_image_id || '');
-
-        }
-        else {
-            // if the image set is empty
-            loadStatistics(imageId);
-            displayImage(imageId);
-        }
-    }
-
-    /**
-     * Load the image list from tye server applying a new filter.
-     */
-    function loadImageList(filter_type = "ALL") {
-
-        url = API_1_IMAGES_BASE_URL + "images/?limit=10000&" 
-        url += API_1_IMAGES_FIELDS
-
-        filter = `image_set=${gImageSetId}&`;
-        if (filter_type === "NoAnnotations")
-            filter += `num_annotations_max=0&`;
-        if (filter_type == "ComputerGenerated")
-            filter += `image_type=1&`;
-        if (filter_type == "Verified")
-            filter += `verified=True&`;
-        if (filter_type == "Unverified")
-            filter += `verified=False&`;
-        if (isNaN(parseInt(filter_type)) === false)
-            filter += `annotation_type=${parseInt(filter_type)}&`;
-
-        url += filter;
-        
-        $.ajax(url, {type: 'GET', headers: gHeaders, dataType: 'json',
-            success: function (images, textStatus, jqXHR) {
-
-                if (images.count === 0) {
-                    // redirect to image set view.
-                    if (filter_type ===  "Unverified") {
-                        $("#filter_annotation_type").notify("All images are verified. :)",
-                            {position: "top", className: "error", autoHide: false});
-
-                    } else {
-                        $("#filter_annotation_type").notify("The image set is empty with that filter applied.",
-                            {position: "top", className: "error"});
-                    }
-                }
-                displayImageList(images.results);
-            }
-        });
-    }
-
-    /**
-     * Load the previous or the next image
-     *
-     * @param offset integer to add to the current image index
-     */
-    function loadAdjacentImage(offset) {
-        var imageIndex = gImageList.indexOf(gImageId);
-        if (imageIndex < 0) {
-            console.log('current image is not referenced from page!');
-            return;
-        }
-
-        imageIndex += offset;
-        while (imageIndex < 0) {
-            imageIndex += imageIndex.length;
-        }
-        while (imageIndex > imageIndex.length) {
-            imageIndex -= imageIndex.length;
-        }
-
-        loadAnnotateView(gImageList[imageIndex]);
-    }
-
-    /**
-     * Scroll image list to make current image visible.
-     */
-    function scrollImageList() {
-        var imageLink = $('#annotate_image_link_' + gImageId);
-        var list = $('#image_list');
-
-        if (imageLink.offset() !== undefined) {
-            var offset = list.offset().top;
-            var linkTop = imageLink.offset().top;
-
-            // link should be (roughly) in the middle of the element
-            offset += parseInt(list.height() / 2);
-
-            list.scrollTop(list.scrollTop() + linkTop - offset);
-        }
-    }
-
-    /**
-     * Handle the selection change of the annotation type.
-     * Check if annotation type change is valid
-     */
-
-    function handleAnnotationTypeChange(new_annotation_tpye_id) {
-
-        if (new_annotation_tpye_id !== -1) {
-            exact_viewer.changeAnnotationType(new_annotation_tpye_id);
-        }
-    }
-
-    function selectAnnotationType(annotationTypeNumber) {
-        if (typeof annotationTypeNumber == "undefined")
-            return
-
-        var annotationTypeId = gAnnotationKeyToIdLookUp[annotationTypeNumber];
-        if (!OpenSeadragon.isFullScreen()) {
-            $('#annotation_type_id').val(annotationTypeId);
-        }
-
-        handleAnnotationTypeChange(annotationTypeId);
-    }
 
     function handleResize() {
         var image_node = document.getElementById('openseadragon1');
-        var footer_node  = document.getElementById('footer_id');
+        var footer_node = document.getElementById('footer_id');
 
         var image_rect = image_node.getBoundingClientRect();
         if (footer_node !== null) {
@@ -776,90 +430,10 @@ globals = {
             var height = footer_rect.top - image_rect.top - 40; // window.innerHeight - (5 * footer_rect.height); //footer_rect.y - image_rect.y;
             var width = footer_rect.right - 45 - image_rect.left;
 
-            image_node.style.height = height+ 'px';
-            image_node.style.width = width+ 'px';
+            image_node.style.height = height + 'px';
+            image_node.style.width = width + 'px';
 
         }
-    }
-
-    function verifyAndLoadNext() {
-        // Save current annotation first
-        exact_viewer.finishAnnotation();
-
-        if (globals.allAnnotations.length == 0) {
-
-            var annotationType = gAnnotationType;
-            var action = 'create';
-            var data = {
-                annotation_type_id: annotationType.id,
-                image_id: gImageId,
-                vector: null,
-                concealed: false,
-                blurred: false
-            };
-
-            $.ajax(API_ANNOTATIONS_BASE_URL + 'annotation/' + action + '/', {
-                type: 'POST',
-                headers: gHeaders,
-                dataType: 'json',
-                data: JSON.stringify(data),
-                success: function (data) {
-
-                    let data_val = {
-                        annotation_id: data.annotations.id,
-                        state: 'accept',
-                    };
-
-                    $.ajax(API_ANNOTATIONS_BASE_URL + 'annotation/verify/', {
-                        type: 'POST',
-                        headers: gHeaders,
-                        dataType: 'json',
-                        data: JSON.stringify(data_val),
-                        success: function (data) {
-                            $('#next_button').notify('The image has been verified.', "warn");
-                            loadImageList();
-                            loadAdjacentImage(1);
-                        },
-                        error: function () {
-                            displayFeedback($('#feedback_connection_error'));
-                        }
-                    })
-                },
-                error: function () {
-                    displayFeedback($('#feedback_connection_error'));
-                }
-            })
-        } else {
-
-            let data = {
-                image_id: gImageId,
-                state: 'accept'
-            };
-
-            $.ajax(API_IMAGES_BASE_URL + 'image/verify/', {
-                type: 'POST',
-                headers: gHeaders,
-                dataType: 'json',
-                data: JSON.stringify(data),
-                success: function (data) {
-                    loadImageList();
-                    loadAdjacentImage(1);
-                },
-                error: function () {
-                    displayFeedback($('#feedback_connection_error'));
-                }
-            })
-        }
-    }
-
-    function changeAnnotationTypeByButton(event) {
-        var annotationTypeId = parseInt(event.target.dataset.type_id);
-
-        if (!OpenSeadragon.isFullScreen()) {
-            $('#annotation_type_id').val(annotationTypeId);
-        }
-        
-        handleAnnotationTypeChange(annotationTypeId);
     }
 
     $(function () {
@@ -873,9 +447,6 @@ globals = {
                 break;
             }
         }
-        globals.editActiveContainer = $('#edit_active');
-        globals.drawAnnotations = $('#draw_annotations').is(':checked');
-
         // get current environment
         gCsrfToken = $('[name="csrfmiddlewaretoken"]').first().val();
         gImageId = parseInt($('#image_id').html());
@@ -885,59 +456,10 @@ globals = {
             "X-CSRFTOKEN": gCsrfToken
         };
 
-        //loadImageList();
-        gImageList = getImageList();
-        //preloadAnnotations(gImageId, gImageList);
-        //loadAnnotationTypeList(gImageSetId);
-        scrollImageList();
+        let image_url = window.location.origin;
+        let username = document.getElementById("username").innerText.trim();
 
-        $.ajax(API_1_IMAGES_BASE_URL + 'image_sets/'+ gImageSetId + '/?expand=product_set.annotationtype_set&omit=images,product_set.imagesets', {
-            type: 'GET',
-            headers: gHeaders,
-            dataType: 'json',
-            success: function (image_set, textStatus, jqXHR) {
-
-                for (product of image_set.product_set) {
-                    for (annotation_type of product.annotationtype_set) {
-                        annotation_type.product = {id: product.id, name: product.name}
-
-                        gAnnotationTypes[annotation_type.id] = annotation_type;
-
-
-                        $('#DrawCheckBox_'+annotation_type.id).change(handleAnnotationVisibilityChanged)
-                        $('#annotation_type_id_button_'+annotation_type.id).click(changeAnnotationTypeByButton)
-
-               
-                    }
-                }
-                displayAnnotationTypeOptions(Object.values(gAnnotationTypes));
-
-                if (image_set.main_annotation_type !== undefined){
-                    gAnnotationType = gAnnotationTypes[image_set.main_annotation_type];
-                } else {
-                    // TODO: Assign first non global annotation with the smallest sort order
-                }
-            },
-            error: function () {
-            }
-        });
-
-        $.ajax(API_1_IMAGES_BASE_URL + 'images/?image_set='+gImageSetId+'&fields=id,width,height,mpp,objectivePower,name,frames,depth&limit=100000', {
-            type: 'GET',
-            headers: gHeaders,
-            dataType: 'json',
-            success: function (data, textStatus, jqXHR) {
-                data.results.forEach(x => gImageInformation[x.id] = {"id":x.id, "width":x.width, "height": x.height,
-                    "mpp": x.mpp, "objectivePower": x.objectivePower, 'depth': x.depth, 'frames': x.frames });
-
-                displayImageList(data.results);
-
-                loadAnnotateView(gImageId);
-            },
-            error: function () {
-            }
-        });
-
+        exact_imageset_viewer = new EXACTImageSetViewer(gImageSetId, gImageId, image_url, gHeaders, username);
 
 
         // W3C standards do not define the load event on images, we therefore need to use
@@ -946,147 +468,54 @@ globals = {
             handleResize();
         }());
 
-        $('.annotation_value').on('input', function () {
-
-        });
-        $('select#filter_annotation_type').on('change', function (event) {
-            var filter_type = $('#filter_annotation_type').children(':selected').val();
-            loadImageList(filter_type);
-        });
-        $('#filter_update_btn').on('click', function (event) {
-            var filter_type = $('#filter_annotation_type').children(':selected').val();
-            loadImageList(filter_type);
-        });
-
         $('#search_update_btn').on('click', function (event) {
             event.preventDefault();
 
             updateSearch(event);
         });
 
-        $('select').on('change', function () {
-            document.activeElement.blur();
-        });
-        $('#draw_annotations').on('change', handleShowAnnotationsToggle);
-        $('select#annotation_type_id').on('change', function (event){
-
-            annotationTypeId = $('#annotation_type_id').children(':selected').val();
-
-            handleAnnotationTypeChange(annotationTypeId);
-
-        });
-
-        // register click events
-        $('#cancel_edit_button').click(function () {
-            exact_viewer.cancelEditAnnotation();
-        });
-        $('#delete_annotation_button').click(function () {
-            exact_viewer.deleteAnnotation();
-        });
-        $('#verify_annotation_button').click(function () {
-            event.preventDefault();
-
-            let data_val = {
-                annotation_id: globals.editedAnnotation,
-                state: 'accept',
-            };
-
-            $.ajax(API_ANNOTATIONS_BASE_URL + 'annotation/verify/', {
-                type: 'POST',
-                headers: gHeaders,
-                dataType: 'json',
-                data: JSON.stringify(data_val),
-                success: function (data) {
-                    syncAnnotationFromServer(data.annotation, false);
-
-                    $('#verify_annotation_button').notify('The annotation has been verified.', "info");
-                },
-                error: function () {
-                    displayFeedback($('#feedback_connection_error'));
-                }
-            })
-        });
-        $('#save_button').click(function () {
-            event.preventDefault();
-            exact_viewer.finishAnnotation();
-        });
-        $('#reset_button').click(function () {
-            event.preventDefault();
-            exact_viewer.tool.resetSelection();
-        });
-        $('#last_button').click(function (event) {
-            event.preventDefault();
-            loadAdjacentImage(-1);
-        });
-        $('#back_button').click(function (event) {
-            event.preventDefault();
-
-            loadAdjacentImage(-1);
-        });
-        $('#skip_button').click(function (event) {
-            event.preventDefault();
-
-            loadAdjacentImage(1);
-        });
-        $('#next_button').click(function (event) {
-            event.preventDefault();
-
-            verifyAndLoadNext();
-        });
         $('.js_feedback').mouseover(function () {
             $(this).addClass('hidden');
         });
 
-
-        document.getElementById("StrokeWidthSlider").oninput = function(event) {
-            exact_viewer.tool.updateStrokeWidth(event.srcElement.valueAsNumber);
-        };
-
-
         $("#ContrastSlider").slider();
         $("#ContrastSlider").on("change", updateFiltersOnImage);
-        $("#ContrastSlider-enabled").click(function() { 
-            if(this.checked) { $("#ContrastSlider").slider("enable");  updateFiltersOnImage(null);} 
-            else { $("#ContrastSlider").slider("disable");  updateFiltersOnImage(null);}
+        $("#ContrastSlider-enabled").click(function () {
+            if (this.checked) { $("#ContrastSlider").slider("enable"); updateFiltersOnImage(null); }
+            else { $("#ContrastSlider").slider("disable"); updateFiltersOnImage(null); }
         });
 
         $("#CLAHESlider").slider();
         $("#CLAHESlider").on("change", updateFiltersOnImage);
-        $("#CLAHESlider-enabled").click(function() { 
-            if(this.checked) { $("#CLAHESlider").slider("enable");  updateFiltersOnImage(null);} 
-            else { $("#CLAHESlider").slider("disable");  updateFiltersOnImage(null);}
+        $("#CLAHESlider-enabled").click(function () {
+            if (this.checked) { $("#CLAHESlider").slider("enable"); updateFiltersOnImage(null); }
+            else { $("#CLAHESlider").slider("disable"); updateFiltersOnImage(null); }
         });
 
         $("#BRIGHTNESSSlider").slider();
         $("#BRIGHTNESSSlider").on("change", updateFiltersOnImage);
-        $("#BRIGHTNESSSlider-enabled").click(function() { 
-            if(this.checked) { $("#BRIGHTNESSSlider").slider("enable"); updateFiltersOnImage(null);} 
-            else { $("#BRIGHTNESSSlider").slider("disable");  updateFiltersOnImage(null);}
+        $("#BRIGHTNESSSlider-enabled").click(function () {
+            if (this.checked) { $("#BRIGHTNESSSlider").slider("enable"); updateFiltersOnImage(null); }
+            else { $("#BRIGHTNESSSlider").slider("disable"); updateFiltersOnImage(null); }
         });
 
         $("#THRESHOLDINGSlider").slider();
         $("#THRESHOLDINGSlider").on("change", updateFiltersOnImage);
-        $("#THRESHOLDINGSlider-enabled").click(function() { 
-            if(this.checked) { $("#THRESHOLDINGSlider").slider("enable"); updateFiltersOnImage(null);} 
-            else { $("#THRESHOLDINGSlider").slider("disable"); updateFiltersOnImage(null);}
+        $("#THRESHOLDINGSlider-enabled").click(function () {
+            if (this.checked) { $("#THRESHOLDINGSlider").slider("enable"); updateFiltersOnImage(null); }
+            else { $("#THRESHOLDINGSlider").slider("disable"); updateFiltersOnImage(null); }
         });
-
-        $("#Invert-enabled").click(updateFiltersOnImage);
-        $("#GREYSCALE-enabled").click(updateFiltersOnImage);
-        $("#Red-enabled").click(updateFiltersOnImage);
-        $("#Green-enabled").click(updateFiltersOnImage);
-        $("#Blue-enabled").click(updateFiltersOnImage);
 
         function updateFiltersOnImage(event) {
 
             let processors = []
 
-            if ($("#Red-enabled").prop("checked") == false || 
-                $("#Green-enabled").prop("checked") == false || 
+            if ($("#Red-enabled").prop("checked") == false ||
+                $("#Green-enabled").prop("checked") == false ||
                 $("#Blue-enabled").prop("checked") == false)
-                processors.push(OpenSeadragon.Filters.DRAW_RGB($("#Red-enabled").prop("checked"), 
-                        $("#Green-enabled").prop("checked"), 
-                        $("#Blue-enabled").prop("checked")))
+                processors.push(OpenSeadragon.Filters.DRAW_RGB($("#Red-enabled").prop("checked"),
+                    $("#Green-enabled").prop("checked"),
+                    $("#Blue-enabled").prop("checked")))
 
             if ($("#Invert-enabled").prop("checked"))
                 processors.push(OpenSeadragon.Filters.INVERT())
@@ -1096,7 +525,7 @@ globals = {
 
             if ($("#BRIGHTNESSSlider-enabled").prop("checked"))
                 processors.push(OpenSeadragon.Filters.BRIGHTNESS(parseInt($("#BRIGHTNESSSlider").val())))
-            
+
             if ($("#ContrastSlider-enabled").prop("checked"))
                 processors.push(OpenSeadragon.Filters.CONTRAST(parseFloat($("#ContrastSlider").val())))
 
@@ -1105,36 +534,30 @@ globals = {
 
             if ($("#CLAHESlider-enabled").prop("checked"))
                 processors.push(OpenSeadragon.Filters.CLAHE(parseInt($("#CLAHESlider").val())))
-         
+
             viewer.setFilterOptions({ filters: { processors: processors } });
         }
 
 
         //listen for click events from this style
-        $(document).on('click', '.notifyjs-bootstrap-info', function(event) {
-            if ($(this).text().trim()  === "Start Screening") {
+        $(document).on('click', '.notifyjs-bootstrap-info', function (event) {
+            if ($(this).text().trim() === "Start Screening") {
                 var result = globals.screeningTool.getCurrentPosition();
                 viewCoordinates(result['x_min'], result['y_min'], result['x_max'], result['y_max']);
 
             } else {
-                var id  = parseInt($(this).text().split(" ")[1]);
+                var id = parseInt($(this).text().split(" ")[1]);
                 var index = globals.allAnnotations.findIndex((elem) => elem.id === id);
-                tool.showItem( globals.allAnnotations[index]);
+                tool.showItem(globals.allAnnotations[index]);
             }
         });
-        $(document).on('click', '.notifyjs-bootstrap-warn', function(event) {
-            var id  = parseInt($(this).text().split(" ")[1]);
+        $(document).on('click', '.notifyjs-bootstrap-warn', function (event) {
+            var id = parseInt($(this).text().split(" ")[1]);
             var index = globals.allAnnotations.findIndex((elem) => elem.id === id);
-            tool.showItem( globals.allAnnotations[index]);
+            tool.showItem(globals.allAnnotations[index]);
         });
 
         $(window).on('resize', handleResize);
-
-        window.onpopstate = function (event) {
-            if (event.state !== undefined && event.state !== null && event.state.imageId !== undefined) {
-                loadAnnotateView(event.state.imageId, true);
-            }
-        };
 
         window.onbeforeunload = function (event) {
             exact_viewer.imageClosed();
@@ -1149,9 +572,6 @@ globals = {
                 case 16: // Shift
                     gShiftDown = true;
                     break;
-                case 27: // Escape
-                    exact_viewer.cancelEditAnnotation();
-                    break;
                 case 73: //i
                     break;
                 case 75: //k
@@ -1159,66 +579,6 @@ globals = {
                 case 76: //l
                     break;
                 case 74: //j
-                    break;
-                case 48: //0
-                    selectAnnotationType(0);
-                    break;
-                case 49: //1
-                    selectAnnotationType(1);
-                    break;
-                case 50: //2
-                    selectAnnotationType(2);
-                    break;
-                case 51: //3
-                    selectAnnotationType(3);
-                    break;
-                case 52: //4
-                    selectAnnotationType(4);
-                    break;
-                case 53: //5
-                    selectAnnotationType(5);
-                    break;
-                case 54: //6
-                    selectAnnotationType(6);
-                    break;
-                case 55: //7
-                    selectAnnotationType(7);
-                    break;
-                case 56: //8
-                    selectAnnotationType(8);
-                    break;
-                case 57: //9
-                    selectAnnotationType(9);
-                    break;
-                case 96: //0
-                    selectAnnotationType(0);
-                    break;
-                case 97: //1
-                    selectAnnotationType(1);
-                    break;
-                case 98: //2
-                    selectAnnotationType(2);
-                    break;
-                case 99: //3
-                    selectAnnotationType(3);
-                    break;
-                case 100: //4
-                    selectAnnotationType(4);
-                    break;
-                case 101: //5
-                    selectAnnotationType(5);
-                    break;
-                case 102: //6
-                    selectAnnotationType(6);
-                    break;
-                case 103: //7
-                    selectAnnotationType(7);
-                    break;
-                case 104: //8
-                    selectAnnotationType(8);
-                    break;
-                case 105: //9
-                    selectAnnotationType(9);
                     break;
             }
         });
@@ -1228,24 +588,10 @@ globals = {
                 return;
 
             switch (event.keyCode) {
-                case 8: //'DEL'
-                    exact_viewer.deleteAnnotation();
-                    break;
-                case 13: //'enter'
-                    exact_viewer.finishAnnotation();
-                    break;
                 case 16: // Shift
                     break;
                 case 70: //f
                     verifyAndLoadNext();
-                    break;
-                case 69: //e load next image
-                    loadAdjacentImage(1);
-
-                    break;
-                case 81: //q load last image
-                    loadAdjacentImage(-1);
-
                     break;
                 case 65: //a left tile
                     var result = globals.screeningTool.moveLeft();
@@ -1268,27 +614,6 @@ globals = {
                     viewCoordinates(result['x_min'], result['y_min'], result['x_max'], result['y_max']);
 
                     break;
-
-                case 82: //r
-                    $('#reset_button').click();
-                    break;
-                case 86: //'v'
-                    exact_viewer.finishAnnotation();
-                    break;
-                case 46: //'DEL'
-                    exact_viewer.deleteAnnotation();
-                    break;
-                case 66: //b
-                    break;
-                case 67: //c
-                    exact_viewer.viewer.selectionInstance.toggleState();
-                    break;
-            }
-        });
-        $(document).one("ajaxStop", function () {
-            //selectAnnotationType($('#main_annotation_type_id').html());
-            if (editAnnotationId) {
-                $('#annotation_edit_button_' + editAnnotationId).click();
             }
         });
     });
