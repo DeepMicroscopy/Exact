@@ -635,6 +635,11 @@ globals = {
                             date.getSeconds().toString().padStart(2, '0')}`
                     
                     let filter = 'image='+imageId+'&' + "last_edit_time__gte="+time + "&";
+
+                    if (gCollaborationType == 1) {
+                        filter += "user=" + gUserId + "&"
+                    }                                            
+
                     gLastUpdateTimePoint = new Date(Date.now());
                     let url = API_1_ANNOTATIONS_BASE_URL+ 'annotations/?limit=50&' + filter + API_1_ANNOTATION_EXPAND + API_1_ANNOTATION_FIELDS;
 
@@ -1430,6 +1435,10 @@ globals = {
                 filter += "deleted=False&"
             }
 
+            if (gCollaborationType == 1) {
+                filter += "user=" + gUserId + "&"
+            }
+
             let url = API_1_ANNOTATIONS_BASE_URL+ 'annotations/?limit=250&' + filter + API_1_ANNOTATION_EXPAND + API_1_ANNOTATION_FIELDS
             loadAnnotations(url, imageId)
         }
@@ -1747,6 +1756,8 @@ globals = {
         gCsrfToken = $('[name="csrfmiddlewaretoken"]').first().val();
         gImageId = parseInt($('#image_id').html());
         gImageSetId = parseInt($('#image_set_id').html());
+        gUserId = parseInt($('#user_id').html());
+        gCollaborationType = parseInt($('#collaboration_type').html());
         gHeaders = {
             "Content-Type": 'application/json',
             "X-CSRFTOKEN": gCsrfToken

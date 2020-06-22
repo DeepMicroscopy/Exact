@@ -57,7 +57,8 @@ def annotate(request, image_id):
             'total_annotations': total_annotations,
             'annotation_types': annotation_types,
             'HasMediaFiles': hasMediaFiles,
-            'global_annotation_types': global_annotation_types
+            'global_annotation_types': global_annotation_types,
+            'user': request.user
         })
     else:
         return redirect(reverse('images:view_imageset', args=(selected_image.image_set.id,)))
