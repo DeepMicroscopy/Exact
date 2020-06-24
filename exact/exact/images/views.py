@@ -360,6 +360,18 @@ def upload_image(request, imageset_id):
                                 # save first frame as default file for thumbnail etc.
                                 if frame_id == 0:
                                     image.filename = str(Path(path.stem) / target_file.name)
+                        # check if file is philips iSyntax
+                        elif Path(path).suffix.lower().endswith(".isyntax"):
+                            from util.ISyntaxContainer import ISyntaxContainer
+                            old_path = path
+
+                            path = Path(path)
+                            path = Path(path).with_suffix('.tiff')
+
+                            converter = ISyntaxContainer(str(old_path))
+                            converter.convert(str(path), 0)
+                            image.objectivePower = 40
+                            image.filename = path.name
 
                         else:                            
                             path = Path(path).with_suffix('.tiff')
