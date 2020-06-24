@@ -1,0 +1,40 @@
+version: '3.7'
+
+services:
+  web:
+    build: 
+        context: ./exact
+        dockerfile: Dockerfile.iSyntax.prod    
+    command: gunicorn --workers=6 --threads=4 --graceful-timeout=3000 -t 3000 exact.wsgi:application --bind 0.0.0.0:8000
+    volumes:
+      - ./exact/images:/home/app/web/images
+      - static_volume:/home/app/web/static    
+      - ./exact/media:/home/app/web/media #media_volume
+    expose:
+      - 8000
+    env_file:
+      - ./env.prod
+    depends_on:
+      - db
+  db:
+    image: postgres:12.0-alpine
+    ports:
+        - 5432:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - ./env.prod.db
+  nginx:
+    build: ./nginx
+    volumes:
+      - static_volume:/home/app/web/static   
+      - ./exact/media:/home/app/web/media   #media_volume
+    ports:
+      - 1337:80
+    depends_on:
+      - web
+        
+volumes:
+  postgres_data:      
+  static_volume:
+  media_volume:
