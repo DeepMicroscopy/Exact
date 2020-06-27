@@ -14,6 +14,7 @@ class EXACTViewer {
         this.initViewerEventHandler(this.viewer, imageInformation);
 
         this.filterImage = new OpenseadragonFilteringViewer(this.viewer);
+        this.pluginHandler = new PluginHandler(this.imageId, gHeaders, this.viewer);
 
         console.log(`${this.constructor.name} loaded for id ${this.imageId}`);
     }
