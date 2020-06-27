@@ -48,142 +48,6 @@ globals = {
     var exact_viewer;
     var exact_imageset_viewer;
 
-    function updateSearch() {
-
-        var searchText = $('#searchInputAnnotation').val().trim().toLowerCase();
-
-        var table = document.getElementById('annotationSearchResults');
-
-        // remove all elements from table expect first
-        while (table.childNodes.length > 3) {
-            table.removeChild(table.lastChild);
-        }
-
-
-        if (searchText) {
-
-            var searchFields = ['@id', '@label', '@first editor', '@last editor', '@remark']
-
-            if (searchFields.some(searchField => searchText.includes(searchField))) {
-
-                var all_annotations = globals.allAnnotations;
-
-                var search_requests = searchText.split(';');
-
-                search_requests.forEach(function (item, index) {
-                    if (item.includes(':')) {
-
-                        var field = item.split(':')[0];
-                        var value = item.split(':')[1];
-
-                        switch (field) {
-                            case "@id":
-                                if (!isNaN(parseInt(value)))
-                                    value = parseInt(value);
-
-                                all_annotations = all_annotations.filter(function (item) {
-                                    return item.id === value;
-                                });
-                                break;
-
-                            case "@label":
-                                all_annotations = all_annotations.filter(function (item) {
-                                    return item.annotation_type.name.toLowerCase() === value;
-                                });
-                                break;
-
-                            case "@first editor":
-                                all_annotations = all_annotations.filter(function (item) {
-                                    return item.user.toLowerCase() === value;
-                                });
-                                break;
-
-                            case "@last editor":
-                                all_annotations = all_annotations.filter(function (item) {
-                                    return item.last_editor.toLowerCase() === value;
-                                });
-                                break;
-
-                            case "@verified":
-                                all_annotations = all_annotations.filter(function (item) {
-                                    item.is_verified.toString() === value;
-                                });
-                                break;
-
-                            case "@verified":
-                                all_annotations = all_annotations.filter(function (item) {
-                                    return item.remark.toLowerCase().includes(value);
-                                });
-                                break;
-
-                            default:
-                                break;
-                        }
-                    }
-                });
-
-
-                all_annotations.slice(0, 10).forEach(function (item) {
-
-                    var row = document.createElement("tr");
-
-                    // ID
-                    var column = document.createElement("th");
-                    var id_link = document.createElement("a");
-                    id_link.textContent = item.id;
-                    id_link.onclick = function (event) {
-                        var id = parseInt(event.currentTarget.innerText);
-                        annotation = globals.allAnnotations.filter(function (d) {
-                            return d.id === id;
-                        })[0]
-                        tool.showItem(annotation);
-                    };
-                    column.appendChild(id_link);
-                    row.appendChild(column);
-
-                    // Label
-                    column = document.createElement("th");
-                    var label = document.createElement("label");
-                    label.innerText = item.annotation_type.name;
-                    column.appendChild(label);
-                    row.appendChild(column);
-
-                    // First Editor
-                    var column = document.createElement("th");
-                    var name_link = document.createElement("a");
-                    name_link.setAttribute('href', `/users/user/${item.user.id}/`);
-                    name_link.textContent = item.user.username;
-                    column.appendChild(name_link);
-                    row.appendChild(column);
-
-                    // First Editor
-                    var column = document.createElement("th");
-                    name_link = document.createElement("a");
-                    name_link.setAttribute('href', `/users/user/${item.last_editor.id}/`);
-                    name_link.textContent = item.last_editor.username;
-                    column.appendChild(name_link);
-                    row.appendChild(column);
-
-                    // verified
-                    column = document.createElement("th");
-                    var verified = document.createElement("label");
-                    verified.innerText = item.is_verified.toString();
-                    column.appendChild(verified);
-                    row.appendChild(column);
-
-                    // remark
-                    column = document.createElement("th");
-                    var remark = document.createElement("label");
-                    remark.innerText = item.remark;
-                    column.appendChild(remark);
-                    row.appendChild(column);
-
-                    table.appendChild(row);
-                });
-            }
-        }
-    }
-
     /**
      * Edit an annotation.
      *
@@ -451,15 +315,16 @@ globals = {
         gCsrfToken = $('[name="csrfmiddlewaretoken"]').first().val();
         gImageId = parseInt($('#image_id').html());
         gImageSetId = parseInt($('#image_set_id').html());
+        
         gHeaders = {
             "Content-Type": 'application/json',
             "X-CSRFTOKEN": gCsrfToken
         };
 
         let image_url = window.location.origin;
-        let username = document.getElementById("username").innerText.trim();
+        let user_id = parseInt($('#user_id').html());
 
-        exact_imageset_viewer = new EXACTImageSetViewer(gImageSetId, gImageId, image_url, gHeaders, username);
+        exact_imageset_viewer = new EXACTImageSetViewer(gImageSetId, gImageId, image_url, gHeaders, user_id);
 
 
         // W3C standards do not define the load event on images, we therefore need to use
@@ -467,12 +332,6 @@ globals = {
         $(window).on('load', function () {
             handleResize();
         }());
-
-        $('#search_update_btn').on('click', function (event) {
-            event.preventDefault();
-
-            updateSearch(event);
-        });
 
         $('.js_feedback').mouseover(function () {
             $(this).addClass('hidden');

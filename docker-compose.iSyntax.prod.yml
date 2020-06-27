@@ -5,13 +5,15 @@ services:
     build: 
         context: ./exact
         dockerfile: Dockerfile.iSyntax.prod    
-    command: gunicorn --workers=6 --threads=4 --graceful-timeout=3000 -t 3000 exact.wsgi:application --bind 0.0.0.0:8000
+    command: gunicorn --workers=1 --threads=1 --graceful-timeout=3000 -t 3000 exact.wsgi:application --bind 0.0.0.0:8000
     volumes:
       - ./exact/images:/home/app/web/images
       - static_volume:/home/app/web/static    
       - ./exact/media:/home/app/web/media #media_volume
     expose:
       - 8000
+    ports: 
+      - 3001:3001
     env_file:
       - ./env.prod
     depends_on:

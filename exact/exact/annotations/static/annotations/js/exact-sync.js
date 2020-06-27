@@ -1,5 +1,31 @@
 // JS file for sync annotations with the EXACT Server
 
+class EXACTTeamSync {
+    constructor(team_id) {
+        this.team_id = team_id;
+        this.name; 
+        this.users = {};
+
+        this.API_1_TEAMS_BASE_URL = `/api/v1/users/teams/${team_id}/?expand=members`;
+        this.loadTeamInformation(this.API_1_TEAMS_BASE_URL, this);
+    }
+
+    loadTeamInformation(url, context) {
+        $.ajax(url, {
+            type: 'GET', headers: context.gHeaders, dataType: 'json',
+            success: function (data) {
+
+                this.name = data.name;
+
+                for (let user of data.members) {
+
+                    context.users[user.id] = user;
+                }
+            }
+        });
+    }
+}
+
 class EXACTImageSetSync {
     constructor(imageSetId, gHeaders) {
         this.imageSetId = imageSetId;
@@ -8,6 +34,9 @@ class EXACTImageSetSync {
         this.annotation_types = {};
         this.imageInformation = {};
         this.main_annotation_type;
+        
+        // Collaborative = 0; COMPETITIVE = 1;
+        this.collaboration_type = 0;
 
         this.API_1_IMAGES_BASE_URL = '/api/v1/images/';
     }
@@ -23,6 +52,8 @@ class EXACTImageSetSync {
             headers: this.gHeaders,
             dataType: 'json',
             success: function (image_set, textStatus, jqXHR) {
+
+                context.collaboration_type = image_set.collaboration_type;
 
                 for (let product of image_set.product_set) {
                     for (let annotation_type of product.annotationtype_set) {
@@ -168,12 +199,13 @@ class EXACTImageSync {
 class EXACTAnnotationSync {
 
     constructor(annotationTypes, imageId, gHeaders,
-        viewer, username, limit = 250, updateInterval = 30000) {
+        viewer, user_id, collaboration_type = 0, limit = 250, updateInterval = 30000) {
 
         this.exact_image_sync = new EXACTImageSync(imageId, gHeaders, viewer);
 
+        this.collaboration_type = collaboration_type;
         this.interruptLoading = false; // Stop loading annotations
-        this.username = username; // document.getElementById("username").innerText.trim() 
+        this.user_id = user_id; 
         this.viewer = viewer; // just for notification reasons remove later!
         this.annotations = {};
         this.global_annotations = {};
@@ -190,7 +222,13 @@ class EXACTAnnotationSync {
         this.API_ANNOTATIONS_BASE_URL = '/annotations/api/';
         this.API_1_ANNOTATIONS_BASE_URL = '/api/v1/annotations/';
         this.API_1_ANNOTATION_EXPAND = 'expand=user,last_editor,uploaded_media_files&';
-        this.API_1_ANNOTATION_FIELDS = 'fields=image,annotation_type,id,vector,deleted,description,verified_by_user,uploaded_media_files,unique_identifier,user.id,user.username,last_editor.id,last_editor.username&';
+        this.API_1_FILTERS = 'image=' + imageId + '&'
+        if (this.collaboration_type === 1) {
+            this.API_1_FILTERS += "user=" + user_id + "&"
+        }
+        
+
+        this.API_1_ANNOTATION_FIELDS = 'fields=image,annotation_type,id,vector,deleted,description,verified_by_user,uploaded_media_files,unique_identifier,remark,user.id,user.username,last_editor.id,last_editor.username&';
 
         this.initLoadAnnotations(annotationTypes, imageId)
         this.refreshAnnotationsFromServer = setInterval(function (context) {
@@ -205,7 +243,7 @@ class EXACTAnnotationSync {
                 date.getMinutes().toString().padStart(2, '0')}:${
                 date.getSeconds().toString().padStart(2, '0')}`
 
-            let filter = 'image=' + imageId + '&' + "last_edit_time__gte=" + time + "&";
+            let filter = context.API_1_FILTERS + "last_edit_time__gte=" + time + "&";
             context.lastUpdateTimePoint = new Date(Date.now());
             let url = context.API_1_ANNOTATIONS_BASE_URL + 'annotations/?limit=50&' + filter + context.API_1_ANNOTATION_EXPAND + context.API_1_ANNOTATION_FIELDS;
 
@@ -229,7 +267,7 @@ class EXACTAnnotationSync {
                 verified: 0
             }
 
-            let filter = 'image=' + imageId + '&';
+            let filter = this.API_1_FILTERS;
             filter += 'annotation_type=' + annotation_type.id + '&';
 
             let url = `${this.API_1_ANNOTATIONS_BASE_URL}annotations/?limit=${limit}&${filter}${this.API_1_ANNOTATION_EXPAND}${this.API_1_ANNOTATION_FIELDS}`
@@ -294,14 +332,14 @@ class EXACTAnnotationSync {
                 if (jqXHR.status === 200) {
 
                     for (let anno of data.results) {
-                        if (anno.user.username === context.username ||
-                            anno.last_editor.username === context.username)
+                        if (anno.user.id === context.user_id ||
+                            anno.last_editor.id === context.user_id)
                             continue;
 
                         anno.annotation_type = context.annotationTypes[anno.annotation_type]
 
                         className = "info";
-                        if (anno.description.includes('@') && anno.description.includes(context.username)) {
+                        if (anno.description.includes('@')) {
                             className = "warn";
                         }
 
@@ -474,7 +512,7 @@ class EXACTGlobalAnnotationSync extends EXACTAnnotationSync {
     initLoadAnnotations(annotationTypes, imageId, limit = 250) {
 
         //  get all global types
-        let filter = 'image=' + imageId + '&' + "vector_type=7&";
+        let filter = this.API_1_FILTERS + "vector_type=7&";
 
         for (let annotation_type of Object.values(annotationTypes)) {
 
@@ -515,14 +553,14 @@ class EXACTGlobalAnnotationSync extends EXACTAnnotationSync {
             success: function (data, textStatus, jqXHR) {
 
                 for (let annotation of data.results) {
-                    if (annotation.user.username === context.username ||
-                        annotation.last_editor.username === context.username)
+                    if (annotation.user.id === context.user_id ||
+                        annotation.last_editor.id === context.user_id)
                         continue;
 
                     annotation.annotation_type = context.annotationTypes[annotation.annotation_type]
 
                     className = "info";
-                    if (annotation.description.includes('@') && annotation.description.includes(context.username)) {
+                    if (annotation.description.includes('@')) {
                         className = "warn";
                     }
 

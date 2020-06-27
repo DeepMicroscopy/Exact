@@ -1,0 +1,53 @@
+# pull official base image
+FROM ubuntu:18.04 as builder
+
+# set work directory
+WORKDIR /usr/src/exact
+
+RUN apt-get update && apt-get install -y python3-pip python3-openslide libvips libvips-dev netcat gdebi libtinyxml2.6.2v5 libgles2-mesa libegl1-mesa \
+    && rm -rf /var/lib/apt/lists/*
+
+# set environment variables
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+# install dependencies
+RUN pip3 install --upgrade pip
+COPY ./requirements.txt /usr/src/exact/requirements.txt
+
+RUN pip3 install -r requirements.txt
+
+# copy entrypoint.sh and convert to linux format 
+COPY ./entrypoint.sh /usr/src/exact/entrypoint.sh
+
+# copy settingsfile 
+#COPY ./exact/settings.py.example /usr/src/exact/exact/settings.py
+#RUN cat /usr/src/exact/exact/settings.py
+
+RUN chmod +x /usr/src/exact/entrypoint.sh
+#RUN cat /usr/src/exact/entrypoint.sh
+
+#RUN pip install --upgrade git+git://github.com/ubernostrum/django-registration.git#egg=django-registration
+RUN pip list
+
+# copy project
+COPY . /usr/src/exact/
+
+
+RUN gdebi -n /usr/src/exact/iSyntax/*pixelengine*.deb
+RUN gdebi -n /usr/src/exact/iSyntax/*python3-pixelengine*.deb
+RUN gdebi -n /usr/src/exact/iSyntax/*eglrendercontext*.deb
+RUN gdebi -n /usr/src/exact/iSyntax/*python3-eglrendercontext*.deb
+RUN gdebi -n /usr/src/exact/iSyntax/*gles2renderbackend*.deb
+RUN gdebi -n /usr/src/exact/iSyntax/*python3-gles2renderbackend*.deb
+RUN gdebi -n /usr/src/exact/iSyntax/*gles3renderbackend*.deb
+RUN gdebi -n /usr/src/exact/iSyntax/*python3-gles3renderbackend*.deb
+RUN gdebi -n /usr/src/exact/iSyntax/*softwarerenderer*.deb
+RUN gdebi -n /usr/src/exact/iSyntax/*python3-softwarerenderbackend*.deb
+RUN gdebi -n /usr/src/exact/iSyntax/*python3-softwarerendercontext*.deb
+
+#RUN mv /usr/src/exact/exact/settings.py.example /usr/src/exact/exact/settings.py
+#RUN cat /usr/src/exact/exact/settings.py
+
+# run entrypoint.sh
+ENTRYPOINT ["/usr/src/exact/entrypoint.sh"]

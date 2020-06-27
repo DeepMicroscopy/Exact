@@ -2,11 +2,11 @@
 
 class EXACTImageSetViewer {
 
-    constructor(image_set_id, image_id, image_url, gHeaders, username) {
+    constructor(image_set_id, image_id, image_url, gHeaders, user_id) {
 
         this.image_set_id = image_set_id;
         this.gHeaders = gHeaders;
-        this.username = username;
+        this.user_id = user_id;
         this.image_id = image_id;
         this.image_url = image_url;
         this.ready = false; // true if alle needed informations are loaded from EXACT
@@ -120,13 +120,14 @@ class EXACTImageSetViewer {
         this.image_id = imageId;
         let image_information = this.exact_imageset_sync.imageInformation[imageId];
         let annotation_types = this.exact_imageset_sync.annotation_types;
+        let collaboration_type = this.exact_imageset_sync.collaboration_type;
 
         $('#annotate_image_link_' + imageId).addClass('active');
         $('#active_image_name').text(image_information.name);
 
         const options = {};
         this.exact_viewer = EXACTViewer.factoryCreateViewer(this.image_url, this.image_id, options, 
-            image_information, annotation_types, this.gHeaders, this.username);
+            image_information, annotation_types, this.gHeaders, this.user_id, collaboration_type);
 
         this.scrollImageList(this.image_id);
     }

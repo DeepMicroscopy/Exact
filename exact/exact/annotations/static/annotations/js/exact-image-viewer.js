@@ -19,7 +19,7 @@ class EXACTViewer {
     }
 
     static factoryCreateViewer(image_url, imageId, options, imageInformation, annotationTypes = undefined,
-        headers = undefined, username = undefined, drawAnnotations = true, strokeWidth = 5) {
+        headers = undefined, user_id = undefined, collaboration_type = 0, drawAnnotations = true, strokeWidth = 5) {
 
         if (imageInformation['depth'] == 1 && imageInformation['frames'] == 1) {
             options.tileSources = [image_url + `/images/image/${imageId}/1/1/tile/`]
@@ -64,14 +64,14 @@ class EXACTViewer {
             // crate viewer with global and local support
             if (Object.keys(global_annotation_types).length > 0
                 && Object.keys(local_annotation_types).length > 0) {
-                return new EXACTViewerGlobalLocalAnnotations(image_url, options, imageInformation, local_annotation_types, global_annotation_types,
-                    headers, username, drawAnnotations, strokeWidth)
+                return new EXACTViewerGlobalLocalAnnotations(image_url, options, imageInformation, collaboration_type, local_annotation_types, global_annotation_types,
+                    headers, user_id, drawAnnotations, strokeWidth)
             } else if (Object.keys(global_annotation_types).length > 0) {
-                return new EXACTViewerGlobalAnnotations(image_url, options, imageInformation, annotationTypes,
-                    headers, username)
+                return new EXACTViewerGlobalAnnotations(image_url, options, imageInformation, collaboration_type, annotationTypes,
+                    headers, user_id)
             } else {
-                return new EXACTViewerLocalAnnotations(image_url, options, imageInformation, annotationTypes,
-                    headers, username, drawAnnotations, strokeWidth)
+                return new EXACTViewerLocalAnnotations(image_url, options, imageInformation, collaboration_type, annotationTypes,
+                    headers, user_id, drawAnnotations, strokeWidth)
             }
         } else {
             // create viewer without the option to handle annotations
@@ -240,7 +240,7 @@ class EXACTViewer {
         return;
     }
 
-    createSyncModules(annotationTypes, imageId, headers, viewer, username) {
+    createSyncModules(annotationTypes, imageId, headers, viewer, user_id) {
         return;
     }
 
@@ -303,8 +303,8 @@ class EXACTViewer {
 
 class EXACTViewerLocalAnnotations extends EXACTViewer {
 
-    constructor(image_url, options, imageInformation, annotationTypes,
-        headers, username, drawAnnotations = true, strokeWidth = 5) {
+    constructor(image_url, options, imageInformation, collaboration_type, annotationTypes,
+        headers, user_id, drawAnnotations = true, strokeWidth = 5) {
 
         super(image_url, options, imageInformation, headers)
 
@@ -316,7 +316,8 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         this.tool = this.createDrawingModule(this.viewer, this.imageId, this.imageInformation);
         this.initToolEventHandler(this.viewer);
 
-        this.exact_sync = this.createSyncModules(annotationTypes, this.imageId, headers, this.viewer, username);
+        this.exact_sync = this.createSyncModules(annotationTypes, this.imageId, headers, this.viewer, user_id, collaboration_type);
+        this.searchTool = new SearchTool(this.imageId, this.viewer, this.exact_sync);
 
         this.initUiEvents(this.annotationTypes);
     }
@@ -324,6 +325,11 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
     initViewerEventHandler(viewer, imageInformation) {
 
         super.initViewerEventHandler(viewer, imageInformation)
+
+        viewer.addHandler("search_ShowAnnotation", function (event) {
+            
+            event.userData.tool.showItem(event.annotation);
+        }, this);
 
         viewer.selection({
             allowRotation: false,
@@ -633,8 +639,8 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         return new BoundingBoxes(viewer, imageId, imageInformation);
     }
 
-    createSyncModules(annotationTypes, imageId, headers, viewer, username) {
-        return new EXACTAnnotationSync(annotationTypes, imageId, headers, viewer, username)
+    createSyncModules(annotationTypes, imageId, headers, viewer, user_id, collaboration_type) {
+        return new EXACTAnnotationSync(annotationTypes, imageId, headers, viewer, user_id, collaboration_type)
     }
 
     getCurrentAnnotationType() {
@@ -779,11 +785,11 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
 class EXACTViewerGlobalAnnotations extends EXACTViewer {
 
-    constructor(image_url, options, imageInformation, annotationTypes,
-        headers, username) {
+    constructor(image_url, options, imageInformation, collaboration_type, annotationTypes,
+        headers, user_id) {
 
         super(image_url, options, imageInformation, headers);
-        this.exact_sync = this.createSyncModules(annotationTypes, this.imageId, headers, this.viewer, username);
+        this.exact_sync = this.createSyncModules(annotationTypes, this.imageId, headers, this.viewer, user_id, collaboration_type);
 
         // register for global annotation type interactions
         // set global annotation initialy to false
@@ -814,8 +820,8 @@ class EXACTViewerGlobalAnnotations extends EXACTViewer {
         $("#GlobalAnnotation_" + annotation_type.id).prop("checked", value);
     }
 
-    createSyncModules(annotationTypes, imageId, headers, viewer, username) {
-        return new EXACTGlobalAnnotationSync(annotationTypes, imageId, headers, viewer, username)
+    createSyncModules(annotationTypes, imageId, headers, viewer, user_id, collaboration_type) {
+        return new EXACTGlobalAnnotationSync(annotationTypes, imageId, headers, viewer, user_id, collaboration_type)
     }
 
     destroy() {
@@ -826,14 +832,14 @@ class EXACTViewerGlobalAnnotations extends EXACTViewer {
 
 class EXACTViewerGlobalLocalAnnotations extends EXACTViewerLocalAnnotations {
 
-    constructor(image_url, options, imageInformation, annotationTypesLocal, annotationTypesGlobal,
-        headers, username, drawAnnotations = true, strokeWidth = 5) {
+    constructor(image_url, options, imageInformation, collaboration_type, annotationTypesLocal, annotationTypesGlobal,
+        headers, user_id, drawAnnotations = true, strokeWidth = 5) {
 
-        super(image_url, options, imageInformation, annotationTypesLocal, headers,
-            username, drawAnnotations, strokeWidth);
+        super(image_url, options, imageInformation, collaboration_type, annotationTypesLocal, headers,
+            user_id, drawAnnotations, strokeWidth);
 
         this.exact_sync_global = new EXACTGlobalAnnotationSync(annotationTypesGlobal,
-            this.imageId, headers, this.viewer, username)
+            this.imageId, headers, this.viewer, user_id, collaboration_type)
 
         // register for global annotation type interactions
         // set global annotation initialy to false

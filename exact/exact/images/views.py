@@ -319,7 +319,6 @@ def upload_image(request, imageset_id):
             for path in file_list:
 
                 try:
-
                     fchecksum = file_list[path]
 
                     path = Path(path)
