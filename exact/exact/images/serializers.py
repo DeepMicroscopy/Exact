@@ -98,7 +98,8 @@ class ImageSetSerializer(FlexFieldsModelSerializer):
             'main_annotation_type',
             'set_tags',
             'team',
-            'creator'
+            'creator',
+            'collaboration_type'
         )
 
         expandable_fields = {

@@ -27,3 +27,4 @@ openslide-python==1.1.1
 tifffile
 pyvips
 pydicom
+ptvsd

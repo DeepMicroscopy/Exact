@@ -53,6 +53,7 @@
     <script type="text/javascript" src="{% static 'annotations/js/exact-image-viewer.js' %}"></script>
     <script type="text/javascript" src="{% static 'annotations/js/exact-imageset-viewer.js' %}"></script> 
     <script type="text/javascript" src="{% static 'annotations/js/openseadragon_filtering_viewer.js' %}"></script> 
+    <script type="text/javascript" src="{% static 'annotations/js/searchTool.js' %}"></script> 
     <script type="text/javascript" src="{% static 'annotations/js/annotations.js' %}"></script>
 
     <script type="text/javascript" src="{% static 'annotations/js/bootstrap-slider.min.js' %}"></script>
@@ -551,8 +552,7 @@
 
     <span id="image_id" class="hidden">{{ selected_image.id }}</span>
     <span id="image_set_id" class="hidden">{{ selected_image.image_set.id }}</span>
-    <span id="main_annotation_type_id" class="hidden">{% if selected_image.image_set.main_annotation_type.id %}
-        {{ selected_image.image_set.main_annotation_type.id }}{% else %}-1{% endif %}</span>
+    <span id="user_id" class="hidden">{{ user_id }}</span>
     {% if 'delete_images' in imageset_perms and not imageset_lock %}
         <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel">
             <div class="modal-dialog" role="document">
