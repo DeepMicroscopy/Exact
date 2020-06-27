@@ -306,7 +306,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
     constructor(image_url, options, imageInformation, collaboration_type, annotationTypes,
         headers, user_id, drawAnnotations = true, strokeWidth = 5) {
 
-        super(image_url, options, imageInformation, headers)
+        super(image_url, options, imageInformation, headers);
 
         // set initial annotaton type
         this.annotationTypes = annotationTypes;
