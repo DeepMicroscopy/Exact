@@ -3,7 +3,7 @@
 class EXACTTeamSync {
     constructor(team_id) {
         this.team_id = team_id;
-        this.name; 
+        this.name;
         this.users = {};
 
         this.API_1_TEAMS_BASE_URL = `/api/v1/users/teams/${team_id}/?expand=members`;
@@ -34,7 +34,7 @@ class EXACTImageSetSync {
         this.annotation_types = {};
         this.imageInformation = {};
         this.main_annotation_type;
-        
+
         // Collaborative = 0; COMPETITIVE = 1;
         this.collaboration_type = 0;
 
@@ -205,7 +205,7 @@ class EXACTAnnotationSync {
 
         this.collaboration_type = collaboration_type;
         this.interruptLoading = false; // Stop loading annotations
-        this.user_id = user_id; 
+        this.user_id = user_id;
         this.viewer = viewer; // just for notification reasons remove later!
         this.annotations = {};
         this.global_annotations = {};
@@ -226,29 +226,30 @@ class EXACTAnnotationSync {
         if (this.collaboration_type === 1) {
             this.API_1_FILTERS += "user=" + user_id + "&"
         }
-        
 
         this.API_1_ANNOTATION_FIELDS = 'fields=image,annotation_type,id,vector,deleted,description,verified_by_user,uploaded_media_files,unique_identifier,remark,user.id,user.username,last_editor.id,last_editor.username&';
 
         this.initLoadAnnotations(annotationTypes, imageId)
-        this.refreshAnnotationsFromServer = setInterval(function (context) {
+        this.refreshAnnotationsFromServer = setInterval(this.refreshAnnotations(this), this.upDateFromServerInterval, this);
+    }
 
-            //2020-05-03+09:52:01
-            var date = context.lastUpdateTimePoint;
-            var time = `${
-                date.getFullYear().toString().padStart(4, '0')}-${
-                (date.getMonth() + 1).toString().padStart(2, '0')}-${
-                date.getDate().toString().padStart(2, '0')}+${
-                date.getHours().toString().padStart(2, '0')}:${
-                date.getMinutes().toString().padStart(2, '0')}:${
-                date.getSeconds().toString().padStart(2, '0')}`
+    refreshAnnotations(context) {
 
-            let filter = context.API_1_FILTERS + "last_edit_time__gte=" + time + "&";
-            context.lastUpdateTimePoint = new Date(Date.now());
-            let url = context.API_1_ANNOTATIONS_BASE_URL + 'annotations/?limit=50&' + filter + context.API_1_ANNOTATION_EXPAND + context.API_1_ANNOTATION_FIELDS;
+        //2020-05-03+09:52:01
+        var date = context.lastUpdateTimePoint;
+        var time = `${
+            date.getFullYear().toString().padStart(4, '0')}-${
+            (date.getMonth() + 1).toString().padStart(2, '0')}-${
+            date.getDate().toString().padStart(2, '0')}+${
+            date.getHours().toString().padStart(2, '0')}:${
+            date.getMinutes().toString().padStart(2, '0')}:${
+            date.getSeconds().toString().padStart(2, '0')}`
 
-            context.loadAnnotationsWithConditions(url, imageId, context);
-        }, this.upDateFromServerInterval, this);
+        let filter = context.API_1_FILTERS + "last_edit_time__gte=" + time + "&";
+        context.lastUpdateTimePoint = new Date(Date.now());
+        let url = context.API_1_ANNOTATIONS_BASE_URL + 'annotations/?limit=50&' + filter + context.API_1_ANNOTATION_EXPAND + context.API_1_ANNOTATION_FIELDS;
+
+        context.loadAnnotationsWithConditions(url, context.imageId, context);
     }
 
     getUUIDV4() {
@@ -259,12 +260,17 @@ class EXACTAnnotationSync {
     }
 
     initLoadAnnotations(annotationTypes, imageId, limit = 250) {
+
+        this.statistics_viewer = new StatisticsViewer(this.viewer, this);
+
         for (let annotation_type of Object.values(annotationTypes)) {
 
             this.statistics[annotation_type.id] = {
                 total: 0,
-                loaded: false,
-                verified: 0
+                loaded: 0,
+                finished: false,
+                verified: 0,
+                annotation_type: annotation_type
             }
 
             let filter = this.API_1_FILTERS;
@@ -294,7 +300,9 @@ class EXACTAnnotationSync {
             type: 'GET', headers: context.gHeaders, dataType: 'json',
             success: function (data) {
 
+
                 for (let anno of data.results) {
+                    context.statistics[anno.annotation_type].total = data.count;
                     // set annoation type
                     anno.annotation_type = context.annotationTypes[anno.annotation_type];
                     context.annotations[anno.unique_identifier] = anno;
@@ -306,6 +314,7 @@ class EXACTAnnotationSync {
                 }
 
                 if (data.next !== null) {
+                    context.viewer.raiseEvent('sync_UpdateStatistics', {});
                     // if the image instance should load more annotation but has a stop command save the next commands
                     let url = context.API_1_ANNOTATIONS_BASE_URL + data.next.split(context.API_1_ANNOTATIONS_BASE_URL)[1]
                     if (context.interruptLoading === false) {
@@ -316,7 +325,7 @@ class EXACTAnnotationSync {
                         }
                     }
                 } else {
-                    context.statistics[annotation_type.id].loaded = true;
+                    context.statistics[annotation_type.id].finished = true;
                     context.viewer.raiseEvent('sync_UpdateStatistics', {});
                 }
             }
@@ -449,7 +458,7 @@ class EXACTAnnotationSync {
                 anno.annotation_type = context.annotationTypes[anno.annotation_type]
                 context.annotations[anno.unique_identifier] = anno
 
-                context.exact_image_sync.loadStatistics(context.getStatistics, context);
+                context.viewer.raiseEvent('sync_UpdateStatistics', {});
             },
             error: function () {
                 $.notify(`Server ERR_CONNECTION_REFUSED`, { position: "bottom center", className: "error" });
@@ -509,6 +518,14 @@ class EXACTAnnotationSync {
 
 class EXACTGlobalAnnotationSync extends EXACTAnnotationSync {
 
+    constructor(annotationTypes, imageId, gHeaders,
+        viewer, user_id, collaboration_type = 0, limit = 250, updateInterval = 30000) {
+
+        super(annotationTypes, imageId, gHeaders, viewer, user_id, collaboration_type, limit, updateInterval);
+
+        this.global_annotations = {};
+    }
+
     initLoadAnnotations(annotationTypes, imageId, limit = 250) {
 
         //  get all global types
@@ -518,8 +535,10 @@ class EXACTGlobalAnnotationSync extends EXACTAnnotationSync {
 
             this.statistics[annotation_type.id] = {
                 total: 0,
-                loaded: false,
-                verified: 0
+                loaded: 0,
+                finished: false,
+                verified: 0,
+                annotation_type: annotation_type
             }
         }
 
@@ -538,7 +557,7 @@ class EXACTGlobalAnnotationSync extends EXACTAnnotationSync {
 
                     //  New global Annotations Added                
                     context.annotations[annotation.annotation_type.id] = annotation;
-                    context.statistics[annotation.annotation_type.id].loaded = true;
+                    context.statistics[annotation.annotation_type.id].finished = true;
 
                     context.viewer.raiseEvent('sync_GlobalAnnotations', { annotation });
                 }
@@ -627,7 +646,7 @@ class EXACTGlobalAnnotationSync extends EXACTAnnotationSync {
                 anno.annotation_type = context.annotationTypes[anno.annotation_type]
                 context.annotations[anno.annotation_type.id] = anno
 
-                context.exact_image_sync.loadStatistics(context.getStatistics, context);
+                context.viewer.raiseEvent('sync_UpdateStatisticsGlobal', {});
             },
             error: function () {
                 $.notify(`Server ERR_CONNECTION_REFUSED`, { position: "bottom center", className: "error" });
