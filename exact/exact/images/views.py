@@ -522,8 +522,8 @@ def image_plugins(request) -> Response:
         for plugin in plugin_finder.filter_plugins(product_name=product.name):
             plugins.append(plugin.instance.getPluginStatisticsElements(image, request.user, options))
     # add all default plugins
-    for plugin in plugin_finder.filter_plugins(product_name=''):
-        plugins.append(plugin.instance.getPluginStatisticsElements(image, request.user, options))
+    #for plugin in plugin_finder.filter_plugins(product_name=''):
+    #    plugins.append(plugin.instance.getPluginStatisticsElements(image, request.user, options))
 
 
     return Response({

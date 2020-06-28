@@ -1,13 +1,3 @@
-globals = {
-    editedAnnotation: undefined,
-    editActiveContainer: {},
-    drawAnnotations: true,
-    allAnnotations: undefined,
-    isSelecting: false,
-    screeningTool: undefined
-};
-
-
 (function () {
     const API_1_ADMINISTRATION_BASE_URL = '/api/v1/administration/';
 
@@ -233,27 +223,6 @@ globals = {
                     break;
                 case 70: //f
                     verifyAndLoadNext();
-                    break;
-                case 65: //a left tile
-                    var result = globals.screeningTool.moveLeft();
-                    viewCoordinates(result['x_min'], result['y_min'], result['x_max'], result['y_max']);
-
-                    break;
-                case 87: //w up tile
-                    var result = globals.screeningTool.moveUp();
-                    viewCoordinates(result['x_min'], result['y_min'], result['x_max'], result['y_max']);
-
-                    break;
-
-                case 83: //s down tile
-                    var result = globals.screeningTool.moveDown();
-                    viewCoordinates(result['x_min'], result['y_min'], result['x_max'], result['y_max']);
-
-                    break;
-                case 68: //d right tile
-                    var result = globals.screeningTool.moveRight();
-                    viewCoordinates(result['x_min'], result['y_min'], result['x_max'], result['y_max']);
-
                     break;
             }
         });

@@ -26,6 +26,107 @@ class EXACTTeamSync {
     }
 }
 
+class EXACTScreeningModeSync {
+    constructor(imageId, user_id, gHeaders, viewer) {
+     
+        this.imageId = imageId;
+        this.user_id = user_id;
+        this.gHeaders = gHeaders;
+        this.viewer = viewer;
+        
+        this.screening_mode;
+        this.thumbnail_image;
+
+        this.API_1_SCREENING_BASE_URL = '/api/v1/images/screening_modes/';
+        this.API_1_IMAGES_BASE_URL = '/api/v1/images/images/'; 
+
+        this.loadScreeningMode(imageId, user_id, this);
+    }
+
+    loadScreeningMode(imageId, user_id, context) {
+
+        $.ajax(this.API_1_SCREENING_BASE_URL + `?image=${imageId}&user=${user_id}`, {
+            type: 'GET',
+            headers: context.gHeaders,
+            dataType: 'json',
+            success: function (screening_modes, textStatus, jqXHR) {
+
+                for (const screening_mode of screening_modes.results) {
+                    context.screening_mode = screening_mode;
+
+                    context.viewer.raiseEvent('sync_ScreeningModeLoaded', { screening_mode });
+                }
+
+                if (context.screening_mode === undefined) {
+                    context.viewer.raiseEvent('sync_ScreeningModeNotInitialised', {  });
+                }
+            },
+            error: function () {
+            }
+        });
+    }
+
+    updateCurrentIndex(index) {
+
+        this.screening_mode.current_index = index;
+
+        let data = {
+            current_index: this.screening_mode.current_index
+        }
+
+        $.ajax(this.API_1_SCREENING_BASE_URL + `${this.screening_mode.id}/?fields=id`, {
+            type: 'PATCH',
+            headers: this.gHeaders,
+            dataType: 'json',
+            data: JSON.stringify(data),
+            success: function (data, textStatus, jqXHR) {
+            },
+            error: function () {
+            }
+        });
+    }
+
+    update(data) {
+        let context = this;
+
+        $.ajax(this.API_1_SCREENING_BASE_URL + `${this.screening_mode.id}/`, {
+            type: 'PATCH',
+            headers: this.gHeaders,
+            dataType: 'json',
+            data: JSON.stringify(data),
+            success: function (screening_mode, textStatus, jqXHR) {
+
+                context.screening_mode = screening_mode;
+                context.viewer.raiseEvent('sync_ScreeningModeLoaded', { screening_mode });
+
+            },
+            error: function () {
+            }
+        });
+    }
+
+    create(data) {
+        var action = 'POST';
+        var url = this.API_1_SCREENING_BASE_URL;
+
+        let context = this;
+        $.ajax(url, {
+            type: action, headers: this.gHeaders, dataType: 'json',
+            data: JSON.stringify(data), 
+            success: function (screening_mode, textStatus, jqXHR) {
+
+                context.screening_mode = screening_mode;
+                context.viewer.raiseEvent('sync_ScreeningModeLoaded', { screening_mode });
+
+            },
+            error: function () {
+                $.notify(`Server ERR_CONNECTION_REFUSED`, { position: "bottom center", className: "error" });
+            }
+        });
+
+    }
+}
+
 class EXACTImageSetSync {
     constructor(imageSetId, gHeaders) {
         this.imageSetId = imageSetId;

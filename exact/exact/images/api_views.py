@@ -1,18 +1,19 @@
 import os, stat
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404
-from django.http import HttpResponseBadRequest
+from django.http import HttpResponseBadRequest, HttpResponse
 from django.template.response import TemplateResponse
 from rest_framework.response import Response
 from rest_framework import viewsets, permissions, renderers
 from rest_framework.settings import api_settings
+from rest_framework.decorators import action
 from django.db.models import Q, Count
 from django.db import transaction, connection
 from exact.annotations.models import Annotation, AnnotationVersion
 from . import models
 from . import serializers
 import django_filters
-
+import base64
 
 import openslide
 from openslide import OpenSlide, open_slide
@@ -21,6 +22,10 @@ import random
 import zipfile
 import hashlib
 from pathlib import Path
+
+from PIL import Image as PIL_Image
+from util.slide_server import SlideCache, SlideFile, PILBytesIO
+image_cache = SlideCache(cache_size=10)
 
 class ImageFilterSet(django_filters.FilterSet):
     image_type = django_filters.ChoiceFilter(choices=models.Image.SOURCE_TYPES)
@@ -93,6 +98,25 @@ class ImageViewSet(viewsets.ModelViewSet):
         user = self.request.user
         return  models.Image.objects.filter(image_set__team__in=user.team_set.all()).select_related('image_set')
 
+    @action(detail=True, methods=['GET'], name='Get Thumbnail for image PK')
+    def thumbnail(self, request, pk=None):
+        image = get_object_or_404(models.Image, id=pk)
+
+        file_path = image.path()
+
+        if Path(image.thumbnail_path()).exists():
+            tile = PIL_Image.open(image.thumbnail_path())
+        else:
+            slide = image_cache.get(file_path)
+            tile = slide._osr.get_thumbnail((128,128))
+            tile.save(image.thumbnail_path())
+
+        buf = PILBytesIO()
+        tile.save(buf, 'png', quality=90)
+
+        img_str = str(base64.b64encode(buf.getvalue()))[2:-1]
+
+        return HttpResponse(buf.getvalue(), content_type='image/png')
 
     def create(self, request):
         image_type = int(request.POST.get('image_type', 0))
@@ -505,3 +529,14 @@ class ScreeningModeViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         return  models.ScreeningMode.objects.filter(image__image_set__team__in=user.team_set.all()).select_related('image', 'user').order_by('id')
+
+    def partial_update(self, request, *args, **kwargs):
+        user = self.request.user
+        if "current_index" in request.data:
+            screening = self.get_queryset().filter(id=kwargs['pk']).first()
+            if screening is not None:
+                screening.screening_tiles[str(request.data['current_index'])]['Screened'] = True
+                screening.save()
+
+        response = super().partial_update(request, *args, **kwargs)
+        return response
