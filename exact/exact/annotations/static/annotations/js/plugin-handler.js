@@ -32,11 +32,6 @@ class PluginHandler {
                 max_y: Math.round(imageRect.y + imageRect.height)
             }
         };
-
-
-        if (globals.screeningTool !== undefined && globals.screeningTool.getImageId() === imageId) {
-            data.options['current_index'] = globals.screeningTool.getCurrentIndx();
-        }
         
         // update Plugins
         $.ajax(this.API_IMAGES_BASE_URL + 'image/plugins/', {
