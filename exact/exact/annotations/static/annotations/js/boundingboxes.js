@@ -2,10 +2,8 @@
 
 class BoundingBoxes {
     constructor(viewer, imageid, imageSize) {
-        this.selection = undefined;
-
         this.viewer = viewer;
-
+        this.current_item = undefined;
 
         this.buttons = [new OpenSeadragon.Button({
             tooltip: 'Substract the slected objects area from all other objects ',
@@ -61,6 +59,35 @@ class BoundingBoxes {
 
         this.resetSelection();
     }
+
+    get selection () {
+        return this.current_item;
+    }
+
+    set selection (item) {
+
+        let current_uuid;
+        let new_uuid;
+        if (this.current_item !== undefined) {
+            current_uuid = this.current_item.item.name
+        }
+
+        if (item !== undefined) {
+            new_uuid = item.item.name
+        }
+
+        if (new_uuid !== current_uuid) {
+            this.current_item = item;
+
+            if (item === undefined) {
+                this.viewer.raiseEvent('tool_StopedAnnotationEditing', {  });
+            } else {
+                let uuid = item.item.name;
+                this.viewer.raiseEvent('tool_StartAnnotationEditing', { uuid });
+            }
+        }
+    }
+        
     
     clickPolyOperation(event) {
         if (this.selection) {

@@ -329,6 +329,8 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         this.exact_sync = this.createSyncModules(annotationTypes, this.imageId, headers, this.viewer, user_id, collaboration_type);
         this.searchTool = new SearchTool(this.imageId, this.viewer, this.exact_sync);
 
+        this.showAnnotationProperties = new ShowAnnotationProperties(this.viewer, this.exact_sync);
+
         this.initUiEvents(this.annotationTypes);
     }
 

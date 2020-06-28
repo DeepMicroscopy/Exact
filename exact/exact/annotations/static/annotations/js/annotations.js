@@ -1,119 +1,14 @@
 (function () {
-    const API_1_ADMINISTRATION_BASE_URL = '/api/v1/administration/';
-
-    const API_1_IMAGES_BASE_URL = '/api/v1/images/';
-    const API_1_IMAGES_FIELDS = 'fields=id,name&';
-
-
-    const API_1_ANNOTATIONS_BASE_URL = '/api/v1/annotations/';
-    const API_1_ANNOTATION_EXPAND = 'expand=user,last_editor,uploaded_media_files&';
-    const API_1_ANNOTATION_FIELDS = 'fields=image,annotation_type,id,vector,deleted,description,verified_by_user,uploaded_media_files,unique_identifier,user.id,user.username,last_editor.id,last_editor.username&';
-
-    const API_ANNOTATIONS_BASE_URL = '/annotations/api/';
-    const API_IMAGES_BASE_URL = '/images/api/';
-    const FEEDBACK_DISPLAY_TIME = 3000;
-    const ANNOTATE_URL = '/annotations/%s/';
-    const IMAGE_SET_URL = '/images/imageset/%s/';
-    const PRELOAD_BACKWARD = 1;
-    const PRELOAD_FORWARD = 1;
-    const STATIC_ROOT = '/static/';
 
     // TODO: Find a solution for url resolvings
 
     var gCsrfToken;
     var gHeaders;
-    var gHideFeedbackTimeout;
     var gImageId;
     var gImageSetId;
-    var gImageList;
-    var gFilterType = "All";
-    var gAnnotationType = undefined;
-    var gAnnotationTypes = {};
-    var gAnnotationKeyToIdLookUp = {};
-    let gAnnotationCache = {};
-    let gImageInformation = {};
-
-    var gShiftDown;
 
     var exact_viewer;
     var exact_imageset_viewer;
-
-    /**
-     * Edit an annotation.
-     *
-     * @param event
-     * @param annotationElem the element which stores the edit button of the annotation
-     * @param annotationId
-     */
-    function enableAnnotationEditing(annotation) {
-        // ToDo: Remove
-
-        //annotationElem = $(annotationElem);
-        //let annotationTypeId = annotation.annotation_type.id;
-        //$('#annotation_type_id').val(annotationTypeId);
-        //$('#annotation_type_id').val(annotationTypeId);
-
-        $('#annotation_type_id').val(annotation.annotation_type.id);
-        gAnnotationType = annotation.annotation_type;
-
-        globals.editedAnnotation = annotation;
-        globals.editActiveContainer.removeClass('hidden');
-
-
-        $('.js_feedback').stop().addClass('hidden');
-
-        // highlight currently edited annotation
-        $('.annotation').removeClass('alert-info');
-
-        $('#annotation_buttons').show();
-
-        $('#AnnotationInformation').show();
-
-        if (!OpenSeadragon.isFullScreen()) {
-            document.getElementById('annotationFirstEditor')
-                .setAttribute('href', `/users/user/${annotation.user.id}/`);
-            document.getElementById('annotationFirstEditor').textContent = annotation.user.username;
-
-            document.getElementById('annotationLastEditor')
-                .setAttribute('href', `/users/user/${annotation.last_editor.id}/`);
-            document.getElementById('annotationLastEditor').textContent = annotation.last_editor.username;
-
-            document.getElementById('annotationRemark').value = annotation.description;
-
-            if (annotation.is_verified !== undefined)
-                document.getElementById('annotationVerified').innerText = annotation.verified_by_user.toString();
-
-            document.getElementById('annotationUniqueID').textContent = annotation.id;
-            document.getElementById('annotationUniqueID').onclick = function (event) {
-                var id = parseInt(event.currentTarget.innerText);
-                var annotation = globals.allAnnotations.filter(function (d) {
-                    return d.id === id;
-                })[0];
-                tool.showItem(annotation);
-            };
-
-            if (annotation.uploaded_media_files !== undefined) {
-                for (const media of annotation.uploaded_media_files) {
-                    if (media.media_file_type === 4) //Audio
-                    {
-                        var audio = document.getElementById('audio');
-                        if (audio !== undefined) {
-                            var source = document.getElementById('annotationAudio');
-                            source.src = media.file
-                            audio.load();
-
-                            if ($('#autoplay_media').is(':checked'))
-                                audio.play();
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-
-        //$('.annotate_button').prop('disabled', true);
-    }
 
     function handleResize() {
         var image_node = document.getElementById('openseadragon1');
@@ -191,7 +86,7 @@
         $(window).on('resize', handleResize);
 
         window.onbeforeunload = function (event) {
-            exact_viewer.imageClosed();
+            //exact_viewer.imageClosed();
         };
 
         $(document).keydown(function (event) {
