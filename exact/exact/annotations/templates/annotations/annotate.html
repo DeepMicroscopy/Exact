@@ -174,6 +174,11 @@
                                         <a class="nav-link active" id="default_filter_openseadragon_tab" data-toggle="tab"
                                            href="#nav-item_openseadragon_filter" role="tab" aria-controls="home">Filter</a>
                                     </li>
+
+                                    <li class="nav-item" style="float: none">
+                                        <a class="nav-link active" id="default_screening_tool" data-toggle="tab"
+                                           href="#nav-item_screening_tool" role="tab" aria-controls="home">Screening</a>
+                                    </li>
                                     
                                 </ul>
 
@@ -407,6 +412,28 @@
                                             </div>
                                         </div>
 
+                                    </div>
+
+                                    <div class="tab-pane fade in" id="nav-item_screening_tool">
+
+                                        <div class="input-group">
+                                            <input type="number" id="screeningResolutionX" placeholder="350"
+                                                    title="Screening tile size in pixel X" class="form-control" style="width: 50%;" value={{ resolution_x }}>
+                                            <input type="number" id="screeningResolutionY" placeholder="350"
+                                                    title="Screening tile size in pixel Y" class="form-control" style="width: 50%;" value={{ resolution_y }}>
+                                            <span class="input-group-btn">
+                                                <button class="btn btn-primary" id="screening_resolution_update_btn">
+                                                    <span class="glyphicon glyphicon-play">
+                                                </button>
+                                            </span>
+                                        </div>
+
+                                        <div>
+                                            <img id="screeningImage" alt="Screening mode not initialised!" class="hidden"
+                                                 ></br>
+                                            <canvas id="screeningImageOutput"  alt="Screening mode not initialised!"
+                                                style="width: -webkit-fill-available; height: -webkit-fill-available"></canvas>
+                                        </div>
                                     </div>
 
                                 </div>

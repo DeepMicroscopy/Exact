@@ -1,12 +1,13 @@
 // JS file for handling the openseadragon viewer
 
 class EXACTViewer {
-    constructor(image_url, options, imageInformation, gHeaders) {
+    constructor(image_url, options, imageInformation, gHeaders, user_id) {
 
         this.imageId = imageInformation['id'];
         this.imageInformation = imageInformation;
         this.image_url = image_url;
         this.gHeaders = gHeaders;
+        this.user_id = user_id;
 
         this.viewer = this.createViewer(options);
         this.exact_image_sync = new EXACTImageSync(this.imageId, this.gHeaders, this.viewer);
@@ -15,6 +16,7 @@ class EXACTViewer {
 
         this.filterImage = new OpenseadragonFilteringViewer(this.viewer);
         this.pluginHandler = new PluginHandler(this.imageId, gHeaders, this.viewer);
+        this.screeningTool = new ScreeningTool(imageInformation, user_id, gHeaders, this.viewer);
 
         console.log(`${this.constructor.name} loaded for id ${this.imageId}`);
     }
@@ -112,6 +114,13 @@ class EXACTViewer {
     }
 
     initViewerEventHandler(viewer, imageInformation) {
+
+        viewer.addHandler("viewCoordinates", function (event){
+
+            var coodinates = event.coordinates;
+            event.userData.viewCoordinates(coodinates.x_min, coodinates.y_min, coodinates.x_max, coodinates.y_max);
+
+        }, this);
 
         // called when the image is loaded
         viewer.addHandler("open", function (event) {
@@ -307,7 +316,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
     constructor(image_url, options, imageInformation, collaboration_type, annotationTypes,
         headers, user_id, drawAnnotations = true, strokeWidth = 5) {
 
-        super(image_url, options, imageInformation, headers);
+        super(image_url, options, imageInformation, headers, user_id);
 
         // set initial annotaton type
         this.annotationTypes = annotationTypes;
