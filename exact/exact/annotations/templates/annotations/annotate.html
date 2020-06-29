@@ -86,7 +86,7 @@
                                         <a data-toggle="tab" href="#imageList">Image List</a>
                                     </li>
                                     <li>
-                                        <a data-toggle="tab" href="#imageGrid">Image Grid</a>
+                                        <a data-toggle="tab" href="#imageGrid" id="imageGridButton">Image Grid</a>
                                     </li>
                                 </ul>
                                 <div class="tab-content">
@@ -104,8 +104,7 @@
                                         {% for set_image in set_images %}
                                             <a id="annotate_image_link_{{ set_image.id }}" href="{% url 'annotations:annotate' set_image.id %}">
                                                 <img id="imageThumbnail_{{ set_image.id }}" alt="Loading thumbnail"                                             
-                                                    data-image_id="{{ set_image.id }}"
-                                                    src="/api/v1/images/images/{{ set_image.id }}/thumbnail">
+                                                    data-image_id="{{ set_image.id }}">
                                             </a>
                                         {% endfor %}
                                     </div>
