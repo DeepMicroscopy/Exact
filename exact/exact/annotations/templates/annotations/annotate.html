@@ -2,34 +2,6 @@
 {% load i18n %}
 {% load static %}
 
-{% block additional_annotation_css %}
-    <link rel="stylesheet" type="text/css" href="{% static 'annotations/css/bounding_boxes.css' %}"/>
-    <link rel="stylesheet" type="text/css" href="{% static 'annotations/css/openseadragon-guides.css' %}"/>
-    <link rel="stylesheet" type="text/css" href="{% static 'annotations/css/bootstrap-slider.min.css' %}"/>
-    <style>
-        {% if not "delete_annotation" in imageset_perms %}
-            .annotation_delete_button {
-                visibility: hidden;
-                display: none;
-            }
-        {%  endif %}
-
-        {% if not "verify" in imageset_perms %}
-            .annotation_verify_button {
-                visibility: hidden;
-                display: none;
-            }
-        {%  endif %}
-
-        {% if not "edit_annotation" in imageset_perms %}
-            .annotation_edit_button {
-                visibility: hidden;
-                display: none;
-            }
-        {%  endif %}
-    </style>
-{% endblock additional_annotation_css %}
-
 {% block additional_annotation_js %}
     <script type="text/javascript" src="https://openseadragon.github.io/openseadragon/openseadragon.min.js"></script>
     <script type="text/javascript"
@@ -109,14 +81,35 @@
                             </div>
                             <br>
                             <div id="image_list">
-                                {% for set_image in set_images %}
-                                    <a id="annotate_image_link_{{ set_image.id }}"
-                                       href="{% url 'annotations:annotate' set_image.id %}{% if filtered is not None %}?selected_annotation_type={{ filtered }}{% endif %}"
-                                       class="annotate_image_link {% if set_image.id == selected_image.id %}active{% endif %}"
-                                       data-image_id="{{ set_image.id }}">
-                                        {{ set_image.name }}
-                                    </a>
-                                {% endfor %}
+                                <ul class="nav nav-tabs"  role="tablist">
+                                    <li class="active">
+                                        <a data-toggle="tab" href="#imageList">Image List</a>
+                                    </li>
+                                    <li>
+                                        <a data-toggle="tab" href="#imageGrid">Image Grid</a>
+                                    </li>
+                                </ul>
+                                <div class="tab-content">
+                                    <div id="imageList" class="tab-pane fade in active">
+                                        {% for set_image in set_images %}
+                                            <a id="annotate_image_link_{{ set_image.id }}"
+                                                href="{% url 'annotations:annotate' set_image.id %}{% if filtered is not None %}?selected_annotation_type={{ filtered }}{% endif %}"
+                                                class="annotate_image_link {% if set_image.id == selected_image.id %}active{% endif %}"
+                                                data-image_id="{{ set_image.id }}">
+                                                {{ set_image.name }}
+                                            </a>                                    
+                                        {% endfor %}
+                                    </div>
+                                    <div id="imageGrid" class="tab-pane fade">
+                                        {% for set_image in set_images %}
+                                            <a id="annotate_image_link_{{ set_image.id }}" href="{% url 'annotations:annotate' set_image.id %}">
+                                                <img id="imageThumbnail_{{ set_image.id }}" alt="Loading thumbnail"                                             
+                                                    data-image_id="{{ set_image.id }}"
+                                                    src="/api/v1/images/images/{{ set_image.id }}/thumbnail">
+                                            </a>
+                                        {% endfor %}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -127,10 +120,6 @@
                             <h3 id="active_image_name" class="panel-title">{{ selected_image.name }}</h3>
                         </div>
                         <div class="panel-body">
-                            <form id="annotation_form" action="
-
-                                 {% url 'annotations:annotate' selected_image.id %}{% if filtered is not None %}?selected_annotation_type={{ filtered }}{% endif %}"
-                                  enctype="multipart/form-data" method="post">
                                 {% csrf_token %}
                                 <input type="hidden" name="image_id" value="{{ selected_image.id }}">
 
@@ -430,8 +419,7 @@
                                         </div>
 
                                         <div>
-                                            <img id="screeningImage" alt="Screening mode not initialised!" class="hidden"
-                                                 ></br>
+                                            <img id="screeningImage" alt="Screening mode not initialised!" class="hidden"></br>
                                             <canvas id="screeningImageOutput"  alt="Screening mode not initialised!"
                                                 style="width: -webkit-fill-available; height: -webkit-fill-available"></canvas>
                                         </div>
@@ -564,17 +552,14 @@
                                         </div>
                                     {% endif %}
                                 </div>
-                            </form>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="col-md-8">
-                <div class="col-md" id="openseadragon1" style="width: 85vh; height: 600px;"></div>
-
                 <div style="width: 100%" id="zoomSlider"></div>
-
+                <div class="col-md" id="openseadragon1" style="width: 85vh; height: 600px;"></div>
             </div>
 
         </div>
