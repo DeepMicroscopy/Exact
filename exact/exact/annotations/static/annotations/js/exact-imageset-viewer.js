@@ -15,7 +15,7 @@ class EXACTImageSetViewer {
 
         this.exact_imageset_sync = new EXACTImageSetSync(image_set_id, gHeaders);
         this.exact_imageset_sync.loadImageSetInformation(this.imageSetInformationLoaded.bind(this), this.exact_imageset_sync)
-    
+
         this.imageInformation = {};
         this.filteredImageInformation = {}
 
@@ -43,8 +43,19 @@ class EXACTImageSetViewer {
         $('#skip_button').click(this.skip.bind(this));
 
         $('select#filter_images').on('change', this.filterImageList.bind(this));
-        $('#filter_update_btn').on('click', this.filterImageList.bind(this) );
-    } 
+        $('#filter_update_btn').on('click', this.filterImageList.bind(this));
+
+        $('#imageGridButton').on('click', this.loadThumbnails.bind(this));
+    }
+
+    loadThumbnails() {
+        let image_ids = Object.keys(this.imageInformation).map(x => parseInt(x));
+        for (let image_id of image_ids) {
+            if ($('#imageThumbnail_' + image_id).attr("src") === undefined) {
+                $('#imageThumbnail_' + image_id).attr("src", `/api/v1/images/images/${image_id}/thumbnail`);
+            }
+        }
+    }
 
     imageSetInformationLoaded() {
         this.ready = true;
@@ -53,7 +64,7 @@ class EXACTImageSetViewer {
         this.imageInformation = this.exact_imageset_sync.imageInformation;
 
         //register for imagelists click events 
-        let image_ids = Object.keys(this.imageInformation).map(x=>parseInt(x));
+        let image_ids = Object.keys(this.imageInformation).map(x => parseInt(x));
         for (let image_id of image_ids) {
             $('#annotate_image_link_' + image_id).click(this.imageLinkClicked.bind(this));
             $('#imageThumbnail_' + image_id).click(this.imageLinkClicked.bind(this));
@@ -63,12 +74,12 @@ class EXACTImageSetViewer {
         this.filteredImageInformation = this.exact_imageset_sync.imageInformation;
     }
 
-    updateFilteredImageSet (images) {
+    updateFilteredImageSet(images) {
 
         this.filteredImageInformation = {}
 
         // set visibility of all image links to false
-        let image_ids = Object.keys(this.imageInformation).map(x=>parseInt(x));
+        let image_ids = Object.keys(this.imageInformation).map(x => parseInt(x));
         for (let image_id of image_ids) {
             $('#annotate_image_link_' + image_id).hide();
             $('#imageThumbnail_' + image_id).hide();
@@ -85,24 +96,24 @@ class EXACTImageSetViewer {
             this.destroyViewer();
         } else if (this.image_id in this.filteredImageInformation === false) {
             // if current image is not in filtered images load first new image
-            let first_id = Object.keys(this.filteredImageInformation).map(x=>parseInt(x))[0];
+            let first_id = Object.keys(this.filteredImageInformation).map(x => parseInt(x))[0];
             this.displayImage(first_id);
         }
     }
 
     filterImageList(filter_type) {
 
-        if (typeof filter_type === "undefined" || 
-                filter_type.hasOwnProperty('originalEvent')) {
+        if (typeof filter_type === "undefined" ||
+            filter_type.hasOwnProperty('originalEvent')) {
             filter_type = $('#filter_images').children(':selected').val();
         }
-        
-        this.exact_imageset_sync.filterImageList(filter_type, this.updateFilteredImageSet.bind(this), 
-            this.image_set_id);        
+
+        this.exact_imageset_sync.filterImageList(filter_type, this.updateFilteredImageSet.bind(this),
+            this.image_set_id);
     }
 
     destroyViewer() {
-        
+
         // if a exact_viewer instance exists destroy
         if (this.exact_viewer !== undefined) {
             // deactivate current image link
@@ -129,7 +140,7 @@ class EXACTImageSetViewer {
         $('#active_image_name').text(image_information.name);
 
         const options = {};
-        this.exact_viewer = EXACTViewer.factoryCreateViewer(this.image_url, this.image_id, options, 
+        this.exact_viewer = EXACTViewer.factoryCreateViewer(this.image_url, this.image_id, options,
             image_information, annotation_types, this.gHeaders, this.user_id, collaboration_type);
 
         this.scrollImageList(this.image_id);
@@ -152,7 +163,7 @@ class EXACTImageSetViewer {
     }
 
     verifyAndLoadNext() {
-        
+
         // Save current annotation first
         this.exact_viewer.finishAnnotation();
         this.exact_viewer.exact_image_sync.verifyImage();
@@ -167,7 +178,7 @@ class EXACTImageSetViewer {
      */
     loadAdjacentImage(offset) {
 
-        let image_ids = Object.keys(this.filteredImageInformation).map(x=>parseInt(x));
+        let image_ids = Object.keys(this.filteredImageInformation).map(x => parseInt(x));
         let currentIndex = image_ids.indexOf(this.image_id);
         let newIndex = currentIndex += offset;
 
