@@ -56,6 +56,7 @@ class EXACTImageSetViewer {
         let image_ids = Object.keys(this.imageInformation).map(x=>parseInt(x));
         for (let image_id of image_ids) {
             $('#annotate_image_link_' + image_id).click(this.imageLinkClicked.bind(this));
+            $('#imageThumbnail_' + image_id).click(this.imageLinkClicked.bind(this));
         }
 
 
@@ -70,11 +71,13 @@ class EXACTImageSetViewer {
         let image_ids = Object.keys(this.imageInformation).map(x=>parseInt(x));
         for (let image_id of image_ids) {
             $('#annotate_image_link_' + image_id).hide();
+            $('#imageThumbnail_' + image_id).hide();
         }
 
         for (let image of images) {
             this.filteredImageInformation[image.id] = this.imageInformation[image.id];
             $('#annotate_image_link_' + image.id).show();
+            $('#imageThumbnail_' + image.id).show();
         }
 
         // detroy viewer if the filtered set is empty
