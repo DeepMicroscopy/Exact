@@ -8,6 +8,8 @@ class EXACTViewer {
         this.image_url = image_url;
         this.gHeaders = gHeaders;
         this.user_id = user_id;
+        this.options = options;
+
 
         this.viewer = this.createViewer(options);
         this.exact_image_sync = new EXACTImageSync(this.imageId, this.gHeaders, this.viewer);
@@ -115,7 +117,24 @@ class EXACTViewer {
 
     initViewerEventHandler(viewer, imageInformation) {
 
-        viewer.addHandler("viewCoordinates", function (event){
+        // Update URL
+        viewer.addHandler('animation-finish', function (event) {
+
+            let bounds = this.userData.viewer.viewport.getBounds(true);
+            let imageRect = this.userData.viewer.viewport.viewportToImageRectangle(bounds);
+
+            let xmin = Math.round(imageRect.x);
+            let ymin = Math.round(imageRect.y);
+            let xmax = Math.round(imageRect.x + imageRect.width);
+            let ymax = Math.round(imageRect.y + imageRect.height);
+
+            window.history.pushState("object or string",
+                `${this.userData.imageInformation.name}`,
+                `/annotations/${this.userData.imageInformation.id}/?xmin=${xmin}&ymin=${ymin}&xmax=${xmax}&ymax=${ymax}`);
+
+        }, this);
+
+        viewer.addHandler("viewCoordinates", function (event) {
 
             var coodinates = event.coordinates;
             event.userData.viewCoordinates(coodinates.x_min, coodinates.y_min, coodinates.x_max, coodinates.y_max);
@@ -127,6 +146,16 @@ class EXACTViewer {
             viewer.canvas.tabIndex = 1;
 
             event.userData.imageOpend();
+
+            // zoom to last url position
+            if (event.userData.options.url_parameters !== undefined &&
+                "xmin" in event.userData.options.url_parameters && "ymin" in event.userData.options.url_parameters &&
+                "xmax" in event.userData.options.url_parameters && "ymax" in event.userData.options.url_parameters) {
+
+                let coodinates = event.userData.options.url_parameters;
+
+                event.userData.viewCoordinates(parseInt(coodinates.xmin), parseInt(coodinates.ymin), parseInt(coodinates.xmax), parseInt(coodinates.ymax));
+            }
 
             function addNavigatorImage(status, context) {
 
@@ -255,7 +284,7 @@ class EXACTViewer {
     }
 
     uiShowNavigatorToggle(event) {
-        if ($('#show_navigator').is(':checked')){
+        if ($('#show_navigator').is(':checked')) {
             this.viewer.navigator.element.style.display = "inline-block";
         } else {
             this.viewer.navigator.element.style.display = "none";
@@ -339,7 +368,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         super.initViewerEventHandler(viewer, imageInformation)
 
         viewer.addHandler("search_ShowAnnotation", function (event) {
-            
+
             event.userData.tool.showItem(event.annotation);
         }, this);
 
@@ -585,7 +614,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         $(document).keyup(this.handleKeyUp.bind(this));
         $('#draw_annotations').change(this.uiShowAnnotationsToggle.bind(this))
         $('select#annotation_type_id').change(this.changeAnnotationTypeByComboxbox.bind(this));
-        
+
         // annotatation events
         $('#cancel_edit_button').click(this.cancelEditAnnotation.bind(this));
         $('#delete_annotation_button').click(this.deleteAnnotation.bind(this));
@@ -601,7 +630,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
             $('#DrawCheckBox_' + annotation_type.id).change(this.uiLocalAnnotationVisibilityChanged.bind(this));
             $('#annotation_type_id_button_' + annotation_type.id).click(this.uiAnnotationTypeChanged.bind(this));
-                     
+
             let key_number = $('#annotation_type_' + annotation_type.id).data('annotation_type_key');
             this.annotationTypeKeyToIdLookUp[key_number] = annotation_type.id;
         }
@@ -705,12 +734,12 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
     verifyAnnotation(annotation) {
         // if annotation is undefined or an event use current selected one
-        if (typeof annotation === "undefined" || 
-                annotation.hasOwnProperty('originalEvent')) {
+        if (typeof annotation === "undefined" ||
+            annotation.hasOwnProperty('originalEvent')) {
             annotation = this.getCurrentSelectedAnnotation();
         }
 
-        if (typeof annotation !== "undefined") { 
+        if (typeof annotation !== "undefined") {
             this.exact_sync.verifyAnnotation(annotation);
         }
     }
@@ -718,8 +747,8 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
     finishAnnotation(annotation) {
 
         // if annotation is undefined or an event use current selected one
-        if (typeof annotation === "undefined" || 
-                annotation.hasOwnProperty('originalEvent')) {
+        if (typeof annotation === "undefined" ||
+            annotation.hasOwnProperty('originalEvent')) {
             annotation = this.getCurrentSelectedAnnotation();
         }
 
@@ -733,8 +762,8 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
     deleteAnnotation(annotation) {
         // if annotation is undefined use current selected one
-        if (typeof annotation === "undefined" || 
-                annotation.hasOwnProperty('originalEvent')) {
+        if (typeof annotation === "undefined" ||
+            annotation.hasOwnProperty('originalEvent')) {
             annotation = this.getCurrentSelectedAnnotation();
         }
 

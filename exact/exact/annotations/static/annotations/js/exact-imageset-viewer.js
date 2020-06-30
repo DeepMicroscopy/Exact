@@ -2,7 +2,7 @@
 
 class EXACTImageSetViewer {
 
-    constructor(image_set_id, image_id, image_url, gHeaders, user_id) {
+    constructor(image_set_id, image_id, image_url, gHeaders, user_id, url_parameters) {
 
         this.image_set_id = image_set_id;
         this.gHeaders = gHeaders;
@@ -10,6 +10,7 @@ class EXACTImageSetViewer {
         this.image_id = image_id;
         this.image_url = image_url;
         this.ready = false; // true if alle needed informations are loaded from EXACT
+        this.url_parameters = url_parameters;
 
         this.exact_viewer;
 
@@ -59,7 +60,10 @@ class EXACTImageSetViewer {
 
     imageSetInformationLoaded() {
         this.ready = true;
-        this.displayImage(this.image_id);
+        this.displayImage(this.image_id, this.url_parameters);
+
+        //use url parameter just for the first image
+        this.url_parameters = undefined;
 
         this.imageInformation = this.exact_imageset_sync.imageInformation;
 
@@ -122,7 +126,7 @@ class EXACTImageSetViewer {
         }
     }
 
-    displayImage(imageId) {
+    displayImage(imageId, url_parameters) {
 
         //if new imageid equals old image id do nothing
         if (this.exact_viewer !== undefined
@@ -139,7 +143,10 @@ class EXACTImageSetViewer {
         $('#annotate_image_link_' + imageId).addClass('active');
         $('#active_image_name').text(image_information.name);
 
-        const options = {};
+        //Update URL
+        window.history.pushState("object or string",  `${image_information.name}`, `/annotations/${imageId}/`);
+
+        const options = {url_parameters: url_parameters};
         this.exact_viewer = EXACTViewer.factoryCreateViewer(this.image_url, this.image_id, options,
             image_information, annotation_types, this.gHeaders, this.user_id, collaboration_type);
 

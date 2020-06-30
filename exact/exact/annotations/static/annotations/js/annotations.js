@@ -28,16 +28,11 @@
     }
 
     $(function () {
-        let get_params = decodeURIComponent(window.location.search.substring(1)).split('&');
+        let url_parameters = decodeURIComponent(window.location.search.substring(1)).split('&');
 
-        let editAnnotationId = undefined;
-        for (let i = 0; i < get_params.length; i++) {
-            let parameter = get_params[i].split('=');
-            if (parameter[0] === "edit") {
-                editAnnotationId = parameter[1];
-                break;
-            }
-        }
+        // convert array to dict 
+        url_parameters = Object.assign({}, ...url_parameters.map((x) => ({[x.split("=")[0]]: x.split("=")[1]})));
+
         // get current environment
         gCsrfToken = $('[name="csrfmiddlewaretoken"]').first().val();
         gImageId = parseInt($('#image_id').html());
@@ -51,7 +46,7 @@
         let image_url = window.location.origin;
         let user_id = parseInt($('#user_id').html());
 
-        exact_imageset_viewer = new EXACTImageSetViewer(gImageSetId, gImageId, image_url, gHeaders, user_id);
+        exact_imageset_viewer = new EXACTImageSetViewer(gImageSetId, gImageId, image_url, gHeaders, user_id, url_parameters);
 
 
         // W3C standards do not define the load event on images, we therefore need to use

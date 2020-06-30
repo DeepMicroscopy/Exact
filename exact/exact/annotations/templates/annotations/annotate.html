@@ -102,7 +102,7 @@
                                     </div>
                                     <div id="imageGrid" class="tab-pane fade">
                                         {% for set_image in set_images %}
-                                            <a id="annotate_image_link_{{ set_image.id }}" href="{% url 'annotations:annotate' set_image.id %}">
+                                            <a href="{% url 'annotations:annotate' set_image.id %}">
                                                 <img id="imageThumbnail_{{ set_image.id }}" alt="Loading thumbnail"                                             
                                                     data-image_id="{{ set_image.id }}">
                                             </a>
