@@ -110,6 +110,44 @@
                                     </div>
                                 </div>
                             </div>
+                            <br>
+                            <div>
+                                <div class="col-md-3">
+                                    <button type="button" class="annotate_button btn btn-default btn-block"
+                                            id="back_button">
+                                        <span class="glyphicon glyphicon-menu-left" aria-hidden="true"></span> Back
+                                        (s)
+                                    </button>
+                                </div>
+
+                                {% if 'delete_images' in imageset_perms and not imageset_lock %}
+                                    <div class="col-md-2">
+                                        <button type="button" class="btn btn-danger" id="delete-button"
+                                                data-toggle="modal" data-target="#deleteModal" style="width: 100%">
+                                                <span class="glyphicon glyphicon-trash" aria-hidden="true"
+                                                    style="padding-right: 3px;"></span>
+                                        </button>
+                                    </div>
+                                {% endif %}
+
+                                {% if 'annotate' in imageset_perms %}
+                                    <div class="col-sm-3">
+                                        <button type="button" class="annotate_button btn btn-default btn-block"
+                                                id="verify_image_button">
+                                            <span class="glyphicon glyphicon-floppy-save" aria-hidden="true"></span> Verify (f)
+                                        </button>
+                                    </div>
+                                {% endif %}
+
+
+                                <div class="col-md-3">
+                                    <button type="button" class="annotate_button btn btn-default btn-block"
+                                            id="skip_button">
+                                        <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span> Skip
+                                        (d)
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -427,129 +465,30 @@
                                 </div>
 
                                 <div class="row">
-                                    <select id="annotation_type_id" name="selected_annotation_type" class="form-control">
-                                        {% for annotation_type in annotation_types %}
-
-                                            <option value="{{ annotation_type.id }}" name="{{ annotation_type.name }}" 
-                                                        id="annotation_type_{{ annotation_type.id }}" data-annotation_type_key={{ forloop.counter0 }}>
-                                                {{ annotation_type.name }} ({{forloop.counter0}}) 
-                                            </option>
-
-                                        {% endfor %}
-                                    </select>
-                                </div>
-
-                                <div class="row">
-                                    <div class="col-md-4">
+                                    <div class="col-md-2">
                                         
                                         <input id="StrokeWidthSlider" type="range"  class="custom-range" min="1"
                                                max="500" step="1" value="5"/>
-                                        <label for="StrokeWidthSlider">Stroke Width</label>
+                                        <label for="StrokeWidthSlider">Stroke</label>
                                     </div>
-
-                                    <div class="col-md-2">
-                                        <input type='checkbox' id='draw_annotations' name="draw_annotations" checked>
-                                        <label for='draw_annotations'>Draw</label>
-                                    </div>
-
-                                    <div class="col-md-2">
-                                        <input type='checkbox' id='show_navigator' name="show_navigator" checked>
-                                        <label for='show_navigator'>Nav</label>
-                                    </div>
-
+                                    
                                     <div class="col-md-2">
                                         <label for='statistics_total_annotations' title="Total Annotations">Total:</label>
                                         <label id="statistics_total_annotations" title="Total Annotations">{{ total_annotations }}</label>
-
                                     </div>
-                                </div>
 
-                                <br>
-                                <div class="row">
-                                    {% if 'annotate' in imageset_perms %}
-                                        <div class="row" id="annotation_buttons" style="margin: auto">
-                                            <div class="col-md-6">
-                                                <button type="button" class="annotate_button btn btn-default btn-block"
-                                                        id="delete_annotation_button">
-                                                    <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>Delete
-                                                    (DEL)
-                                                </button>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <button type="button" class="annotate_button btn btn-default btn-block"
-                                                        id="verify_annotation_button">
-                                                    <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>Verify
-                                                </button>
-                                            </div>
+                                    <div class="col-md-8">
+                                        <select id="annotation_type_id" name="selected_annotation_type" class="form-control">
+                                            {% for annotation_type in annotation_types %}
 
-                                            <div class="col-sm-12"><p></p></div>
-                                            <div class="col-md-6">
-                                                <button type="button" class="annotate_button btn btn-default btn-block"
-                                                        id="save_button">
-                                                    <span class="glyphicon glyphicon-floppy-save"
-                                                          aria-hidden="true"></span>Save
-                                                    (v)
-                                                </button>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <button type="button" class="annotate_button btn btn-default btn-block"
-                                                        id="reset_button">
-                                                    <span class="glyphicon glyphicon-erase" aria-hidden="true"></span>Reset
-                                                    (r)
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div class="col-sm-12"><p></p></div>
-                                        <div class="col-md-6">
-                                            <button type="button" class="annotate_button btn btn-default btn-block"
-                                                    id="back_button">
-                                                <span class="glyphicon glyphicon-menu-left" aria-hidden="true"></span>Back
-                                                (q)
-                                            </button>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <button type="button" class="annotate_button btn btn-default btn-block"
-                                                    id="skip_button">
-                                                <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span>Skip
-                                                (e)
-                                            </button>
-                                        </div>
-                                        <!--<div class="col-sm-12"><p></p></div>-->
-                                        <div class="col-sm-12">
-                                            <p></p>
-                                            <button type="button" class="annotate_button btn btn-default btn-block"
-                                                    id="next_button">
-                                                <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span>
-                                                <span class="glyphicon glyphicon-floppy-save" aria-hidden="true"></span>Verify
-                                                & Next (f)
-                                            </button>
-                                        </div>
-                                    {% else %}
-                                        <div class="col-md-6">
-                                            <button type="button" class="annotate_button btn btn-default btn-block"
-                                                    id="back_button">
-                                                <span class="glyphicon glyphicon-menu-left" aria-hidden="true"></span>Back
-                                                (s)
-                                            </button>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <button type="button" class="annotate_button btn btn-default btn-block"
-                                                    id="skip_button">
-                                                <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span>Skip
-                                                (d)
-                                            </button>
-                                        </div>
-                                    {% endif %}
-                                    {% if 'delete_images' in imageset_perms and not imageset_lock %}
-                                        <div class="col-sm-12"><p></p></div>
-                                        <div class="col-md-12">
-                                            <button type="button" class="btn btn-danger" id="delete-button"
-                                                    data-toggle="modal" data-target="#deleteModal" style="width: 100%">
-                                                    <span class="glyphicon glyphicon-trash" aria-hidden="true"
-                                                          style="padding-right: 3px;"></span>Remove image from imageset
-                                            </button>
-                                        </div>
-                                    {% endif %}
+                                                <option value="{{ annotation_type.id }}" name="{{ annotation_type.name }}" 
+                                                            id="annotation_type_{{ annotation_type.id }}" data-annotation_type_key={{ forloop.counter0 }}>
+                                                    {{ annotation_type.name }} ({{forloop.counter0}}) 
+                                                </option>
+
+                                            {% endfor %}
+                                        </select>
+                                    </div>
                                 </div>
                         </div>
                     </div>

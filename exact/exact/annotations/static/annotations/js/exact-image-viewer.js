@@ -9,6 +9,7 @@ class EXACTViewer {
         this.gHeaders = gHeaders;
         this.user_id = user_id;
         this.options = options;
+        this.showNavigator = true;
 
 
         this.viewer = this.createViewer(options);
@@ -264,7 +265,17 @@ class EXACTViewer {
             this.gZoomSlider.on('change', this.onSliderChanged);
         }
 
-        $('#show_navigator').change(this.uiShowNavigatorToggle.bind(this))
+        let showNavigationButton = new OpenSeadragon.Button({
+            tooltip: 'Show navigation overview',
+            name: "ShowNavigation",
+            srcRest: viewer.prefixUrl + `map.svg`,
+            srcGroup: viewer.prefixUrl + `map.svg`,
+            srcHover: viewer.prefixUrl + `map.svg`,
+            srcDown: viewer.prefixUrl + `map.svg`,
+            onClick: this.uiShowNavigatorToggle.bind(this),
+        });
+        viewer.buttons.buttons.push(showNavigationButton);
+        viewer.buttons.element.appendChild(showNavigationButton.element);
     }
 
     initUiEvents() {
@@ -284,10 +295,12 @@ class EXACTViewer {
     }
 
     uiShowNavigatorToggle(event) {
-        if ($('#show_navigator').is(':checked')) {
-            this.viewer.navigator.element.style.display = "inline-block";
-        } else {
+        if (this.showNavigator) {
             this.viewer.navigator.element.style.display = "none";
+            this.showNavigator = false;
+        } else {
+            this.showNavigator = true;
+            this.viewer.navigator.element.style.display = "inline-block";
         }
     }
 
@@ -346,6 +359,8 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         headers, user_id, drawAnnotations = true, strokeWidth = 5) {
 
         super(image_url, options, imageInformation, headers, user_id);
+
+        this.annotationsToggle = true;
 
         // set initial annotaton type
         this.annotationTypes = annotationTypes;
@@ -597,7 +612,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 this.finishAnnotation();
                 break;
             case 89: // 'y'
-                this.changeAnnotationTypeByKey();
+                this.uiShowAnnotationsToggle();
                 break;
         }
     }
@@ -612,18 +627,9 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
     initUiEvents(annotation_types) {
 
         $(document).keyup(this.handleKeyUp.bind(this));
-        $('#draw_annotations').change(this.uiShowAnnotationsToggle.bind(this))
         $('select#annotation_type_id').change(this.changeAnnotationTypeByComboxbox.bind(this));
 
-        // annotatation events
-        $('#cancel_edit_button').click(this.cancelEditAnnotation.bind(this));
-        $('#delete_annotation_button').click(this.deleteAnnotation.bind(this));
-        $('#save_button').click(this.finishAnnotation.bind(this));
-        $('#verify_annotation_button').click(this.verifyAnnotation.bind(this));
-
-
         // tool events
-        $('#reset_button').click(this.tool.resetSelection.bind(this.tool));
         $('#StrokeWidthSlider').on("input", this.updateStrokeWidth.bind(this));
 
         for (let annotation_type of Object.values(annotation_types)) {
@@ -634,6 +640,92 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             let key_number = $('#annotation_type_' + annotation_type.id).data('annotation_type_key');
             this.annotationTypeKeyToIdLookUp[key_number] = annotation_type.id;
         }
+
+        let element = new OpenSeadragon.Button({
+            tooltip: 'Draw annotations (y)',
+            name: "DrawAnnotations",
+            srcRest: this.viewer.prefixUrl + `eye_fill.svg`,
+            srcGroup: this.viewer.prefixUrl + `eye_fill.svg`,
+            srcHover: this.viewer.prefixUrl + `eye_slash.svg`,
+            srcDown: this.viewer.prefixUrl + `eye_slash.svg`,
+            onClick: this.uiShowAnnotationsToggle.bind(this),
+        });
+        this.viewer.buttons.buttons.push(element);
+        this.viewer.buttons.element.appendChild(element.element);
+
+
+        // Register Annotation Buttons
+        this.annotationButtons = [
+            new OpenSeadragon.Button({
+                tooltip: 'Save (v)',
+                name: "save_button",
+                srcRest: this.viewer.prefixUrl + `hdd.svg`,
+                srcGroup: this.viewer.prefixUrl + `hdd.svg`,
+                srcHover: this.viewer.prefixUrl + `hdd.svg`,
+                srcDown: this.viewer.prefixUrl + `hdd.svg`,
+                onClick: this.finishAnnotation.bind(this),
+            }),
+            new OpenSeadragon.Button({
+                tooltip: 'Reset (ESC)',
+                name: "reset_button",
+                srcRest: this.viewer.prefixUrl + `arrow_counterclockwise.svg`,
+                srcGroup: this.viewer.prefixUrl + `arrow_counterclockwise.svg`,
+                srcHover: this.viewer.prefixUrl + `arrow_counterclockwise.svg`,
+                srcDown: this.viewer.prefixUrl + `arrow_counterclockwise.svg`,
+                onClick: this.cancelEditAnnotation.bind(this),
+            }),
+            new OpenSeadragon.Button({
+                tooltip: 'Verify',
+                name: "verify_annotation_button",
+                srcRest: this.viewer.prefixUrl + `check.svg`,
+                srcGroup: this.viewer.prefixUrl + `check.svg`,
+                srcHover: this.viewer.prefixUrl + `check.svg`,
+                srcDown: this.viewer.prefixUrl + `check.svg`,
+                onClick: this.verifyAnnotation.bind(this),
+            }),
+            new OpenSeadragon.Button({
+                tooltip: 'Delete (DEL)',
+                name: "delete_annotation_button",
+                srcRest: this.viewer.prefixUrl + `trash.svg`,
+                srcGroup: this.viewer.prefixUrl + `trash.svg`,
+                srcHover: this.viewer.prefixUrl + `trash.svg`,
+                srcDown: this.viewer.prefixUrl + `trash.svg`,
+                onClick: this.deleteAnnotation.bind(this),
+            }),
+            new OpenSeadragon.Button({
+                tooltip: 'Substract the slected objects area from all other objects ',
+                name: "NOT",
+                srcRest: this.viewer.prefixUrl + `subtract.svg`,
+                srcGroup: this.viewer.prefixUrl + `subtract.svg`,
+                srcHover: this.viewer.prefixUrl + `subtract.svg`,
+                srcDown: this.viewer.prefixUrl + `subtract.svg`,
+                onClick: this.tool.clickPolyOperation.bind(this),
+            }),
+            new OpenSeadragon.Button({
+                tooltip: 'Merge all polygon objects from the same class touching the selected object',
+                name: "UNION",
+                srcRest: this.viewer.prefixUrl + `union.svg`,
+                srcGroup: this.viewer.prefixUrl + `union.svg`,
+                srcHover: this.viewer.prefixUrl + `union.svg`,
+                srcDown: this.viewer.prefixUrl + `union.svg`,
+                onClick: this.tool.clickPolyOperation.bind(this),
+            }),
+            new OpenSeadragon.Button({
+                tooltip: 'Changes the class of all included objects to selected class if possible',
+                name: "HARMONIZE",
+                srcRest: this.viewer.prefixUrl + `basket.svg`,
+                srcGroup: this.viewer.prefixUrl + `basket.svg`,
+                srcHover: this.viewer.prefixUrl + `basket.svg`,
+                srcDown: this.viewer.prefixUrl + `basket.svg`,
+                onClick: this.tool.clickPolyOperation.bind(this),
+            })
+        ]
+
+        let index = 0;
+        this.annotationButtons.forEach(element => {
+            this.viewer.addControl(element.element, { anchor: OpenSeadragon.ControlAnchor.ABSOLUTE, top: 150 + index, left: 5 });
+            index += 45;
+        });
     }
 
     /**
@@ -642,13 +734,12 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
      * @param event
      */
     uiShowAnnotationsToggle() {
-        if ($('#draw_annotations').is(':checked') == true) {
-            $('#draw_annotations').prop("checked", false);
+        if (this.annotationsToggle === true) {
+            this.annotationsToggle = false;
         } else {
-            $('#draw_annotations').prop("checked", true);
+            this.annotationsToggle = true;
         }
-        let drawAnnotations = $('#draw_annotations').is(':checked');
-        this.annotationVisibility(drawAnnotations);
+        this.annotationVisibility(this.annotationsToggle);
     }
 
     changeAnnotationTypeByComboxbox() {
