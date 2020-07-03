@@ -32,6 +32,9 @@ class EXACTImageSetViewer {
             case 81: //q load last image
                 this.loadAdjacentImage(-1);
                 break;
+            case 70: //f
+                this.verifyImage();
+                break;
         }
     }
 
@@ -40,7 +43,7 @@ class EXACTImageSetViewer {
         $(document).keyup(this.handleKeyUp.bind(this));
 
         $('#back_button').click(this.loadLast.bind(this));
-        $('#next_button').click(this.verifyAndLoadNext.bind(this));
+        $('#verify_image_button').click(this.verifyImage.bind(this));
         $('#skip_button').click(this.skip.bind(this));
 
         $('select#filter_images').on('change', this.filterImageList.bind(this));
@@ -169,13 +172,11 @@ class EXACTImageSetViewer {
         this.loadAdjacentImage(-1);
     }
 
-    verifyAndLoadNext() {
+    verifyImage() {
 
         // Save current annotation first
         this.exact_viewer.finishAnnotation();
         this.exact_viewer.exact_image_sync.verifyImage();
-
-        this.loadAdjacentImage(1);
     }
 
     /**

@@ -114,8 +114,6 @@ class ImageViewSet(viewsets.ModelViewSet):
         buf = PILBytesIO()
         tile.save(buf, 'png', quality=90)
 
-        img_str = str(base64.b64encode(buf.getvalue()))[2:-1]
-
         return HttpResponse(buf.getvalue(), content_type='image/png')
 
     def create(self, request):

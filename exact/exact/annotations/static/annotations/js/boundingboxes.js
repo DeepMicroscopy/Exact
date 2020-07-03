@@ -5,40 +5,6 @@ class BoundingBoxes {
         this.viewer = viewer;
         this.current_item = undefined;
 
-        this.buttons = [new OpenSeadragon.Button({
-            tooltip: 'Substract the slected objects area from all other objects ',
-            name: "NOT",
-            srcRest: this.viewer.prefixUrl + `NOT.png`,
-            srcGroup: this.viewer.prefixUrl + `NOT.png`,
-            srcHover: this.viewer.prefixUrl + `NOT_hover.png`,
-            srcDown: this.viewer.prefixUrl + `NOT_down.png`,
-            onClick: this.clickPolyOperation.bind( this ),
-          }),
-            new OpenSeadragon.Button({
-            tooltip: 'Merge all polygon objects from the same class touching the selected object',
-            name: "UNION",
-            srcRest: this.viewer.prefixUrl + `UNION.png`,
-            srcGroup: this.viewer.prefixUrl + `UNION.png`,
-            srcHover: this.viewer.prefixUrl + `UNION_hover.png`,
-            srcDown: this.viewer.prefixUrl + `UNION_down.png`,
-            onClick: this.clickPolyOperation.bind( this ),
-          }),
-            new OpenSeadragon.Button({
-            tooltip: 'Changes the class of all included objects to selected class if possible',
-            name: "HARMONIZE",
-            srcRest: this.viewer.prefixUrl + `HARMONIZE_rest.png`,
-            srcGroup: this.viewer.prefixUrl + `HARMONIZE_rest.png`,
-            srcHover: this.viewer.prefixUrl + `HARMONIZE_hover.png`,
-            srcDown: this.viewer.prefixUrl + `HARMONIZE_down.png`,
-            onClick: this.clickPolyOperation.bind( this ),
-          })]
-
-        this.buttons.forEach(element => {
-            viewer.buttons.buttons.push(element);
-            viewer.buttons.element.appendChild(element.element);
-        });
-
-
         this.overlay = this.viewer.paperjsOverlay();
         this.group = new paper.Group();
 
@@ -687,12 +653,6 @@ class BoundingBoxes {
 
     clear() {
         this.group.removeChildren();
-
-        this.buttons.forEach(element => {
-            this.viewer.buttons.buttons = this.viewer.buttons.buttons.filter(function(value, index, arr){ return value.name !== element.name;});
-            if (this.viewer.buttons.element.contains(element.element))
-                this.viewer.buttons.element.removeChild(element.element);
-        });
     }
 
     handleMouseDrag(event) {
