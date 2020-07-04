@@ -2119,6 +2119,12 @@ globals = {
                 case 8: //'DEL'
                     handleDelete(event);
                     break;
+                case 88: //'X'
+                    handleDelete(event);
+                    break;
+                case 120: //'X'
+                    handleDelete(event);
+                    break;
                 case 13: //'enter'
                     finishAnnotation(globals.editedAnnotation);
                     break;
