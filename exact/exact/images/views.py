@@ -161,10 +161,6 @@ def index(request):
     userteams = Team.objects.filter(members=request.user)
     # get all teams where the user is an admin
     user_admin_teams = Team.objects.filter(memberships__user=request.user, memberships__is_admin=True)
-    imagesets = ImageSet.objects.filter(team__in=userteams).annotate(
-        image_count_agg=Count('images')
-    ).select_related('team').prefetch_related('set_tags') \
-        .order_by('-priority', '-time')
 
     imageset_creation_form = ImageSetCreationFormWT()  # the user provides the team manually
     imageset_creation_form.fields['team'].queryset = userteams
@@ -197,13 +193,13 @@ def index(request):
 
     last_image_action = LogImageAction.objects.filter(user=request.user).order_by('-time').first()
 
+
     return TemplateResponse(request, 'images/index.html', {
         'last_image_action': last_image_action,
         'user': request.user,
         'team_creation_form': team_creation_form,
         'imageset_creation_form': imageset_creation_form,
         'team_message_creation_form': team_message_creation_form,
-        'image_sets': imagesets.order_by('team', 'priority' ,'name'),
         'user_has_admin_teams': user_admin_teams.exists(),
         'userteams': userteams,
         'usermessages': usermessages,
