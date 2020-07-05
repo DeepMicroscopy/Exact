@@ -32,11 +32,14 @@ class StatisticsViewer{
             }, anno_type).length;
 
             total_loaded += elements;
-            if (type_statistics.finished) {
-                document.getElementById(anno_type.name + '_' + anno_type.id).innerHTML = elements;
-            } else {
-                loading = true;
-                document.getElementById(anno_type.name + '_' + anno_type.id).innerHTML = `${elements} / ${type_statistics.total}`;
+            let annotype_element = document.getElementById(anno_type.name + '_' + anno_type.id);
+            if (annotype_element !== null) {
+                if (type_statistics.finished) {
+                    annotype_element.innerHTML = elements;
+                } else {
+                    loading = true;
+                    annotype_element.innerHTML = `${elements} / ${type_statistics.total}`;
+                }
             }
         }
 
