@@ -11,6 +11,7 @@
     var exact_imageset_viewer;
 
     function handleResize() {
+        return;
         var image_node = document.getElementById('openseadragon1');
         var footer_node = document.getElementById('footer_id');
 
@@ -110,9 +111,6 @@
 
             switch (event.keyCode) {
                 case 16: // Shift
-                    break;
-                case 70: //f
-                    verifyAndLoadNext();
                     break;
             }
         });

@@ -37,8 +37,12 @@ div.card-header {
   word-wrap:break-word;
 }
 
-#image_list, #annotation_list {
+#image_list, #imageGrid {
   max-height : 15vh;
+  overflow-y: scroll;
+}
+
+#statistics_tabs_content {
   overflow-y: scroll;
 }
 
@@ -232,4 +236,17 @@ body {
 
 .card {
   text-align: center;
+}
+
+.bg-purple {
+  background: rgb(48,0,50);
+}
+.bg-gray {
+  background: rgb(74,74,74);
+}
+.bg-blue {
+  background: rgb(50,101,196);
+}
+.bg-red {
+  background: rgb(196,50,53);
 }
