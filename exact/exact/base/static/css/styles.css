@@ -2,9 +2,6 @@
   padding-top: 70px;
 }
 
-
-
-
 .checkbox{
   border-radius: 3px;
   border-color: silver;
@@ -14,6 +11,20 @@
   font-size: 15px;
   width: auto;
 }
+
+.js_feedback {
+  position: fixed;
+  top: 5px;
+  left: 0;
+  right: 0;
+  width: 50em;
+  margin: auto;
+
+  text-align: center;
+
+  z-index: 10000;
+}
+
 div.wrapper{
   position: relative;
 }
