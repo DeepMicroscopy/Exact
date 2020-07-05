@@ -549,6 +549,13 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             case 8: //'DEL'
                 this.deleteAnnotation();
                 break;
+            case 88: //'X'
+                this.deleteAnnotation();
+                break;
+            case 120: //'X'
+                this.deleteAnnotation();
+                break;
+
             case 13: //'enter'
                 this.finishAnnotation();
                 break;
@@ -684,7 +691,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 onClick: this.verifyAnnotation.bind(this),
             }),
             new OpenSeadragon.Button({
-                tooltip: 'Delete (DEL)',
+                tooltip: 'Delete (DEL, x)',
                 name: "delete_annotation_button",
                 srcRest: this.viewer.prefixUrl + `trash.svg`,
                 srcGroup: this.viewer.prefixUrl + `trash.svg`,
