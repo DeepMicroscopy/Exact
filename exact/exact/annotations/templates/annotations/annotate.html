@@ -3,6 +3,8 @@
 {% load static %}
 
 {% block additional_annotation_js %}
+<link rel="stylesheet" type="text/css" href="{% static 'annotations/css/bootstrap-slider.min.css' %}">
+
 <script type="text/javascript" src="{% static 'scripts/jquery-3.2.1.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'scripts/bootstrap.min.js' %}"></script>
 
@@ -40,9 +42,14 @@
 
 <div class="container-fluid  h-100">
     <div class="row justify-content-center h-100">
-        <div class="col-3" style="max-height: 95vh; overflow-y: auto">
-            <div >
-                
+        <div class="row">
+            <button type="button" class="btn btn-light" id="loadAnnotationMenu">
+                <image src="{% static 'images/LayouttextSidebarReverse.svg' %}"></image>
+            </button>
+        </div>
+
+        <div class="col-3" style="max-height: 95vh; overflow-y: auto" id="annotationMenu">
+            <div>
                 <div class="card">
                     <div class="card-header">
                         <a href="{% url 'images:view_imageset' selected_image.image_set.id %}">
@@ -96,7 +103,7 @@
                         </div>
                     </div>
                     <div class="card-footer">
-                        <div class="d-flex justify-content-between" 
+                        <div class="d-flex justify-content-between"
                             style="overflow-x: auto; flex-wrap: nowrap; overflow-y: hidden">
                             <button type="button" class="annotate_button btn btn-primary" id="back_button">
                                 <image src="{% static 'images/backspace.svg' %}"> (s)
@@ -129,8 +136,8 @@
                     </div>
                     <div class="card-body">
                         {% csrf_token %}
-                      
-                        <ul class="nav nav-tabs" id="statistics_tabs" role="tablist" 
+
+                        <ul class="nav nav-tabs" id="statistics_tabs" role="tablist"
                             style="overflow-x: auto; flex-wrap: nowrap; overflow-y: hidden">
 
                             {% if annotation_types %}
@@ -149,22 +156,22 @@
                             {% endif %}
 
                             <li class="nav-item">
-                                <a class="nav-link" id="default_annotation_tab" data-toggle="tab"
-                                    href="#nav-item_anno" role="tab" aria-controls="home">Annotation</a>
+                                <a class="nav-link" id="default_annotation_tab" data-toggle="tab" href="#nav-item_anno"
+                                    role="tab" aria-controls="home">Annotation</a>
                             </li>
 
                             {% if HasMediaFiles %}
 
                             <li class="nav-item">
-                                <a class="nav-link" id="default_media_tab" data-toggle="tab"
-                                    href="#nav-item_media" role="tab" aria-controls="home">Media</a>
+                                <a class="nav-link" id="default_media_tab" data-toggle="tab" href="#nav-item_media"
+                                    role="tab" aria-controls="home">Media</a>
                             </li>
 
                             {% endif %}
 
                             <li class="nav-item">
-                                <a class="nav-link" id="default_search_tab" data-toggle="tab"
-                                    href="#nav-item_search" role="tab" aria-controls="home">Search</a>
+                                <a class="nav-link" id="default_search_tab" data-toggle="tab" href="#nav-item_search"
+                                    role="tab" aria-controls="home">Search</a>
                             </li>
 
                             <li class="nav-item">
@@ -335,7 +342,7 @@
                                         title="Search Syntax: @Field:Value; [@Field:Value]" class="form-control">
                                     <span class="input-group-btn">
                                         <button class="btn btn-primary" id="search_update_btn">
-                                            <span class="glyphicon glyphicon-search" />
+                                            <image src="{% static 'images/search.svg' %}">
                                         </button>
                                     </span>
                                 </div>
@@ -359,77 +366,84 @@
 
                             <div class="tab-pane fade" id="nav-item_openseadragon_filter">
 
-                                <div class="row-md-sm">
-                                    <label for="BRIGHTNESSSlider">Brigthness</label>
+                                <div class="card">
+                                    <div class="card-body">
 
-                                    <input id="BRIGHTNESSSlider" type="text" data-slider-min="-255"
-                                        data-slider-max="255" data-slider-step="1" data-slider-value="0"
-                                        data-slider-enabled="false" />
+                                        <div class="d-flex justify-content-between">
+                                            <label for="BRIGHTNESSSlider">Brigthness</label>
+                                            <input id="BRIGHTNESSSlider" type="text" data-slider-min="-255"
+                                                data-slider-max="255" data-slider-step="1" data-slider-value="0"
+                                                data-slider-enabled="false" />
 
-                                    <input id="BRIGHTNESSSlider-enabled" type="checkbox" />
+                                            <input id="BRIGHTNESSSlider-enabled" type="checkbox" />
 
-                                </div>
-                                <div class="row-md-sm">
-                                    <label for="ContrastSlider">Contrast</label>
-                                    <input id="ContrastSlider" type="text" data-slider-min="0" data-slider-max="10"
-                                        data-slider-step="0.1" data-slider-value="1" data-slider-enabled="false" />
-                                    <input id="ContrastSlider-enabled" type="checkbox" />
-                                </div>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <label for="ContrastSlider">Contrast</label>
+                                            <input id="ContrastSlider" type="text" data-slider-min="0" data-slider-max="10"
+                                                data-slider-step="0.1" data-slider-value="1" data-slider-enabled="false" />
+                                            <input id="ContrastSlider-enabled" type="checkbox" />
+                                        </div>
 
-                                <div class="row-md-sm">
-                                    <label for="CLAHESlider">CLAHE</label>
-                                    <input id="CLAHESlider" type="text" data-slider-min="0" data-slider-max="50"
-                                        data-slider-step="1" data-slider-value="1" data-slider-enabled="false" />
-                                    <input id="CLAHESlider-enabled" type="checkbox" />
-                                </div>
+                                        <div class="d-flex justify-content-between">
+                                            <label for="CLAHESlider">CLAHE</label>
+                                            <input id="CLAHESlider" type="text" data-slider-min="0" data-slider-max="50"
+                                                data-slider-step="1" data-slider-value="1" data-slider-enabled="false" />
+                                            <input id="CLAHESlider-enabled" type="checkbox" />
+                                        </div>
 
-                                <div class="row-md-sm">
-                                    <label for="THRESHOLDINGSlider">Thresholding</label>
-                                    <input id="THRESHOLDINGSlider" type="text" data-slider-min="0" data-slider-max="255"
-                                        data-slider-step="1" data-slider-value="128" data-slider-enabled="false" />
-                                    <input id="THRESHOLDINGSlider-enabled" type="checkbox" />
-                                </div>
+                                        <div class="d-flex justify-content-between">
+                                            <label for="THRESHOLDINGSlider">Thresholding</label>
+                                            <input id="THRESHOLDINGSlider" type="text" data-slider-min="0" data-slider-max="255"
+                                                data-slider-step="1" data-slider-value="128" data-slider-enabled="false" />
+                                            <input id="THRESHOLDINGSlider-enabled" type="checkbox" />
+                                        </div>
 
-                                <div class="row-md">
-                                    <div class="col-md-3">
-                                        <input id="Invert-enabled" type="checkbox" /> Invert
+                                        <div class="d-flex justify-content-between">
+                                            <div class="col">
+                                                <input id="Invert-enabled" type="checkbox" title="Invert"/> I
+                                            </div>
+                                            <div class="col">
+                                                <input id="GREYSCALE-enabled" type="checkbox" title="Grey"/> S
+                                            </div>
+                                            <div class="col">
+                                                <input id="Red-enabled" type="checkbox" checked=true /> R
+                                            </div>
+                                            <div class="col">
+                                                <input id="Green-enabled" type="checkbox" checked=true /> G
+                                            </div>
+                                            <div class="col">
+                                                <input id="Blue-enabled" type="checkbox" checked=true /> B
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="col-md-2">
-                                        <input id="GREYSCALE-enabled" type="checkbox" /> Grey
-                                    </div>
-                                    <div class="col-md-2">
-                                        <input id="Red-enabled" type="checkbox" checked=true /> R
-                                    </div>
-                                    <div class="col-md-2">
-                                        <input id="Green-enabled" type="checkbox" checked=true /> G
-                                    </div>
-                                    <div class="col-md-2">
-                                        <input id="Blue-enabled" type="checkbox" checked=true /> B
-                                    </div>
                                 </div>
-
                             </div>
 
                             <div class="tab-pane fade" id="nav-item_screening_tool">
 
-                                <div class="input-group">
-                                    <input type="number" id="screeningResolutionX" placeholder="350"
-                                        title="Screening tile size in pixel X" class="form-control" style="width: 50%;"
-                                        value={{ resolution_x }}>
-                                    <input type="number" id="screeningResolutionY" placeholder="350"
-                                        title="Screening tile size in pixel Y" class="form-control" style="width: 50%;"
-                                        value={{ resolution_y }}>
-                                    <span class="input-group-btn">
-                                        <button class="btn btn-primary" id="screening_resolution_update_btn">
-                                            <span class="glyphicon glyphicon-play">
-                                        </button>
-                                    </span>
-                                </div>
-
-                                <div>
-                                    <img id="screeningImage" alt="Screening mode not initialised!" class="hidden"></br>
-                                    <canvas id="screeningImageOutput" alt="Screening mode not initialised!"
-                                        style="width: -webkit-fill-available; height: -webkit-fill-available"></canvas>
+                                <div class="card">
+                                    <div class="card-header">
+                                        <div class="d-flex justify-content-between">
+                                                <input type="number" id="screeningResolutionX" placeholder="350"
+                                                    title="Screening tile size in pixel X" class="form-control"
+                                                    value={{ resolution_x }}>
+                                                <input type="number" id="screeningResolutionY" placeholder="350"
+                                                    title="Screening tile size in pixel Y" class="form-control" 
+                                                    value={{ resolution_y }}>
+                                                <button class="btn btn-primary" id="screening_resolution_update_btn">
+                                                    <image src="{% static 'images/play.svg' %}">
+                                                </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="collapse">
+                                            <img id="screeningImage" alt="Screening mode not initialised!">
+                                        </div>
+                                        
+                                        <canvas id="screeningImageOutput" alt="Screening mode not initialised!"></canvas>
+                             
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -471,19 +485,35 @@
                 <span id="user_id" class="invisible">{{ user_id }}</span>
             </div>
         </div>
-        <div class="col-9">
-            <div style="width: 100%" id="zoomSlider"></div>
-            <div class="col-md h-100" id="openseadragon1"></div>
+
+        <div class="col h-100" id="annotationImage">
+            <div id="zoomSlider" style="width: 35vw;"></div> <!-- style="width: 25vw;" -->                            
+            <div class="col" id="openseadragon1" style="height: 85vh;"></div>
+        </div>
+
+        <div class="col-3 collapse" style="max-height: 90vh; overflow-y: auto" id="imagesetThumbnails">
+            <div class="card-columns">
+                {% for set_image in set_images %}
+                <div class="card" id="thumbnailCard_{{ set_image.id }}">
+                    <a href="{% url 'annotations:annotate' set_image.id %}">
+                        <img class="card-img-top" id="imageThumbnail_{{ set_image.id }}" alt="Loading thumbnail"
+                            data-image_id="{{ set_image.id }}">
+                    </a>
+                </div>
+                {% endfor %}
+
+            </div>
+        </div>
+
+        <div class="row">
+            <button type="button" class="btn btn-light" id="loadImagesetThumbnails">
+                <image src="{% static 'images/LayouttextSidebar.svg' %}"></image>
+            </button>
         </div>
     </div>
 </div>
 
-<!--    
 
-    <span id="image_id" class="invisible">{{ selected_image.id }}</span>
-    <span id="image_set_id" class="invisible">{{ selected_image.image_set.id }}</span>
-    <span id="user_id" class="invisible">{{ user_id }}</span>
-  -->
 {% if 'delete_images' in imageset_perms and not imageset_lock %}
 <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel">
     <div class="modal-dialog" role="document">

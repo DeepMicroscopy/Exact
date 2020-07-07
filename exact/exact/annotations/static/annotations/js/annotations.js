@@ -10,35 +10,17 @@
     var exact_viewer;
     var exact_imageset_viewer;
 
-    function handleResize() {
-        return;
-        var image_node = document.getElementById('openseadragon1');
-        var footer_node = document.getElementById('footer_id');
-
-        var image_rect = image_node.getBoundingClientRect();
-        if (footer_node !== null) {
-            var footer_rect = footer_node.getBoundingClientRect();
-
-            var height = footer_rect.top - image_rect.top - 40; // window.innerHeight - (5 * footer_rect.height); //footer_rect.y - image_rect.y;
-            var width = footer_rect.right - 45 - image_rect.left;
-
-            image_node.style.height = height + 'px';
-            image_node.style.width = width + 'px';
-
-        }
-    }
-
     $(function () {
         let url_parameters = decodeURIComponent(window.location.search.substring(1)).split('&');
 
         // convert array to dict 
-        url_parameters = Object.assign({}, ...url_parameters.map((x) => ({[x.split("=")[0]]: x.split("=")[1]})));
+        url_parameters = Object.assign({}, ...url_parameters.map((x) => ({ [x.split("=")[0]]: x.split("=")[1] })));
 
         // get current environment
         gCsrfToken = $('[name="csrfmiddlewaretoken"]').first().val();
         gImageId = parseInt($('#image_id').html());
         gImageSetId = parseInt($('#image_set_id').html());
-        
+
         gHeaders = {
             "Content-Type": 'application/json',
             "X-CSRFTOKEN": gCsrfToken
@@ -49,17 +31,15 @@
 
         exact_imageset_viewer = new EXACTImageSetViewer(gImageSetId, gImageId, image_url, gHeaders, user_id, url_parameters);
 
-
-        // W3C standards do not define the load event on images, we therefore need to use
-        // it from window (this should wait for all external sources including images)
-        $(window).on('load', function () {
-            handleResize();
-        }());
-
-        $('.js_feedback').mouseover(function () {
-            $(this).addClass('hidden');
+        // Expand Annotations Menu
+        $('#loadAnnotationMenu').click(function (event) {
+            $('#annotationMenu').collapse('toggle');
         });
 
+        // Expand Thumbnail Grid
+        $('#loadImagesetThumbnails').click(function (event) {
+            $('#imagesetThumbnails').collapse('toggle');
+        });
 
         //listen for click events from this style
         $(document).on('click', '.notifyjs-bootstrap-info', function (event) {
@@ -78,8 +58,6 @@
             var index = globals.allAnnotations.findIndex((elem) => elem.id === id);
             tool.showItem(globals.allAnnotations[index]);
         });
-
-        $(window).on('resize', handleResize);
 
         window.onbeforeunload = function (event) {
             //exact_viewer.imageClosed();

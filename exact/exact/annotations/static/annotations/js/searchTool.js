@@ -158,4 +158,9 @@ class SearchTool {
 
         return all_annotations;
     }
+
+    destroy() {
+        $('#search_update_btn').off("click");
+    }
+
 }
