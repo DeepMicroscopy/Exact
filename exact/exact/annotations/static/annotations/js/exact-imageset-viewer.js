@@ -49,7 +49,7 @@ class EXACTImageSetViewer {
         $('select#filter_images').on('change', this.filterImageList.bind(this));
         $('#filter_update_btn').on('click', this.filterImageList.bind(this));
 
-        $('#imageGridButton').on('click', this.loadThumbnails.bind(this));
+        $('#loadImagesetThumbnails').on('click', this.loadThumbnails.bind(this));
     }
 
     loadThumbnails() {
@@ -89,13 +89,13 @@ class EXACTImageSetViewer {
         let image_ids = Object.keys(this.imageInformation).map(x => parseInt(x));
         for (let image_id of image_ids) {
             $('#annotate_image_link_' + image_id).hide();
-            $('#imageThumbnail_' + image_id).hide();
+            $('#thumbnailCard_' + image_id).hide();
         }
 
         for (let image of images) {
             this.filteredImageInformation[image.id] = this.imageInformation[image.id];
             $('#annotate_image_link_' + image.id).show();
-            $('#imageThumbnail_' + image.id).show();
+            $('#thumbnailCard_' + image.id).show();
         }
 
         // detroy viewer if the filtered set is empty

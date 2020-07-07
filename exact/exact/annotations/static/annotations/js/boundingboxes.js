@@ -40,6 +40,11 @@ class BoundingBoxes {
 
         if (item !== undefined) {
             new_uuid = item.item.name
+
+            // update type
+            if (this.current_item !== undefined) {
+                this.current_item.type = item.type;
+            }
         }
 
         if (new_uuid !== current_uuid) {
@@ -52,6 +57,8 @@ class BoundingBoxes {
                 this.viewer.raiseEvent('tool_StartAnnotationEditing', { uuid });
             }
         }
+
+        
     }
         
     

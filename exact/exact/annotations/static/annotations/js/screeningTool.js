@@ -342,4 +342,14 @@ class ScreeningTool {
 
         return this.calcOverlap(this.screeningTiles[this.currentIndex]);
     }
+
+    destroy() {
+        // unload image
+        //$('#screeningImage').attr('src', ``);
+
+        $("#screening_resolution_update_btn").off("click");
+        $('#screeningImage').off('load');
+
+        $(document).off('keyup');
+    }
 }

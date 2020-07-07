@@ -313,6 +313,7 @@ class EXACTViewer {
         this.viewer.destroy();
         this.tool.clear();
         this.exact_sync.destroy();
+        this.screeningTool.destroy();
     }
 
     onSliderChanged(event) {
@@ -913,10 +914,22 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         this.tool.updateStrokeWidth(value);
     }
 
-    destroy() {
+    destdestroy() {
+
+        // unregister UI events
+        $(document).off("keyup"); 
+        $('select#annotation_type_id').off("change"); 
+        $('#StrokeWidthSlider').off("input"); 
+        for (let annotation_type of Object.values(this.annotationTypes)) {
+
+            $('#DrawCheckBox_' + annotation_type.id).off("change"); 
+            $('#annotation_type_id_button_' + annotation_type.id).off("click"); 
+        }
+
         super.destroy();
 
         this.tool.clear();
+        this.searchTool.destroy();
         this.exact_sync.destroy();
     }
 }
@@ -964,6 +977,12 @@ class EXACTViewerGlobalAnnotations extends EXACTViewer {
     }
 
     destroy() {
+
+        // unregister UI events
+        for (let annotation_type of Object.values(this.annotationTypes)) {
+            $('#GlobalAnnotation_' + annotation_type.id).off("change"); 
+        }
+
         super.destroy();
         this.exact_sync.destroy();
     }
@@ -1008,6 +1027,11 @@ class EXACTViewerGlobalLocalAnnotations extends EXACTViewerLocalAnnotations {
     }
 
     destroy() {
+        // unregister UI events
+        for (let annotation_type of Object.values(this.exact_sync_global.annotationTypes)) {
+            $('#GlobalAnnotation_' + annotation_type.id).off("change"); 
+        }
+
         super.destroy();
 
         this.exact_sync_global.destroy();
