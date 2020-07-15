@@ -1,19 +1,21 @@
-<div class="panel panel-default">
-    <div class="panel-heading">
-        <h3 class="panel-title">
+<div class="card" style="text-align: left;">
+    <div class="card-header">
+        <h3>
             Products
         </h3>
     </div>
-    <div class="panel-body">
+    <div class="card-body">
         <ul>
             {% for team in teams %}
                 <li>
+                    Team: 
                     <a href="{% url "users:team" team.id %}">
-                        {{ team.name }}
+                       {{ team.name }}
                     </a>
                     <ul>
                         {% for product_list_item in team.product_set.all %}
                             <li>
+                                Product: 
                                 {% if product_list_item == product %}
                                     <b>
                                         {{ product_list_item.name }}
