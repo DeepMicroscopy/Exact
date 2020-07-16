@@ -26,7 +26,7 @@ urlpatterns = [
 
 
     url(r'^api/image/navigator_overlay_status/$', views.navigator_overlay_status, name='navigator_overlay_status'),
-    url(r'^image/(\d+_navigator_overlay/\d+/\d+_\d+.(?:png|jpeg))/$',
+    url(r'^image/(\d+)_navigator_overlay/(\d+)/(\d+)/(\d+)/(\d+_\d+.(?:png|jpeg))/$',
         views.view_image_navigator_overlay_tile, name='view_image_navigator_overlay_tile'),
 
     url(r'^api/image/statistics/$', views.image_statistics, name='image_statistics'),
