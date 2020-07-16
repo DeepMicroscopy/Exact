@@ -557,7 +557,7 @@ def navigator_overlay_status(request) -> Response:
 
 
 @login_required
-def view_image_navigator_overlay_tile(request, z_dimension, frame, tile_path):
+def view_image_navigator_overlay_tile(request, image_id, z_dimension, frame, level, tile_path):
     """
     This view is to authenticate direct access to the images via nginx auth_request directive
 

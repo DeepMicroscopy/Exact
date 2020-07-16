@@ -164,7 +164,7 @@ class EXACTViewer {
                     var navigator_overlay = {
                         Image: {
                             xmlns: "http://schemas.microsoft.com/deepzoom/2008",
-                            Url: context.image_url + "/images/image/" + context.imageId + "_navigator_overlay/",
+                            Url: context.image_url + "/images/image/" + context.imageId + "_navigator_overlay/0/0/",
                             Format: "jpeg",
                             Overlap: "2",
                             TileSize: "256",
@@ -260,9 +260,10 @@ class EXACTViewer {
                 scale: 'logarithmic',
                 ticks_labels: labels_to_use,
                 tooltip: 'always',
-                ticks_snap_bounds: 1
+                ticks_snap_bounds: 1,
+                value: 0
             });
-            this.gZoomSlider.on('change', this.onSliderChanged);
+            this.gZoomSlider.on('change', this.onSliderChanged.bind(this));
         }
 
         let showNavigationButton = new OpenSeadragon.Button({
@@ -296,11 +297,13 @@ class EXACTViewer {
 
     uiShowNavigatorToggle(event) {
         if (this.showNavigator) {
+            this.viewer.scalebarInstance.divElt.style.display = "none";
             this.viewer.navigator.element.style.display = "none";
             this.showNavigator = false;
         } else {
             this.showNavigator = true;
             this.viewer.navigator.element.style.display = "inline-block";
+            this.viewer.scalebarInstance.divElt.style.display = "inline-block";
         }
     }
 
@@ -309,7 +312,11 @@ class EXACTViewer {
     }
 
     destroy() {
-        this.imageClosed()
+        if (this.gZoomSlider !== undefined) {
+            this.gZoomSlider.destroy();
+        }
+        
+        this.imageClosed();
         this.viewer.destroy();
         this.tool.clear();
         this.exact_sync.destroy();

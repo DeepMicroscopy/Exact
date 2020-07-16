@@ -111,7 +111,10 @@ class Plugin(ExactServerPlugin):
         # create new image
         else:
             self.updateNavigationViewOverlay(image)
-            return PIL_Image.open(str(file_path_navigator))
+            if file_path_navigator.exists():
+                return PIL_Image.open(str(file_path_navigator))
+            else:
+                return PIL_Image.open(str(image.thumbnail_path()))
 
     def getStatisticsUpdatePolicy(self):
         return UpdatePolicy.UPDATE_ON_SCROLL_CHANGE
