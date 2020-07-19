@@ -315,7 +315,7 @@ class EXACTViewer {
         if (this.gZoomSlider !== undefined) {
             this.gZoomSlider.destroy();
         }
-        
+
         this.imageClosed();
         this.viewer.destroy();
         this.tool.clear();
@@ -383,12 +383,34 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
         this.showAnnotationProperties = new ShowAnnotationProperties(this.viewer, this.exact_sync);
 
+        let team_id = parseInt($('#team_id').html());
+        this.teamTool = new TeamTool(this.viewer, team_id)
+
         this.initUiEvents(this.annotationTypes);
     }
 
     initViewerEventHandler(viewer, imageInformation) {
 
         super.initViewerEventHandler(viewer, imageInformation)
+
+        viewer.addHandler("team_ChangeCreatorAnnotationsVisibility", function (event) {
+
+            for (let anno of Object.values(this.userData.exact_sync.annotations)) {
+                if (anno.user.id === event.User){
+                    this.userData.tool.updateAnnotationVisibility(anno.unique_identifier, event.Checked);
+                }                
+            }
+        }, this);
+
+        viewer.addHandler("team_ChangeLastEditedAnnotationsVisibility", function (event) {
+
+            for (let anno of Object.values(this.userData.exact_sync.annotations)) {
+                if (anno.last_editor.id === event.User){
+                    this.userData.tool.updateAnnotationVisibility(anno.unique_identifier, event.Checked);
+                }                
+            }
+        }, this);
+
 
         viewer.addHandler("search_ShowAnnotation", function (event) {
 
@@ -921,16 +943,16 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         this.tool.updateStrokeWidth(value);
     }
 
-    destdestroy() {
+    destroy() {
 
         // unregister UI events
-        $(document).off("keyup"); 
-        $('select#annotation_type_id').off("change"); 
-        $('#StrokeWidthSlider').off("input"); 
+        $(document).off("keyup");
+        $('select#annotation_type_id').off("change");
+        $('#StrokeWidthSlider').off("input");
         for (let annotation_type of Object.values(this.annotationTypes)) {
 
-            $('#DrawCheckBox_' + annotation_type.id).off("change"); 
-            $('#annotation_type_id_button_' + annotation_type.id).off("click"); 
+            $('#DrawCheckBox_' + annotation_type.id).off("change");
+            $('#annotation_type_id_button_' + annotation_type.id).off("click");
         }
 
         super.destroy();
@@ -987,7 +1009,7 @@ class EXACTViewerGlobalAnnotations extends EXACTViewer {
 
         // unregister UI events
         for (let annotation_type of Object.values(this.annotationTypes)) {
-            $('#GlobalAnnotation_' + annotation_type.id).off("change"); 
+            $('#GlobalAnnotation_' + annotation_type.id).off("change");
         }
 
         super.destroy();
@@ -1036,7 +1058,7 @@ class EXACTViewerGlobalLocalAnnotations extends EXACTViewerLocalAnnotations {
     destroy() {
         // unregister UI events
         for (let annotation_type of Object.values(this.exact_sync_global.annotationTypes)) {
-            $('#GlobalAnnotation_' + annotation_type.id).off("change"); 
+            $('#GlobalAnnotation_' + annotation_type.id).off("change");
         }
 
         super.destroy();

@@ -1,10 +1,11 @@
 // JS file for sync annotations with the EXACT Server
 
 class EXACTTeamSync {
-    constructor(team_id) {
+    constructor(viewer, team_id) {
         this.team_id = team_id;
         this.name;
         this.users = {};
+        this.viewer = viewer;
 
         this.API_1_TEAMS_BASE_URL = `/api/v1/users/teams/${team_id}/?expand=members`;
         this.loadTeamInformation(this.API_1_TEAMS_BASE_URL, this);
@@ -21,6 +22,8 @@ class EXACTTeamSync {
 
                     context.users[user.id] = user;
                 }
+
+                context.viewer.raiseEvent('sync_TeamLoaded', {  });
             }
         });
     }

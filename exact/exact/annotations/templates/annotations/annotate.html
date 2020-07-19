@@ -31,6 +31,7 @@
 <script type="text/javascript" src="{% static 'annotations/js/exact-imageset-viewer.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/openseadragon_filtering_viewer.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/searchTool.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/teamTool.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/statistics-viewer.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/plugin-handler.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/show-annotation-properties.js' %}"></script>
@@ -184,6 +185,12 @@
                                     href="#nav-item_screening_tool" role="tab" aria-controls="home">Screening</a>
                             </li>
 
+                            {% if annotation_types %}
+                            <li class="nav-item">
+                                <a class="nav-link" id="team_statistics_tool" data-toggle="tab"
+                                    href="#nav-item_team_statistics_tool" role="tab" aria-controls="home">Team</a>
+                            </li>
+                            {% endif %}
                         </ul>
 
                         <div class="tab-content" id="statistics_tabs_content">
@@ -446,6 +453,49 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <div class="tab-pane fade" id="nav-item_team_statistics_tool">
+
+                                <div class="card">
+                                    <div class="card-body">
+                                        <table class="table">
+                                            <thead>
+                                                <tr>
+                                                    <th scope="col">User</th>
+                                                    <th scope="col" title="Show annotations created by this user">First</th>
+                                                    <th scope="col" title="Show annotations last edited by this user">Last</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td> Toggle All </td>
+                                                    <td>
+                                                        <input id="ShowUserCreadedAnnotationsToggle" type="checkbox" checked/>
+                                                    </td>
+                                                    <td>
+                                                        <input id="ShowUserLastEditedAnnotationsToggle" type="checkbox" checked/>
+                                                    </td> 
+                                                </tr>
+
+                                                {% for user in team.members.all %}
+                                                <tr>
+                                                    <td>{{ user.username }}</td>
+                                                    <td>
+                                                        <input id="ShowUserCreadedAnnotations_{{user.id}}" type="checkbox" checked data-user_id={{user.id}}/>
+                                                    </td>
+                                                    <td>
+                                                        <input id="ShowUserLastEditedAnnotations_{{user.id}}" type="checkbox" checked data-user_id={{user.id}}/>
+                                                    </td>     
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+
+                                    </div>
+                                </div>
+                            </div>
+
+
                         </div>
                     </div>
                     <div class="card-footer">
@@ -483,6 +533,7 @@
                 <span id="image_id" class="invisible">{{ selected_image.id }}</span>
                 <span id="image_set_id" class="invisible">{{ selected_image.image_set.id }}</span>
                 <span id="user_id" class="invisible">{{ user_id }}</span>
+                <span id="team_id" class="invisible">{{ team.id }}</span>
             </div>
         </div>
 
