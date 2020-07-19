@@ -56,7 +56,7 @@ class Plugin(ExactServerPlugin):
             gt_image = np.zeros(shape=(len(x_steps) + 1, len(y_steps) + 1))
             annotations = np.array(
                 [[a.vector['x1'], a.vector['y1'], a.vector['x2'], a.vector['y2'], int(a.annotation_type.name)]
-                 for a in image.annotations.filter(annotation_type__active=True, deleted=False).exclude(vector__isnull=True).all() if a['name'].isdigit()])
+                 for a in image.annotations.filter(annotation_type__active=True, deleted=False).exclude(vector__isnull=True).all() if a.annotation_type.name.isdigit()])
 
             # image.annotations.filter(vector__x1__gte=x_min, vector__y1__gte=y_min, vector__x2__lte=x_max,
             # vector__y2__lte=y_max).annotate(name_as_int=Cast('annotation_type__name', FloatField()))

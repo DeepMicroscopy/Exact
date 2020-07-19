@@ -57,10 +57,7 @@ class BoundingBoxes {
                 this.viewer.raiseEvent('tool_StartAnnotationEditing', { uuid });
             }
         }
-
-        
-    }
-        
+    }        
     
     clickPolyOperation(event) {
         if (this.selection) {
@@ -432,6 +429,22 @@ class BoundingBoxes {
         }
     }
 
+    updateAnnotationVisibility(unique_identifier, visibility) {
+        var item = this.getItemFromUUID(unique_identifier);
+
+        if (item !== undefined) {
+            if (visibility === true && item.data.area_hit_test === true) {
+                item.fillColor = new paper.Color(0, 0, 0, 0.000001);
+            }
+            else if (visibility === false){
+                item.fillColor = new paper.Color(0, 0, 0, 0);
+            }
+
+
+            item.visible = visibility; 
+        }
+    }
+
     updateVisbility(annotation_type_id, visibility ) {
 
         this.group.children.filter(function (el) {return el.data.type_id === parseInt(annotation_type_id)})
@@ -444,7 +457,7 @@ class BoundingBoxes {
                 }
 
 
-                el.visible = visibility
+                el.visible = visibility;
             });
     }
 

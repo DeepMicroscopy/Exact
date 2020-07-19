@@ -50,6 +50,7 @@ def annotate(request, image_id):
         total_annotations = selected_image.annotations.filter(deleted=False).count()
         imageset_lock = selected_image.image_set.image_lock
         return render(request, 'annotations/annotate.html', {
+            'team': selected_image.image_set.team,
             'selected_image': selected_image,
             'imageset_perms': imageset_perms,
             'imageset_lock': imageset_lock,
