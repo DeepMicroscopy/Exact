@@ -4,7 +4,7 @@
 {% load widget_tweaks %}
 
 {% block taggerimports %}
-
+<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
 <script type="text/javascript" src="{% static 'scripts/jquery-3.2.1.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'scripts/bootstrap.min.js' %}"></script>
 
@@ -53,7 +53,7 @@
 <!-- The template to display files available for download -->
 <script id="template-download" type="text/x-tmpl">
 {% for (var i=0, file; file=o.files[i]; i++) { %}
-    <tr class="template-download fade">
+    <tr class="template-download fade show">
         <td>
             <span class="preview">
                 {% if (file.thumbnailUrl) { %}
