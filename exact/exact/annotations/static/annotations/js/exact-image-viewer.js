@@ -76,8 +76,13 @@ class EXACTViewer {
                 return new EXACTViewerGlobalAnnotations(image_url, options, imageInformation, collaboration_type, annotationTypes,
                     headers, user_id)
             } else {
-                return new EXACTViewerLocalAnnotations(image_url, options, imageInformation, collaboration_type, annotationTypes,
-                    headers, user_id, drawAnnotations, strokeWidth)
+                if (imageInformation['frames'] > 1) {
+                    return new EXACTViewerLocalAnnotationsFrames(image_url, options, imageInformation, collaboration_type, annotationTypes,
+                        headers, user_id, drawAnnotations, strokeWidth);
+                } else {
+                    return new EXACTViewerLocalAnnotations(image_url, options, imageInformation, collaboration_type, annotationTypes,
+                        headers, user_id, drawAnnotations, strokeWidth);
+                }
             }
         } else {
             // create viewer without the option to handle annotations
@@ -368,6 +373,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
         super(image_url, options, imageInformation, headers, user_id);
 
+        this.y_button_start = 150;
         this.annotationsToggle = true;
 
         // set initial annotaton type
@@ -391,7 +397,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
     initViewerEventHandler(viewer, imageInformation) {
 
-        super.initViewerEventHandler(viewer, imageInformation)
+        super.initViewerEventHandler(viewer, imageInformation);
 
         viewer.addHandler("team_ChangeCreatorAnnotationsVisibility", function (event) {
 
@@ -510,7 +516,6 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             }
         }, this);
 
-
         viewer.addHandler('boundingboxes_PolyOperation', function (event) {
             var resultDict = { deleted: [], insert: [], update: [], included: [] }
 
@@ -534,7 +539,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             for (let unique_identifier of new Set(resultDict.update)) {
 
                 let annotation = exact_sync.getAnnotation(unique_identifier)
-                annotation.vector = tool.getAnnotationVector(annotation.unique_identifier);
+                annotation.vector = event.userData.getAnnotationVector(annotation.unique_identifier);
                 exact_sync.saveAnnotation(annotation)
             }
 
@@ -545,7 +550,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             }
 
             for (let newAnno of resultDict.insert) {
-                annotation.vector = tool.getAnnotationVector(newAnno.unique_identifier);
+                annotation.vector = event.userData.getAnnotationVector(newAnno.unique_identifier);
                 exact_sync.saveAnnotation(newAnno)
             }
 
@@ -563,7 +568,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                             annotation.annotation_type = newType;
                             tool.updateAnnotationType(annotation.unique_identifier, newType, false);
 
-                            annotation.vector = tool.getAnnotationVector(annotation.unique_identifier);
+                            annotation.vector = event.userData.getAnnotationVector(annotation.unique_identifier);
                             exact_sync.saveAnnotation(annotation)
                         }
                     }
@@ -758,10 +763,10 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             })
         ]
 
-        let index = 0;
+        
         this.annotationButtons.forEach(element => {
-            this.viewer.addControl(element.element, { anchor: OpenSeadragon.ControlAnchor.ABSOLUTE, top: 150 + index, left: 5 });
-            index += 45;
+            this.viewer.addControl(element.element, { anchor: OpenSeadragon.ControlAnchor.ABSOLUTE, top: this.y_button_start, left: 5 });
+            this.y_button_start += 45;
         });
     }
 
@@ -872,6 +877,10 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         }
     }
 
+    getAnnotationVector(unique_identifier) {
+        return this.tool.getAnnotationVector(unique_identifier);
+    }
+
     finishAnnotation(annotation) {
 
         // if annotation is undefined or an event use current selected one
@@ -882,7 +891,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
         if (typeof annotation !== "undefined") {
 
-            annotation.vector = this.tool.getAnnotationVector(annotation.unique_identifier);
+            annotation.vector = this.getAnnotationVector(annotation.unique_identifier);
             this.exact_sync.saveAnnotation(annotation)
             this.tool.resetSelection();
         }
@@ -958,11 +967,124 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         super.destroy();
 
         this.tool.clear();
+        this.teamTool.destroy();
         this.searchTool.destroy();
         this.exact_sync.destroy();
     }
 }
 
+class EXACTViewerLocalAnnotationsFrames extends EXACTViewerLocalAnnotations{
+
+    constructor(image_url, options, imageInformation, collaboration_type, annotationTypes,
+        headers, user_id, drawAnnotations = true, strokeWidth = 5, frame=1) {
+
+        super(image_url, options, imageInformation, collaboration_type, annotationTypes, headers, user_id);
+        this.frame = 1;
+    }
+
+    initViewerEventHandler(viewer, imageInformation) {
+
+        super.initViewerEventHandler(viewer, imageInformation);
+
+        viewer.addHandler('page', function (event) {
+
+            event.userData.newPageLoaded(event.page + 1)
+        }, this);
+    }
+
+    initToolEventHandler(viewer) {
+
+        viewer.addHandler('sync_drawAnnotations', function (event) {
+
+            let annotations = event.userData.filterFrameAnnotations(event.annotations);
+
+            event.userData.tool.drawExistingAnnotations(annotations);
+        }, this);
+    }
+
+    initUiEvents(annotation_types) { 
+
+        super.initUiEvents(annotation_types);
+
+        // add load annoations from prev frame
+        let loadPrevAnnotaionsButton = new OpenSeadragon.Button({
+            tooltip: 'Copy all annotations from the previous frame',
+            name: "CopyFrameAnnotations",
+            srcRest: this.viewer.prefixUrl + `reply_all.svg`,
+            srcGroup: this.viewer.prefixUrl + `reply_all.svg`,
+            srcHover: this.viewer.prefixUrl + `reply_all.svg`,
+            srcDown: this.viewer.prefixUrl + `reply_all.svg`,
+            onClick: this.copyAnnotationsFromFrame.bind(this),
+        })
+
+        this.annotationButtons.push(loadPrevAnnotaionsButton);
+        this.viewer.addControl(loadPrevAnnotaionsButton.element, { anchor: OpenSeadragon.ControlAnchor.ABSOLUTE, top: this.y_button_start, left: 5 });
+        this.y_button_start += 45;
+    }
+
+    copyAnnotationsFromFrame(event) {
+
+        let prevFrame = this.frame - 1;
+        if (prevFrame >= 1) {
+            
+            let preFrameAnnotations = this.filterFrameAnnotations(this.exact_sync.annotations, prevFrame);
+            
+            // generate new uuids and ids
+            let frameAnnotations = preFrameAnnotations.map(anno => {
+                return {
+                    annotation_type: anno.annotation_type,
+                    id: -1,
+                    vector: anno.vector,
+                    user: {id: null, username: "you"},
+                    last_editor: {id: null, username: "you"},
+                    image: anno.image,
+                    unique_identifier: this.tool.uuidv4(),
+                    deleted: false
+                }
+            });
+            
+            this.tool.drawExistingAnnotations(frameAnnotations);
+
+            for (let annotation of frameAnnotations) {
+                this.finishAnnotation(annotation)
+            }
+        }
+    }
+
+    newPageLoaded(frame_id) {
+
+        this.frame = frame_id;
+
+        // init new tool
+        if (this.tool !== undefined) {
+            this.tool.clear();
+        } 
+
+        this.tool = this.createDrawingModule(this.viewer, this.imageId, this.imageInformation);
+
+        let frameAnnotations =this.filterFrameAnnotations(this.exact_sync.annotations, this.frame);
+
+        this.tool.drawExistingAnnotations(frameAnnotations);
+
+    }
+
+    filterFrameAnnotations(annotations, frame_id) {
+
+        if (frame_id === undefined) {
+            frame_id = this.frame;
+        }
+
+        return Object.values(annotations).filter(function (item) {
+            return item.vector.frame === frame_id && item.deleted === false
+        });
+    } 
+
+    getAnnotationVector(unique_identifier) {
+        let vector = this.tool.getAnnotationVector(unique_identifier);
+        vector.frame = this.frame;
+        return vector;
+    }
+}
 
 class EXACTViewerGlobalAnnotations extends EXACTViewer {
 
