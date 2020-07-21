@@ -237,7 +237,7 @@ class EXACTViewer {
             }
         });
 
-        viewer.activateImagingHelper({ onImageViewChanged: this.onImageViewChanged });
+        viewer.activateImagingHelper({ onImageViewChanged: this.onImageViewChanged.bind(this) });
 
         // add zoome slider if objective power is greater than 1
         var objectivePower = imageInformation['objectivePower'];
@@ -323,7 +323,6 @@ class EXACTViewer {
 
         this.imageClosed();
         this.viewer.destroy();
-        this.tool.clear();
         this.exact_sync.destroy();
         this.screeningTool.destroy();
     }
@@ -343,8 +342,6 @@ class EXACTViewer {
             !== (event.zoomFactor * this.imageInformation['objectivePower']).toFixed(3)) {
 
             this.gZoomSlider.setValue(this.imageInformation['objectivePower'] * event.zoomFactor);
-
-            this.tool.updateStrokeWidth(null);
         }
     }
 
@@ -575,6 +572,12 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 }
             }
         }, this)
+    }
+
+    onImageViewChanged(event) {
+        super.onImageViewChanged(event);
+
+        this.tool.updateStrokeWidth(null);
     }
 
     handleKeyUp(event) {
