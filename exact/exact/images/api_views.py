@@ -379,6 +379,7 @@ class ImageSetViewSet(viewsets.ModelViewSet):
                                            image_set.id)
             image_set.save()
             folder_path = image_set.root_path()
+            os.makedirs(folder_path)
             os.chmod(folder_path, 0o777)
         return response
 

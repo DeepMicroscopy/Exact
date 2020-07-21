@@ -312,7 +312,6 @@ class EXACTAnnotationSync {
         this.user_id = user_id;
         this.viewer = viewer; // just for notification reasons remove later!
         this.annotations = {};
-        this.global_annotations = {};
         this.annotationTypes = annotationTypes;
         this.imageId = imageId;
         this.gHeaders = gHeaders;
@@ -626,8 +625,6 @@ class EXACTGlobalAnnotationSync extends EXACTAnnotationSync {
         viewer, user_id, collaboration_type = 0, limit = 250, updateInterval = 30000) {
 
         super(annotationTypes, imageId, gHeaders, viewer, user_id, collaboration_type, limit, updateInterval);
-
-        this.global_annotations = {};
     }
 
     initLoadAnnotations(annotationTypes, imageId, limit = 250) {
