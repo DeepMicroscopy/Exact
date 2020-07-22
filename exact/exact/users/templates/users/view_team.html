@@ -66,7 +66,7 @@
                                 {% for imageset in imagesets %}
                                 <li>
                                     {% if not imageset.public %}
-                                    <span class="glyphicon glyphicon-lock"></span>
+                                    <span class="fa fa-lock"></span>
                                     {% endif %}
                                     <a href="{% url 'images:view_imageset' imageset.id%}">
                                         {{ imageset.name }}
@@ -96,7 +96,7 @@
                                 {% for imageset in date_imagesets %}
                                 <li>
                                     {% if not imageset.public %}
-                                    <span class="glyphicon glyphicon-lock"></span>
+                                    <span class="fa fa-lock"></span>
                                     {% endif %}
                                     <a href="{% url 'images:view_imageset' imageset.id%}">
                                         {{ imageset.name }}
@@ -126,7 +126,7 @@
                                 {% for imageset in size_imagesets %}
                                 <li>
                                     {% if not imageset.public %}
-                                    <span class="glyphicon glyphicon-lock"></span>
+                                    <span class="fa fa-lock"></span>
                                     {% endif %}
                                     <a href="{% url 'images:view_imageset' imageset.id%}">
                                         {{ imageset.name }}
@@ -156,7 +156,7 @@
                                 {% for imageset in test_imagesets %}
                                 <li>
                                     {% if not imageset.public %}
-                                    <span class="glyphicon glyphicon-lock"></span>
+                                    <span class="fa fa-lock"></span>
                                     {% endif %}
                                     <a href="{% url 'images:view_imageset' imageset.id%}">
                                         {{ imageset.name }}
@@ -206,7 +206,7 @@
                         <tr>
                             <td>
                                 {% if member in team.admins %}
-                                <span class="glyphicon glyphicon-king"></span>
+                                <span class="fa fa-user-plus"></span>
                                 {% endif %}
                                 <a href="{% url 'users:user' member.id %}">{{member.username}}</a>
                             </td>
@@ -309,14 +309,14 @@
                     </div>
                     <div class="form-group">
                         <label for="id_public">{{ imageset_creation_form.public.label }} <span
-                                class="glyphicon glyphicon-question-sign" data-toggle="tooltip" data-placement="right"
+                                class="fa fa-question-sign" data-toggle="tooltip" data-placement="right"
                                 title="Enables public users to read the imageset "></span></label>
                         {% render_field imageset_creation_form.public %}
                     </div>
                     <div class="form-group">
                         <label for="id_public_collaboration">
                             {{ imageset_creation_form.public_collaboration.label }} <span
-                                class="glyphicon glyphicon-question-sign" data-toggle="tooltip" data-placement="right"
+                                class="fa fa-question-sign" data-toggle="tooltip" data-placement="right"
                                 title="Enables public users to annotate and verify in the imageset, when it is set public "></span>
                         </label>
                         {% render_field imageset_creation_form.public_collaboration %}
@@ -396,7 +396,7 @@
                     {% for form in export_formats_forms %}
                     <li>
                         {% if not form.instance.public %}
-                        <span class="glyphicon glyphicon-lock"></span>
+                        <span class="fa fa-lock"></span>
                         {% endif %}
                         <!-- Button trigger modal -->
                         <a href="#" data-toggle="modal" data-target="#format{{ form.instance.id }}Modal">

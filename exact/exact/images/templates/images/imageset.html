@@ -4,7 +4,7 @@
 {% load widget_tweaks %}
 
 {% block taggerimports %}
-<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+
 <script type="text/javascript" src="{% static 'scripts/jquery-3.2.1.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'scripts/bootstrap.min.js' %}"></script>
 
@@ -36,13 +36,13 @@
         <td>
             {% if (!i && !o.options.autoUpload) { %}
                 <button class="btn btn-primary start" disabled>
-                    <i class="glyphicon glyphicon-upload"></i>
+                    <i class="fa fa-upload"></i>
                     <span>Start</span>
                 </button>
             {% } %}
             {% if (!i) { %}
                 <button class="btn btn-warning cancel">
-                    <i class="glyphicon glyphicon-ban-circle"></i>
+                    <i class="fa fa-ban-circle"></i>
                     <span>Cancel</span>
                 </button>
             {% } %}
@@ -79,13 +79,13 @@
         <td>
             {% if (file.deleteUrl) { %}
                 <button class="btn btn-danger delete" data-type="{%=file.deleteType%}" data-url="{%=file.deleteUrl%}"{% if (file.deleteWithCredentials) { %} data-xhr-fields='{"withCredentials":true}'{% } %}>
-                    <i class="glyphicon glyphicon-trash"></i>
+                    <i class="fa fa-trash"></i>
                     <span>Delete</span>
                 </button>
                 <input type="checkbox" name="delete" value="1" class="toggle">
             {% } else { %}
                 <button class="btn btn-warning cancel">
-                    <i class="glyphicon glyphicon-ban-circle"></i>
+                    <i class="fa fa-ban-circle"></i>
                     <span>Cancel</span>
                 </button>
             {% } %}
@@ -255,7 +255,7 @@
                                             {% for version in imageset.set_versions.all %}
                                             <li>
                                                 {{ version.name }} ({{version.annotationversion_set.count}})
-                                                <a href="{% url 'AnnotationVersionView-list' %}?version={{ version.id }}"><span class="glyphicon glyphicon-new-window"> </span></a> 
+                                                <a href="{% url 'AnnotationVersionView-list' %}?version={{ version.id }}"><span class="fa fa-new-window"> </span></a> 
                                             </li>
                                             {% endfor %}
                                         </ul>
@@ -357,7 +357,7 @@
                                                 {% for product in imageset.product_set.all %}
                                                     <span class="label label-info" value="{{ product.id }}" id="product_{{ product.id }}">
                                                         <a href="{% url 'administration:product' product.id%}"> {{ product.name }}&nbsp;</a>
-                                                        <span class="glyphicon glyphicon-remove-sign product-delete" value={{ product.id }} data_id={{ product.id }}></span>
+                                                        <span class="fa fa-remove product-delete" value={{ product.id }} data_id={{ product.id }}></span>
                                                     </span>&#8203;
                                                 {% endfor %}
                                             </td>
@@ -388,7 +388,7 @@
                                             <td><b>Tags</b></td>
                                             <td id="tags-with-delete" class="tag-container">
                                                 {% for tag in imageset.set_tags.all %}<span class="label label-info">{{ tag.name }}&nbsp;
-                                                    <span class="glyphicon glyphicon-remove-sign tag-delete"></span></span>&#8203;{% endfor %}
+                                                    <span class="fa fa-remove tag-delete"></span></span>&#8203;{% endfor %}
                                             </td>
                                         </tr>
                                         <tr>
@@ -412,7 +412,7 @@
                                                 {% for version in imageset.set_versions.all %}
                                                     <li>
                                                         {{ version.name }} ({{version.annotationversion_set.count}})
-                                                        <a href="{% url 'AnnotationVersionView-list' %}?version={{ version.id }}"><span class="glyphicon glyphicon-new-window"> </span></a> 
+                                                        <a href="{% url 'AnnotationVersionView-list' %}?version={{ version.id }}"><span class="fa fa-new-window"> </span></a> 
                                                     </li>
                                                 {% endfor %}
                                                 </ul>
@@ -449,7 +449,7 @@
                                         <tr>
                                             <td>
                                                 <label for="id_public">{{ edit_form.public.label }}
-                                                    <span class="glyphicon glyphicon-question-sign" data-toggle="tooltip" data-placement="right" title="Enables public users to read the imageset "></span>
+                                                    <span class="fa fa-question-sign" data-toggle="tooltip" data-placement="right" title="Enables public users to read the imageset "></span>
                                                 </label>
                                             </td>
                                             <td>
@@ -459,7 +459,7 @@
                                         <tr id="public_collaboration_row">
                                             <td>
                                                 <label for="id_public_collaboration">{{ edit_form.public_collaboration.label }}
-                                                    <span class="glyphicon glyphicon-question-sign" data-toggle="tooltip" data-placement="right" title="Enables public users to annotate and verify in the imageset, when it is set public "></span>
+                                                    <span class="fa fa-question-sign" data-toggle="tooltip" data-placement="right" title="Enables public users to annotate and verify in the imageset, when it is set public "></span>
                                                 </label>
                                             </td>
                                             <td>
@@ -469,7 +469,7 @@
                                         <tr>
                                             <td>
                                                 <label for="image-lock">{{ edit_form.image_lock.label }}
-                                                    <span class="glyphicon glyphicon-question-sign" data-toggle="tooltip" data-placement="right" title="Prevents the upload of new pictures to the set"></span>
+                                                    <span class="fa fa-question-sign" data-toggle="tooltip" data-placement="right" title="Prevents the upload of new pictures to the set"></span>
                                                 </label>
                                             </td>
                                             <td>
@@ -479,7 +479,7 @@
                                         <tr>
                                             <td>
                                                 <label for="image-lock">{{ edit_form.priority.label }}
-                                                    <span class="glyphicon glyphicon-question-sign" data-toggle="tooltip" data-placement="right" title="The importance of the set."></span>
+                                                    <span class="fa fa-question-sign" data-toggle="tooltip" data-placement="right" title="The importance of the set."></span>
                                                 </label>
                                             </td>
                                             <td>
@@ -489,7 +489,7 @@
                                         <tr>
                                             <td>
                                                 <label for="image-lock">{{ edit_form.collaboration_type.label }}
-                                                    <span class="glyphicon glyphicon-question-sign" data-toggle="tooltip" data-placement="right" title="Decides whether the annotations will be shared between the participants"></span>
+                                                    <span class="fa fa-question-sign" data-toggle="tooltip" data-placement="right" title="Decides whether the annotations will be shared between the participants"></span>
                                                 </label>
                                             </td>
                                             <td>
@@ -499,7 +499,7 @@
                                         <tr>
                                             <td>
                                                 <label for="image-lock">{{ edit_form.main_annotation_type.label }}
-                                                    <span class="glyphicon glyphicon-question-sign" data-toggle="tooltip" data-placement="right" title="The preferred annotation type to label in this set."></span>
+                                                    <span class="fa fa-question-sign" data-toggle="tooltip" data-placement="right" title="The preferred annotation type to label in this set."></span>
                                                 </label>
                                             </td>
                                             <td>

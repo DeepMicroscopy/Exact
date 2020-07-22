@@ -25,6 +25,10 @@ class EXACTImageSetViewer {
 
     handleKeyUp(event) {
 
+        if (event.target.id === "TEXTAREA"
+            || event.target.nodeName == 'INPUT')
+            return;
+
         switch (event.keyCode) {
             case 69: //e load next image
                 this.loadAdjacentImage(1);
