@@ -19,6 +19,10 @@ class ScreeningTool {
 
     handleKeyUp(event) {
 
+        if (event.target.id === "TEXTAREA"
+            || event.target.nodeName == 'INPUT')
+            return;
+
         switch (event.keyCode) {
             case 65: //a left tile
                 var coordinates = this.moveLeft();

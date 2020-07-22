@@ -34,7 +34,7 @@
                     var el = document.getElementById('products-with-delete');
                     if (el) {
                         var inner_span = document.createElement("span");
-                        inner_span.setAttribute('class', 'glyphicon glyphicon-remove-sign product-delete');
+                        inner_span.setAttribute('class', 'fa fa-remove product-delete');
                         inner_span.setAttribute('value', data.product.id);
 
                         var outer_span = document.createElement("span");

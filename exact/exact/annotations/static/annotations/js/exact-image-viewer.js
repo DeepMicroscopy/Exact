@@ -86,7 +86,7 @@ class EXACTViewer {
             }
         } else {
             // create viewer without the option to handle annotations
-            return new EXACTViewer(image_url, options, imageInformation, headers)
+            return new EXACTViewer(image_url, options, imageInformation, headers, user_id);
         }
     }
 
@@ -322,8 +322,7 @@ class EXACTViewer {
         }
 
         this.imageClosed();
-        this.viewer.destroy();
-        this.exact_sync.destroy();
+        this.viewer.destroy(); 
         this.screeningTool.destroy();
     }
 
@@ -581,6 +580,9 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
     }
 
     handleKeyUp(event) {
+        if (event.target.id === "TEXTAREA"
+            || event.target.nodeName == 'INPUT')
+            return;
 
         switch (event.keyCode) {
 
