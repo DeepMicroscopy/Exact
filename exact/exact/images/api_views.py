@@ -219,27 +219,59 @@ class ImageViewSet(viewsets.ModelViewSet):
 
                     path = Path(path)
                     name = path.name
-                    # check if the file can be opened by OpenSlide if not convert it
-                    try:
-                        osr = OpenSlide(str(path))
-                    except:
-                        old_path = path
-                        path = Path(path).with_suffix('.tiff')
-
-                        try:
-                            import pyvips
-                            vi = pyvips.Image.new_from_file(str(old_path))
-                            vi.tiffsave(str(path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
-                        except:
-                            error['unsupported'] = True
 
                     image = models.Image(
                         name=name,
                         image_set=imageset,
-                        filename=path.name,
-                        image_type=image_type,
                         checksum=fchecksum)
 
+                    # check if the file can be opened by OpenSlide if not convert it
+                    try:
+                        osr = OpenSlide(str(path))
+                        image.filename = path.name
+                    except:
+                        import pyvips
+                        old_path = path
+
+                        #check if it is a CellVizio MKT file by suffix and save each frame to a seperate file
+                        if Path(path).suffix.lower().endswith(".mkt"):
+                            reader = ReadableCellVizioMKTDataset(str(path))
+                            image.frames = reader.numberOfFrames
+                            image.channels = 1
+                            image.mpp = (float(reader.mpp_x) + float(reader.mpp_y)) / 2
+                            # create sub dir to save frames
+                            folder_path = Path(imageset.root_path()) / path.stem
+                            os.makedirs(str(folder_path), exist_ok =True)
+                            os.chmod(str(folder_path), 0o777)
+                            for frame_id in range(image.frames):
+                                height, width = reader.dimensions 
+                                np_image = np.array(reader.read_region(location=(0,0), size=(reader.dimensions), level=0, zLevel=frame_id))[:,:,0]
+                                linear = np_image.reshape(width * height * image.channels)
+                                vi = pyvips.Image.new_from_memory(np.ascontiguousarray(linear.data), width, height, image.channels, 'uchar')
+
+                                target_file = folder_path / "{}_{}_{}".format(1, frame_id + 1, path.name) #z-axis frame image
+                                vi.tiffsave(str(target_file), tile=True, compression='lzw', bigtiff=True, pyramid=True,  tile_width=256, tile_height=256)
+
+                                # save first frame as default file for thumbnail etc.
+                                if frame_id == 0:
+                                    image.filename = str(Path(path.stem) / target_file.name)
+                        # check if file is philips iSyntax
+                        elif Path(path).suffix.lower().endswith(".isyntax"):
+                            from util.ISyntaxContainer import ISyntaxContainer
+                            old_path = path
+                            path = Path(path).with_suffix('.tiff')
+
+                            converter = ISyntaxContainer(str(old_path))
+                            converter.convert(str(path), 0)
+                            image.objectivePower = 40
+                            image.filename = path.name
+
+                        else:                            
+                            path = Path(path).with_suffix('.tiff')
+
+                            vi = pyvips.Image.new_from_file(str(old_path))
+                            vi.tiffsave(str(path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
+                            image.filename = path.name
 
                     osr = OpenSlide(image.path())
                     image.width, image.height = osr.level_dimensions[0]
