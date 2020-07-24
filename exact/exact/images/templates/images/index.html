@@ -11,8 +11,7 @@
                     </div>
                     <div class="card-body">
                         <div class="row">
-                            <!--
-                            {% if last_image_action %}
+                            {% if last_image_action and last_image_action.image.id is not None %}
                                 <div class="col-sm-3">
                                     <div class="card">
                                         <a href="{% url 'annotations:annotate' last_image_action.image.id %}">
@@ -29,16 +28,17 @@
                                     </div>
                                 </div>
                             {% endif %}
-                            -->
                             <div class="col-sm">
                                 <div class="card-columns">
                                     {% for imageset in user.pinned_sets.all|dictsort:"name" %}                    
                                         <div class="card">
                                             {% for image in imageset.images.all|slice:":1" %}
-                                                <a href="{% url 'annotations:annotate' image.id %}">
-                                                    <img class="card-img-top" src="{% url 'images:view_thumbnail' image.id %}"
-                                                        alt="Thumbnail {{image.name}} not found!" data-imageid="{{ image.id }}">
-                                                </a>
+                                                {% if image.id is not None %}
+                                                    <a href="{% url 'annotations:annotate' image.id %}">
+                                                        <img class="card-img-top" src="{% url 'images:view_thumbnail' image.id %}"
+                                                            alt="Thumbnail {{image.name}} not found!" data-imageid="{{ image.id }}">
+                                                    </a>
+                                                {% endif %}
                                             {% endfor %}
                                             <div class="card-body">
                                                 <h5 class="card-title">
