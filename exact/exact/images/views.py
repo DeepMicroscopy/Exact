@@ -346,8 +346,8 @@ def upload_image(request, imageset_id):
                             for frame_id in range(image.frames):
                                 height, width = reader.dimensions 
                                 np_image = np.array(reader.read_region(location=(0,0), size=(reader.dimensions), level=0, zLevel=frame_id))[:,:,0]
-                                linear = np_image.reshape(width * height * image.channels)
-                                vi = pyvips.Image.new_from_memory(np.ascontiguousarray(linear.data), width, height, image.channels, 'uchar')
+                                linear = np_image.reshape(height * width * image.channels)
+                                vi = pyvips.Image.new_from_memory(np.ascontiguousarray(linear.data), height, width, image.channels, 'uchar')
 
                                 target_file = folder_path / "{}_{}_{}".format(1, frame_id + 1, path.name) #z-axis frame image
                                 vi.tiffsave(str(target_file), tile=True, compression='lzw', bigtiff=True, pyramid=True,  tile_width=256, tile_height=256)
