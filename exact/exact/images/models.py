@@ -48,8 +48,8 @@ class Image(models.Model):
     image_type = models.IntegerField(choices=SOURCE_TYPES, default=ImageSourceTypes.DEFAULT)
 
     def get_file_name(self, depth=1, frame=1): 
-        if (depth > 1 or frame > 1):
-            return str(Path(self.filename).parent / "{}_{}_{}".format(depth, frame, self.name))
+        if depth > 1 or frame > 1 or self.frames > 1 or self.depth > 1:
+            return str(Path(Path(self.name).stem) / "{}_{}_{}".format(depth, frame, self.name))
         else:
             return self.filename
 

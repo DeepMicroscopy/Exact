@@ -354,7 +354,7 @@ def upload_image(request, imageset_id):
 
                                 # save first frame as default file for thumbnail etc.
                                 if frame_id == 0:
-                                    image.filename = str(Path(path.stem) / target_file.name)
+                                    image.filename = target_file.name
                         # check if file is philips iSyntax
                         elif Path(path).suffix.lower().endswith(".isyntax"):
                             from util.ISyntaxContainer import ISyntaxContainer

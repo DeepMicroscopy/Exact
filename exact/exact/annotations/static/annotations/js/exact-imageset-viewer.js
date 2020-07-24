@@ -44,7 +44,7 @@ class EXACTImageSetViewer {
 
     initUiEvents() {
 
-        $(document).keyup(this.handleKeyUp.bind(this));
+        $(document).keydown(this.handleKeyUp.bind(this));
 
         $('#back_button').click(this.loadLast.bind(this));
         $('#verify_image_button').click(this.verifyImage.bind(this));
