@@ -746,7 +746,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 srcGroup: this.viewer.prefixUrl + `subtract.svg`,
                 srcHover: this.viewer.prefixUrl + `subtract.svg`,
                 srcDown: this.viewer.prefixUrl + `subtract.svg`,
-                onClick: this.tool.clickPolyOperation.bind(this),
+                onClick: this.tool.clickPolyOperation.bind(this.tool),
             }),
             new OpenSeadragon.Button({
                 tooltip: 'Merge all polygon objects from the same class touching the selected object',
@@ -755,7 +755,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 srcGroup: this.viewer.prefixUrl + `union.svg`,
                 srcHover: this.viewer.prefixUrl + `union.svg`,
                 srcDown: this.viewer.prefixUrl + `union.svg`,
-                onClick: this.tool.clickPolyOperation.bind(this),
+                onClick: this.tool.clickPolyOperation.bind(this.tool),
             }),
             new OpenSeadragon.Button({
                 tooltip: 'Changes the class of all included objects to selected class if possible',
@@ -764,7 +764,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 srcGroup: this.viewer.prefixUrl + `basket.svg`,
                 srcHover: this.viewer.prefixUrl + `basket.svg`,
                 srcDown: this.viewer.prefixUrl + `basket.svg`,
-                onClick: this.tool.clickPolyOperation.bind(this),
+                onClick: this.tool.clickPolyOperation.bind(this.tool),
             })
         ]
 
