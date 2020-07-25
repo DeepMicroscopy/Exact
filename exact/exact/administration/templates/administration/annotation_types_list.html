@@ -1,10 +1,10 @@
-<div class="panel panel-default">
-    <div class="panel-heading">
-        <h3 class="panel-title">
+<div class="card" style="text-align: left;">
+    <div class="card-header">
+        <h3>
             Unanassigned Annotation Types
         </h3>
     </div>
-    <div class="panel-body">
+    <div class="card-body">
         <ul>
             {% for list_annotation_type in annotation_types %}
                 <li>
@@ -23,23 +23,27 @@
             {% endfor %}
         </ul>
     </div>
-    <div class="panel-heading">
-        <h3 class="panel-title">
+</div>
+<div class="card" style="text-align: left;">
+    <div class="card-header">
+        <h3>
             Assigned Annotation Types
         </h3>
     </div>
-    <div class="panel-body">
+    <div class="card-body">
 
         {% if teams %}
         <ul>
             {% for team in teams %}
                 <li>
+                    Team: 
                     <a href="{% url "users:team" team.id %}">
                         {{ team.name }}
                     </a>
                     <ul>
                         {% for product in team.product_set.all %}
                             <li>
+                                Product: 
                                 <a href="{% url "administration:product" product.id %}">
                                     {{ product.name }}
                                 </a>
@@ -67,8 +71,6 @@
                 </li>
             {% endfor %}
         </ul>
-
         {% endif %}
     </div>
-
 </div>

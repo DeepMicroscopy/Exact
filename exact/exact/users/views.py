@@ -211,30 +211,7 @@ def add_team_member(request: HttpRequest, team_id: int) -> HttpResponse:
 @login_required
 def view_team(request, team_id):
     team = get_object_or_404(Team, id=team_id)
-    members = team.members.all().order_by('-points')
-    members_30 = User.objects.raw('''
-    SELECT
-      u.id, u.password, u.last_login, u.is_superuser, u.username, u.first_name,
-      u.last_name, u.email, u.is_staff, u.is_active, u.date_joined, u.points,
-      COUNT(v.id) points_30
-    FROM
-      users_user u,
-      users_teammembership utm,
-      annotations_annotation AS a,
-      annotations_verification AS v
-    WHERE
-      utm.team_id = %s AND
-      u.id = utm.user_id AND
-      a.id = v.annotation_id AND
-      a.user_id = u.id AND
-      v.time >= NOW() - '30 days'::interval
-    GROUP BY
-      u.id, u.password, u.last_login, u.is_superuser, u.username, u.first_name,
-      u.last_name, u.email, u.is_staff, u.is_active, u.date_joined, u.points
-    ORDER BY
-      points_30
-    DESC
-    ''', (team.pk,))
+    members = team.members.all().order_by('id')
 
     is_member = request.user in members
     admins = team.admins
@@ -264,7 +241,6 @@ def view_team(request, team_id):
     return render(request, 'users/view_team.html', {
         'team': team,
         'members': members,
-        'members_30': members_30,
         'admins': admins,
         'imagesets': imagesets,
         'date_imagesets': sorted(imagesets, key=lambda i: i.time, reverse=True),

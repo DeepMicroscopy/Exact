@@ -111,7 +111,7 @@
                 element:    this.toggleButton ? $.getElement( this.toggleButton ) : null,
                 clickTimeThreshold: this.viewer.clickTimeThreshold,
                 clickDistThreshold: this.viewer.clickDistThreshold,
-                tooltip:    $.getString('Tooltips.SelectionToggle') || 'Toggle selection (c)',
+                tooltip:    $.getString('Tooltips.SelectionToggle') || 'Annotation mode (c)',
                 srcRest:    prefix + this.navImages.selection.REST,
                 srcGroup:   prefix + this.navImages.selection.GROUP,
                 srcHover:   prefix + this.navImages.selection.HOVER,
@@ -121,8 +121,9 @@
                 onBlur:     onBlurHandler
             });
             if (useGroup) {
-                this.viewer.buttons.buttons.push(this.toggleButton);
-                this.viewer.buttons.element.appendChild(this.toggleButton.element);
+                this.viewer.addControl(this.toggleButton.element, { anchor: OpenSeadragon.ControlAnchor.ABSOLUTE, top:100, left: 0 });
+                //this.viewer.buttons.buttons.push(this.toggleButton);
+                //this.viewer.buttons.element.appendChild(this.toggleButton.element);
             }
             if (this.toggleButton.imgDown) {
                 this.buttonActiveImg = this.toggleButton.imgDown.cloneNode(true);

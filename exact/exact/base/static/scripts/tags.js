@@ -48,7 +48,7 @@
           displayFeedback($('#feedback_tag_exists'));
         } else if (jqXHR.status === 201) {
           displayFeedback($('#feedback_tag_added'));
-          let inner_span = $('<span class="glyphicon glyphicon-remove-sign tag-delete"></span>');
+          let inner_span = $('<span class="fa fa-remove tag-delete"></span>');
           let outer_span = $('<span class="label label-info">' + data.tag.name + '&nbsp;</span>');
           inner_span.appendTo(outer_span);
           outer_span.appendTo($('#tags-with-delete'));

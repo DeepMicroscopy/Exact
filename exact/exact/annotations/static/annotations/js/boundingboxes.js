@@ -2,44 +2,8 @@
 
 class BoundingBoxes {
     constructor(viewer, imageid, imageSize) {
-        this.selection = undefined;
-
         this.viewer = viewer;
-
-
-        this.buttons = [new OpenSeadragon.Button({
-            tooltip: 'Substract the slected objects area from all other objects ',
-            name: "NOT",
-            srcRest: this.viewer.prefixUrl + `NOT.png`,
-            srcGroup: this.viewer.prefixUrl + `NOT.png`,
-            srcHover: this.viewer.prefixUrl + `NOT_hover.png`,
-            srcDown: this.viewer.prefixUrl + `NOT_down.png`,
-            onClick: this.clickPolyOperation.bind( this ),
-          }),
-            new OpenSeadragon.Button({
-            tooltip: 'Merge all polygon objects from the same class touching the selected object',
-            name: "UNION",
-            srcRest: this.viewer.prefixUrl + `UNION.png`,
-            srcGroup: this.viewer.prefixUrl + `UNION.png`,
-            srcHover: this.viewer.prefixUrl + `UNION_hover.png`,
-            srcDown: this.viewer.prefixUrl + `UNION_down.png`,
-            onClick: this.clickPolyOperation.bind( this ),
-          }),
-            new OpenSeadragon.Button({
-            tooltip: 'Changes the class of all included objects to selected class if possible',
-            name: "HARMONIZE",
-            srcRest: this.viewer.prefixUrl + `HARMONIZE_rest.png`,
-            srcGroup: this.viewer.prefixUrl + `HARMONIZE_rest.png`,
-            srcHover: this.viewer.prefixUrl + `HARMONIZE_hover.png`,
-            srcDown: this.viewer.prefixUrl + `HARMONIZE_down.png`,
-            onClick: this.clickPolyOperation.bind( this ),
-          })]
-
-        this.buttons.forEach(element => {
-            viewer.buttons.buttons.push(element);
-            viewer.buttons.element.appendChild(element.element);
-        });
-
+        this.current_item = undefined;
 
         this.overlay = this.viewer.paperjsOverlay();
         this.group = new paper.Group();
@@ -61,6 +25,41 @@ class BoundingBoxes {
 
         this.resetSelection();
     }
+
+    get selection () {
+        return this.current_item;
+    }
+
+    set selection (item) {
+
+        let current_uuid;
+        let new_uuid;
+        if (this.current_item !== undefined) {
+            current_uuid = this.current_item.item.name
+        }
+
+        if (item !== undefined) {
+            new_uuid = item.item.name
+
+            // update type
+            if (this.current_item !== undefined) {
+                this.current_item.type = item.type;
+            }
+        }
+
+        if (new_uuid !== current_uuid) {
+            this.current_item = item;
+
+            if (item === undefined) {
+                this.viewer.raiseEvent('tool_StopedAnnotationEditing', {  });
+            } else {
+                let uuid = item.item.name;
+                this.viewer.raiseEvent('tool_StartAnnotationEditing', { uuid });
+            }
+        } else if (this.current_item.item !== item.item) {
+            this.current_item.item = item.item;
+        }
+    }        
     
     clickPolyOperation(event) {
         if (this.selection) {
@@ -68,7 +67,7 @@ class BoundingBoxes {
         }        
     }
 
-    findIncludedObjectsOperation(event) {
+    findIncludedObjectsOperation() {
         var resultDict = {deleted: [], insert: [], update: [], included: []}
 
         if (this.selection) {
@@ -88,7 +87,7 @@ class BoundingBoxes {
         return resultDict
     }
 
-    polyUnionOperation(event) {
+    polyUnionOperation() {
 
         var resultDict = {deleted: [], insert: [], update: [], included: []}
 
@@ -127,7 +126,7 @@ class BoundingBoxes {
         return resultDict
     }
 
-    polyNotOperation(event) {
+    polyNotOperation() {
 
         // var operations = ['unite', 'intersect', 'subtract', 'exclude', 'divide'];
         var resultDict = {deleted: [], insert: [], update: [], included: []}
@@ -432,9 +431,25 @@ class BoundingBoxes {
         }
     }
 
+    updateAnnotationVisibility(unique_identifier, visibility) {
+        var item = this.getItemFromUUID(unique_identifier);
+
+        if (item !== undefined) {
+            if (visibility === true && item.data.area_hit_test === true) {
+                item.fillColor = new paper.Color(0, 0, 0, 0.000001);
+            }
+            else if (visibility === false){
+                item.fillColor = new paper.Color(0, 0, 0, 0);
+            }
+
+
+            item.visible = visibility; 
+        }
+    }
+
     updateVisbility(annotation_type_id, visibility ) {
 
-        this.group.children.filter(function (el) {return el.data.type_id === annotation_type_id})
+        this.group.children.filter(function (el) {return el.data.type_id === parseInt(annotation_type_id)})
             .forEach(function (el) {
                 if (visibility === true && el.data.area_hit_test === true) {
                     el.fillColor = new paper.Color(0, 0, 0, 0.000001);
@@ -444,15 +459,15 @@ class BoundingBoxes {
                 }
 
 
-                el.visible = visibility
+                el.visible = visibility;
             });
     }
 
 
-    drawExistingAnnotations(annotations) {
+    drawExistingAnnotations(annotations, drawAnnotations=true) {
         if (annotations === undefined ||
             annotations.length === 0 ||
-            !globals.drawAnnotations) {
+            !drawAnnotations) {
 
             return;
         }
@@ -473,6 +488,11 @@ class BoundingBoxes {
     removeAnnotation(unique_identifier) {
         var item = this.getItemFromUUID(unique_identifier);
         if (item !== undefined) {
+            // if the current item is removed reset selection
+            if (this.selection !== undefined && 
+                unique_identifier === this.selection.item.name) {
+                this.resetSelection();    
+            }
             item.remove();
         }
     }
@@ -556,14 +576,6 @@ class BoundingBoxes {
      * Delete current selection.
      */
     resetSelection() {
-        //$('.annotation_value').val(0);
-
-        globals.editedAnnotation = undefined;
-        $('.annotation').removeClass('alert-info');
-        globals.editActiveContainer.addClass('hidden');
-
-        $('#AnnotationInformation').hide();
-        $('#annotation_buttons').hide();
 
         if (this.selection !== undefined) {
             this.selection.item.selected = false;
@@ -663,12 +675,6 @@ class BoundingBoxes {
 
     clear() {
         this.group.removeChildren();
-
-        this.buttons.forEach(element => {
-            this.viewer.buttons.buttons = this.viewer.buttons.buttons.filter(function(value, index, arr){ return value.name !== element.name;});
-            if (this.viewer.buttons.element.contains(element.element))
-                this.viewer.buttons.element.removeChild(element.element);
-        });
     }
 
     handleMouseDrag(event) {

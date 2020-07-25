@@ -2,21 +2,24 @@
 {% load static %}
 
 {% block taggerimports %}
-    <link rel="stylesheet" type="text/css" href="{% static 'css/imgareaselect-default.css' %}" />
-    <link rel="stylesheet" type="text/css" href="{% static 'css/cursor.css' %}" />
     {% block additional_annotation_css %}
     {% endblock additional_annotation_css %}
 {% endblock %}
 
 {% block additional_js %}
-  <script type="text/javascript" src="{% static 'scripts/jquery.imgareaselect.pack.js' %}"></script>
-  <script type="text/javascript" src="{% static 'scripts/jcanvas.min.js' %}"></script>
-  <script type="text/javascript" src="{% static 'scripts/jcanvas-handles.min.js' %}"></script>
-  {% block additional_annotation_js %}
+  {% block additional_annotation_js %}  
+  <script type="text/javascript" src="{% static 'scripts/jquery-3.2.1.min.js' %}"></script>
+  <script type="text/javascript" src="{% static 'scripts/bootstrap.min.js' %}"></script>
   {% endblock additional_annotation_js %}
 {% endblock additional_js %}
 
 {% block selectorblock %}
 
 {% endblock %}
-{% block navblock %} <li><a href="{% url 'images:view_imageset' selected_image.image_set_id %}">{{ selected_image.image_set.name }}</a></li> {% endblock %}
+{% block navblock %} 
+<!--
+<li class="nav-item">
+   <a href="{% url 'images:view_imageset' selected_image.image_set_id %}" class="nav-link">{{ selected_image.image_set.name }}</a>
+</li>
+-->
+ {% endblock %}

@@ -5,6 +5,9 @@
 
 {% block taggerimports %}
 
+<script type="text/javascript" src="{% static 'scripts/jquery-3.2.1.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'scripts/bootstrap.min.js' %}"></script>
+
 {% if "edit_set" in imageset_perms and not imageset.image_lock %}
 <!-- CSS to style the file input field as button and adjust the Bootstrap progress bars -->
 <link rel="stylesheet" href="{% static 'jQuery-File-Upload/css/jquery.fileupload.css' %}">
@@ -18,7 +21,7 @@
 {% verbatim %}
 <script id="template-upload" type="text/x-tmpl">
 {% for (var i=0, file; file=o.files[i]; i++) { %}
-    <tr class="template-upload fade">
+    <tr class="template-upload fade show">
         <td>
             <span class="preview"></span>
         </td>
@@ -33,13 +36,13 @@
         <td>
             {% if (!i && !o.options.autoUpload) { %}
                 <button class="btn btn-primary start" disabled>
-                    <i class="glyphicon glyphicon-upload"></i>
+                    <i class="fa fa-upload"></i>
                     <span>Start</span>
                 </button>
             {% } %}
             {% if (!i) { %}
                 <button class="btn btn-warning cancel">
-                    <i class="glyphicon glyphicon-ban-circle"></i>
+                    <i class="fa fa-ban-circle"></i>
                     <span>Cancel</span>
                 </button>
             {% } %}
@@ -50,7 +53,7 @@
 <!-- The template to display files available for download -->
 <script id="template-download" type="text/x-tmpl">
 {% for (var i=0, file; file=o.files[i]; i++) { %}
-    <tr class="template-download fade">
+    <tr class="template-download fade show">
         <td>
             <span class="preview">
                 {% if (file.thumbnailUrl) { %}
@@ -76,13 +79,13 @@
         <td>
             {% if (file.deleteUrl) { %}
                 <button class="btn btn-danger delete" data-type="{%=file.deleteType%}" data-url="{%=file.deleteUrl%}"{% if (file.deleteWithCredentials) { %} data-xhr-fields='{"withCredentials":true}'{% } %}>
-                    <i class="glyphicon glyphicon-trash"></i>
+                    <i class="fa fa-trash"></i>
                     <span>Delete</span>
                 </button>
                 <input type="checkbox" name="delete" value="1" class="toggle">
             {% } else { %}
                 <button class="btn btn-warning cancel">
-                    <i class="glyphicon glyphicon-ban-circle"></i>
+                    <i class="fa fa-ban-circle"></i>
                     <span>Cancel</span>
                 </button>
             {% } %}
@@ -128,72 +131,72 @@
 {% endblock additional_js %}
 {% block bodyblock %}
 <div class="container-fluid">
-    <div id="feedback_version_added" class="js_feedback alert alert-success hidden">
+    <div id="feedback_version_added" class="js_feedback alert alert-success invisible">
         {% trans 'The version was added successfully. Please press F5' %}
     </div>
-    <div id="feedback_empty_version_name" class="js_feedback alert alert-success hidden">
+    <div id="feedback_empty_version_name" class="js_feedback alert alert-success invisible">
         {% trans 'The version name is empty.' %}
     </div>
-    <div id="feedback_version_exists" class="js_feedback alert alert-info hidden">
+    <div id="feedback_version_exists" class="js_feedback alert alert-info invisible">
         {% trans 'The imageset already has the version.' %}
     </div>
-    <div id="feedback_tag_added" class="js_feedback alert alert-success hidden">
+    <div id="feedback_tag_added" class="js_feedback alert alert-success invisible">
         {% trans 'The tag was added successfully.' %}
     </div>
-    <div id="feedback_tag_removed" class="js_feedback alert alert-success hidden">
+    <div id="feedback_tag_removed" class="js_feedback alert alert-success invisible">
         {% trans 'The tag has been removed from the imageset.' %}
     </div>
-    <div id="feedback_tag_exists" class="js_feedback alert alert-info hidden">
+    <div id="feedback_tag_exists" class="js_feedback alert alert-info invisible">
         {% trans 'The imageset already has the tag.' %}
     </div>
-    <div id="feedback_tag_invalid" class="js_feedback alert alert-warning hidden">
+    <div id="feedback_tag_invalid" class="js_feedback alert alert-warning invisible">
         {% trans 'The tag is invalid.' %}
     </div>
-    <div id="feedback_connection_error" class="js_feedback alert alert-danger hidden">
+    <div id="feedback_connection_error" class="js_feedback alert alert-danger invisible">
         {% trans 'There was an unhandled error during the connection.' %}
     </div>
     <div class="row">
         <div class="col-md-3">
-                <div class="panel panel-default">
-                    <div class="panel-heading">
-                        <h2 class="panel-title">Images to label and verify</h2>
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Images to label and verify</h3>
                     </div>
-                    <div class="panel-body" style="max-height: 250px; overflow-y: auto;">
-                        <ul> 
+                    <div class="card-body" style="max-height: 25vh; overflow-y: auto;">
                             {% for image in images|dictsort:"name" %}
                                 {% if image.image_type != 1 %}
                                     <li>
-                                        <a href="{% url 'annotations:annotate' image.id %}"> {{image.name|truncatechars:30}}</a>
+                                        <a href="{% url 'annotations:annotate' image.id %}" title="{{image.name}}"> {{image.name|truncatechars:30}}</a>
                                     </li>
                                 {% endif %}
                             {% endfor %}
-                        </ul>
                     </div>
-
-                    <div class="panel-heading">
-                        <h2 class="panel-title">All images</h2>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3>All images</h3>
                     </div>
-                    <div class="panel-body" style="max-height: 250px; overflow-y: auto;">
+                    <div class="card-body" style="max-height: 25vh; overflow-y: auto;">
                         <ul>
                             {% for image in imageset.images.all|dictsort:"name" %}
                                 {% if image.image_type != 1 %}
                                 <li>
-                                    <a href="{% url 'annotations:annotate' image.id %}"> {{image.name|truncatechars:30}}</a>
+                                    <a href="{% url 'annotations:annotate' image.id %}" title="{{image.name}}"> {{image.name|truncatechars:30}}</a>
                                 </li>
                                 {% endif %}
                             {% endfor %}
                         </ul>
                     </div>
-
-                    <div class="panel-heading">
-                        <h2 class="panel-title">Computer generated images</h2>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Computer generated images</h3>
                     </div>
-                    <div class="panel-body" style="max-height: 250px; overflow-y: auto;">
+                    <div class="card-body" style="max-height: 25vh; overflow-y: auto;">
                         <ul>
                             {% for image in imageset.images.all|dictsort:"name" %}
                                 {% if image.image_type == 1 %}
                                     <li>
-                                        <a href="{% url 'annotations:annotate' image.id %}"> {{image.name|truncatechars:30}}</a>
+                                        <a href="{% url 'annotations:annotate' image.id %}" title="{{image.name}}"> {{image.name|truncatechars:30}}</a>
                                     </li>
                                 {% endif %}
                             {% endfor %}
@@ -202,22 +205,26 @@
                 </div>
         </div>
         <div class="col-md-6">
-            <div class="row">
-                <div class="panel panel-default">
-                    <div class="panel-heading clearfix">
-                        <h2 class="panel-title pull-left" style="padding-top: 5px;">{{imageset.name}} {{ imageset.prio_symbol | safe }}</h2>
-                        <div class="btn-group pull-right">
-                            <a href="{% url 'images:pin_imageset' imageset.id %}" class="btn {% if imageset in request.user.pinned_sets.all %}btn-primary{% else %}btn-default{% endif %} btn-sm" data-toggle="tooltip" data-placement="bottom" title="Click to {% if imageset in request.user.pinned_sets.all %}un{% endif %}pin the imageset"><span class="glyphicon glyphicon-pushpin"></span></a>
-                        </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="float-left">{{imageset.name}} {{ imageset.prio_symbol | safe }}</h3>
+                        
+                        <button type="button"
+                            class="btn {% if imageset in request.user.pinned_sets.all %}btn-primary{% else %}btn-default{% endif %} btn-sm float-right">
+                            <a href="{% url 'images:pin_imageset' imageset.id %}" 
+                                title="Click to {% if imageset in request.user.pinned_sets.all %}un{% endif %}pin the imageset">
+                                <image src="{% static 'images/link-45deg.svg' %}">
+                            </a>
+                        </button>
                     </div>
-                    <div class="panel-body">
+                    <div class="card-body">
                         <table class="table table-striped">
                             <tbody>
                                 <tr>
                                     <td>Name</td>
                                     <td>{{imageset.name}}</td>
                                 </tr>
-                                {% if imageset.team and user.is_superuser %}
+                                {% if imageset.team %}
                                     <tr>
                                         <td>Team</td>
                                         <td><a href="{% url 'users:team' imageset.team.id %}">{{imageset.team.name}}</a></td>
@@ -248,7 +255,7 @@
                                             {% for version in imageset.set_versions.all %}
                                             <li>
                                                 {{ version.name }} ({{version.annotationversion_set.count}})
-                                                <a href="{% url 'AnnotationVersionView-list' %}?version={{ version.id }}"><span class="glyphicon glyphicon-new-window"> </span></a> 
+                                                <a href="{% url 'AnnotationVersionView-list' %}?version={{ version.id }}"><span class="fa fa-new-window"> </span></a> 
                                             </li>
                                             {% endfor %}
                                         </ul>
@@ -284,16 +291,13 @@
                                     <td>{{image_count}}</td>
                                 </tr>
                                 <tr>
-                                    <td>Annotation count</td>
+                                    <td>Annotations:  {{annotationcount}}</td>
                                     <td>
-                                        {{annotationcount}}<br>
-                                        <ul>
                                             {% for at in annotation_types %}
                                                 <li>
                                                    {{ at.product.name }} -> {{ at.name }}: <b>{{ at.count }}</b> (<b><span class="text-success">{{ at.in_image_count }}</span></b>/<b><span class="text-danger">{{ at.not_in_image_count }}</span></b>)
                                                 </li>
                                             {% endfor %}
-                                        </ul>
                                     </td>
                                 </tr>
                                 {% if imageset.images.count > 0 and user.is_superuser %}
@@ -306,28 +310,6 @@
 
                                         <a class="btn btn-primary" href="{% url 'images:sync_annotation_map' imageset.id %}">
                                             Sync annotations</a>
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <td>Download</td>
-                                    <td>
-                                        {% if enable_zip_download %}
-                                        <ul>
-                                            <li>
-                                                {% if imageset.zip_state == imageset.ZipState.READY %}
-                                                    <a href="{% url 'images:download_imageset' imageset.id %}">Download zip</a>
-                                                {% else %}
-                                                    Download zip (processing, wait a few moments)
-                                                {% endif %}
-                                            </li>
-                                            <li>
-                                                <a href="{% url 'images:dl_script' %}">Download Script</a> Image Download via <pre>./exact_dl_script.py {{ imageset.id }}</pre> to current directory
-                                            </li>
-                                        </ul>
-                                        {% else %}
-                                            <a href="{% url 'images:dl_script' %}">Download Script</a> Image Download via <pre>./exact_dl_script.py {{ imageset.id }}</pre> to current directory
-                                        {% endif %}
                                     </td>
                                 </tr>
                                 {% endif %}
@@ -349,14 +331,12 @@
                         </table>
                     </div>
                 </div>
-            </div>
-            {% if "edit_set" in imageset_perms and user.is_superuser %}
-            <div class="row">
-                <div class="panel panel-default">
-                    <div class="panel-heading">
-                        <h2 class="panel-title">Imageset management</h2>
+            {% if "edit_set" in imageset_perms %}
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="float-left">Imageset management</h3>
                     </div>
-                    <div class="panel-body">
+                    <div class="card-body">
                         <div>
                             <table class="table table-striped">
                                 <tbody>
@@ -377,7 +357,7 @@
                                                 {% for product in imageset.product_set.all %}
                                                     <span class="label label-info" value="{{ product.id }}" id="product_{{ product.id }}">
                                                         <a href="{% url 'administration:product' product.id%}"> {{ product.name }}&nbsp;</a>
-                                                        <span class="glyphicon glyphicon-remove-sign product-delete" value={{ product.id }} data_id={{ product.id }}></span>
+                                                        <span class="fa fa-remove product-delete" value={{ product.id }} data_id={{ product.id }}></span>
                                                     </span>&#8203;
                                                 {% endfor %}
                                             </td>
@@ -408,7 +388,7 @@
                                             <td><b>Tags</b></td>
                                             <td id="tags-with-delete" class="tag-container">
                                                 {% for tag in imageset.set_tags.all %}<span class="label label-info">{{ tag.name }}&nbsp;
-                                                    <span class="glyphicon glyphicon-remove-sign tag-delete"></span></span>&#8203;{% endfor %}
+                                                    <span class="fa fa-remove tag-delete"></span></span>&#8203;{% endfor %}
                                             </td>
                                         </tr>
                                         <tr>
@@ -432,7 +412,7 @@
                                                 {% for version in imageset.set_versions.all %}
                                                     <li>
                                                         {{ version.name }} ({{version.annotationversion_set.count}})
-                                                        <a href="{% url 'AnnotationVersionView-list' %}?version={{ version.id }}"><span class="glyphicon glyphicon-new-window"> </span></a> 
+                                                        <a href="{% url 'AnnotationVersionView-list' %}?version={{ version.id }}"><span class="fa fa-new-window"> </span></a> 
                                                     </li>
                                                 {% endfor %}
                                                 </ul>
@@ -469,7 +449,7 @@
                                         <tr>
                                             <td>
                                                 <label for="id_public">{{ edit_form.public.label }}
-                                                    <span class="glyphicon glyphicon-question-sign" data-toggle="tooltip" data-placement="right" title="Enables public users to read the imageset "></span>
+                                                    <span class="fa fa-question-sign" data-toggle="tooltip" data-placement="right" title="Enables public users to read the imageset "></span>
                                                 </label>
                                             </td>
                                             <td>
@@ -479,7 +459,7 @@
                                         <tr id="public_collaboration_row">
                                             <td>
                                                 <label for="id_public_collaboration">{{ edit_form.public_collaboration.label }}
-                                                    <span class="glyphicon glyphicon-question-sign" data-toggle="tooltip" data-placement="right" title="Enables public users to annotate and verify in the imageset, when it is set public "></span>
+                                                    <span class="fa fa-question-sign" data-toggle="tooltip" data-placement="right" title="Enables public users to annotate and verify in the imageset, when it is set public "></span>
                                                 </label>
                                             </td>
                                             <td>
@@ -489,7 +469,7 @@
                                         <tr>
                                             <td>
                                                 <label for="image-lock">{{ edit_form.image_lock.label }}
-                                                    <span class="glyphicon glyphicon-question-sign" data-toggle="tooltip" data-placement="right" title="Prevents the upload of new pictures to the set"></span>
+                                                    <span class="fa fa-question-sign" data-toggle="tooltip" data-placement="right" title="Prevents the upload of new pictures to the set"></span>
                                                 </label>
                                             </td>
                                             <td>
@@ -499,7 +479,7 @@
                                         <tr>
                                             <td>
                                                 <label for="image-lock">{{ edit_form.priority.label }}
-                                                    <span class="glyphicon glyphicon-question-sign" data-toggle="tooltip" data-placement="right" title="The importance of the set."></span>
+                                                    <span class="fa fa-question-sign" data-toggle="tooltip" data-placement="right" title="The importance of the set."></span>
                                                 </label>
                                             </td>
                                             <td>
@@ -509,7 +489,7 @@
                                         <tr>
                                             <td>
                                                 <label for="image-lock">{{ edit_form.collaboration_type.label }}
-                                                    <span class="glyphicon glyphicon-question-sign" data-toggle="tooltip" data-placement="right" title="Decides whether the annotations will be shared between the participants"></span>
+                                                    <span class="fa fa-question-sign" data-toggle="tooltip" data-placement="right" title="Decides whether the annotations will be shared between the participants"></span>
                                                 </label>
                                             </td>
                                             <td>
@@ -519,7 +499,7 @@
                                         <tr>
                                             <td>
                                                 <label for="image-lock">{{ edit_form.main_annotation_type.label }}
-                                                    <span class="glyphicon glyphicon-question-sign" data-toggle="tooltip" data-placement="right" title="The preferred annotation type to label in this set."></span>
+                                                    <span class="fa fa-question-sign" data-toggle="tooltip" data-placement="right" title="The preferred annotation type to label in this set."></span>
                                                 </label>
                                             </td>
                                             <td>
@@ -547,41 +527,34 @@
 
                              <hr>
 
-                            <ul class="nav nav-tabs" id="upLoadTab" role="tablist">
+                            <nav>
+                                <div class="nav nav-tabs" id="upLoadTab" role="tablist">
 
-                                <li class="nav-item">
-                                    <a class="nav-link active" id="upload-images-tab" data-toggle="tab" href="#uploadImages"
+                                    <a class="nav-item nav-link active" id="upload-images-tab" data-toggle="tab" href="#uploadImages"
                                        role="tab" aria-controls="uploadImages">
                                         <h4>
                                             Upload new images
                                         </h4>
                                     </a>
-                                </li>
 
-                                <li class="nav-item">
-                                    <a class="nav-link" id="copy-images-tab" data-toggle="tab" href="#copyImages"
+                                    <a class="nav-item nav-link" id="copy-images-tab" data-toggle="tab" href="#copyImages"
                                        role="tab" aria-controls="copyImages">
                                         <h4>
                                             Copy images
                                         </h4>
                                     </a>
-                                </li>
 
-                                <li class="nav-item">
-                                    <a class="nav-link" id="upload-labels-tab" data-toggle="tab" href="#uploadLabels"
-                                       role="tab" aria-controls="uploadLabels">
+                                    <a class="nav-item nav-link" id="upload-labels-tab" data-toggle="tab" href="#uploadLabels"
+                                        role="tab" aria-controls="uploadLabels">
                                         <h4>
                                             Upload existing Labels
                                         </h4>
                                     </a>
-                                </li>
-
-
-
-                            </ul>
+                                </div>
+                            </nav>
 
                             <div class="tab-content" id="upLoadTabContent">
-                                <div class="tab-pane fade" id="uploadImages" role="tabpanel" aria-labelledby="uploadImages-tab">
+                                <div class="tab-pane fade show active" id="uploadImages" role="tabpanel" aria-labelledby="uploadImages-tab">
 
                                     <br>
                                     <br>
@@ -678,11 +651,10 @@
 
                     </div>
                 </div>
-            </div>
             {% endif %}
         </div>
         <div class="col-md-3">
-            {%  if "annotate" in imageset_perms and is_superuser%}
+            {%  if "annotate" in imageset_perms%}
                 {% if first_annotation or "edit_set" in imageset_perms and all_annotation_types%}
                     <div class="panel panel-default">
                         <div class="panel-heading">
@@ -735,11 +707,11 @@
                     </div>
                 {% endif %}
             {% endif %}
-            <div class="panel panel-default">
-                <div class="panel-heading">
-                    <h2 class="panel-title">Export tags to file</h2>
+            <div class="card">
+                <div class="card-header">
+                    <h3>Export tags to file</h3>
                 </div>
-                <div class="panel-body">
+                <div class="card-body">
                     <form method="post" action="{% url 'annotations:create_export' imageset.id %}" enctype="multipart/form-data">
                         {% csrf_token %}
                             {% comment %}

@@ -1,0 +1,105 @@
+###########
+# BUILDER #
+###########
+
+
+# pull official base image
+FROM ubuntu:18.04 as builder
+
+# set work directory
+WORKDIR /usr/src/app
+
+RUN apt-get update && apt-get install -y python3-pip dos2unix\
+    && rm -rf /var/lib/apt/lists/*
+
+
+# set environment variables
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+
+# lint
+RUN pip3 install --upgrade pip
+RUN pip3 install flake8
+COPY . /usr/src/app/
+
+# Just build if code is valid!!!
+#RUN flake8 --ignore=E501,F401 .
+
+# install dependencies
+COPY ./requirements.txt .
+RUN pip3 install wheel
+RUN pip3 wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requirements.txt
+
+
+# copy entrypoint.sh and convert to linux format 
+#RUN apt-get update && apt-get install -y dos2unix
+COPY ./entrypoint.prod.sh /usr/src/app/entrypoint.prod.sh
+
+RUN dos2unix /usr/src/app/entrypoint.prod.sh
+
+RUN chmod +x /usr/src/app/entrypoint.prod.sh
+
+
+#########
+# FINAL #
+#########
+
+
+FROM ubuntu:18.04
+
+# create directory for the app user
+RUN mkdir -p /home/app
+
+# create the app user
+RUN addgroup --system  app --gid 1001
+RUN adduser --system --group app 
+
+# create the appropriate directories
+ENV HOME=/home/app
+ENV APP_HOME=/home/app/web
+RUN mkdir $APP_HOME
+RUN mkdir $APP_HOME/static
+RUN mkdir $APP_HOME/media
+RUN mkdir $APP_HOME/images
+RUN mkdir $APP_HOME/iSyntax
+WORKDIR $APP_HOME
+
+
+# install dependencies
+RUN apt-get update && apt-get install -y python3-pip python3-openslide libvips libvips-dev netcat gdebi libtinyxml2.6.2v5 libgles2-mesa libegl1-mesa \
+    && rm -rf /var/lib/apt/lists/*
+
+
+COPY --from=builder /usr/src/app/wheels /wheels
+COPY --from=builder /usr/src/app/requirements.txt .
+RUN pip3 install --upgrade pip
+RUN pip3 install --no-cache /wheels/*
+
+
+# copy entrypoint-prod.sh
+COPY --from=builder /usr/src/app/entrypoint.prod.sh $APP_HOME
+
+# copy project
+COPY . $APP_HOME
+
+RUN gdebi -n $APP_HOME/iSyntax/*pixelengine*.deb
+RUN gdebi -n $APP_HOME/iSyntax/*python3-pixelengine*.deb
+RUN gdebi -n $APP_HOME/iSyntax/*eglrendercontext*.deb
+RUN gdebi -n $APP_HOME/iSyntax/*python3-eglrendercontext*.deb
+RUN gdebi -n $APP_HOME/iSyntax/*gles2renderbackend*.deb
+RUN gdebi -n $APP_HOME/iSyntax/*python3-gles2renderbackend*.deb
+RUN gdebi -n $APP_HOME/iSyntax/*gles3renderbackend*.deb
+RUN gdebi -n $APP_HOME/iSyntax/*python3-gles3renderbackend*.deb
+RUN gdebi -n $APP_HOME/iSyntax/*softwarerenderer*.deb
+RUN gdebi -n $APP_HOME/iSyntax/*python3-softwarerenderbackend*.deb
+RUN gdebi -n $APP_HOME/iSyntax/*python3-softwarerendercontext*.deb
+# chown all the files to the app user
+#RUN chown -R app:app $APP_HOME
+
+# change to the app user
+#USER app
+
+
+# run entrypoint.prod.sh
+ENTRYPOINT ["/home/app/web/entrypoint.prod.sh"]

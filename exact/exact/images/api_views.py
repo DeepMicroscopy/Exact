@@ -1,18 +1,19 @@
 import os, stat
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404
-from django.http import HttpResponseBadRequest
+from django.http import HttpResponseBadRequest, HttpResponse
 from django.template.response import TemplateResponse
 from rest_framework.response import Response
 from rest_framework import viewsets, permissions, renderers
 from rest_framework.settings import api_settings
+from rest_framework.decorators import action
 from django.db.models import Q, Count
 from django.db import transaction, connection
 from exact.annotations.models import Annotation, AnnotationVersion
 from . import models
 from . import serializers
 import django_filters
-
+import base64
 
 import openslide
 from openslide import OpenSlide, open_slide
@@ -21,6 +22,10 @@ import random
 import zipfile
 import hashlib
 from pathlib import Path
+
+from PIL import Image as PIL_Image
+from util.slide_server import SlideCache, SlideFile, PILBytesIO
+image_cache = SlideCache(cache_size=10)
 
 class ImageFilterSet(django_filters.FilterSet):
     image_type = django_filters.ChoiceFilter(choices=models.Image.SOURCE_TYPES)
@@ -93,6 +98,23 @@ class ImageViewSet(viewsets.ModelViewSet):
         user = self.request.user
         return  models.Image.objects.filter(image_set__team__in=user.team_set.all()).select_related('image_set')
 
+    @action(detail=True, methods=['GET'], name='Get Thumbnail for image PK')
+    def thumbnail(self, request, pk=None):
+        image = get_object_or_404(models.Image, id=pk)
+
+        file_path = image.path()
+
+        if Path(image.thumbnail_path()).exists():
+            tile = PIL_Image.open(image.thumbnail_path())
+        else:
+            slide = image_cache.get(file_path)
+            tile = slide._osr.get_thumbnail((128,128))
+            tile.save(image.thumbnail_path())
+
+        buf = PILBytesIO()
+        tile.save(buf, 'png', quality=90)
+
+        return HttpResponse(buf.getvalue(), content_type='image/png')
 
     def create(self, request):
         image_type = int(request.POST.get('image_type', 0))
@@ -197,27 +219,91 @@ class ImageViewSet(viewsets.ModelViewSet):
 
                     path = Path(path)
                     name = path.name
-                    # check if the file can be opened by OpenSlide if not convert it
-                    try:
-                        osr = OpenSlide(str(path))
-                    except:
-                        old_path = path
-                        path = Path(path).with_suffix('.tiff')
-
-                        try:
-                            import pyvips
-                            vi = pyvips.Image.new_from_file(str(old_path))
-                            vi.tiffsave(str(path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
-                        except:
-                            error['unsupported'] = True
 
                     image = models.Image(
                         name=name,
                         image_set=imageset,
-                        filename=path.name,
-                        image_type=image_type,
                         checksum=fchecksum)
 
+                    # check if the file can be opened by OpenSlide if not convert it
+                    try:
+                        osr = OpenSlide(str(path))
+                        image.filename = path.name
+                    except:
+                        import pyvips
+                        old_path = path
+
+                        #check if it is a CellVizio MKT file by suffix and save each frame to a seperate file
+                        if Path(path).suffix.lower().endswith(".mkt"):
+                            reader = ReadableCellVizioMKTDataset(str(path))
+                            image.frames = reader.numberOfFrames
+                            image.channels = 1
+                            image.mpp = (float(reader.mpp_x) + float(reader.mpp_y)) / 2
+                            # create sub dir to save frames
+                            folder_path = Path(imageset.root_path()) / path.stem
+                            os.makedirs(str(folder_path), exist_ok =True)
+                            os.chmod(str(folder_path), 0o777)
+                            for frame_id in range(image.frames):
+                                height, width = reader.dimensions 
+                                np_image = np.array(reader.read_region(location=(0,0), size=(reader.dimensions), level=0, zLevel=frame_id))[:,:,0]
+                                linear = np_image.reshape(height * width * image.channels)
+                                vi = pyvips.Image.new_from_memory(np.ascontiguousarray(linear.data), height, width, image.channels, 'uchar')
+
+                                target_file = folder_path / "{}_{}_{}".format(1, frame_id + 1, path.name) #z-axis frame image
+                                vi.tiffsave(str(target_file), tile=True, compression='lzw', bigtiff=True, pyramid=True,  tile_width=256, tile_height=256)
+
+                                # save first frame as default file for thumbnail etc.
+                                if frame_id == 0:
+                                    image.filename = target_file.name
+                        # check if file is philips iSyntax
+                        elif Path(path).suffix.lower().endswith(".isyntax"):
+                            from util.ISyntaxContainer import ISyntaxContainer
+                            old_path = path
+                            path = Path(path).with_suffix('.tiff')
+
+                            converter = ISyntaxContainer(str(old_path))
+                            converter.convert(str(path), 0)
+                            image.objectivePower = 40
+                            image.filename = path.name
+                        # check if possible multi frame tiff
+                        elif path.suffix.lower().endswith(".tiff") or path.suffix.lower().endswith(".tif"):
+                            shape = tifffile.imread(str(path)).shape
+                            image_saved = False
+                            if len(shape) >= 3: # possible multi channel or frames
+                                #Possible formats (10, 300, 300, 3) (10, 300, 300)
+                                if (len(shape) == 4 and shape[-1] in [1, 3, 4]) or len(shape) == 3 and shape[-1] not in [1, 3, 4]: 
+                                    image_saved = True
+                                    frames = shape[0]
+                                    image.frames = frames
+
+                                    folder_path = Path(imageset.root_path()) / path.stem
+                                    os.makedirs(str(folder_path), exist_ok =True)
+                                    os.chmod(str(folder_path), 0o777)
+
+                                    for frame_id in range(shape[0]):
+                                        vi = pyvips.Image.new_from_file(str(path), page=frame_id)
+                                        vi = vi.scaleimage()
+                                        height, width, channels = vi.height, vi.width, vi.bands
+                                        image.channels = channels
+
+                                        target_file = folder_path / "{}_{}_{}".format(1, frame_id + 1, path.name) #z-axis frame image
+                                        vi.tiffsave(str(target_file), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
+
+                                        # save first frame as default file for thumbnail etc.
+                                        if frame_id == 0:
+                                            image.filename = target_file.name
+                            if image_saved == False:
+                                path = Path(path).with_suffix('.tiff')
+
+                                vi = pyvips.Image.new_from_file(str(old_path))
+                                vi.tiffsave(str(path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
+                                image.filename = path.name
+                        else:                            
+                            path = Path(path).with_suffix('.tiff')
+
+                            vi = pyvips.Image.new_from_file(str(old_path))
+                            vi.tiffsave(str(path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
+                            image.filename = path.name
 
                     osr = OpenSlide(image.path())
                     image.width, image.height = osr.level_dimensions[0]
@@ -357,6 +443,7 @@ class ImageSetViewSet(viewsets.ModelViewSet):
                                            image_set.id)
             image_set.save()
             folder_path = image_set.root_path()
+            os.makedirs(folder_path)
             os.chmod(folder_path, 0o777)
         return response
 
@@ -505,3 +592,14 @@ class ScreeningModeViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         return  models.ScreeningMode.objects.filter(image__image_set__team__in=user.team_set.all()).select_related('image', 'user').order_by('id')
+
+    def partial_update(self, request, *args, **kwargs):
+        user = self.request.user
+        if "current_index" in request.data:
+            screening = self.get_queryset().filter(id=kwargs['pk']).first()
+            if screening is not None:
+                screening.screening_tiles[str(request.data['current_index'])]['Screened'] = True
+                screening.save()
+
+        response = super().partial_update(request, *args, **kwargs)
+        return response
