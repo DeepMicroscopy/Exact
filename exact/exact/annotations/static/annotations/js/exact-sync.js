@@ -24,6 +24,13 @@ class EXACTTeamSync {
                 }
 
                 context.viewer.raiseEvent('sync_TeamLoaded', {  });
+            },
+            error: function (request, status, error) {
+                if (request.responseText !== undefined) {
+                    $.notify(request.responseText, { position: "bottom center", className: "error" });
+                } else {
+                    $.notify(`Server ERR_CONNECTION_TIMED_OUT`, { position: "bottom center", className: "error" });
+                }
             }
         });
     }
@@ -64,7 +71,12 @@ class EXACTScreeningModeSync {
                     context.viewer.raiseEvent('sync_ScreeningModeNotInitialised', {  });
                 }
             },
-            error: function () {
+            error: function (request, status, error) {
+                if (request.responseText !== undefined) {
+                    $.notify(request.responseText, { position: "bottom center", className: "error" });
+                } else {
+                    $.notify(`Server ERR_CONNECTION_TIMED_OUT`, { position: "bottom center", className: "error" });
+                }
             }
         });
     }
@@ -84,7 +96,12 @@ class EXACTScreeningModeSync {
             data: JSON.stringify(data),
             success: function (data, textStatus, jqXHR) {
             },
-            error: function () {
+            error: function (request, status, error) {
+                if (request.responseText !== undefined) {
+                    $.notify(request.responseText, { position: "bottom center", className: "error" });
+                } else {
+                    $.notify(`Server ERR_CONNECTION_TIMED_OUT`, { position: "bottom center", className: "error" });
+                }
             }
         });
     }
@@ -103,7 +120,12 @@ class EXACTScreeningModeSync {
                 context.viewer.raiseEvent('sync_ScreeningModeLoaded', { screening_mode });
 
             },
-            error: function () {
+            error: function (request, status, error) {
+                if (request.responseText !== undefined) {
+                    $.notify(request.responseText, { position: "bottom center", className: "error" });
+                } else {
+                    $.notify(`Server ERR_CONNECTION_TIMED_OUT`, { position: "bottom center", className: "error" });
+                }
             }
         });
     }
@@ -122,8 +144,12 @@ class EXACTScreeningModeSync {
                 context.viewer.raiseEvent('sync_ScreeningModeLoaded', { screening_mode });
 
             },
-            error: function () {
-                $.notify(`Server ERR_CONNECTION_REFUSED`, { position: "bottom center", className: "error" });
+            error: function (request, status, error) {
+                if (request.responseText !== undefined) {
+                    $.notify(request.responseText, { position: "bottom center", className: "error" });
+                } else {
+                    $.notify(`Server ERR_CONNECTION_TIMED_OUT`, { position: "bottom center", className: "error" });
+                }
             }
         });
 
@@ -181,7 +207,12 @@ class EXACTImageSetSync {
 
                 success_notification();
             },
-            error: function () {
+            error: function (request, status, error) {
+                if (request.responseText !== undefined) {
+                    $.notify(request.responseText, { position: "bottom center", className: "error" });
+                } else {
+                    $.notify(`Server ERR_CONNECTION_TIMED_OUT`, { position: "bottom center", className: "error" });
+                }
             }
         });
     }
@@ -209,6 +240,13 @@ class EXACTImageSetSync {
             type: 'GET', headers: this.gHeaders, dataType: 'json',
             success: function (images, textStatus, jqXHR) {
                 success_function(images.results);
+            },
+            error: function (request, status, error) {
+                if (request.responseText !== undefined) {
+                    $.notify(request.responseText, { position: "bottom center", className: "error" });
+                } else {
+                    $.notify(`Server ERR_CONNECTION_TIMED_OUT`, { position: "bottom center", className: "error" });
+                }
             }
         });
     }
@@ -249,8 +287,12 @@ class EXACTImageSync {
             success: function (data) {
                 success_function(data, context)
             },
-            error: function () {
-
+            error: function (request, status, error) {
+                if (request.responseText !== undefined) {
+                    $.notify(request.responseText, { position: "bottom center", className: "error" });
+                } else {
+                    $.notify(`Server ERR_CONNECTION_TIMED_OUT`, { position: "bottom center", className: "error" });
+                }
             }
         });
     }
@@ -271,8 +313,12 @@ class EXACTImageSync {
                     success_function(false, context)
                 }
             },
-            error: function () {
-
+            error: function (request, status, error) {
+                if (request.responseText !== undefined) {
+                    $.notify(request.responseText, { position: "bottom center", className: "error" });
+                } else {
+                    $.notify(`Server ERR_CONNECTION_TIMED_OUT`, { position: "bottom center", className: "error" });
+                }
             }
         });
     }
@@ -292,8 +338,12 @@ class EXACTImageSync {
             success: function (data) {
 
             },
-            error: function () {
-
+            error: function (request, status, error) {
+                if (request.responseText !== undefined) {
+                    $.notify(request.responseText, { position: "bottom center", className: "error" });
+                } else {
+                    $.notify(`Server ERR_CONNECTION_TIMED_OUT`, { position: "bottom center", className: "error" });
+                }
             }
         });
     }
@@ -431,6 +481,13 @@ class EXACTAnnotationSync {
                     context.statistics[annotation_type.id].finished = true;
                     context.viewer.raiseEvent('sync_UpdateStatistics', {});
                 }
+            },
+            error: function (request, status, error) {
+                if (request.responseText !== undefined) {
+                    $.notify(request.responseText, { position: "bottom center", className: "error" });
+                } else {
+                    $.notify(`Server ERR_CONNECTION_TIMED_OUT`, { position: "bottom center", className: "error" });
+                }
             }
         });
     }
@@ -486,7 +543,11 @@ class EXACTAnnotationSync {
                 }
             },
             error: function (request, status, error) {
-                $.notify(`Server ERR_CONNECTION_REFUSED`, { position: "bottom center", className: "error" });
+                if (request.responseText !== undefined) {
+                    $.notify(request.responseText, { position: "bottom center", className: "error" });
+                } else {
+                    $.notify(`Server ERR_CONNECTION_TIMED_OUT`, { position: "bottom center", className: "error" });
+                }
             }
         });
     }
@@ -563,8 +624,12 @@ class EXACTAnnotationSync {
 
                 context.viewer.raiseEvent('sync_UpdateStatistics', {});
             },
-            error: function () {
-                $.notify(`Server ERR_CONNECTION_REFUSED`, { position: "bottom center", className: "error" });
+            error: function (request, status, error) {
+                if (request.responseText !== undefined) {
+                    $.notify(request.responseText, { position: "bottom center", className: "error" });
+                } else {
+                    $.notify(`Server ERR_CONNECTION_TIMED_OUT`, { position: "bottom center", className: "error" });
+                }
             }
         });
     }
@@ -585,8 +650,12 @@ class EXACTAnnotationSync {
             success: function (data) {
                 context.synchronisationNotifications("info", data.annotation, "AnnotationVerified")
             },
-            error: function () {
-
+            error: function (request, status, error) {
+                if (request.responseText !== undefined) {
+                    $.notify(request.responseText, { position: "bottom center", className: "error" });
+                } else {
+                    $.notify(`Server ERR_CONNECTION_TIMED_OUT`, { position: "bottom center", className: "error" });
+                }
             }
         })
     }
@@ -662,6 +731,13 @@ class EXACTGlobalAnnotationSync extends EXACTAnnotationSync {
 
                     context.viewer.raiseEvent('sync_GlobalAnnotations', { annotation });
                 }
+            },
+            error: function (request, status, error) {
+                if (request.responseText !== undefined) {
+                    $.notify(request.responseText, { position: "bottom center", className: "error" });
+                } else {
+                    $.notify(`Server ERR_CONNECTION_TIMED_OUT`, { position: "bottom center", className: "error" });
+                }
             }
         });
     }
@@ -702,7 +778,11 @@ class EXACTGlobalAnnotationSync extends EXACTAnnotationSync {
                 }
             },
             error: function (request, status, error) {
-                $.notify(`Server ERR_CONNECTION_REFUSED`, { position: "bottom center", className: "error" });
+                if (request.responseText !== undefined) {
+                    $.notify(request.responseText, { position: "bottom center", className: "error" });
+                } else {
+                    $.notify(`Server ERR_CONNECTION_TIMED_OUT`, { position: "bottom center", className: "error" });
+                }
             }
         });
     }
@@ -749,8 +829,12 @@ class EXACTGlobalAnnotationSync extends EXACTAnnotationSync {
 
                 context.viewer.raiseEvent('sync_UpdateStatisticsGlobal', {});
             },
-            error: function () {
-                $.notify(`Server ERR_CONNECTION_REFUSED`, { position: "bottom center", className: "error" });
+            error: function (request, status, error) {
+                if (request.responseText !== undefined) {
+                    $.notify(request.responseText, { position: "bottom center", className: "error" });
+                } else {
+                    $.notify(`Server ERR_CONNECTION_TIMED_OUT`, { position: "bottom center", className: "error" });
+                }
             }
         });
     }

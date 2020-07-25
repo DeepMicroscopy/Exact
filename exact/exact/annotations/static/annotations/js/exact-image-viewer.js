@@ -237,11 +237,32 @@ class EXACTViewer {
             }
         });
 
+        viewer.addHandler('page', function (event) {
+
+            if (this.userData.frameSlider !== undefined && 
+                event.page + 1 !== this.userData.frameSlider.getValue()) {
+    
+                this.userData.frameSlider.setValue(event.page + 1);
+            }
+        }, this);
+
         viewer.activateImagingHelper({ onImageViewChanged: this.onImageViewChanged.bind(this) });
 
-        // add zoome slider if objective power is greater than 1
-        var objectivePower = imageInformation['objectivePower'];
-        if (objectivePower > 1) {
+        // add frame slider if frames > 1
+        // or add zoome slider if objective power is greater than 1
+        let objectivePower = imageInformation['objectivePower'];
+        let frames =  imageInformation['frames'];
+        if (frames > 1) {
+            this.frameSlider = new Slider("#frameSlider", {
+                ticks_snap_bounds: 1,
+                value: 1,
+                min: 1,
+                tooltip: 'always',
+                max: frames
+            });
+            this.frameSlider.on('change', this.onFrameSliderChanged.bind(this));
+        }
+        else if (objectivePower > 1) {
 
             const default_ticks = [0, 1, 2, 5, 10, 20, 40, 80, 160];
             const default_names = ["0x", "1x", "2x", "5x", "10x", "20x", "40x", "80x", "160x"];
@@ -321,9 +342,19 @@ class EXACTViewer {
             this.gZoomSlider.destroy();
         }
 
+        if (this.frameSlider  !== undefined) {
+            this.frameSlider.destroy();
+        }
+
         this.imageClosed();
         this.viewer.destroy(); 
         this.screeningTool.destroy();
+    }
+
+    onFrameSliderChanged(event) {
+        if (this.frameSlider !== undefined) {
+            this.viewer.goToPage(this.frameSlider.getValue() - 1);
+        }
     }
 
     onSliderChanged(event) {

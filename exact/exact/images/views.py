@@ -65,7 +65,7 @@ import numpy as np
 from multiprocessing.pool import ThreadPool
 import subprocess
 import cv2
-from tifffile import *
+import tifffile
 import openslide
 from openslide import OpenSlide, open_slide
 from PIL import Image as PIL_Image
@@ -359,15 +359,45 @@ def upload_image(request, imageset_id):
                         elif Path(path).suffix.lower().endswith(".isyntax"):
                             from util.ISyntaxContainer import ISyntaxContainer
                             old_path = path
-
-                            path = Path(path)
                             path = Path(path).with_suffix('.tiff')
 
                             converter = ISyntaxContainer(str(old_path))
                             converter.convert(str(path), 0)
                             image.objectivePower = 40
                             image.filename = path.name
+                        # check if possible multi frame tiff
+                        elif path.suffix.lower().endswith(".tiff") or path.suffix.lower().endswith(".tif"):
+                            shape = tifffile.imread(str(path)).shape
+                            image_saved = False
+                            if len(shape) >= 3: # possible multi channel or frames
+                                #Possible formats (10, 300, 300, 3) (10, 300, 300)
+                                if (len(shape) == 4 and shape[-1] in [1, 3, 4]) or len(shape) == 3 and shape[-1] not in [1, 3, 4]: 
+                                    image_saved = True
+                                    frames = shape[0]
+                                    image.frames = frames
 
+                                    folder_path = Path(imageset.root_path()) / path.stem
+                                    os.makedirs(str(folder_path), exist_ok =True)
+                                    os.chmod(str(folder_path), 0o777)
+
+                                    for frame_id in range(shape[0]):
+                                        vi = pyvips.Image.new_from_file(str(path), page=frame_id)
+                                        vi = vi.scaleimage()
+                                        height, width, channels = vi.height, vi.width, vi.bands
+                                        image.channels = channels
+
+                                        target_file = folder_path / "{}_{}_{}".format(1, frame_id + 1, path.name) #z-axis frame image
+                                        vi.tiffsave(str(target_file), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
+
+                                        # save first frame as default file for thumbnail etc.
+                                        if frame_id == 0:
+                                            image.filename = target_file.name
+                            if image_saved == False:
+                                path = Path(path).with_suffix('.tiff')
+
+                                vi = pyvips.Image.new_from_file(str(old_path))
+                                vi.tiffsave(str(path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
+                                image.filename = path.name
                         else:                            
                             path = Path(path).with_suffix('.tiff')
 
