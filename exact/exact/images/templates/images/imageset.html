@@ -654,6 +654,7 @@
             {% endif %}
         </div>
         <div class="col-md-3">
+            <!--
             {%  if "annotate" in imageset_perms%}
                 {% if first_annotation or "edit_set" in imageset_perms and all_annotation_types%}
                     <div class="panel panel-default">
@@ -668,7 +669,6 @@
                             {% endif %}
                             {% if "edit_set" in imageset_perms and all_annotation_types %}
                                 <li><a href="#" class="link" data-toggle="modal" data-target="#niiModal">Annotate the whole set</a></li>
-                                <!-- Modal -->
                                 <div class="modal fade" id="niiModal" tabindex="-1" role="dialog" aria-labelledby="niiModalLabel">
                                     <div class="modal-dialog" role="document">
                                         <div class="modal-content">
@@ -707,6 +707,7 @@
                     </div>
                 {% endif %}
             {% endif %}
+            -->
             <div class="card">
                 <div class="card-header">
                     <h3>Export tags to file</h3>
