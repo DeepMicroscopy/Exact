@@ -55,3 +55,7 @@
     max-width: 100%;
   }
 }
+
+.fade.in {
+  opacity: 1
+}

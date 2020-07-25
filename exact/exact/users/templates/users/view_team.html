@@ -4,14 +4,19 @@
 {% load widget_tweaks %}
 
 {% block additional_js %}
-    <!-- An additional form script -->
-    <script src="{% static 'scripts/pub_coll.js' %}"></script>
-    <script src="{% static 'scripts/jquery.autocomplete.js' %}"></script>
-    <script type="text/javascript">
-        $('#add_username').autocomplete({
-          serviceUrl: '/users/api/user/autocomplete/'
-        });
-    </script>
+<link rel="stylesheet" type="text/css" href="{% static 'css/bootstrap.min.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'css/styles.css' %}">
+<!-- An additional form script -->
+<script type="text/javascript" src="{% static 'scripts/jquery-3.2.1.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'scripts/bootstrap.min.js' %}"></script>
+
+<script src="{% static 'scripts/pub_coll.js' %}"></script>
+<script src="{% static 'scripts/jquery.autocomplete.js' %}"></script>
+<script type="text/javascript">
+    $('#add_username').autocomplete({
+        serviceUrl: '/users/api/user/autocomplete/'
+    });
+</script>
 {% endblock additional_js %}
 
 {% block bodyblock %}
@@ -21,555 +26,553 @@
             <h1>{% blocktrans with team=team.name %}Team Profile of {{ team }}{% endblocktrans %}</h1>
         </div>
     </div>
-    <div class="row">
-        <div class="col-md-3">
-            <div class="panel panel-default">
-                <div class="panel-heading">
-                    <h3 class="panel-title">{% trans 'Imagesets' %}</h3>
-                </div>
-                <div class="panel-body">
-                    {% if not team.admins and request.user in members %}
-                        Your team has no admin!
-                        <form method="POST" action="{% url 'users:grant_team_admin' team.id request.user.id %}">
-                            {% csrf_token %}
-                            <input type="submit" value="I want to become admin!" class="btn btn-link" />
-                        </form>
-                    {% endif %}
-                    <div>
-                        {% if imagesets %}
-                            <ul class="nav nav-tabs" role="tablist">
-                                <li role="presentation" class="active">
-                                    <a href="#alphabetically" aria-controls="alphabetically" role="tab" data-toggle="tab">
-                                        A-Z
-                                    </a>
-                                </li>
-                                <li role="presentation">
-                                    <a href="#date" aria-controls="date" role="tab" data-toggle="tab">
-                                        By Date
-                                    </a>
-                                </li>
-                                <li role="presentation">
-                                    <a href="#size" aria-controls="size" role="tab" data-toggle="tab">
-                                       By Size
-                                    </a>
-                                </li>
-                                <li role="presentation">
-                                    <a href="#test" aria-controls="test" role="tab" data-toggle="tab">
-                                        Test Sets
-                                    </a>
-                                </li>
-                            </ul>
-                            <div class="tab-content">
-                                <div role="tabpanel" class="tab-pane active" id="alphabetically">
-                                    <ul>
-                                        {% for imageset in imagesets %}
-                                            <li>
-                                                {% if not imageset.public %}
-                                                    <span class="glyphicon glyphicon-lock"></span>
-                                                {% endif %}
-                                                <a href="{% url 'images:view_imageset' imageset.id%}">
-                                                    {{ imageset.name }}
-                                                </a>
-                                                ({{ imageset.image_count }} images) {{ imageset.prio_symbol | safe }}
-                                                {% for tag in imageset.set_tags.all %}
-                                                    <a href="{% url 'images:explore_imageset' %}?tags={{ tag.name }}," class="label label-info">{{ tag.name }}</a>
-                                                {% endfor %}
-
-                                                <ul>
-                                                    {% for product_item in imageset.product_set.all %}
-                                                        <li>
-                                                            <a href="{% url "administration:product" product_item.id %}">
-                                                                {{ product_item.name }} </a>
-                                                        </li>
-                                                    {% endfor %}
-                                                </ul>
-                                            </li>
-                                        {% empty %}
-                                            {% trans 'no imagesets available' %}
-                                        {% endfor %}
-                                    </ul>
-                                </div>
-                                <div role="tabpanel" class="tab-pane" id="date">
-                                    <ul>
-                                        {% for imageset in date_imagesets %}
-                                            <li>
-                                                {% if not imageset.public %}
-                                                    <span class="glyphicon glyphicon-lock"></span>
-                                                {% endif %}
-                                                <a href="{% url 'images:view_imageset' imageset.id%}">
-                                                    {{ imageset.name }}
-                                                </a>
-                                                ({{ imageset.image_count }} images) {{ imageset.prio_symbol | safe }}
-                                                {% for tag in imageset.set_tags.all %}
-                                                    <a href="{% url 'images:explore_imageset' %}?tags={{ tag.name }}," class="label label-info">{{ tag.name }}</a>
-                                                {% endfor %}
-
-                                                <ul>
-                                                    {% for product_item in imageset.product_set.all %}
-                                                        <li>
-                                                            <a href="{% url "administration:product" product_item.id %}">
-                                                                {{ product_item.name }} </a>
-                                                        </li>
-                                                    {% endfor %}
-                                                </ul>
-                                            </li>
-                                        {% empty %}
-                                            {% trans 'no imagesets available' %}
-                                        {% endfor %}
-                                    </ul>
-                                </div>
-                                <div role="tabpanel" class="tab-pane" id="size">
-                                    <ul>
-                                        {% for imageset in size_imagesets %}
-                                            <li>
-                                                {% if not imageset.public %}
-                                                    <span class="glyphicon glyphicon-lock"></span>
-                                                {% endif %}
-                                                <a href="{% url 'images:view_imageset' imageset.id%}">
-                                                    {{ imageset.name }}
-                                                </a>
-                                                ({{ imageset.image_count }} images) {{ imageset.prio_symbol | safe }}
-                                                {% for tag in imageset.set_tags.all %}
-                                                    <a href="{% url 'images:explore_imageset' %}?tags={{ tag.name }}," class="label label-info">{{ tag.name }}</a>
-                                                {% endfor %}
-
-                                                <ul>
-                                                    {% for product_item in imageset.product_set.all %}
-                                                        <li>
-                                                            <a href="{% url "administration:product" product_item.id %}">
-                                                                {{ product_item.name }} </a>
-                                                        </li>
-                                                    {% endfor %}
-                                                </ul>
-                                            </li>
-                                        {% empty %}
-                                            {% trans 'no imagesets available' %}
-                                        {% endfor %}
-                                    </ul>
-                                </div>
-                                <div role="tabpanel" class="tab-pane" id="test">
-                                    <ul>
-                                        {% for imageset in test_imagesets %}
-                                            <li>
-                                                {% if not imageset.public %}
-                                                    <span class="glyphicon glyphicon-lock"></span>
-                                                {% endif %}
-                                                <a href="{% url 'images:view_imageset' imageset.id%}">
-                                                    {{ imageset.name }}
-                                                </a>
-                                                ({{ imageset.image_count }} images) {{ imageset.prio_symbol | safe }}
-                                                {% for tag in imageset.set_tags.all %}
-                                                    <a href="{% url 'images:explore_imageset' %}?tags={{ tag.name }}," class="label label-info">{{ tag.name }}</a>
-                                                {% endfor %}
-
-                                                <ul>
-                                                    {% for product_item in imageset.product_set.all %}
-                                                        <li>
-                                                            <a href="{% url "administration:product" product_item.id %}">
-                                                                {{ product_item.name }} </a>
-                                                        </li>
-                                                    {% endfor %}
-                                                </ul>
-                                            </li>
-                                        {% empty %}
-                                            Here, all imagesets with the tag 'test' are listed.<br>
-                                            {% trans 'no test imagesets available' %}
-                                        {% endfor %}
-                                    </ul>
-                                </div>
-                            </div>
-                        {% else %}
-                            {% trans 'no imagesets available' %}
-                        {% endif %}
-                    </div>
-
-                </div>
+    <div class="card-columns">
+        <div class="card" style="text-align: left;">
+            <div class="card-header">
+                <h3>{% trans 'Imagesets' %}</h3>
             </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="panel panel-default">
-                <div class="panel-heading">
-                    <h3 class="panel-title">{% trans 'Members' %}</h3>
-                </div>
-                    {% if "user_management" in team_perms %}
-                        <p>
-                            <form method="post" action="{% url 'users:add_team_member' team.id %}" class="form-inline">
-                                {% csrf_token %}
-                                <label for="add_username">{% trans 'Add member' %}</label>
-                                <input type="text" placeholder="username" maxlength="20" id="add_username" name="username" class="form-control autocomplete">
-                                <input type="submit" value="Add" class="btn btn-primary" />
-                            </form>
-                        </p>
-                    {% endif %}
-                    <div>
-                        <ul class="nav nav-tabs" role="tablist">
-                            <li role="presentation" class="active">
-                                <a href="#complete" aria-controls="complete" role="tab" data-toggle="tab">
-                                    All members
-                                </a>
-                            </li>
-                            <li role="presentation">
-                                <a href="#30score" aria-controls="30score" role="tab" data-toggle="tab">
-                                    30 day highscore
-                                </a>
-                            </li>
-                        </ul>
-                        <div class="tab-content">
-                            <div role="tabpanel" class="tab-pane active" id="complete">
-                                <table class="team-table">
-                                    {% for member in members %}
-                                        <tr>
-                                            <td>
-                                                {% if member in team.admins %}
-                                                    <span class="glyphicon glyphicon-king"></span>
-                                                {% endif %}
-                                                <a href="{% url 'users:user' member.id %}">{{member.username}}</a>
-                                            </td>
-                                            <td>
-                                                {{member.points}}
-                                            </td>
-                                            {% if member == request.user  %}
-                                                <td>
-                                                    <a href="{% url 'users:leave_team' team.id member.id %}"> [{% trans 'leave' %}]</a>
-                                                </td>
-                                            {% else %}
-                                                {% if "user_management" in team_perms %}
-                                                    <td>
-                                                        <a href="{% url 'users:leave_team' team.id member.id %}"> [{% trans 'kick' %}]</a>
-                                                    </td>
-                                                    {% if member in admins %}
-                                                        <td>
-                                                            <form method="POST" action="{% url 'users:revoke_team_admin' team.id member.id %}" class="form-inline">
-                                                                {% csrf_token %}
-                                                                <input type="submit" value="[{% trans 'revoke admin' %}]" class="btn btn-link" />
-                                                            </form>
-                                                        </td>
-                                                    {% else %}
-                                                        <td>
-                                                            <form method="POST" action="{% url 'users:grant_team_admin' team.id member.id %}" class="form-inline">
-                                                                {% csrf_token %}
-                                                                <input type="submit" value="[{% trans 'grant admin' %}]" class="btn btn-link" />
-                                                            </form>
-                                                        </td>
-                                                    {% endif %}
-                                                {% else %}
-                                                    <td></td>
-                                                    <td></td>
-                                                {% endif %}
-                                            {% endif %}
-                                        </tr>
+            <div class="card-body">
+                {% if not team.admins and request.user in members %}
+                Your team has no admin!
+                <form method="POST" action="{% url 'users:grant_team_admin' team.id request.user.id %}">
+                    {% csrf_token %}
+                    <input type="submit" value="I want to become admin!" class="btn btn-link" />
+                </form>
+                {% endif %}
+                <div>
+                    {% if imagesets %}
+                    <div class="nav nav-tabs" role="tablist" id="nav-tab">
+                        <a class="nav-item nav-link active" href="#alphabetically" aria-controls="alphabetically"
+                            aria-selected="false" role="tab" data-toggle="tab" id="nav-alphabetically-tab">
+                            A-Z
+                        </a>
+                        <a class="nav-item nav-link" href="#date" aria-controls="date" aria-selected="false" role="tab"
+                            data-toggle="tab" id="nav-date-tab">
+                            By Date
+                        </a>
+                        <a class="nav-item nav-link" href="#size" aria-controls="size" aria-selected="false" role="tab"
+                            data-toggle="tab" id="nav-size-tab">
+                            By Size
+                        </a>
+                        <a class="nav-item nav-link" href="#test" aria-controls="test" aria-selected="false" role="tab"
+                            data-toggle="tab" id="nav-test-tab">
+                            Test Sets
+                        </a>
+                    </div>
+                    <div class="tab-content" id="nav-tabContent">
+                        <div role="tabpanel" class="tab-pane fade  show active" id="alphabetically"
+                            aria-labelledby="nav-alphabetically-tab">
+                            <ul>
+                                {% for imageset in imagesets %}
+                                <li>
+                                    {% if not imageset.public %}
+                                    <span class="fa fa-lock"></span>
+                                    {% endif %}
+                                    <a href="{% url 'images:view_imageset' imageset.id%}">
+                                        {{ imageset.name }}
+                                    </a>
+                                    ({{ imageset.image_count }} images) {{ imageset.prio_symbol | safe }}
+                                    {% for tag in imageset.set_tags.all %}
+                                    <a href="{% url 'images:explore_imageset' %}?tags={{ tag.name }},"
+                                        class="label label-info">{{ tag.name }}</a>
                                     {% endfor %}
-                                </table>
-                            </div>
-                            <div role="tabpanel" class="tab-pane" id="30score">
-                                {% if members_30 %}
-                                    <table class="team-table">
-                                        {% for member in members_30 %}
-                                            <tr>
-                                                <td>
-                                                    <a href="{% url 'users:user' member.id %}">{{member.username}}&nbsp;&nbsp;&nbsp;&nbsp;</a>
-                                                </td>
-                                                <td>
-                                                    {% if member.points_30 %}
-                                                        {{member.points_30}}
-                                                    {% else %}
-                                                        0
-                                                    {% endif %}
-                                                </td>
-                                            </tr>
+
+                                    <ul>
+                                        {% for product_item in imageset.product_set.all %}
+                                        <li>
+                                            <a href="{% url "administration:product" product_item.id %}">
+                                                {{ product_item.name }} </a>
+                                        </li>
                                         {% endfor %}
-                                    </table>
-                                {% else %}
-                                    <p>
-                                        No highscore to show.
-                                    </p>
-                                {% endif %}
-                            </div>
+                                    </ul>
+                                </li>
+                                {% empty %}
+                                {% trans 'no imagesets available' %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        <div role="tabpanel" class="tab-pane fade" id="date" aria-labelledby="nav-date-tab">
+                            <ul>
+                                {% for imageset in date_imagesets %}
+                                <li>
+                                    {% if not imageset.public %}
+                                    <span class="fa fa-lock"></span>
+                                    {% endif %}
+                                    <a href="{% url 'images:view_imageset' imageset.id%}">
+                                        {{ imageset.name }}
+                                    </a>
+                                    ({{ imageset.image_count }} images) {{ imageset.prio_symbol | safe }}
+                                    {% for tag in imageset.set_tags.all %}
+                                    <a href="{% url 'images:explore_imageset' %}?tags={{ tag.name }},"
+                                        class="label label-info">{{ tag.name }}</a>
+                                    {% endfor %}
+
+                                    <ul>
+                                        {% for product_item in imageset.product_set.all %}
+                                        <li>
+                                            <a href="{% url "administration:product" product_item.id %}">
+                                                {{ product_item.name }} </a>
+                                        </li>
+                                        {% endfor %}
+                                    </ul>
+                                </li>
+                                {% empty %}
+                                {% trans 'no imagesets available' %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        <div role="tabpanel" class="tab-pane fade" id="size" aria-labelledby="nav-size-tab">
+                            <ul>
+                                {% for imageset in size_imagesets %}
+                                <li>
+                                    {% if not imageset.public %}
+                                    <span class="fa fa-lock"></span>
+                                    {% endif %}
+                                    <a href="{% url 'images:view_imageset' imageset.id%}">
+                                        {{ imageset.name }}
+                                    </a>
+                                    ({{ imageset.image_count }} images) {{ imageset.prio_symbol | safe }}
+                                    {% for tag in imageset.set_tags.all %}
+                                    <a href="{% url 'images:explore_imageset' %}?tags={{ tag.name }},"
+                                        class="label label-info">{{ tag.name }}</a>
+                                    {% endfor %}
+
+                                    <ul>
+                                        {% for product_item in imageset.product_set.all %}
+                                        <li>
+                                            <a href="{% url "administration:product" product_item.id %}">
+                                                {{ product_item.name }} </a>
+                                        </li>
+                                        {% endfor %}
+                                    </ul>
+                                </li>
+                                {% empty %}
+                                {% trans 'no imagesets available' %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        <div role="tabpanel" class="tab-pane fade" id="test" aria-labelledby="nav-test-tab">
+                            <ul>
+                                {% for imageset in test_imagesets %}
+                                <li>
+                                    {% if not imageset.public %}
+                                    <span class="fa fa-lock"></span>
+                                    {% endif %}
+                                    <a href="{% url 'images:view_imageset' imageset.id%}">
+                                        {{ imageset.name }}
+                                    </a>
+                                    ({{ imageset.image_count }} images) {{ imageset.prio_symbol | safe }}
+                                    {% for tag in imageset.set_tags.all %}
+                                    <a href="{% url 'images:explore_imageset' %}?tags={{ tag.name }},"
+                                        class="label label-info">{{ tag.name }}</a>
+                                    {% endfor %}
+
+                                    <ul>
+                                        {% for product_item in imageset.product_set.all %}
+                                        <li>
+                                            <a href="{% url "administration:product" product_item.id %}">
+                                                {{ product_item.name }} </a>
+                                        </li>
+                                        {% endfor %}
+                                    </ul>
+                                </li>
+                                {% empty %}
+                                Here, all imagesets with the tag 'test' are listed.<br>
+                                {% trans 'no test imagesets available' %}
+                                {% endfor %}
+                            </ul>
                         </div>
                     </div>
+                    {% else %}
+                    {% trans 'no imagesets available' %}
+                    {% endif %}
                 </div>
-            </div>
 
-        <div class="col-md-3">
-            <div class="panel panel-default">
-                <div class="panel-heading">
-                    <h3 class="panel-title">{% trans 'Products' %}</h3>
-                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <h3>{% trans 'Members' %}</h3>
+            </div>
+            <div class="card-body">
                 <div>
-                    <ul>
-                        {% for product_item in products %}
-                            <li>
-                                <a href="{% url "administration:product" product_item.id %}">
-                                    {{ product_item.name }}
-                                </a>
-                                <ul>
-                                    {% for annotation_type in product_item.annotationtype_set.all %}
-                                        <li>
-                                            <a href="{% url "administration:annotation_type" annotation_type.id %}">
-                                                {{ annotation_type.name }}
-                                            </a>
-                                        </li>
-                                    {% endfor %}
-                                </ul>
-                            </li>
+                    <table class="team-table ">
+                        <tr>
+                            <td>
+                                User
+                            </td>
+                        </tr>
+                        {% for member in members %}
+                        <tr>
+                            <td>
+                                {% if member in team.admins %}
+                                <span class="fa fa-user-plus"></span>
+                                {% endif %}
+                                <a href="{% url 'users:user' member.id %}">{{member.username}}</a>
+                            </td>
+                            {% if member == request.user  %}
+                            <td>
+                                <a href="{% url 'users:leave_team' team.id member.id %}">
+                                    [{% trans 'leave' %}]</a>
+                            </td>
+                            {% else %}
+                            {% if "user_management" in team_perms %}
+                            <td>
+                                <a href="{% url 'users:leave_team' team.id member.id %}">
+                                    [{% trans 'kick' %}]</a>
+                            </td>
+                            {% if member in admins %}
+                            <td>
+                                <form method="POST" action="{% url 'users:revoke_team_admin' team.id member.id %}"
+                                    class="form-inline">
+                                    {% csrf_token %}
+                                    <input type="submit" value="[{% trans 'revoke admin' %}]" class="btn btn-link" />
+                                </form>
+                            </td>
+                            {% else %}
+                            <td>
+                                <form method="POST" action="{% url 'users:grant_team_admin' team.id member.id %}"
+                                    class="form-inline">
+                                    {% csrf_token %}
+                                    <input type="submit" value="[{% trans 'grant admin' %}]" class="btn btn-link" />
+                                </form>
+                            </td>
+                            {% endif %}
+                            {% else %}
+                            <td></td>
+                            <td></td>
+                            {% endif %}
+                            {% endif %}
+                        </tr>
                         {% endfor %}
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            {% if 'create_set' in team_perms %}
-                <div class="panel panel-default">
-                    <div class="panel-heading">
-                       <h3 class="panel-title">Create imageset</h3>
-                    </div>
-                    <div class="panel-body">
-                        <form method="post" action="{% url 'images:create_imageset' %}">
-                            {% csrf_token %}
-                            <input type="hidden" name="team" value="{{ team.id }}">
-                            <div class="form-group">
-                                <label for="id_name">{{ imageset_creation_form.name.label }}</label>
-                                {% render_field imageset_creation_form.name class+='form-control' placeholder=imageset_creation_form.name.label %}
-                            </div>
-                            <div class="form-group">
-                                <label for="id_location">{{ imageset_creation_form.location.label }}</label>
-                                {% render_field imageset_creation_form.location class+='form-control' placeholder=imageset_creation_form.location.label %}
-                            </div>
-                            <div class="form-group">
-                                <label for="id_public">{{ imageset_creation_form.public.label }} <span class="glyphicon glyphicon-question-sign" data-toggle="tooltip" data-placement="right" title="Enables public users to read the imageset "></span></label>
-                                {% render_field imageset_creation_form.public %}
-                            </div>
-                            <div class="form-group">
-                                <label for="id_public_collaboration">
-                                    {{ imageset_creation_form.public_collaboration.label }} <span class="glyphicon glyphicon-question-sign" data-toggle="tooltip" data-placement="right" title="Enables public users to annotate and verify in the imageset, when it is set public "></span> </label>
-                                {% render_field imageset_creation_form.public_collaboration %}
-                            </div>
-                            <input class="btn btn-primary" type="submit" value="Create">
-                        </form>
-                    </div>
-                </div>
-            {% endif %}
-
-        </div>
-
-        <div class="col-md-3">
-            {% if 'create_set' in team_perms %}
-                <div class="panel panel-default">
-                    <div class="panel-heading">
-                        <h3 class="panel-title">Create a new Product</h3>
-                    </div>
-                    <table class="table table-striped">
-                        <tbody>
-                            <form action="{% url "administration:create_product" %}" method="POST">
-                                {% csrf_token %}
-                                <tr>
-                                    <td>
-                                        <label for="id_name">{{ product_creation_form.name.label }}</label>
-                                    </td>
-                                    <td>
-                                        {% render_field product_creation_form.name class+='form-control' %}
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <td>
-                                        <label for="id_description">{{ product_creation_form.description.label }}</label>
-                                    </td>
-                                    <td>
-                                        {% render_field product_creation_form.description class+='form-control' %}
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <td>
-                                        <label for="id_team">{{ product_creation_form.team.label }}</label>
-                                    </td>
-                                    <td>
-                                        {% render_field product_creation_form.team class+='form-control' %}
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <td>
-                                        <input class="btn btn-danger" type="reset" value="Reset">
-                                    </td>
-                                    <td align="right">
-                                        <input class="btn btn-primary right" type="submit" value="Create">
-                                    </td>
-                                </tr>
-                            </form>
-                        </tbody>
                     </table>
                 </div>
-            {% endif %}
+            </div>
+            <div class="card-footer">
+                {% if "user_management" in team_perms %}
+                <form method="post" action="{% url 'users:add_team_member' team.id %}" class="form-inline">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-between">
+                        <label>{% trans 'Add member' %}</label>
+                        <input type="text" placeholder="username" maxlength="20" id="add_username" name="username"
+                            class="form-control autocomplete">
+                        <input type="submit" value="Add" class="btn btn-primary" />
+                    </div>
+                </form>
+                {% endif %}
+            </div>
+
         </div>
 
-        <div class="col-md-3">
-            {% if 'manage_export_formats' in team_perms %}
-                <div class="row">
-                    <div class="col-md-12">
-                        <div class="panel panel-default">
-                            <div class="panel-heading">
-                                <div class="panel-title pull-left">
-                                    <h4>Export formats</h4>
-                                </div>
-                                <div class="panel-title pull-right">
-                                    <input name="create_format" class="btn btn-default" type="button" value="Create Format" onclick="location.href='{% url 'annotations:create_exportformat' %}?mode=1&id={{ team.id }}'">
-                                </div>
-                                <div class="clearfix"></div>
-                            </div>
-                            <div class="panel-body">
-                                <ul>
-                                    {% for form in export_formats_forms %}
-                                        <li>
-                                               {% if not form.instance.public %}
-                                               <span class="glyphicon glyphicon-lock"></span>
-                                               {% endif %}
-                                               <!-- Button trigger modal -->
-                                               <a href="#" data-toggle="modal" data-target="#format{{ form.instance.id }}Modal">
-                                               {{ form.instance.name }}
-                                               </a>
+        <div class="card" style="text-align: left;">
+            <div class="card-header">
+                <h3>{% trans 'Products' %}</h3>
+            </div>
+            <div class="card-body">
+                <ul>
+                    {% for product_item in products %}
+                    <li>
+                        <a href="{% url "administration:product" product_item.id %}">
+                            {{ product_item.name }}
+                        </a>
+                        <ul>
+                            {% for annotation_type in product_item.annotationtype_set.all %}
+                            <li>
+                                <a href="{% url "administration:annotation_type" annotation_type.id %}">
+                                    {{ annotation_type.name }}
+                                </a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
 
-                                               <!-- Modal -->
-                                               <div class="modal fade" id="format{{ form.instance.id }}Modal" tabindex="-1" role="dialog" aria-labelledby="format{{ form.instance.id }}ModalLabel">
-                                               <div class="modal-dialog modal-lg" role="document">
-                                               <div class="modal-content">
-                                               <div class="modal-header">
-                                               <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                                               <h4 class="modal-title" id="format{{ form.instance.id }}ModalLabel">Edit "{{ form.instance.name }}"</h4>
-                                               </div>
-                                               <form method="POST" action="{% url 'annotations:edit_exportformat' form.instance.id %}">
-                                               <div class="modal-body">
-                                               {% csrf_token %}
-                                               <div class="form-group">
-                                               <label for="id_name"><h3>{{ form.name.label }}</h3> of the export format</label>
-                                               {% render_field form.name class+='form-control' %}
-                                               {% for error in form.name.errors %}
-                                               <div class="alert alert-warning">{{ error }}</div>
-                                               {% endfor %}
-                                               </div>
-                                               <div class="form-group">
-                                               <label for="id_name_format"><h3>{{ form.name_format.label }}</h3>for the export file name</label>
-                                               {% include 'annotations/export_format_legends/name.html' %}
-                                               {% render_field form.name_format class+='form-control' %}
-                                               {% for error in form.name_format.errors %}
-                                               <div class="alert alert-warning">{{ error }}</div>
-                                               {% endfor %}
-                                               </div>
-                                               <div class="form-group">
-                                               <label for="id_public"><h3>{{ form.public.label }}: </h3></label>
-                                               {% render_field form.public %}
-                                               {% for error in form.public.errors %}
-                                               <div class="alert alert-warning">{{ error }}</div>
-                                               {% endfor %}
-                                               </div>
-                                               <div class="form-group">
-                                               <label for="id_annotations_types"><h3>{{ form.annotations_types.label }}</h3></label>
-                                               {% blocktrans %}
-                                               <p>Hold down "Ctl" to select more than one.</p>
-                                               {% endblocktrans %}
-                                               {% render_field form.annotations_types class+='form-control' %}
-                                               {% for error in form.annotations_types.errors %}
-                                               <div class="alert alert-warning">{{ error }}</div>
-                                               {% endfor %}
-                                               </div>
-                                               <div class="form-group">
-                                               <label for="id_min_verifications"><h3>Minimum Amount of Verifications needed:</h3></label>
-                                               {% render_field form.min_verifications %}
-                                               {% for error in form.min_verifications.errors %}
-                                               <div class="alert alert-warning">{{ error }}</div>
-                                               {% endfor %}
-                                               </div>
-                                               <div class="form-group">
-                                                   <label for="id_include_blurred"><h3>{{ form.include_blurred.label }} annotations: </h3></label>
-                                                   {% render_field form.include_blurred %}
-                                                   {% for error in form.include_blurred.errors %}
-                                                       <div class="alert alert-warning">{{ error }}</div>
-                                                   {% endfor %}
-                                               </div>
-                                               <div class="form-group">
-                                                   <label for="id_include_concealed"><h3>{{ form.include_concealed.label }} annotations: </h3></label>
-                                                   {% render_field form.include_concealed %}
-                                                   {% for error in form.include_concealed.errors %}
-                                                   <div class="alert alert-warning">{{ error }}</div>
-                                                   {% endfor %}
-                                               </div>
-                                               <hr>
-                                               <div class="form-group">
-                                               <label for="id_base_format"><h3>{{ form.base_format.label }}</h3></label>
-                                               {%  include 'annotations/export_format_legends/base.html' %}
-                                               {% render_field form.base_format class+='form-control'%}
-                                               {% for error in form.base_format.errors %}
-                                               <div class="alert alert-warning">{{ error }}</div>
-                                               {% endfor %}
-                                               </div>
-                                               <hr>
-                                               <div class="form-group">
-                                               <label for="id_image_aggregation"><h3>Group annotations by images: </h3></label>
-                                               {% render_field form.image_aggregation|append_attr:'id:img_agg' %}
-                                               </div>
-                                               <div class="form-group" id="img_form-group">
-                                               <label for="id_image_format"><h3>{{ form.image_format.label }}</h3></label>
-                                               {% include 'annotations/export_format_legends/image.html' %}
-                                               {% render_field form.image_format class+='form-control'%}
-                                               {% for error in form.image_format.errors %}
-                                               <div class="alert alert-warning">{{ error }}</div>
-                                               {% endfor %}
-                                               </div>
-                                               <hr>
-                                               <div class="form-group">
-                                               <label for="id_annotation_format"><h3>{{ form.annotation_format.label }}</h3></label>
-                                               {%  include 'annotations/export_format_legends/annotation.html' %}
-                                               {% render_field form.annotation_format class+='form-control'%}
-                                               {% for error in form.annotation_format.errors %}
-                                               <div class="alert alert-warning">{{ error }}</div>
-                                               {% endfor %}
-                                               </div>
-                                               <hr>
-                                               <div class="form-group">
-                                               <label for="id_vector_format"><h3>{{ form.vector_format.label }}</h3></label>
-                                               {% include 'annotations/export_format_legends/vector.html' %}
-                                               {% render_field form.vector_format class+='form-control'%}
-                                               {% for error in form.vector_format.errors %}
-                                               <div class="alert alert-warning">{{ error }}</div>
-                                               {% endfor %}
-                                               </div>
-                                               <hr>
-                                               <div class="form-group">
-                                               <label for="id_not_in_image_format"><h3>{{ form.not_in_image_format.label }}</h3></label>
-                                               {% include 'annotations/export_format_legends/not_in_image.html' %}
-                                               {% render_field form.not_in_image_format class+='form-control'%}
-                                               {% for error in form.not_in_image_format.errors %}
-                                               <div class="alert alert-warning">{{ error }}</div>
-                                               {% endfor %}
-                                               </div>
-                                               {% for error in form.non_field_errors %}
-                                               <div class="alert alert-warning">{{ error }}</div>
-                                               {% endfor %}
-                                               </div>
-                                               <div class="modal-footer">
-                                               <a href="{% url 'annotations:delete_exportformat' form.instance.id %}" type="button" class="btn btn-danger pull-left">Delete</a>
-                                               <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-                                               <button type="submit" class="btn btn-primary">Save changes</button>
-                                               </div>
-                                               </form>
-                                               </div>
-                                               </div>
-                                               </div>
-                                               </li>
-                                    {% empty %}
-                                        {% trans 'no export formats available' %}
-                                    {% endfor %}
-                                </ul>
+        {% if 'create_set' in team_perms %}
+        <div class="card">
+            <div class="card-header">
+                <h3>Create imageset</h3>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'images:create_imageset' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="team" value="{{ team.id }}">
+                    <div class="form-group">
+                        <label for="id_name">{{ imageset_creation_form.name.label }}</label>
+                        {% render_field imageset_creation_form.name class+='form-control' placeholder=imageset_creation_form.name.label %}
+                    </div>
+                    <div class="form-group">
+                        <label for="id_location">{{ imageset_creation_form.location.label }}</label>
+                        {% render_field imageset_creation_form.location class+='form-control' placeholder=imageset_creation_form.location.label %}
+                    </div>
+                    <div class="form-group">
+                        <label for="id_public">{{ imageset_creation_form.public.label }} <span
+                                class="fa fa-question-sign" data-toggle="tooltip" data-placement="right"
+                                title="Enables public users to read the imageset "></span></label>
+                        {% render_field imageset_creation_form.public %}
+                    </div>
+                    <div class="form-group">
+                        <label for="id_public_collaboration">
+                            {{ imageset_creation_form.public_collaboration.label }} <span
+                                class="fa fa-question-sign" data-toggle="tooltip" data-placement="right"
+                                title="Enables public users to annotate and verify in the imageset, when it is set public "></span>
+                        </label>
+                        {% render_field imageset_creation_form.public_collaboration %}
+                    </div>
+                    <input class="btn btn-primary" type="submit" value="Create">
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if 'create_set' in team_perms %}
+        <div class="card">
+            <div class="card-header">
+                <h3>Create a new Product</h3>
+            </div>
+            <div class="card-body">
+                <table class="table table-striped">
+                    <tbody>
+                        <form action="{% url "administration:create_product" %}" method="POST">
+                            {% csrf_token %}
+                            <tr>
+                                <td>
+                                    <label for="id_name">{{ product_creation_form.name.label }}</label>
+                                </td>
+                                <td>
+                                    {% render_field product_creation_form.name class+='form-control' %}
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    <label for="id_description">{{ product_creation_form.description.label }}</label>
+                                </td>
+                                <td>
+                                    {% render_field product_creation_form.description class+='form-control' %}
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    <label for="id_team">{{ product_creation_form.team.label }}</label>
+                                </td>
+                                <td>
+                                    {% render_field product_creation_form.team class+='form-control' %}
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    <input class="btn btn-danger" type="reset" value="Reset">
+                                </td>
+                                <td align="right">
+                                    <input class="btn btn-primary right" type="submit" value="Create">
+                                </td>
+                            </tr>
+                        </form>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if 'manage_export_formats' in team_perms %}
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <h4>Export formats</h4>
+                </div>
+                <div class="panel-title pull-right">
+                    <input name="create_format" class="btn btn-default" type="button" value="Create Format"
+                        onclick="location.href='{% url 'annotations:create_exportformat' %}?mode=1&id={{ team.id }}'">
+                </div>
+                <div class="clearfix"></div>
+            </div>
+            <div class="card-body">
+                <ul>
+                    {% for form in export_formats_forms %}
+                    <li>
+                        {% if not form.instance.public %}
+                        <span class="fa fa-lock"></span>
+                        {% endif %}
+                        <!-- Button trigger modal -->
+                        <a href="#" data-toggle="modal" data-target="#format{{ form.instance.id }}Modal">
+                            {{ form.instance.name }}
+                        </a>
+
+                        <!-- Modal -->
+                        <div class="modal fade" id="format{{ form.instance.id }}Modal" tabindex="-1" role="dialog"
+                            aria-labelledby="format{{ form.instance.id }}ModalLabel">
+                            <div class="modal-dialog modal-lg" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <button type="button" class="close" data-dismiss="modal"
+                                            aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                        <h4 class="modal-title" id="format{{ form.instance.id }}ModalLabel">
+                                            Edit "{{ form.instance.name }}"</h4>
+                                    </div>
+                                    <form method="POST"
+                                        action="{% url 'annotations:edit_exportformat' form.instance.id %}">
+                                        <div class="modal-body">
+                                            {% csrf_token %}
+                                            <div class="form-group">
+                                                <label for="id_name">
+                                                    <h3>{{ form.name.label }}</h3> of the export format
+                                                </label>
+                                                {% render_field form.name class+='form-control' %}
+                                                {% for error in form.name.errors %}
+                                                <div class="alert alert-warning">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="id_name_format">
+                                                    <h3>{{ form.name_format.label }}</h3>for the export file
+                                                    name
+                                                </label>
+                                                {% include 'annotations/export_format_legends/name.html' %}
+                                                {% render_field form.name_format class+='form-control' %}
+                                                {% for error in form.name_format.errors %}
+                                                <div class="alert alert-warning">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="id_public">
+                                                    <h3>{{ form.public.label }}: </h3>
+                                                </label>
+                                                {% render_field form.public %}
+                                                {% for error in form.public.errors %}
+                                                <div class="alert alert-warning">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="id_annotations_types">
+                                                    <h3>{{ form.annotations_types.label }}</h3>
+                                                </label>
+                                                {% blocktrans %}
+                                                <p>Hold down "Ctl" to select more than one.</p>
+                                                {% endblocktrans %}
+                                                {% render_field form.annotations_types class+='form-control' %}
+                                                {% for error in form.annotations_types.errors %}
+                                                <div class="alert alert-warning">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="id_min_verifications">
+                                                    <h3>Minimum Amount of Verifications needed:</h3>
+                                                </label>
+                                                {% render_field form.min_verifications %}
+                                                {% for error in form.min_verifications.errors %}
+                                                <div class="alert alert-warning">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="id_include_blurred">
+                                                    <h3>{{ form.include_blurred.label }} annotations: </h3>
+                                                </label>
+                                                {% render_field form.include_blurred %}
+                                                {% for error in form.include_blurred.errors %}
+                                                <div class="alert alert-warning">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="id_include_concealed">
+                                                    <h3>{{ form.include_concealed.label }} annotations:
+                                                    </h3>
+                                                </label>
+                                                {% render_field form.include_concealed %}
+                                                {% for error in form.include_concealed.errors %}
+                                                <div class="alert alert-warning">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                            <hr>
+                                            <div class="form-group">
+                                                <label for="id_base_format">
+                                                    <h3>{{ form.base_format.label }}</h3>
+                                                </label>
+                                                {%  include 'annotations/export_format_legends/base.html' %}
+                                                {% render_field form.base_format class+='form-control'%}
+                                                {% for error in form.base_format.errors %}
+                                                <div class="alert alert-warning">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                            <hr>
+                                            <div class="form-group">
+                                                <label for="id_image_aggregation">
+                                                    <h3>Group annotations by images: </h3>
+                                                </label>
+                                                {% render_field form.image_aggregation|append_attr:'id:img_agg' %}
+                                            </div>
+                                            <div class="form-group" id="img_form-group">
+                                                <label for="id_image_format">
+                                                    <h3>{{ form.image_format.label }}</h3>
+                                                </label>
+                                                {% include 'annotations/export_format_legends/image.html' %}
+                                                {% render_field form.image_format class+='form-control'%}
+                                                {% for error in form.image_format.errors %}
+                                                <div class="alert alert-warning">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                            <hr>
+                                            <div class="form-group">
+                                                <label for="id_annotation_format">
+                                                    <h3>{{ form.annotation_format.label }}</h3>
+                                                </label>
+                                                {%  include 'annotations/export_format_legends/annotation.html' %}
+                                                {% render_field form.annotation_format class+='form-control'%}
+                                                {% for error in form.annotation_format.errors %}
+                                                <div class="alert alert-warning">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                            <hr>
+                                            <div class="form-group">
+                                                <label for="id_vector_format">
+                                                    <h3>{{ form.vector_format.label }}</h3>
+                                                </label>
+                                                {% include 'annotations/export_format_legends/vector.html' %}
+                                                {% render_field form.vector_format class+='form-control'%}
+                                                {% for error in form.vector_format.errors %}
+                                                <div class="alert alert-warning">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                            <hr>
+                                            <div class="form-group">
+                                                <label for="id_not_in_image_format">
+                                                    <h3>{{ form.not_in_image_format.label }}</h3>
+                                                </label>
+                                                {% include 'annotations/export_format_legends/not_in_image.html' %}
+                                                {% render_field form.not_in_image_format class+='form-control'%}
+                                                {% for error in form.not_in_image_format.errors %}
+                                                <div class="alert alert-warning">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                            {% for error in form.non_field_errors %}
+                                            <div class="alert alert-warning">{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                        <div class="modal-footer">
+                                            <a href="{% url 'annotations:delete_exportformat' form.instance.id %}"
+                                                type="button" class="btn btn-danger pull-left">Delete</a>
+                                            <button type="button" class="btn btn-default"
+                                                data-dismiss="modal">Cancel</button>
+                                            <button type="submit" class="btn btn-primary">Save
+                                                changes</button>
+                                        </div>
+                                    </form>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-            {% endif %}
+                    </li>
+                    {% empty %}
+                    {% trans 'no export formats available' %}
+                    {% endfor %}
+                </ul>
+            </div>
         </div>
-
+        {% endif %}
     </div>
+
 </div>
 {% endblock %}

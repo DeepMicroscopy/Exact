@@ -56,7 +56,7 @@
                                                 <th>
                                                     <dt> 
                                                         {% for tag in imageset.set_tags.all %}
-                                                            {{ tag.name }}<a href="{% url 'ImageSetView-list' %}?set_tags={{ tag.id }}"><span class="glyphicon glyphicon-filter"> </span></a> /
+                                                            {{ tag.name }}<a href="{% url 'ImageSetView-list' %}?set_tags={{ tag.id }}"><span class="fa fa-filter"> </span></a> /
                                                         {% endfor %}
                                                     </dt>
                                                 </th>
@@ -67,8 +67,8 @@
                                                             {% for version in imageset.set_versions.all %}
                                                             <li>
                                                                 {{ version.name }} ({{version.annotationversion_set.count}})
-                                                                <a href="{% url 'ImageSetView-list' %}?set_versions={{ version.id }}"><span class="glyphicon glyphicon-filter"> </span></a> 
-                                                                <a href="{% url 'AnnotationVersionView-list' %}?version={{ version.id }}"><span class="glyphicon glyphicon-new-window"> </span></a> 
+                                                                <a href="{% url 'ImageSetView-list' %}?set_versions={{ version.id }}"><span class="fa fa-filter"> </span></a> 
+                                                                <a href="{% url 'AnnotationVersionView-list' %}?version={{ version.id }}"><span class="fa fa-window-maximize"> </span></a> 
                                                             </li>
                                                             {% endfor %}
                                                         </ul>
@@ -79,8 +79,8 @@
                                                     <dt>
                                                         {% for product in imageset.product_set.all %}
                                                             <a href="{% url 'administration:product' product.id %}"> {{ product.name }}</a>
-                                                            <a href="{% url 'ImageSetView-list' %}?{{ first_query }}&product={{ product.id }}"><span class="glyphicon glyphicon-filter"> </span></a> 
-                                                            <a href="{% url 'ProductView-list' %}?id={{ product.id }}"><span class="glyphicon glyphicon-new-window"> </span></a> /
+                                                            <a href="{% url 'ImageSetView-list' %}?{{ first_query }}&product={{ product.id }}"><span class="fa fa-filter"> </span></a> 
+                                                            <a href="{% url 'ProductView-list' %}?id={{ product.id }}"><span class="fa fa-window-maximize"> </span></a> /
                                                         {% endfor %}
                                                     </dt>
                                                 </th>
@@ -90,7 +90,7 @@
                                                         <li>
                                                             Images: {{ imageset.images.count }}
                                                             <a href="{% url 'ImageView-list' %}?image_set={{ imageset.id }}"> 
-                                                                <span class="glyphicon glyphicon-new-window"></span> 
+                                                                <span class="fa fa-window-maximize"></span> 
                                                             </a>
                                                         </li>
                                                         {% if imageset.location is not None %}
@@ -121,8 +121,8 @@
                                                 <dt>
                                                     <a href="{% url 'users:team' image.image_set.team.id %}">{{image.image_set.team.name}}</a> /
                                                     <a href="{% url 'images:view_imageset' image.image_set.id %}">{{image.image_set.name}}</a> 
-                                                    <a href="{% url 'ImageView-list' %}?image_set={{ image.image_set.id }}"><span class="glyphicon glyphicon-filter"> </span></a>
-                                                    <a href="{% url 'ImageSetView-list' %}?id={{ image.image_set.id }}"><span class="glyphicon glyphicon-new-window"> </span></a> /
+                                                    <a href="{% url 'ImageView-list' %}?image_set={{ image.image_set.id }}"><span class="fa fa-filter"> </span></a>
+                                                    <a href="{% url 'ImageSetView-list' %}?id={{ image.image_set.id }}"><span class="fa fa-window-maximize"> </span></a> /
                                                     <a href="{% url 'annotations:annotate' image.id %}">{{image.name}}</a>
                                                 </dt>
                                             </th>
@@ -132,18 +132,18 @@
                                                     {% if image.image_type == 0 %} DEFAULT {% endif %}
                                                     {% if image.image_type == 1 %} SERVER_GENERATED {% endif %}
                                                     {% if image.image_type == 2 %} FILE_LINK {% endif %}
-                                                    <a href="{% url 'ImageView-list' %}?{{ first_query }}&image_type={{ image.image_type }}"><span class="glyphicon glyphicon-filter"> </span></a>
+                                                    <a href="{% url 'ImageView-list' %}?{{ first_query }}&image_type={{ image.image_type }}"><span class="fa fa-filter"> </span></a>
                                                 </dt>
                                             </th>
 
                                             <th>
                                                 <dt>
                                                     <ul>
-                                                        <li> Width: {{image.width}}<a href="{% url 'ImageView-list' %}?{{ first_query }}&width={{ image.width }}"><span class="glyphicon glyphicon-filter"> </span></a> </li>
-                                                        <li> Height: {{image.height}}<a href="{% url 'ImageView-list' %}?{{ first_query }}&height={{ image.height }}"><span class="glyphicon glyphicon-filter"> </span></a> </li>
-                                                        <li> MPP: {{image.mpp}}<a href="{% url 'ImageView-list' %}?{{ first_query }}&mpp={{ image.mpp }}"><span class="glyphicon glyphicon-filter"> </span></a> </li>
-                                                        <li> Objective Power: {{image.objectivePower}}<a href="{% url 'ImageView-list' %}?{{ first_query }}&objectivePower={{ image.objectivePower }}"><span class="glyphicon glyphicon-filter"> </span></a> </li>
-                                                        <li> Upload: {{image.time}}<a href="{% url 'ImageView-list' %}?{{ first_query }}&time={{ image.time }}"><span class="glyphicon glyphicon-filter"> </span></a> </li>
+                                                        <li> Width: {{image.width}}<a href="{% url 'ImageView-list' %}?{{ first_query }}&width={{ image.width }}"><span class="fa fa-filter"> </span></a> </li>
+                                                        <li> Height: {{image.height}}<a href="{% url 'ImageView-list' %}?{{ first_query }}&height={{ image.height }}"><span class="fa fa-filter"> </span></a> </li>
+                                                        <li> MPP: {{image.mpp}}<a href="{% url 'ImageView-list' %}?{{ first_query }}&mpp={{ image.mpp }}"><span class="fa fa-filter"> </span></a> </li>
+                                                        <li> Objective Power: {{image.objectivePower}}<a href="{% url 'ImageView-list' %}?{{ first_query }}&objectivePower={{ image.objectivePower }}"><span class="fa fa-filter"> </span></a> </li>
+                                                        <li> Upload: {{image.time}}<a href="{% url 'ImageView-list' %}?{{ first_query }}&time={{ image.time }}"><span class="fa fa-filter"> </span></a> </li>
                                                     </ul>                                                    
                                                 </dt>
                                             </th>
@@ -151,7 +151,7 @@
                                             <th>
                                                 <dt>
                                                     <ul>
-                                                        <li> Annotations: {{image.annotations.count}} <a href="{% url 'AnnotationView-list' %}?image={{ image.id }}"><span class="glyphicon glyphicon-new-window"></span></a> </li>
+                                                        <li> Annotations: {{image.annotations.count}} <a href="{% url 'AnnotationView-list' %}?image={{ image.id }}"><span class="fa fa-window-maximize"></span></a> </li>
                                                     </ul> 
                                                 </dt>
                                             </th>
@@ -182,18 +182,18 @@
                                                     <dt>
                                                         <a href="{% url 'users:team' annotation.image.image_set.team.id %}">{{annotation.image.image_set.team.name}}</a> /
                                                         <a href="{% url 'images:view_imageset' annotation.image.image_set.id %}">{{annotation.image.image_set.name}}</a> 
-                                                        <a href="{% url 'ImageSetView-list' %}?id={{ annotation.image.image_set.id }}"><span class="glyphicon glyphicon-new-window"> </span></a>                                                        /
+                                                        <a href="{% url 'ImageSetView-list' %}?id={{ annotation.image.image_set.id }}"><span class="fa fa-window-maximize"> </span></a>                                                        /
                                                         <a href="{% url 'annotations:annotate' annotation.image.id %}">{{annotation.image.name}}</a><!--TODO: Fix Link --> 
-                                                        <a href="{% url 'AnnotationView-list' %}?{{ first_query }}&image={{ annotation.image.id }}"><span class="glyphicon glyphicon-filter"> </span></a>
-                                                        <a href="{% url 'ImageView-list' %}?id={{ annotation.image.id }}"><span class="glyphicon glyphicon-new-window"> </span></a>
+                                                        <a href="{% url 'AnnotationView-list' %}?{{ first_query }}&image={{ annotation.image.id }}"><span class="fa fa-filter"> </span></a>
+                                                        <a href="{% url 'ImageView-list' %}?id={{ annotation.image.id }}"><span class="fa fa-window-maximize"> </span></a>
                                                     </dt>
                                                 </th>
 
                                                 <th>
                                                     <dt>
                                                         <a href="{% url 'administration:annotation_type' annotation.annotation_type.id %}">{{annotation.annotation_type.name}}</a> 
-                                                        <a href="{% url 'AnnotationView-list' %}?{{ first_query }}&annotation_type={{ annotation.annotation_type.id }}"><span class="glyphicon glyphicon-filter"> </span></a>
-                                                        <a href="{% url 'AnnotationTypeView-list' %}?id={{ annotation.annotation_type.id }}"><span class="glyphicon glyphicon-new-window"> </span></a>
+                                                        <a href="{% url 'AnnotationView-list' %}?{{ first_query }}&annotation_type={{ annotation.annotation_type.id }}"><span class="fa fa-filter"> </span></a>
+                                                        <a href="{% url 'AnnotationTypeView-list' %}?id={{ annotation.annotation_type.id }}"><span class="fa fa-window-maximize"> </span></a>
                                                     </dt>
                                                     <dt>
                                                         {% if annotation.annotation_type.vector_type == 1 %} BOUNDING_BOX {% endif %}
@@ -203,16 +203,16 @@
                                                         {% if annotation.annotation_type.vector_type == 5 %} POLYGON {% endif %}
                                                         {% if annotation.annotation_type.vector_type == 6 %} FIXED_SIZE_BOUNDING_BOX {% endif %}
                                                         {% if annotation.annotation_type.vector_type == 7 %} GLOBAL {% endif %}
-                                                        <a href="{% url 'AnnotationView-list' %}?{{ first_query }}&annotation_type.vector_type={{ annotation.annotation_type.vector_type }}"><span class="glyphicon glyphicon-filter"> </span></a>                                                        
+                                                        <a href="{% url 'AnnotationView-list' %}?{{ first_query }}&annotation_type.vector_type={{ annotation.annotation_type.vector_type }}"><span class="fa fa-filter"> </span></a>                                                        
                                                     </dt>
                                                 </th>
 
                                                 <th>
                                                     <dt>
                                                         <ul>
-                                                            <li> User: {{annotation.user.username}}<a href="{% url 'AnnotationView-list' %}?{{ first_query }}&user={{ annotation.user.id }}"><span class="glyphicon glyphicon-filter"> </span></a> </li>
-                                                            <li> Last Editor: {{annotation.last_editor.username}}<a href="{% url 'AnnotationView-list' %}?{{ first_query }}&last_editor={{ annotation.last_editor.id }}"><span class="glyphicon glyphicon-filter"> </span></a> </li>
-                                                            <li> Deleted: {{annotation.deleted}}<a href="{% url 'AnnotationView-list' %}?{{ first_query }}&deleted={{ annotation.deleted }}"><span class="glyphicon glyphicon-filter"> </span></a> </li>
+                                                            <li> User: {{annotation.user.username}}<a href="{% url 'AnnotationView-list' %}?{{ first_query }}&user={{ annotation.user.id }}"><span class="fa fa-filter"> </span></a> </li>
+                                                            <li> Last Editor: {{annotation.last_editor.username}}<a href="{% url 'AnnotationView-list' %}?{{ first_query }}&last_editor={{ annotation.last_editor.id }}"><span class="fa fa-filter"> </span></a> </li>
+                                                            <li> Deleted: {{annotation.deleted}}<a href="{% url 'AnnotationView-list' %}?{{ first_query }}&deleted={{ annotation.deleted }}"><span class="fa fa-filter"> </span></a> </li>
                                                         </ul>                                                    
                                                     </dt>
                                                 </th>
@@ -220,8 +220,8 @@
                                                 <th>
                                                     <dt>
                                                         <ul>
-                                                            <li> UUID: {{annotation.unique_identifier}}<a href="{% url 'AnnotationView-list' %}?{{ first_query }}&unique_identifier={{ annotation.unique_identifier }}"><span class="glyphicon glyphicon-filter"> </span></a> </li>
-                                                            <li> Description: {{annotation.description}}<a href="{% url 'AnnotationView-list' %}?{{ first_query }}&description={{ annotation.description }}"><span class="glyphicon glyphicon-filter"></span></a> </li>
+                                                            <li> UUID: {{annotation.unique_identifier}}<a href="{% url 'AnnotationView-list' %}?{{ first_query }}&unique_identifier={{ annotation.unique_identifier }}"><span class="fa fa-filter"> </span></a> </li>
+                                                            <li> Description: {{annotation.description}}<a href="{% url 'AnnotationView-list' %}?{{ first_query }}&description={{ annotation.description }}"><span class="fa fa-filter"></span></a> </li>
                                                         </ul>
                                                     </dt>
                                                 </th>
@@ -232,10 +232,10 @@
                                                             {% for anno_version in annotation.annotationversion_set.all %}
                                                             <li>
                                                                 {% if anno_version.has_changes == True %} 
-                                                                    <span class="glyphicon glyphicon-exclamation-sign" style="background-color: yellow;"> </span> 
+                                                                    <span class="fa fa-exclamation-sign" style="background-color: yellow;"> </span> 
                                                                 {% endif %}
                                                                 {{ anno_version.version.name }}
-                                                                <a href="{% url 'AnnotationVersionView-list' %}?annotation={{ annotation.id }}"><span class="glyphicon glyphicon-new-window"> </span></a> 
+                                                                <a href="{% url 'AnnotationVersionView-list' %}?annotation={{ annotation.id }}"><span class="fa fa-window-maximize"> </span></a> 
                                                             </li>
                                                             {% endfor %}
                                                         </ul>
@@ -268,7 +268,7 @@
                                                 <th>
                                                     <dt>                                                     
                                                         <a href="{% url 'annotations:annotate' media_file.annotation.image.id %}">{{media_file.annotation.image.name}}</a><!--TODO: Fix Link --> 
-                                                        <a href="{% url 'AnnotationMediaFileView-list' %}?{{ first_query }}&annotation={{ media_file.annotation.id }}"><span class="glyphicon glyphicon-filter"> </span></a>
+                                                        <a href="{% url 'AnnotationMediaFileView-list' %}?{{ first_query }}&annotation={{ media_file.annotation.id }}"><span class="fa fa-filter"> </span></a>
                                                          / {{ media_file.name }}
                                                     </dt>
                                                 </th>
@@ -279,7 +279,7 @@
                                                         {% if media_file.media_file_type == 2 %} Image {% endif %}
                                                         {% if media_file.media_file_type == 3 %} Video {% endif %}
                                                         {% if media_file.media_file_type == 4 %} Audio {% endif %}
-                                                        <a href="{% url 'AnnotationMediaFileView-list' %}?{{ first_query }}&media_file_type={{ media_file.media_file_type }}"><span class="glyphicon glyphicon-filter"> </span></a>                                                        
+                                                        <a href="{% url 'AnnotationMediaFileView-list' %}?{{ first_query }}&media_file_type={{ media_file.media_file_type }}"><span class="fa fa-filter"> </span></a>                                                        
                                                     </dt>
                                                 </th>
 
@@ -305,7 +305,7 @@
                                                 </th>
 
                                                 <th>
-                                                    <a href="{% url 'AnnotationView-list' %}?{{ first_query }}&id={{ media_file.annotation.id }}"><span class="glyphicon glyphicon-new-window"> </span></a>
+                                                    <a href="{% url 'AnnotationView-list' %}?{{ first_query }}&id={{ media_file.annotation.id }}"><span class="fa fa-window-maximize"> </span></a>
                                                 </th>
 
                                             </tr>
@@ -329,20 +329,20 @@
                                                     <dt>
                                                         <a href="{% url 'users:team' annotation_type.product.team.id %}">{{annotation_type.product.team.name}}</a> /
                                                         <a href="{% url 'administration:product' annotation_type.product.id %}"> {{ annotation_type.product.name }} 
-                                                        <a href="{% url 'AnnotationTypeView-list' %}?{{ first_query }}&product={{ annotation_type.product.id }} "><span class="glyphicon glyphicon-filter"> </span></a>
-                                                        <a href="{% url 'ProductView-list' %}?id={{ annotation_type.product.id }} "><span class="glyphicon glyphicon-new-window"> </span></a> /
+                                                        <a href="{% url 'AnnotationTypeView-list' %}?{{ first_query }}&product={{ annotation_type.product.id }} "><span class="fa fa-filter"> </span></a>
+                                                        <a href="{% url 'ProductView-list' %}?id={{ annotation_type.product.id }} "><span class="fa fa-window-maximize"> </span></a> /
                                                         <a href="{% url 'administration:annotation_type' annotation_type.id %}">{{annotation_type.name}}</a>
-                                                        <a href="{% url 'AnnotationTypeView-list' %}?{{ first_query }}&id={{ annotation_type.id }}"><span class="glyphicon glyphicon-filter"> </span></a> 
+                                                        <a href="{% url 'AnnotationTypeView-list' %}?{{ first_query }}&id={{ annotation_type.id }}"><span class="fa fa-filter"> </span></a> 
                                                     </dt>
                                                 </th>
 
                                                 <th>
                                                     <dt>
                                                         <ul>
-                                                            <li> Active: {{annotation_type.active}}<a href="{% url 'AnnotationTypeView-list' %}?{{ first_query }}&active={{ annotation_type.active }}"><span class="glyphicon glyphicon-filter"> </span></a> </li>
+                                                            <li> Active: {{annotation_type.active}}<a href="{% url 'AnnotationTypeView-list' %}?{{ first_query }}&active={{ annotation_type.active }}"><span class="fa fa-filter"> </span></a> </li>
                                                             <li>                                                                 
-                                                                Width: {{annotation_type.default_width}} <a href="{% url 'AnnotationTypeView-list' %}?{{ first_query }}&default_width={{ annotation_type.default_width }}"><span class="glyphicon glyphicon-filter"> </span></a> / 
-                                                                Height: {{annotation_type.default_height}}<a href="{% url 'AnnotationTypeView-list' %}?{{ first_query }}&default_width={{ annotation_type.default_height }}"><span class="glyphicon glyphicon-filter"> </span></a> 
+                                                                Width: {{annotation_type.default_width}} <a href="{% url 'AnnotationTypeView-list' %}?{{ first_query }}&default_width={{ annotation_type.default_width }}"><span class="fa fa-filter"> </span></a> / 
+                                                                Height: {{annotation_type.default_height}}<a href="{% url 'AnnotationTypeView-list' %}?{{ first_query }}&default_width={{ annotation_type.default_height }}"><span class="fa fa-filter"> </span></a> 
                                                             </li>
 
                                                             <li>
@@ -355,7 +355,7 @@
                                                                     {% if annotation_type.vector_type == 5 %} POLYGON {% endif %}
                                                                     {% if annotation_type.vector_type == 6 %} FIXED_SIZE_BOUNDING_BOX {% endif %}
                                                                     {% if annotation_type.vector_type == 7 %} GLOBAL {% endif %}
-                                                                    <a href="{% url 'AnnotationTypeView-list' %}?{{ first_query }}&vector_type={{ annotation_type.vector_type }}"><span class="glyphicon glyphicon-filter"> </span></a>                                                        
+                                                                    <a href="{% url 'AnnotationTypeView-list' %}?{{ first_query }}&vector_type={{ annotation_type.vector_type }}"><span class="fa fa-filter"> </span></a>                                                        
                                                                 </dt>
                                                             </li>
                                                         </ul>                                                    
@@ -366,7 +366,7 @@
                                                 <th>
                                                     <dt>
                                                         <ul>
-                                                            <li> Annotations: {{annotation_type.annotation_set.count}} <a href="{% url 'AnnotationView-list' %}?annotation_type={{ annotation_type.id }}"><span class="glyphicon glyphicon-new-window"></span></a> </li>
+                                                            <li> Annotations: {{annotation_type.annotation_set.count}} <a href="{% url 'AnnotationView-list' %}?annotation_type={{ annotation_type.id }}"><span class="fa fa-window-maximize"></span></a> </li>
                                                         </ul>                                                    
                                                     </dt>
                                                 </th>
@@ -400,8 +400,8 @@
                                                     <dt>
                                                         {% for imageset in product.imagesets.all %}
                                                             <a href="{% url 'images:view_imageset' imageset.id %}">{{imageset.name}}</a>
-                                                            <a href="{% url 'ProductView-list' %}?{{ first_query }}&imagesets={{ imageset.id }} "><span class="glyphicon glyphicon-filter"> </span></a>
-                                                            <a href="{% url 'ImageSetView-list' %}?id={{ imageset.id }} "><span class="glyphicon glyphicon-new-window"> </span></a> /
+                                                            <a href="{% url 'ProductView-list' %}?{{ first_query }}&imagesets={{ imageset.id }} "><span class="fa fa-filter"> </span></a>
+                                                            <a href="{% url 'ImageSetView-list' %}?id={{ imageset.id }} "><span class="fa fa-window-maximize"> </span></a> /
                                                         {% endfor %}
                                                     </dt>
                                                 </th>
@@ -410,8 +410,8 @@
                                                     <dt>
                                                         {% for annotation_type in product.annotationtype_set.all %}
                                                             <a href="{% url 'administration:annotation_type' annotation_type.id %}">{{annotation_type.name}}</a> 
-                                                            <a href="{% url 'ProductView-list' %}?{{ first_query }}&annotationtype={{ annotation_type.id }} "><span class="glyphicon glyphicon-filter"> </span></a>
-                                                            <a href="{% url 'AnnotationTypeView-list' %}?id={{ annotation_type.id }} "><span class="glyphicon glyphicon-new-window"> </span></a> /
+                                                            <a href="{% url 'ProductView-list' %}?{{ first_query }}&annotationtype={{ annotation_type.id }} "><span class="fa fa-filter"> </span></a>
+                                                            <a href="{% url 'AnnotationTypeView-list' %}?id={{ annotation_type.id }} "><span class="fa fa-window-maximize"> </span></a> /
                                                         {% endfor %}
                                                     </dt>
                                                 </th>
@@ -438,7 +438,7 @@
                                                     <dt>
                                                         {% for imageset in version.imagesets.all %}
                                                             <a href="{% url 'images:view_imageset' imageset.id %}">{{imageset.name}}</a>
-                                                            <a href="{% url 'ImageSetView-list' %}?id={{ imageset.id }} "><span class="glyphicon glyphicon-new-window"> </span></a> /
+                                                            <a href="{% url 'ImageSetView-list' %}?id={{ imageset.id }} "><span class="fa fa-window-maximize"> </span></a> /
                                                         {% endfor %}
                                                     </dt>
                                                 </th>
@@ -448,7 +448,7 @@
                                                         <ul>
                                                             <li>
                                                                 Annotations: ({{version.annotationversion_set.count}})
-                                                                <a href="{% url 'AnnotationVersionView-list' %}?version={{ version.id }}"><span class="glyphicon glyphicon-new-window"> </span></a> 
+                                                                <a href="{% url 'AnnotationVersionView-list' %}?version={{ version.id }}"><span class="fa fa-window-maximize"> </span></a> 
                                                             </li>
                                                             <li>
                                                                 File: {{version.file}}
@@ -482,10 +482,10 @@
                                             <dt>
                                                 <a href="{% url 'users:team' anno_version.image.image_set.team.id %}">{{anno_version.image.image_set.team.name}}</a> /
                                                 <a href="{% url 'images:view_imageset' anno_version.image.image_set.id %}">{{anno_version.image.image_set.name}}</a> 
-                                                <a href="{% url 'ImageSetView-list' %}?id={{ anno_version.image.image_set.id }}"><span class="glyphicon glyphicon-new-window"> </span></a>                                                        /
+                                                <a href="{% url 'ImageSetView-list' %}?id={{ anno_version.image.image_set.id }}"><span class="fa fa-window-maximize"> </span></a>                                                        /
                                                 <a href="{% url 'annotations:annotate' anno_version.image.id %}">{{anno_version.image.name}}</a><!--TODO: Fix Link --> 
-                                                <a href="{% url 'AnnotationVersionView-list' %}?{{ first_query }}&image={{ anno_version.image.id }}"><span class="glyphicon glyphicon-filter"> </span></a>
-                                                <a href="{% url 'ImageView-list' %}?id={{ anno_version.image.id }}"><span class="glyphicon glyphicon-new-window"> </span></a>
+                                                <a href="{% url 'AnnotationVersionView-list' %}?{{ first_query }}&image={{ anno_version.image.id }}"><span class="fa fa-filter"> </span></a>
+                                                <a href="{% url 'ImageView-list' %}?id={{ anno_version.image.id }}"><span class="fa fa-window-maximize"> </span></a>
                                             </dt>
                                         </th>
 
@@ -493,12 +493,12 @@
                                             <ul>
                                                 <li>
                                                     {% if anno_version.has_changes == True %} 
-                                                        <span class="glyphicon glyphicon-exclamation-sign" style="background-color: yellow;"> </span> 
+                                                        <span class="fa fa-exclamation-sign" style="background-color: yellow;"> </span> 
                                                     {% endif %}
-                                                    Changes: {{anno_version.has_changes}} <a href="{% url 'AnnotationVersionView-list' %}?{{ first_query }}&has_changes={{ anno_version.has_changes }}"><span class="glyphicon glyphicon-filter"> </span></a>
+                                                    Changes: {{anno_version.has_changes}} <a href="{% url 'AnnotationVersionView-list' %}?{{ first_query }}&has_changes={{ anno_version.has_changes }}"><span class="fa fa-filter"> </span></a>
                                                 </li>
                                                 <li>
-                                                    Name: {{anno_version.version.name}} <a href="{% url 'AnnotationVersionView-list' %}?{{ first_query }}&version={{ anno_version.version.id }}"><span class="glyphicon glyphicon-filter"> </span></a>
+                                                    Name: {{anno_version.version.name}} <a href="{% url 'AnnotationVersionView-list' %}?{{ first_query }}&version={{ anno_version.version.id }}"><span class="fa fa-filter"> </span></a>
                                                 </li>
 
                                                 <li> Date: {{anno_version.version.time}} </li>
@@ -511,10 +511,10 @@
                                                     User: {{anno_version.annotation.user.username}}
                                                 </li>
                                                 <li>
-                                                    Type: {{anno_version.annotation_type.name}} <a href="{% url 'AnnotationVersionView-list' %}?{{ first_query }}&annotation_type={{ anno_version.annotation_type.id }}"><span class="glyphicon glyphicon-filter"> </span></a>
+                                                    Type: {{anno_version.annotation_type.name}} <a href="{% url 'AnnotationVersionView-list' %}?{{ first_query }}&annotation_type={{ anno_version.annotation_type.id }}"><span class="fa fa-filter"> </span></a>
                                                 </li>
                                                 <li>
-                                                    Deleted: {{anno_version.deleted}} <a href="{% url 'AnnotationVersionView-list' %}?{{ first_query }}&deleted={{ anno_version.deleted }}"><span class="glyphicon glyphicon-filter"> </span></a>
+                                                    Deleted: {{anno_version.deleted}} <a href="{% url 'AnnotationVersionView-list' %}?{{ first_query }}&deleted={{ anno_version.deleted }}"><span class="fa fa-filter"> </span></a>
                                                 </li>
                                                 <li>
                                                     Vector: 
@@ -531,19 +531,19 @@
                                                 </li>
                                                 <li>
                                                     {% if anno_version.annotation_type.id != anno_version.annotation.annotation_type.id %} 
-                                                        <span class="glyphicon glyphicon-exclamation-sign" style="background-color: yellow;"> </span> 
+                                                        <span class="fa fa-exclamation-sign" style="background-color: yellow;"> </span> 
                                                     {% endif %}
-                                                    Type: {{anno_version.annotation.annotation_type.name}} <a href="{% url 'AnnotationVersionView-list' %}?{{ first_query }}&annotation_type={{ anno_version.annotation.annotation_type.id }}"><span class="glyphicon glyphicon-filter"> </span></a>
+                                                    Type: {{anno_version.annotation.annotation_type.name}} <a href="{% url 'AnnotationVersionView-list' %}?{{ first_query }}&annotation_type={{ anno_version.annotation.annotation_type.id }}"><span class="fa fa-filter"> </span></a>
                                                 </li>
                                                 <li>
                                                     {% if anno_version.deleted != anno_version.annotation.deleted %} 
-                                                        <span class="glyphicon glyphicon-exclamation-sign" style="background-color: yellow;"> </span> 
+                                                        <span class="fa fa-exclamation-sign" style="background-color: yellow;"> </span> 
                                                     {% endif %}
-                                                    Deleted: {{anno_version.annotation.deleted}} <a href="{% url 'AnnotationVersionView-list' %}?{{ first_query }}&deleted={{ anno_version.annotation.deleted }}"><span class="glyphicon glyphicon-filter"> </span></a>
+                                                    Deleted: {{anno_version.annotation.deleted}} <a href="{% url 'AnnotationVersionView-list' %}?{{ first_query }}&deleted={{ anno_version.annotation.deleted }}"><span class="fa fa-filter"> </span></a>
                                                 </li>
                                                 <li>
                                                     {% if anno_version.vector != anno_version.annotation.vector %} 
-                                                        <span class="glyphicon glyphicon-exclamation-sign" style="background-color: yellow;"> </span> 
+                                                        <span class="fa fa-exclamation-sign" style="background-color: yellow;"> </span> 
                                                     {% endif %}
                                                     Vector: 
                                                     <input type="text" style="max-width: fit-content;" value="{{anno_version.annotation.vector}} " readonly>

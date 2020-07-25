@@ -38,7 +38,7 @@ def annotate(request, image_id):
     selected_image = get_object_or_404(Image, id=image_id)
     imageset_perms = selected_image.image_set.get_perms(request.user)
     if 'read' in imageset_perms:
-        set_images = selected_image.image_set.images.all().order_by('name')
+        set_images = selected_image.image_set.images.all().order_by('id')
         hasMediaFiles = AnnotationMediaFile.objects.filter(annotation__image__in=set_images).count() > 0
         annotation_types = AnnotationType.objects.filter(active=True,
                                                          product__in=selected_image.image_set.product_set.all())\
@@ -46,10 +46,11 @@ def annotate(request, image_id):
 
         global_annotation_types = annotation_types.filter(vector_type=AnnotationType.VECTOR_TYPE.GLOBAL)
         annotation_types = annotation_types.exclude(vector_type=AnnotationType.VECTOR_TYPE.GLOBAL)
-        
+
         total_annotations = selected_image.annotations.filter(deleted=False).count()
         imageset_lock = selected_image.image_set.image_lock
         return render(request, 'annotations/annotate.html', {
+            'team': selected_image.image_set.team,
             'selected_image': selected_image,
             'imageset_perms': imageset_perms,
             'imageset_lock': imageset_lock,
@@ -57,7 +58,8 @@ def annotate(request, image_id):
             'total_annotations': total_annotations,
             'annotation_types': annotation_types,
             'HasMediaFiles': hasMediaFiles,
-            'global_annotation_types': global_annotation_types
+            'global_annotation_types': global_annotation_types,
+            'user_id': request.user.id
         })
     else:
         return redirect(reverse('images:view_imageset', args=(selected_image.image_set.id,)))
