@@ -56,6 +56,8 @@ class BoundingBoxes {
                 let uuid = item.item.name;
                 this.viewer.raiseEvent('tool_StartAnnotationEditing', { uuid });
             }
+        } else if (this.current_item.item !== item.item) {
+            this.current_item.item = item.item;
         }
     }        
     

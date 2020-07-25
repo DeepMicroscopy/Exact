@@ -224,7 +224,7 @@
                                     <td>Name</td>
                                     <td>{{imageset.name}}</td>
                                 </tr>
-                                {% if imageset.team and user.is_superuser %}
+                                {% if imageset.team %}
                                     <tr>
                                         <td>Team</td>
                                         <td><a href="{% url 'users:team' imageset.team.id %}">{{imageset.team.name}}</a></td>
@@ -331,7 +331,7 @@
                         </table>
                     </div>
                 </div>
-            {% if "edit_set" in imageset_perms and user.is_superuser %}
+            {% if "edit_set" in imageset_perms %}
                 <div class="card">
                     <div class="card-header">
                         <h3 class="float-left">Imageset management</h3>
@@ -654,7 +654,7 @@
             {% endif %}
         </div>
         <div class="col-md-3">
-            {%  if "annotate" in imageset_perms and is_superuser%}
+            {%  if "annotate" in imageset_perms%}
                 {% if first_annotation or "edit_set" in imageset_perms and all_annotation_types%}
                     <div class="panel panel-default">
                         <div class="panel-heading">
