@@ -10,6 +10,7 @@ from . import models
 from . import serializers
 import django_filters
 from rest_framework import filters
+from datetime import datetime
 
 
 class AnnotationFilterSet(django_filters.FilterSet):
@@ -87,6 +88,12 @@ class AnnotationViewSet(viewsets.ModelViewSet):
         if "annotationversion_set" not in request.data:
             request.data["annotationversion_set"] = []
         response = super().create(request)
+        if "time" in request.data or "last_edit_time" in request.data:
+            if "time" in request.data: 
+                self.get_queryset().filter(id=response.data['id']).update(time=datetime.strptime(request.data["time"], "%Y-%m-%dT%H:%M:%S.%f"))
+            if "last_edit_time" in request.data: 
+                self.get_queryset().filter(id=response.data['id']).update(last_edit_time=datetime.strptime(request.data["last_edit_time"], "%Y-%m-%dT%H:%M:%S.%f"))
+            return Response(self.get_serializer(models.Annotation.objects.get(pk=response.data['id'])).data)
         return response
 
     def partial_update(self, request, *args, **kwargs):
@@ -101,6 +108,12 @@ class AnnotationViewSet(viewsets.ModelViewSet):
         if "last_editor" not in request.data:
             request.data["last_editor"] = user.id
         response = super().update(request, *args, **kwargs)
+        if "time" in request.data or "last_edit_time" in request.data:
+            if "time" in request.data: 
+                self.get_queryset().filter(id=response.data['id']).update(time=datetime.strptime(request.data["time"], "%Y-%m-%dT%H:%M:%S.%f"))
+            if "last_edit_time" in request.data: 
+                self.get_queryset().filter(id=response.data['id']).update(last_edit_time=datetime.strptime(request.data["last_edit_time"], "%Y-%m-%dT%H:%M:%S.%f"))
+            return Response(self.get_serializer(self.get_object()).data)
         return response
 
     def list(self, request, *args, **kwargs):

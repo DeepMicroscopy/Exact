@@ -57,6 +57,7 @@ class AnnotationTypeSerializer(FlexFieldsModelSerializer):
 class AnnotationSerializer(FlexFieldsModelSerializer):
     verified_by_user = SerializerMethodField('is_verified_by_user')
     is_verified = SerializerMethodField('is_verified')
+    last_edit_time = serializers.DateTimeField(read_only=False)
 
     def is_verified(self, annotation):
 
@@ -78,7 +79,9 @@ class AnnotationSerializer(FlexFieldsModelSerializer):
             'concealed',
             'blurred',
             'last_editor',
+            'last_edit_time',
             'user',
+            'time',
             'deleted',
             'description',
             'unique_identifier',
