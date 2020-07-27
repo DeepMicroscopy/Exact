@@ -715,7 +715,7 @@ def download_image_api(request, image_id) -> Response:
 
     file_path = Path(settings.IMAGE_PATH) / image.path()
     if original_image is not None and 'True' == original_image:
-        file_path =  Path(file_path).parent / Path(image.name)
+        file_path =  Path(image.original_path())
 
     response = FileResponse(open(str(file_path), 'rb'), content_type='application/zip')
 
