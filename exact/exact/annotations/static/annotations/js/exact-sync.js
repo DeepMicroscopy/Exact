@@ -885,3 +885,152 @@ class EXACTGlobalAnnotationSync extends EXACTAnnotationSync {
         }
     }
 }
+
+class EXACTGlobalFrameAnnotationSync extends EXACTGlobalAnnotationSync {
+
+    constructor(annotationTypes, imageId, gHeaders,
+        viewer, user_id, collaboration_type = 0, frames, limit = 250, updateInterval = 30000) {
+
+        super(annotationTypes, imageId, gHeaders, viewer, user_id, collaboration_type, limit, updateInterval);
+        this.frames = frames;
+
+        for (let i = 1; i <= this.frames; i++) {
+            this.annotations[i] = {};
+        }
+    }
+
+    initLoadAnnotations(annotationTypes, imageId, limit = 250) {
+
+        for (let annotation_type of Object.values(annotationTypes)) {
+
+            this.statistics[annotation_type.id] = {
+                total: 0,
+                loaded: 0,
+                finished: false,
+                verified: 0,
+                annotation_type: annotation_type
+            }
+
+            let filter = this.API_1_FILTERS;
+            filter += 'annotation_type=' + annotation_type.id + '&';
+
+            let url = `${this.API_1_ANNOTATIONS_BASE_URL}annotations/?limit=${limit}&${filter}${this.API_1_ANNOTATION_EXPAND}${this.API_1_ANNOTATION_FIELDS}`
+            this.loadAnnotations(url, imageId, this, annotation_type)
+        }
+    }
+
+    loadAnnotations(url, imageId, context, annotation_type = undefined) {
+        $.ajax(url, {
+            type: 'GET', headers: context.gHeaders, dataType: 'json',
+            success: function (data) {
+
+                for (let annotation of data.results) {
+                    // set annoation type
+                    annotation.annotation_type = context.annotationTypes[annotation.annotation_type];
+
+                    //  New global Annotations Added   
+                    if ("frame" in annotation.vector) {
+                        context.annotations[annotation.vector.frame][annotation.annotation_type.id] = annotation;
+                        context.statistics[annotation.annotation_type.id].finished = true;
+                    }
+                }
+
+                if (data.next !== null) {
+                    // if the image instance should load more annotation but has a stop command save the next commands
+                    let url = context.API_1_ANNOTATIONS_BASE_URL + data.next.split(context.API_1_ANNOTATIONS_BASE_URL)[1]
+                    if (context.interruptLoading === false) {
+                        context.loadAnnotations(url, imageId, context, annotation_type)
+                    } else {
+                        context.resumeLoadAnnotationsCache[annotation_type] = {
+                            url: url
+                        }
+                    }
+                } else {
+                    context.statistics[annotation_type.id].finished = true;
+                }
+
+            },
+            error: function (request, status, error) {
+                if (request.responseText !== undefined) {
+                    $.notify(request.responseText, { position: "bottom center", className: "error" });
+                } else {
+                    $.notify(`Server ERR_CONNECTION_TIMED_OUT`, { position: "bottom center", className: "error" });
+                }
+            }
+        });
+    }
+
+    loadAnnotationsWithConditions(url, imageId, context) {
+
+        $.ajax(url, {
+            type: 'GET', headers: context.gHeaders, dataType: 'json',
+            success: function (data, textStatus, jqXHR) {
+
+                for (let annotation of data.results) {
+                    if (annotation.user.id === context.user_id ||
+                        annotation.last_editor.id === context.user_id ||
+                        !("frame" in annotation.vector))
+                        continue;
+
+                    annotation.annotation_type = context.annotationTypes[annotation.annotation_type]
+
+                    className = "info";
+                    if (annotation.description.includes('@')) {
+                        className = "warn";
+                    }
+
+                    // annotation to update
+                    if (annotation.annotation_type.id in context.annotations) {
+                        if (anno.deleted) {
+                            context.synchronisationNotifications(className, annotation, "GlobalAnnotationDeleted")
+                        }
+                        else {
+                            context.synchronisationNotifications(className, annotation, "GlobalAnnotationUpdated")
+                        }
+                    } else {
+                        context.synchronisationNotifications(className, annotation, "GlobalAnnotationCreated")
+                    }
+
+                    // set annotation to values form Server
+                    context.annotations[annotation.vector.frame][annotation.annotation_type.id] = annotation;
+                    context.viewer.raiseEvent('sync_GlobalAnnotations', { annotation });
+                }
+            },
+            error: function (request, status, error) {
+                if (request.responseText !== undefined) {
+                    $.notify(request.responseText, { position: "bottom center", className: "error" });
+                } else {
+                    $.notify(`Server ERR_CONNECTION_TIMED_OUT`, { position: "bottom center", className: "error" });
+                }
+            }
+        });
+    }
+
+    getAnnotation(annotation_type_id, frame) {
+        return this.annotations[frame][annotation_type_id]
+    }
+
+    changeGlobalAnnotation(annotation_type_id, active, frame) {
+
+        let annotation = this.getAnnotation(annotation_type_id, frame);
+        if (annotation === undefined) {
+            annotation = {
+                annotation_type: this.annotationTypes[annotation_type_id],
+                id: -1,
+                vector: { frame: frame},
+                user: { id: null, username: "you" },
+                last_editor: { id: null, username: "you" },
+                image: this.imageId,
+                unique_identifier: this.getUUIDV4()
+            }
+        }
+
+        if (active) {
+            annotation.deleted = false;
+        } else {
+            // set global annotation as deleted
+            annotation.deleted = true;
+        }
+        this.saveAnnotation(annotation)
+    }
+}
