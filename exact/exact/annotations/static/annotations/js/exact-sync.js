@@ -931,7 +931,7 @@ class EXACTGlobalFrameAnnotationSync extends EXACTGlobalAnnotationSync {
                     //  New global Annotations Added   
                     if ("frame" in annotation.vector) {
                         context.annotations[annotation.vector.frame][annotation.annotation_type.id] = annotation;
-                        context.statistics[annotation.annotation_type.id].finished = true;
+                        context.viewer.raiseEvent('sync_GlobalAnnotations', { annotation });
                     }
                 }
 
