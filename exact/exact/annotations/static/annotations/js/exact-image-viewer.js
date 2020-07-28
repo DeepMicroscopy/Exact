@@ -73,8 +73,13 @@ class EXACTViewer {
                 return new EXACTViewerGlobalLocalAnnotations(image_url, options, imageInformation, collaboration_type, local_annotation_types, global_annotation_types,
                     headers, user_id, drawAnnotations, strokeWidth)
             } else if (Object.keys(global_annotation_types).length > 0) {
-                return new EXACTViewerGlobalAnnotations(image_url, options, imageInformation, collaboration_type, annotationTypes,
-                    headers, user_id)
+                if (imageInformation['frames'] > 1) {
+                    return new EXACTViewerGlobalAnnotationsFrame(image_url, options, imageInformation, collaboration_type, annotationTypes,
+                        headers, user_id)
+                } else {
+                    return new EXACTViewerGlobalAnnotations(image_url, options, imageInformation, collaboration_type, annotationTypes,
+                        headers, user_id)
+                }
             } else {
                 if (imageInformation['frames'] > 1) {
                     return new EXACTViewerLocalAnnotationsFrames(image_url, options, imageInformation, collaboration_type, annotationTypes,
@@ -1122,12 +1127,89 @@ class EXACTViewerLocalAnnotationsFrames extends EXACTViewerLocalAnnotations{
     }
 }
 
+
+class EXACTViewerGlobalAnnotationsFrame extends EXACTViewer {
+
+    constructor(image_url, options, imageInformation, collaboration_type, annotationTypes,
+        headers, user_id) {
+
+        super(image_url, options, imageInformation, headers, user_id);
+        this.frame = 1;
+
+        this.exact_sync = this.createSyncModules(annotationTypes, this.imageId, headers, this.viewer, user_id, collaboration_type, frames=imageInformation['frames']);
+
+        // register for global annotation type interactions
+        // set global annotation initialy to false
+        for (let annotation_type of Object.values(annotationTypes)) {
+            this.setUiGlobalAnnotation(annotation_type.id, false)
+            $('#GlobalAnnotation_' + annotation_type.id).change(this.uiGlobalAnnotationChanged.bind(this))
+        }
+    }
+
+    initViewerEventHandler(viewer, imageInformation) {
+
+        super.initViewerEventHandler(viewer, imageInformation);
+
+        viewer.addHandler('sync_GlobalAnnotations', function (event) {
+            event.userData.setUiGlobalAnnotation(event.annotation.annotation_type, !event.annotation.deleted);
+        }, this);
+
+        viewer.addHandler('page', function (event) {
+
+            event.userData.newPageLoaded(event.page + 1)
+        }, this);
+
+    }
+
+    newPageLoaded(frame_id) {
+
+        this.frame = frame_id;
+
+        // set global annotations to false
+        for (let annotation_type of Object.values(this.exact_sync.annotationTypes)) {
+            $('#GlobalAnnotation_' + annotation_type.id).prop("checked", false);
+        }
+
+        let frameAnnotations =this.filterFrameAnnotations(this.exact_sync.annotations, this.frame);
+
+        for (let anno of frameAnnotations) {
+            this.setUiGlobalAnnotation(anno.annotation_type, !anno.deleted)
+        }
+    }
+
+    uiGlobalAnnotationChanged(event) {
+        let active = $("#" + event.target.id).prop("checked");
+        let annotation_type_id = parseInt(event.target.dataset.annotation_type_id);
+
+        this.exact_sync.changeGlobalAnnotation(annotation_type_id, active, this.frame);
+    }
+
+    setUiGlobalAnnotation(annotation_type, value) {
+        $("#GlobalAnnotation_" + annotation_type.id).prop("checked", value);
+    }
+
+    createSyncModules(annotationTypes, imageId, headers, viewer, user_id, collaboration_type, frames) {
+        return new EXACTGlobalFrameAnnotationSync(annotationTypes, imageId, headers, viewer, user_id, collaboration_type, frames)
+    }
+
+    destroy() {
+
+        // unregister UI events
+        for (let annotation_type of Object.values(this.annotationTypes)) {
+            $('#GlobalAnnotation_' + annotation_type.id).off("change");
+        }
+
+        super.destroy();
+        this.exact_sync.destroy();
+    }
+}
+
 class EXACTViewerGlobalAnnotations extends EXACTViewer {
 
     constructor(image_url, options, imageInformation, collaboration_type, annotationTypes,
         headers, user_id) {
 
-        super(image_url, options, imageInformation, headers);
+        super(image_url, options, imageInformation, headers, user_id);
         this.exact_sync = this.createSyncModules(annotationTypes, this.imageId, headers, this.viewer, user_id, collaboration_type);
 
         // register for global annotation type interactions
