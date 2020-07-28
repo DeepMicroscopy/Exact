@@ -1151,7 +1151,9 @@ class EXACTViewerGlobalAnnotationsFrame extends EXACTViewer {
         super.initViewerEventHandler(viewer, imageInformation);
 
         viewer.addHandler('sync_GlobalAnnotations', function (event) {
-            event.userData.setUiGlobalAnnotation(event.annotation.annotation_type, !event.annotation.deleted);
+            if (event.annotation.vector.frame == event.userData.frame) {
+                event.userData.setUiGlobalAnnotation(event.annotation.annotation_type, !event.annotation.deleted);
+            }            
         }, this);
 
         viewer.addHandler('page', function (event) {
@@ -1170,9 +1172,7 @@ class EXACTViewerGlobalAnnotationsFrame extends EXACTViewer {
             $('#GlobalAnnotation_' + annotation_type.id).prop("checked", false);
         }
 
-        let frameAnnotations =this.filterFrameAnnotations(this.exact_sync.annotations, this.frame);
-
-        for (let anno of frameAnnotations) {
+        for (let anno of Object.values(this.exact_sync.annotations[frame_id])) {
             this.setUiGlobalAnnotation(anno.annotation_type, !anno.deleted)
         }
     }
