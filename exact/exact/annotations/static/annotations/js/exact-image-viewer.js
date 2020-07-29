@@ -70,11 +70,21 @@ class EXACTViewer {
             // crate viewer with global and local support
             if (Object.keys(global_annotation_types).length > 0
                 && Object.keys(local_annotation_types).length > 0) {
-                return new EXACTViewerGlobalLocalAnnotations(image_url, options, imageInformation, collaboration_type, local_annotation_types, global_annotation_types,
-                    headers, user_id, drawAnnotations, strokeWidth)
+                    if (imageInformation['frames'] > 1) {
+                        return new EXACTViewerGlobalLocalAnnotationsFrames(image_url, options, imageInformation, collaboration_type, local_annotation_types, global_annotation_types,
+                            headers, user_id, drawAnnotations, strokeWidth)
+                    } else {
+                        return new EXACTViewerGlobalLocalAnnotations(image_url, options, imageInformation, collaboration_type, local_annotation_types, global_annotation_types,
+                            headers, user_id, drawAnnotations, strokeWidth)
+                    }
             } else if (Object.keys(global_annotation_types).length > 0) {
-                return new EXACTViewerGlobalAnnotations(image_url, options, imageInformation, collaboration_type, annotationTypes,
-                    headers, user_id)
+                if (imageInformation['frames'] > 1) {
+                    return new EXACTViewerGlobalAnnotationsFrame(image_url, options, imageInformation, collaboration_type, annotationTypes,
+                        headers, user_id)
+                } else {
+                    return new EXACTViewerGlobalAnnotations(image_url, options, imageInformation, collaboration_type, annotationTypes,
+                        headers, user_id)
+                }
             } else {
                 if (imageInformation['frames'] > 1) {
                     return new EXACTViewerLocalAnnotationsFrames(image_url, options, imageInformation, collaboration_type, annotationTypes,
@@ -1122,12 +1132,88 @@ class EXACTViewerLocalAnnotationsFrames extends EXACTViewerLocalAnnotations{
     }
 }
 
+
+class EXACTViewerGlobalAnnotationsFrame extends EXACTViewer {
+
+    constructor(image_url, options, imageInformation, collaboration_type, annotationTypes,
+        headers, user_id) {
+
+        super(image_url, options, imageInformation, headers, user_id);
+        this.frame = 1;
+
+        this.exact_sync = this.createSyncModules(annotationTypes, this.imageId, headers, this.viewer, user_id, collaboration_type, frames=imageInformation['frames']);
+
+        // register for global annotation type interactions
+        // set global annotation initialy to false
+        for (let annotation_type of Object.values(annotationTypes)) {
+            this.setUiGlobalAnnotation(annotation_type.id, false)
+            $('#GlobalAnnotation_' + annotation_type.id).change(this.uiGlobalAnnotationChanged.bind(this))
+        }
+    }
+
+    initViewerEventHandler(viewer, imageInformation) {
+
+        super.initViewerEventHandler(viewer, imageInformation);
+
+        viewer.addHandler('sync_GlobalAnnotations', function (event) {
+            if (event.annotation.vector.frame == event.userData.frame) {
+                event.userData.setUiGlobalAnnotation(event.annotation.annotation_type, !event.annotation.deleted);
+            }            
+        }, this);
+
+        viewer.addHandler('page', function (event) {
+
+            event.userData.newPageLoaded(event.page + 1)
+        }, this);
+    }
+
+    newPageLoaded(frame_id) {
+
+        this.frame = frame_id;
+
+        // set global annotations to false
+        for (let annotation_type of Object.values(this.exact_sync.annotationTypes)) {
+            $('#GlobalAnnotation_' + annotation_type.id).prop("checked", false);
+        }
+
+        for (let anno of Object.values(this.exact_sync.annotations[frame_id])) {
+            this.setUiGlobalAnnotation(anno.annotation_type, !anno.deleted)
+        }
+    }
+
+    uiGlobalAnnotationChanged(event) {
+        let active = $("#" + event.target.id).prop("checked");
+        let annotation_type_id = parseInt(event.target.dataset.annotation_type_id);
+
+        this.exact_sync.changeGlobalAnnotation(annotation_type_id, active, this.frame);
+    }
+
+    setUiGlobalAnnotation(annotation_type, value) {
+        $("#GlobalAnnotation_" + annotation_type.id).prop("checked", value);
+    }
+
+    createSyncModules(annotationTypes, imageId, headers, viewer, user_id, collaboration_type, frames) {
+        return new EXACTGlobalFrameAnnotationSync(annotationTypes, imageId, headers, viewer, user_id, collaboration_type, frames)
+    }
+
+    destroy() {
+
+        // unregister UI events
+        for (let annotation_type of Object.values(this.annotationTypes)) {
+            $('#GlobalAnnotation_' + annotation_type.id).off("change");
+        }
+
+        super.destroy();
+        this.exact_sync.destroy();
+    }
+}
+
 class EXACTViewerGlobalAnnotations extends EXACTViewer {
 
     constructor(image_url, options, imageInformation, collaboration_type, annotationTypes,
         headers, user_id) {
 
-        super(image_url, options, imageInformation, headers);
+        super(image_url, options, imageInformation, headers, user_id);
         this.exact_sync = this.createSyncModules(annotationTypes, this.imageId, headers, this.viewer, user_id, collaboration_type);
 
         // register for global annotation type interactions
@@ -1207,6 +1293,76 @@ class EXACTViewerGlobalLocalAnnotations extends EXACTViewerLocalAnnotations {
         let annotation_type_id = parseInt(event.target.dataset.annotation_type_id);
 
         this.exact_sync_global.changeGlobalAnnotation(annotation_type_id, active);
+    }
+
+    setUiGlobalAnnotation(annotation_type, value) {
+        $("#GlobalAnnotation_" + annotation_type.id).prop("checked", value);
+    }
+
+    destroy() {
+        // unregister UI events
+        for (let annotation_type of Object.values(this.exact_sync_global.annotationTypes)) {
+            $('#GlobalAnnotation_' + annotation_type.id).off("change");
+        }
+
+        super.destroy();
+
+        this.exact_sync_global.destroy();
+    }
+}
+
+
+class EXACTViewerGlobalLocalAnnotationsFrames extends EXACTViewerLocalAnnotationsFrames {
+
+    constructor(image_url, options, imageInformation, collaboration_type, annotationTypesLocal, annotationTypesGlobal,
+        headers, user_id, drawAnnotations = true, strokeWidth = 5, frame=1) {
+
+        super(image_url, options, imageInformation, collaboration_type, annotationTypesLocal, headers,
+            user_id, drawAnnotations, strokeWidth);
+
+        this.frames=imageInformation['frames']
+        this.frame = 1;
+
+        this.exact_sync_global = new  EXACTGlobalFrameAnnotationSync(annotationTypesGlobal, this.imageId, this.gHeaders, this.viewer, this.user_id, collaboration_type, this.frames)
+
+        // register for global annotation type interactions
+        // set global annotation initialy to false
+        for (let annotation_type of Object.values(annotationTypesGlobal)) {
+            this.setUiGlobalAnnotation(annotation_type.id, false)
+            $('#GlobalAnnotation_' + annotation_type.id).change(this.uiGlobalAnnotationChanged.bind(this))
+        }
+    }
+
+    initViewerEventHandler(viewer, imageInformation) {
+
+        super.initViewerEventHandler(viewer, imageInformation);
+
+        viewer.addHandler('sync_GlobalAnnotations', function (event) {
+            if (event.annotation.vector.frame == event.userData.frame) {
+                event.userData.setUiGlobalAnnotation(event.annotation.annotation_type, !event.annotation.deleted);
+            }            
+        }, this);
+    }
+
+    newPageLoaded(frame_id) {
+
+        super.newPageLoaded(frame_id);
+
+        // set global annotations to false
+        for (let annotation_type of Object.values(this.exact_sync_global.annotationTypes)) {
+            $('#GlobalAnnotation_' + annotation_type.id).prop("checked", false);
+        }
+
+        for (let anno of Object.values(this.exact_sync_global.annotations[frame_id])) {
+            this.setUiGlobalAnnotation(anno.annotation_type, !anno.deleted)
+        }
+    }
+
+    uiGlobalAnnotationChanged(event) {
+        let active = $("#" + event.target.id).prop("checked");
+        let annotation_type_id = parseInt(event.target.dataset.annotation_type_id);
+
+        this.exact_sync_global.changeGlobalAnnotation(annotation_type_id, active, this.frame);
     }
 
     setUiGlobalAnnotation(annotation_type, value) {
