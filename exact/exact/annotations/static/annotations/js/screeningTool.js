@@ -57,6 +57,9 @@ class ScreeningTool {
 
         this.viewer.addHandler("sync_ScreeningModeLoaded", function (event) {
 
+            $('#screeningImage').show();
+            $('#screeningImageOutput').show();
+
             // Enable Screening start button
             $("#screening_resolution_update_btn").attr("disabled", false);
 
@@ -350,6 +353,9 @@ class ScreeningTool {
     destroy() {
         // unload image
         //$('#screeningImage').attr('src', ``);
+
+        $('#screeningImage').hide();
+        $('#screeningImageOutput').hide();
 
         $("#screening_resolution_update_btn").off("click");
         $('#screeningImage').off('load');
