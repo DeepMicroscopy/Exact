@@ -665,19 +665,19 @@ class EXACTAnnotationSync {
         switch (mode) {
             case "AnnotationCreated":
                 $.notify(`Annotation ${anno.id} was created by ${anno.last_editor.username}`,
-                    { position: "bottom center", className: className });
+                    { position: "bottom center", className: className, autoHideDelay: 2000 });
                 break;
             case "AnnotationDeleted":
                 $.notify(`Annotation ${anno.id} was deleted by ${anno.last_editor.username}`,
-                    { position: "bottom center", className: "info" });
+                    { position: "bottom center", className: className, autoHideDelay: 2000 });
                 break;
             case "AnnotationUpdated":
                 $.notify(`Annotation ${anno.id} was updated by ${anno.last_editor.username}`,
-                    { position: "bottom center", className: className });
+                    { position: "bottom center", className: className, autoHideDelay: 2000 });
                 break;
             case "AnnotationVerified":
                 $.notify(`Annotation ${anno.id} is now verified`,
-                    { position: "bottom center", className: className });
+                    { position: "bottom center", className: className, autoHideDelay: 2000 });
                 break;
         }
     }
@@ -872,15 +872,15 @@ class EXACTGlobalAnnotationSync extends EXACTAnnotationSync {
         switch (mode) {
             case "GlobalAnnotationCreated":
                 $.notify(`Global annotation ${anno.id} was created by ${anno.last_editor.username}`,
-                    { position: "bottom center", className: className });
+                    { position: "bottom center", className: className, autoHideDelay: 2000 });
                 break;
             case "GlobalAnnotationDeleted":
                 $.notify(`Global annotation ${anno.id} was deleted by ${anno.last_editor.username}`,
-                    { position: "bottom center", className: "info" });
+                    { position: "bottom center", className: className, autoHideDelay: 2000 });
                 break;
             case "GlobalAnnotationUpdated":
                 $.notify(`Global annotation ${anno.id} was updated by ${anno.last_editor.username}`,
-                    { position: "bottom center", className: className });
+                    { position: "bottom center", className: className, autoHideDelay: 2000 });
                 break;
         }
     }
