@@ -20,6 +20,8 @@ class EXACTViewer {
         this.filterImage = new OpenseadragonFilteringViewer(this.viewer);
         this.pluginHandler = new PluginHandler(this.imageId, gHeaders, this.viewer);
         this.screeningTool = new ScreeningTool(imageInformation, user_id, gHeaders, this.viewer);
+        this.inferenceTool = new InferenceTool(imageInformation, user_id, gHeaders, this.viewer);
+
 
         console.log(`${this.constructor.name} loaded for id ${this.imageId}`);
     }
@@ -359,6 +361,7 @@ class EXACTViewer {
         this.imageClosed();
         this.viewer.destroy(); 
         this.screeningTool.destroy();
+        this.inferenceTool.destroy();
     }
 
     onFrameSliderChanged(event) {

@@ -3,6 +3,12 @@
 {% load static %}
 
 {% block additional_annotation_js %}
+
+<!-- Load TensorFlow.js. This is required to use MobileNet. -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.0.1"> </script>
+<!-- Load the MobileNet model. -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@1.0.0"> </script>
+
 <link rel="stylesheet" type="text/css" href="{% static 'annotations/css/bootstrap-slider.min.css' %}">
 
 <script type="text/javascript" src="{% static 'scripts/jquery-3.2.1.min.js' %}"></script>
@@ -35,6 +41,8 @@
 <script type="text/javascript" src="{% static 'annotations/js/statistics-viewer.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/plugin-handler.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/show-annotation-properties.js' %}"></script>
+
+<script type="text/javascript" src="{% static 'annotations/js/inference_tool.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/annotations.js' %}"></script>
 
 <script type="text/javascript" src="{% static 'annotations/js/bootstrap-slider.min.js' %}"></script>
@@ -184,6 +192,13 @@
                                 <a class="nav-link" id="default_screening_tool" data-toggle="tab"
                                     href="#nav-item_screening_tool" role="tab" aria-controls="home">Screening</a>
                             </li>
+
+                            <li class="nav-item">
+                                <a class="nav-link" id="default_inference_tool" data-toggle="tab"
+                                    href="#nav-item_inference_tool" role="tab" aria-controls="home">Inference</a>
+                            </li>
+
+                            
 
                             {% if annotation_types %}
                             <li class="nav-item">
@@ -450,6 +465,21 @@
                                         
                                         <canvas id="screeningImageOutput" alt="Screening mode not initialised!"></canvas>
                              
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="tab-pane fade" id="nav-item_inference_tool">
+
+                                <div class="card">
+                                    <div class="card-header">
+                                        <div class="d-flex justify-content-between">
+                                                <button class="btn btn-primary" id="inference_update_btn">
+                                                    <image src="{% static 'images/play.svg' %}">
+                                                </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
                                     </div>
                                 </div>
                             </div>
