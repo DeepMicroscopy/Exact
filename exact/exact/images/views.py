@@ -1390,6 +1390,10 @@ def label_upload(request, imageset_id):
                             report_list.append("In image \"{}\" the annotation:"
                                                " \"{}\" was not accepted as valid JSON".format(line_frags[0], line_frags[2]))
 
+                    unique_identifier = None
+                    if len(line_frags) >= 3:
+                        unique_identifier = line_frags[3]
+
                     if annotation_type.validate_vector(vector):
                         #if not Annotation.similar_annotations(vector, image, annotation_type):
                         if not Annotation.equal_annotation(vector, image, annotation_type, request.user):
@@ -1401,13 +1405,17 @@ def label_upload(request, imageset_id):
                             annotation.vector = vector
                             annotation._blurred = blurred
                             annotation._concealed = concealed
-                            annotation.save()
+                            annotation.save()                            
 
-                            verification = Verification()
-                            verification.user = request.user
-                            verification.annotation = annotation
-                            verification.verified = verify
-                            verification.save()
+                            if unique_identifier is not None:
+                                annotation.unique_identifier = unique_identifier
+
+                            if verify:
+                                verification = Verification()
+                                verification.user = request.user
+                                verification.annotation = annotation
+                                verification.verified = verify
+                                verification.save()
                         else:
                             similar_count += 1
                             report_list.append(
