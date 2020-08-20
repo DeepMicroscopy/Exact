@@ -1357,7 +1357,7 @@ def label_upload(request, imageset_id):
             # filter empty lines
             if line in ('', "b'\n'"):
                 continue
-            dec_line = line.decode().replace('\n', '').replace(',}', '}')
+            dec_line = line.decode().replace('\r', '').replace('\n', '').replace(',}', '}')
             line_frags = dec_line.split('|')
             image = images.filter(name=line_frags[0])
             if image.exists():
@@ -1391,8 +1391,8 @@ def label_upload(request, imageset_id):
                                                " \"{}\" was not accepted as valid JSON".format(line_frags[0], line_frags[2]))
 
                     unique_identifier = None
-                    if len(line_frags) >= 3:
-                        unique_identifier = line_frags[3]
+                    if len(line_frags) > 4:
+                        unique_identifier = line_frags[4]
 
                     if annotation_type.validate_vector(vector):
                         #if not Annotation.similar_annotations(vector, image, annotation_type):
@@ -1409,6 +1409,7 @@ def label_upload(request, imageset_id):
 
                             if unique_identifier is not None:
                                 annotation.unique_identifier = unique_identifier
+                                annotation.save()        
 
                             if verify:
                                 verification = Verification()
