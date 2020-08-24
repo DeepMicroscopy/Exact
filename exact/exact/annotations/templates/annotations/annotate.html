@@ -8,6 +8,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.0.1"> </script>
 <!-- Load the MobileNet model. -->
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@1.0.0"> </script>
+<!-- Load the coco-ssd model. -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"> </script>
 
 <link rel="stylesheet" type="text/css" href="{% static 'annotations/css/bootstrap-slider.min.css' %}">
 
@@ -473,13 +475,19 @@
 
                                 <div class="card">
                                     <div class="card-header">
-                                        <div class="d-flex justify-content-between">
-                                                <button class="btn btn-primary" id="inference_update_btn">
-                                                    <image src="{% static 'images/play.svg' %}">
-                                                </button>
-                                        </div>
+                                        <label for="inference_select">Inference Task:</label>
+                                            <select name="inference_select" id="inference_select">
+                                                <option value="classification">Classification</option>
+                                                <option value="object-detection">Object Detection</option>
+                                                <option value="segmentation">Segmentation</option>
+                                            </select>
                                     </div>
                                     <div class="card-body">
+                                        <button class="btn btn-primary" id="inference_update_btn">
+                                            <image src="{% static 'images/play.svg' %}">
+                                        </button>
+                                        <p class="card-text" id="inf_card">Click button to run inference.</p>
+                                        <p class="card-text" id="inf_result_card"></p>
                                     </div>
                                 </div>
                             </div>
