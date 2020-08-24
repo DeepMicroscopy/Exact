@@ -433,6 +433,8 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         this.teamTool = new TeamTool(this.viewer, team_id)
 
         this.initUiEvents(this.annotationTypes);
+
+        this.initInferenceEventHandler(this.viewer, this.inferenceTool);
     }
 
     initViewerEventHandler(viewer, imageInformation) {
@@ -706,6 +708,23 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 this.uiShowAnnotationsToggle();
                 break;
         }
+    }
+
+    initInferenceEventHandler(viewer, inferenceTool) {
+        viewer.addHandler('add_detected_bounding_boxes', function (event) {
+            // Add bounding boxes as new annotations
+            let tool = event.userData.tool;
+            let exact_sync = event.userData.exact_sync;
+            let selected_annotation_type = event.userData.getCurrentAnnotationType();
+            inferenceTool.array_vectors.forEach(vector => {
+                var newAnno = tool.initNewAnnotationFromInference(vector, selected_annotation_type);
+                exact_sync.addAnnotationToCache(newAnno)
+                event.userData.finishAnnotation();
+            });
+            // Display new annotations as bounding boxes
+            event.userData.tool.drawExistingAnnotations(event.annotations, event.userData.drawAnnotations);
+        }, this);
+
     }
 
     initToolEventHandler(viewer) {
