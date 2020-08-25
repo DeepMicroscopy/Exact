@@ -340,29 +340,18 @@ class BoundingBoxes {
         var canvasObject = undefined;
         var selection_hit_type = 'fill';
         switch (selected_annotation_type.vector_type) {
-            case 2:  // POINT or Elipse
-                var rectangle = new paper.Rectangle(imagePoint,
-                    new paper.Size(selected_annotation_type.default_width, selected_annotation_type.default_hight));
-                canvasObject = new paper.Shape.Ellipse(rectangle);
-                canvasObject.position = imagePoint;
-                canvasObject.data.type = "circle";
-
-                break;
-
-            case 3:  // Line
-                canvasObject = new paper.Path(imagePoint);
-                canvasObject.data.type = "line";
-
-                break;
-
-            case 4:  // MULTI_LINE / POLYGON
-            case 5:
+            case 5:  // Polygon
                 var canvasObject = new paper.Path({
                     closed: selected_annotation_type.closed,
                 });
-                canvasObject.add(imagePoint);
                 canvasObject.data.type = "poly";
                 selection_hit_type = 'new';
+                for (var i = 0; i < vector.length; i++) {
+                    canvasObject.add(vector[i]);
+                };
+                //canvasObject.add(imagePoint);
+                //canvasObject.data.type = "poly";
+                //selection_hit_type = 'new';
                 break;
 
             case 1:  // Rect

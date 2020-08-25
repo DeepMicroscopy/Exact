@@ -13,6 +13,7 @@ class InferenceTool {
         this.initUiEvents(this);
 
         this.array_vectors = [];
+        this.array_poly_coordinates = [];
     }
 
     initUiEvents(context) {
@@ -94,12 +95,72 @@ class InferenceTool {
             });
 
         } else if (sel.value == 'segmentation') {
+            // Empty array of coordinates
+            this.array_poly_coordinates.splice(0, this.array_poly_coordinates.length);
 
-        }
+            // Load the model
+            document.getElementById("inf_card").innerHTML = "Loading model"; 
+            const modelName = 'pascal';   // set to your preferred model, either `pascal`, `cityscapes` or `ade20k`
+            const quantizationBytes = 2;  // either 1, 2 or 4
+            deeplab.load({base: modelName, quantizationBytes}).then(model => {
+                model.segment(img, img).then(predictions=> {
+                    console.log(`The predicted classes are ${JSON.stringify(predictions.legend)}`);
+                    var segmentationImage = new ImageData(predictions.segmentationMap, predictions.width, predictions.height);
+
+                    // Create second canvas to render segmentation map
+                    var renderer = document.createElement('canvas');
+                    renderer.width = predictions.width;
+                    renderer.height = predictions.height;
+                    renderer.getContext('2d').putImageData(segmentationImage, 0, 0);
+
+                    // Rescale the segmentation map to EXACT viewer size
+                    ctx.drawImage(renderer, 0, 0, img.width, img.height);
+
+                    // Find Contours
+                    var src = cv.imread(img);
+                    var dst = cv.Mat.zeros(src.rows, src.cols, cv.CV_8UC3);
+                    cv.cvtColor(src, src, cv.COLOR_RGBA2GRAY, 0);
+                    var contours = new cv.MatVector();
+                    var hierarchy = new cv.Mat();
+                    cv.findContours(src, contours, hierarchy, cv.RETR_CCOMP, cv.CHAIN_APPROX_SIMPLE);
+                    for (let i = 0; i < contours.size(); ++i) {
+                        let color = new cv.Scalar(Math.round(Math.random() * 255), Math.round(Math.random() * 255),
+                                                  Math.round(Math.random() * 255));
+                        cv.drawContours(dst, contours, i, color, 1, cv.LINE_8, hierarchy, 100);
+                    }
+                    cv.imshow(img, dst);
+
+                    // Extract contours' coordinates
+                    const numContours = hierarchy.cols;
+                    for (var i = 0; i < numContours; i++) {
+                        const numCoordinates = contours.get(i).size().height;
+                        var coordinates = new Array(numCoordinates);
+                        for (var j = 0; j < numCoordinates; j++) {
+                            var x = contours.get(i).intPtr(j)[0];
+                            var y = contours.get(i).intPtr(j)[1];
+                            var coor = new OpenSeadragon.Point(x, y);
+                            coor = this.viewer.viewport.pointFromPixel(coor);
+                            coor = this.viewer.viewport.viewportToImageCoordinates(coor);
+                            coordinates[j] = coor;
+                        };
+                        this.array_poly_coordinates.push(coordinates);
+                    };
+                    document.getElementById("inf_card").innerHTML = "Segmentation completed"; 
+                    if (this.array_poly_coordinates.length > 0) {
+                        document.getElementById("submit_inference_btn").disabled = false;
+                    };
+                });
+            });
+        };
     }
 
     submitInference(event) {
-        this.viewer.raiseEvent('add_detected_bounding_boxes', {});
+        var sel = document.getElementById('inference_select');
+        if (sel.value == 'object-detection') {
+            this.viewer.raiseEvent('add_detected_bounding_boxes', {});
+        } else if (sel.value == 'segmentation') {
+            this.viewer.raiseEvent('add_polygon_from_segmentation', {});
+        }
     }
 
     destroy() {

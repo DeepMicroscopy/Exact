@@ -725,6 +725,19 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             event.userData.tool.drawExistingAnnotations(event.annotations, event.userData.drawAnnotations);
         }, this);
 
+        viewer.addHandler('add_polygon_from_segmentation', function (event) {
+            let tool = event.userData.tool;
+            let exact_sync = event.userData.exact_sync;
+            let selected_annotation_type = event.userData.getCurrentAnnotationType();
+            inferenceTool.array_poly_coordinates.forEach(poly_coordinates => {
+                var newAnno = tool.initNewAnnotationFromInference(poly_coordinates, selected_annotation_type);
+                exact_sync.addAnnotationToCache(newAnno)
+                event.userData.finishAnnotation();
+            });
+            // Display new annotations as polygons
+            event.userData.tool.drawExistingAnnotations(event.annotations, event.userData.drawAnnotations);
+        }, this);
+
     }
 
     initToolEventHandler(viewer) {
