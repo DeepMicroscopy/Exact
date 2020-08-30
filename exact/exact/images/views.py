@@ -69,6 +69,7 @@ import tifffile
 import openslide
 from openslide import OpenSlide, open_slide
 from PIL import Image as PIL_Image
+from czifile import czi2tif
 
 
 # TODO: Add to cache
@@ -355,6 +356,20 @@ def upload_image(request, imageset_id):
                                 # save first frame as default file for thumbnail etc.
                                 if frame_id == 0:
                                     image.filename = target_file.name
+                        
+                        # check if its a zeiss file
+                        elif  Path(path).suffix.lower().endswith(".czi"):
+                            path_temp = Path(path).with_suffix('.tif')
+                            path = Path(path).with_suffix('.tiff')
+
+                            czi2tif(str(old_path), tiffile=str(path_temp), bigtiff=True)
+
+                            vi = pyvips.Image.new_from_file(str(path_temp))
+                            vi.tiffsave(str(path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
+
+                            os.remove(str(path_temp))
+                            image.filename = path.name
+
                         # check if file is philips iSyntax
                         elif Path(path).suffix.lower().endswith(".isyntax"):
                             from util.ISyntaxContainer import ISyntaxContainer

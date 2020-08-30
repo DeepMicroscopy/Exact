@@ -1,6 +1,7 @@
 import os, stat
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404
+from rest_framework.status import HTTP_400_BAD_REQUEST
 from django.http import HttpResponseBadRequest, HttpResponse
 from django.template.response import TemplateResponse
 from rest_framework.response import Response
@@ -15,6 +16,7 @@ from . import serializers
 import django_filters
 import base64
 
+import numpy as np
 import openslide
 from openslide import OpenSlide, open_slide
 import string
@@ -115,6 +117,58 @@ class ImageViewSet(viewsets.ModelViewSet):
         tile.save(buf, 'png', quality=90)
 
         return HttpResponse(buf.getvalue(), content_type='image/png')
+
+    @action(detail=True, methods=['GET'], name='Get slide information from image PK')
+    def slide_information(self, request, pk=None):
+        image = get_object_or_404(models.Image, id=pk)
+
+        file_path = image.path()
+
+        slide = image_cache.get(file_path)
+        level_dimensions = slide._osr.level_dimensions
+        level_downsamples = slide._osr.level_downsamples
+        levels = slide._osr.level_count
+
+        return Response({"id": id,
+                            "level_dimensions": level_dimensions, 
+                            "level_downsamples":level_downsamples,
+                            "levels": levels})
+
+    @action(detail=True, methods=['GET'], name='Get patch for image PK')
+    def get_patch(self, request, pk=None):
+        image = get_object_or_404(models.Image, id=pk)
+
+        max_width = 2048
+        max_height = 2048
+
+        x = int(request.GET.get("x", 0))
+        y = int(request.GET.get("y", 0))
+        level = int(request.GET.get("level", 0))
+        width = int(request.GET.get("width", image.width))
+        if x + width > image.width:
+            width = image.width - x
+
+        height = int(request.GET.get("height", image.height))
+        if y + height > image.height:
+            height = image.height - y
+
+
+        if width <= max_width and height <= max_height and width > 0 and height > 0:
+            file_path = image.path()
+
+            slide = image_cache.get(file_path)._osr
+
+            patch = np.array(slide.read_region(location=(int(x), int(y)),
+                                                level=level, size=(width, height)))[:, :, :3]
+            
+            patch = PIL_Image.fromarray(patch)
+
+            buf = PILBytesIO()
+            patch.save(buf, 'png', quality=90)
+
+            return HttpResponse(buf.getvalue(), content_type='image/png')
+        else:
+            return Response({"Error":'Image patch not valid max size 2048x2048 pixel or size negativ'}, status=HTTP_400_BAD_REQUEST)
 
     def create(self, request):
         image_type = int(request.POST.get('image_type', 0))
@@ -255,6 +309,18 @@ class ImageViewSet(viewsets.ModelViewSet):
                                 # save first frame as default file for thumbnail etc.
                                 if frame_id == 0:
                                     image.filename = target_file.name
+                        # check if its a zeiss file
+                        elif  Path(path).suffix.lower().endswith(".czi"):
+                            path_temp = Path(path).with_suffix('.tif')
+                            path = Path(path).with_suffix('.tiff')
+
+                            czi2tif(str(old_path), tiffile=str(path_temp), bigtiff=True)
+
+                            vi = pyvips.Image.new_from_file(str(path_temp))
+                            vi.tiffsave(str(path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
+
+                            os.remove(str(path_temp))
+                            image.filename = path.name
                         # check if file is philips iSyntax
                         elif Path(path).suffix.lower().endswith(".isyntax"):
                             from util.ISyntaxContainer import ISyntaxContainer
