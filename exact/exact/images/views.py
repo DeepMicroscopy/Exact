@@ -355,8 +355,7 @@ def upload_image(request, imageset_id):
 
                                 # save first frame as default file for thumbnail etc.
                                 if frame_id == 0:
-                                    image.filename = target_file.name
-                        
+                                    image.filename = target_file.name                        
                         # check if its a zeiss file
                         elif  Path(path).suffix.lower().endswith(".czi"):
                             path_temp = Path(path).with_suffix('.tif')
@@ -369,6 +368,57 @@ def upload_image(request, imageset_id):
 
                             os.remove(str(path_temp))
                             image.filename = path.name
+                        # Videos
+                        elif Path(path).suffix.lower().endswith(".avi"):
+                            dtype_to_format = {
+                                'uint8': 'uchar',
+                                'int8': 'char',
+                                'uint16': 'ushort',
+                                'int16': 'short',
+                                'uint32': 'uint',
+                                'int32': 'int',
+                                'float32': 'float',
+                                'float64': 'double',
+                                'complex64': 'complex',
+                                'complex128': 'dpcomplex',
+                            }
+
+                            folder_path = Path(imageset.root_path()) / path.stem
+                            os.makedirs(str(folder_path), exist_ok =True)
+                            os.chmod(str(folder_path), 0o777)
+
+                            cap = cv2.VideoCapture(str(Path(path)))
+                            frame_id = 0
+                            while cap.isOpened():
+                                ret, frame = cap.read()
+                                if not ret:
+                                    # if video has just one frame copy file to top layer
+                                    if frame_id == 1:
+                                        copy_path = Path(path).with_suffix('.tiff')
+                                        shutil.copyfile(str(target_file), str(copy_path))
+                                        image.filename = copy_path.name
+                                    break
+
+                                height, width, bands = frame.shape
+                                linear = frame.reshape(width * height * bands)
+
+                                vi = pyvips.Image.new_from_memory(np.ascontiguousarray(linear.data), width, height, bands,
+                                                                    dtype_to_format[str(frame.dtype)])
+                                if dtype_to_format[str(frame.dtype)] not in ["uchar"]:
+                                    vi = vi.scaleimage()
+
+                                height, width, channels = vi.height, vi.width, vi.bands
+                                image.channels = channels
+
+                                target_file = folder_path / "{}_{}_{}".format(1, frame_id + 1, path.name) #z-axis frame image
+                                vi.tiffsave(str(target_file), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
+
+                                # save first frame as default file for thumbnail etc.
+                                if frame_id == 0:
+                                    image.filename = target_file.name
+                                frame_id += 1
+                                
+                            image.frames = frame_id
 
                         # check if file is philips iSyntax
                         elif Path(path).suffix.lower().endswith(".isyntax"):
@@ -789,22 +839,6 @@ def view_imageset(request, image_set_id):
     # a list of annotation types used in the imageset
     all_annotation_types = AnnotationType.objects.filter(active=True, name__in=[tag.name for tag in imageset.set_tags.all()])
 
-    if imageset.collaboration_type == ImageSet.CollaborationTypes.COLLABORATIVE:
-        annotations = Annotation.objects.filter(
-            image__image_set=imageset,
-            deleted=False,
-            annotation_type__active=True)\
-            .filter(~Q(image__image_type=Image.ImageSourceTypes.SERVER_GENERATED))\
-            .order_by("id")
-
-        annotation_types = AnnotationType.objects.filter(annotation__image__image_set=imageset, active=True, annotation__deleted=False)\
-            .distinct().order_by('sort_order')\
-            .annotate(count=Count('annotation', filter=~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED)),
-                      in_image_count=Count('annotation', filter=(Q(annotation__verifications__verified=True)
-                                                                 & ~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED))),
-                      not_in_image_count=Count('annotation', filter=(Q(annotation__verifications__verified=False)
-                                                                     & ~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED))))
-
     if imageset.collaboration_type == ImageSet.CollaborationTypes.COMPETITIVE:
         annotations = Annotation.objects.filter(
             image__image_set=imageset,
@@ -821,6 +855,22 @@ def view_imageset(request, image_set_id):
             .annotate(count=Count('annotation'),
                       in_image_count=Count('annotation', filter=Q(annotation__verifications__verified=True, annotation__user=request.user) & ~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED)),
                       not_in_image_count=Count('annotation', filter=Q(annotation__verifications__verified=False, annotation__user=request.user) & ~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED)))
+    else:
+        annotations = Annotation.objects.filter(
+            image__image_set=imageset,
+            deleted=False,
+            annotation_type__active=True)\
+            .filter(~Q(image__image_type=Image.ImageSourceTypes.SERVER_GENERATED))\
+            .order_by("id")
+
+        annotation_types = AnnotationType.objects.filter(annotation__image__image_set=imageset, active=True, annotation__deleted=False)\
+            .distinct().order_by('sort_order')\
+            .annotate(count=Count('annotation', filter=~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED)),
+                      in_image_count=Count('annotation', filter=(Q(annotation__verifications__verified=True)
+                                                                 & ~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED))),
+                      not_in_image_count=Count('annotation', filter=(Q(annotation__verifications__verified=False)
+                                                                     & ~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED))))
+
 
     first_annotation = annotations.first()
     user_teams = Team.objects.filter(members=request.user)

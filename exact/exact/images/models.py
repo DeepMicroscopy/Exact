@@ -274,6 +274,10 @@ class ImageSet(models.Model):
                 .distinct()
             unannotated = images.annotate(annotation_count=Count('annotations')).filter(annotation_count__exact=0).distinct()
 
+            # TODO_ Convert to single query
+            images =  Image.objects.filter(id__in = [a.id for a in unverified] + [a.id for a in unannotated]) #Q(unverified) | Q(unannotated)
+
+
         if self.collaboration_type == ImageSet.CollaborationTypes.COMPETITIVE:
             unverified = images.filter(Q(annotations__annotation_type__active=True, annotations__deleted=False,
                                        annotations__verifications__verified=False, annotations__user=user) |
@@ -283,8 +287,8 @@ class ImageSet(models.Model):
             unannotated = images.annotate(annotation_count=Count('annotations', filter=Q(annotations__user=user)))\
                 .filter(annotation_count__exact=0).distinct()
 
-        # TODO_ Convert to single query
-        images =  Image.objects.filter(id__in = [a.id for a in unverified] + [a.id for a in unannotated]) #Q(unverified) | Q(unannotated)
+            # TODO_ Convert to single query
+            images =  Image.objects.filter(id__in = [a.id for a in unverified] + [a.id for a in unannotated]) #Q(unverified) | Q(unannotated)
 
         # if there are any unverified images but the verified tag was added.
         # remove tag

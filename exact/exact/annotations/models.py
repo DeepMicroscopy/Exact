@@ -133,7 +133,7 @@ class Annotation(models.Model):
 
     @cached_property
     def height(self):
-        if len(self.vector) is 4:
+        if len(self.vector) is 4  and 'y2' in self.vector and "y1" in self.vector:
             return self.vector['y2'] - self.vector['y1']
         elif len(self.vector) > 4:
             return max(0, self.max_y - self.min_y)
@@ -141,7 +141,7 @@ class Annotation(models.Model):
 
     @cached_property
     def width(self):
-        if len(self.vector) is 4:  # bounding box and line
+        if len(self.vector) is 4 and 'x2' in self.vector and "x1" in self.vector:  # bounding box and line
             return self.vector['x2'] - self.vector['x1']
         elif len(self.vector) > 4:
             return max(0, self.max_x - self.min_x)
@@ -161,7 +161,7 @@ class Annotation(models.Model):
 
     @cached_property
     def center(self):
-        xc, yc = self.vector['x1'], self.vector['y1']
+        xc, yc = 0, 0
         if self.annotation_type.vector_type in (
                 AnnotationType.VECTOR_TYPE.BOUNDING_BOX,
                 AnnotationType.VECTOR_TYPE.LINE,
@@ -171,9 +171,6 @@ class Annotation(models.Model):
         elif self.annotation_type.vector_type is AnnotationType.VECTOR_TYPE.POINT:
             yc = self.vector['y1']
             xc = self.vector['x1']
-        else:
-            yc = 0
-            xc = 0
         # TODO: Multiline?
         return {'xc': xc, 'yc': yc}
 

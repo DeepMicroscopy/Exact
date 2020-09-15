@@ -329,6 +329,7 @@ def export_format(export_format_name, imageset):
                             '%%type': annotation.annotation_type.name,
                             #'%%veriamount': annotation.verification_difference,
                             '%%vector': formatted_vector,
+                            '%%frame': annotation.vector["frame"] if "frame" in annotation.vector else 1,
                             #CRUD Infos
                             '%%first_editor': annotation.user.username,
                             '%%first_timepoint': annotation.time,
@@ -374,6 +375,7 @@ def export_format(export_format_name, imageset):
                     '%%imagename': image.name,
                     '%%annotations': annotation_content,
                     '%%annoamount': annotations.count(),
+                    '%%frame': annotation.vector["frame"] if "frame" in annotation.vector else 1
                 }
                 for key, value in placeholders_image.items():
                     formatted_image = formatted_image.replace(key, str(value))
@@ -434,6 +436,7 @@ def export_format(export_format_name, imageset):
                     '%%type': annotation.annotation_type.name,
                     #'%%veriamount': annotation.verification_difference,
                     '%%vector': formatted_vector,
+                    '%%frame': annotation.vector["frame"] if "frame" in annotation.vector else 1,
                     #CRUD Infos
                     '%%first_editor': annotation.user.username,
                     '%%first_timepoint': annotation.time,

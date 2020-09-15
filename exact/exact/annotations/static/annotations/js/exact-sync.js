@@ -816,9 +816,9 @@ class EXACTGlobalAnnotationSync extends EXACTAnnotationSync {
             data: JSON.stringify(data), success: function (anno, textStatus, jqXHR) {
                 if (jqXHR.status === 200) {
                     if (anno.deleted === true) {
-                        context.synchronisationNotifications("info", anno, "GlobalAnnotationUpdated")
-                    } else {
                         context.synchronisationNotifications("info", anno, "GlobalAnnotationDeleted")
+                    } else {
+                        context.synchronisationNotifications("info", anno, "GlobalAnnotationUpdated")
                     }
 
                 } else if (jqXHR.status === 201) {

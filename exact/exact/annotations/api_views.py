@@ -3,6 +3,7 @@ from django.core.paginator import Paginator
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.settings import api_settings
 from rest_framework import viewsets, permissions
+from rest_framework import status
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from django.db.models import Q, F
@@ -11,7 +12,9 @@ from . import serializers
 import django_filters
 from rest_framework import filters
 from datetime import datetime
-
+from exact.annotations.models import Annotation, AnnotationType
+from exact.images.models import Image
+from exact.users.models import User
 
 class AnnotationFilterSet(django_filters.FilterSet):
     vector_x = django_filters.RangeFilter(method='get_vector_x_filter', field_name='vector', label="Vector-X-Range")
@@ -73,28 +76,72 @@ class AnnotationViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.AnnotationSerializer
     filterset_class = AnnotationFilterSet
 
+    def get_serializer(self, *args, **kwargs):
+        if isinstance(kwargs.get("data", {}), list):
+            kwargs["many"] = True
+
+        return super(AnnotationViewSet, self).get_serializer(*args, **kwargs)
+
     def get_queryset(self):
         user = self.request.user
         return  models.Annotation.objects.filter(image__image_set__team__in=user.team_set.all()).select_related('annotation_type', 'image', 'user', 'last_editor').order_by('id')
 
-    def create(self, request):
+    def create(self, request, *args, **kwargs):
         user = self.request.user
-        if "user" not in request.data:
-            request.data["user"] = user.id
-        if "last_editor" not in request.data:
-            request.data["last_editor"] = user.id
-        if "uploaded_media_files" not in request.data:
-            request.data["uploaded_media_files"] = []
-        if "annotationversion_set" not in request.data:
-            request.data["annotationversion_set"] = []
-        response = super().create(request)
-        if "time" in request.data or "last_edit_time" in request.data:
-            if "time" in request.data: 
-                self.get_queryset().filter(id=response.data['id']).update(time=datetime.strptime(request.data["time"], "%Y-%m-%dT%H:%M:%S.%f"))
-            if "last_edit_time" in request.data: 
-                self.get_queryset().filter(id=response.data['id']).update(last_edit_time=datetime.strptime(request.data["last_edit_time"], "%Y-%m-%dT%H:%M:%S.%f"))
-            return Response(self.get_serializer(models.Annotation.objects.get(pk=response.data['id'])).data)
-        return response
+
+        if isinstance(request.data, list):
+            annotations = []
+            images, users, annotation_types = {}, {user.id: user}, {}
+            for id, data in enumerate(request.data):
+                if data["image"] not in images: 
+                    images[data["image"]] = Image.objects.get(pk=data["image"])
+
+                if data["annotation_type"] not in annotation_types: 
+                    annotation_types[data["annotation_type"]] = AnnotationType.objects.get(pk=data["annotation_type"])
+
+                if "user" in data and data["user"] not in users: 
+                    users[data["user"]] = User.objects.get(pk=data["user"])
+
+                if "last_editor" in data and data["last_editor"] not in users: 
+                    users[data["last_editor"]] = User.objects.get(pk=data["last_editor"])
+
+                anno = Annotation(image=images[data["image"]], 
+                                    annotation_type=annotation_types[data["annotation_type"]] )
+                
+                anno.user = user if "user" not in data else users[data["user"]]
+                anno.last_editor = user if "last_editor" not in data else users[data["last_editor"]]
+                
+                if "vector" in data: anno.vector = data["vector"]
+                if "deleted" in data: anno.deleted = data["deleted"]
+                if "description" in data: anno.description = data["description"]
+                if "meta_data" in data: anno.meta_data = data["meta_data"]
+                if "unique_identifier" in data: anno.unique_identifier = data["unique_identifier"]
+                if "time" in data: anno.time = datetime.strptime(request.data["time"], "%Y-%m-%dT%H:%M:%S.%f")
+                if "last_edit_time" in data: anno.last_edit_time = datetime.strptime(request.data["last_edit_time"], "%Y-%m-%dT%H:%M:%S.%f")
+
+                annotations.append(anno)
+
+            Annotation.objects.bulk_create(annotations)
+
+            return Response(self.get_serializer(annotations, many=True).data, status.HTTP_201_CREATED)
+
+        else:
+            if "user" not in request.data:
+                request.data["user"] = user.id
+            if "last_editor" not in request.data:
+                request.data["last_editor"] = user.id
+            if "uploaded_media_files" not in request.data:
+                request.data["uploaded_media_files"] = []
+            if "annotationversion_set" not in request.data:
+                request.data["annotationversion_set"] = []
+            response = super().create(request)
+            if "time" in request.data or "last_edit_time" in request.data:
+                if "time" in request.data: 
+                    self.get_queryset().filter(id=response.data['id']).update(time=datetime.strptime(request.data["time"], "%Y-%m-%dT%H:%M:%S.%f"))
+                if "last_edit_time" in request.data: 
+                    self.get_queryset().filter(id=response.data['id']).update(last_edit_time=datetime.strptime(request.data["last_edit_time"], "%Y-%m-%dT%H:%M:%S.%f"))
+                return Response(self.get_serializer(models.Annotation.objects.get(pk=response.data['id'])).data)
+            return response
 
     def partial_update(self, request, *args, **kwargs):
         user = self.request.user
