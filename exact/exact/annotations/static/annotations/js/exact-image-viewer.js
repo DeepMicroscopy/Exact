@@ -1146,7 +1146,7 @@ class EXACTViewerGlobalAnnotationsFrame extends EXACTViewer {
         // register for global annotation type interactions
         // set global annotation initialy to false
         for (let annotation_type of Object.values(annotationTypes)) {
-            this.setUiGlobalAnnotation(annotation_type.id, false)
+            this.setUiGlobalAnnotation(annotation_type, false)
             $('#GlobalAnnotation_' + annotation_type.id).change(this.uiGlobalAnnotationChanged.bind(this))
         }
     }
@@ -1219,7 +1219,7 @@ class EXACTViewerGlobalAnnotations extends EXACTViewer {
         // register for global annotation type interactions
         // set global annotation initialy to false
         for (let annotation_type of Object.values(annotationTypes)) {
-            this.setUiGlobalAnnotation(annotation_type.id, false)
+            this.setUiGlobalAnnotation(annotation_type, false)
             $('#GlobalAnnotation_' + annotation_type.id).change(this.uiGlobalAnnotationChanged.bind(this))
         }
     }
@@ -1275,7 +1275,7 @@ class EXACTViewerGlobalLocalAnnotations extends EXACTViewerLocalAnnotations {
         // register for global annotation type interactions
         // set global annotation initialy to false
         for (let annotation_type of Object.values(annotationTypesGlobal)) {
-            this.setUiGlobalAnnotation(annotation_type.id, false)
+            this.setUiGlobalAnnotation(annotation_type, false)
             $('#GlobalAnnotation_' + annotation_type.id).change(this.uiGlobalAnnotationChanged.bind(this))
         }
 
@@ -1328,7 +1328,7 @@ class EXACTViewerGlobalLocalAnnotationsFrames extends EXACTViewerLocalAnnotation
         // register for global annotation type interactions
         // set global annotation initialy to false
         for (let annotation_type of Object.values(annotationTypesGlobal)) {
-            this.setUiGlobalAnnotation(annotation_type.id, false)
+            this.setUiGlobalAnnotation(annotation_type, false)
             $('#GlobalAnnotation_' + annotation_type.id).change(this.uiGlobalAnnotationChanged.bind(this))
         }
     }
