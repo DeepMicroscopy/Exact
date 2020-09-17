@@ -217,27 +217,22 @@ class ImageViewSet(viewsets.ModelViewSet):
                     if models.Image.objects.filter(Q(filename=filename)|Q(name=f.name),
                                                                 image_set=imageset).count() == 0:
                         try:
-                            if open_slide(file_path):
-                                # creates a checksum for image
-                                fchecksum = hashlib.sha512()
-                                with open(file_path, 'rb') as fil:
-                                    while True:
-                                        buf = fil.read(10000)
-                                        if not buf:
-                                            break
-                                        fchecksum.update(buf)
-                                fchecksum = fchecksum.digest()
+                            # creates a checksum for image
+                            fchecksum = hashlib.sha512()
+                            with open(file_path, 'rb') as fil:
+                                while True:
+                                    buf = fil.read(10000)
+                                    if not buf:
+                                        break
+                                    fchecksum.update(buf)
+                            fchecksum = fchecksum.digest()
 
-                                # check if vms is in any images then just save the vms files
-                                # else for each jpg a new image will be created in the databse
-                                if any(".vms" in f for f in filenames) and ".vms" in filename:
-                                    file_list[file_path] = fchecksum
-                                elif(any(".vms" in f for f in filenames) == False):
-                                    file_list[file_path] = fchecksum
-                                
-                            else:
-                                error['unsupported'] = True
-
+                            # check if vms is in any images then just save the vms files
+                            # else for each jpg a new image will be created in the databse
+                            if any(".vms" in f for f in filenames) and ".vms" in filename:
+                                file_list[file_path] = fchecksum
+                            elif(any(".vms" in f for f in filenames) == False):
+                                file_list[file_path] = fchecksum
                         except IsADirectoryError:
                             error['directories'] = True
                         except:
