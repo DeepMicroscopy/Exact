@@ -24,6 +24,7 @@ import random
 import zipfile
 import hashlib
 from pathlib import Path
+from czifile import czi2tif
 
 from PIL import Image as PIL_Image
 from util.slide_server import SlideCache, SlideFile, PILBytesIO
@@ -312,7 +313,7 @@ class ImageViewSet(viewsets.ModelViewSet):
                             czi2tif(str(old_path), tiffile=str(path_temp), bigtiff=True)
 
                             vi = pyvips.Image.new_from_file(str(path_temp))
-                            vi.tiffsave(str(path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
+                            vi.tiffsave(str(path), tile=True, compression='jpeg', bigtiff=True, pyramid=True, tile_width=256, tile_height=256, Q=90)
 
                             os.remove(str(path_temp))
                             image.filename = path.name
