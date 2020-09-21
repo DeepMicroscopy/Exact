@@ -360,7 +360,7 @@ def upload_image(request, imageset_id):
                             czi2tif(str(old_path), tiffile=str(path_temp), bigtiff=True)
 
                             vi = pyvips.Image.new_from_file(str(path_temp))
-                            vi.tiffsave(str(path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
+                            vi.tiffsave(str(path), tile=True, compression='jpeg', bigtiff=True, pyramid=True, tile_width=256, tile_height=256, Q=90)
 
                             os.remove(str(path_temp))
                             image.filename = path.name
