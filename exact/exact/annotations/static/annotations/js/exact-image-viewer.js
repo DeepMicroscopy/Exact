@@ -1199,7 +1199,7 @@ class EXACTViewerGlobalAnnotationsFrame extends EXACTViewer {
     destroy() {
 
         // unregister UI events
-        for (let annotation_type of Object.values(this.annotationTypes)) {
+        for (let annotation_type of Object.values(this.exact_sync.annotationTypes)) {
             $('#GlobalAnnotation_' + annotation_type.id).off("change");
         }
 
@@ -1252,7 +1252,7 @@ class EXACTViewerGlobalAnnotations extends EXACTViewer {
     destroy() {
 
         // unregister UI events
-        for (let annotation_type of Object.values(this.annotationTypes)) {
+        for (let annotation_type of Object.values(this.exact_sync.annotationTypes)) {
             $('#GlobalAnnotation_' + annotation_type.id).off("change");
         }
 
