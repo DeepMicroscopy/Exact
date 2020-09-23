@@ -45,6 +45,28 @@ class ScreeningTool {
                 this.viewer.raiseEvent('viewCoordinates', { coordinates });
 
                 break;
+
+            case 74: //j left tile
+                var coordinates = this.moveLeft(false);
+                this.viewer.raiseEvent('viewCoordinates', { coordinates });
+
+                break;
+            case 73: //i up tile
+                var coordinates = this.moveUp(false);
+                this.viewer.raiseEvent('viewCoordinates', { coordinates });
+
+                break;
+
+            case 75: //k down tile
+                var coordinates = this.moveDown(false);
+                this.viewer.raiseEvent('viewCoordinates', { coordinates });
+
+                break;
+            case 76: //l right tile
+                var coordinates = this.moveRight(false);
+                this.viewer.raiseEvent('viewCoordinates', { coordinates });
+
+                break;
         }
     };
 
@@ -122,6 +144,11 @@ class ScreeningTool {
         this.updateThumbnail();
     }
 
+    setFakeCurrentIndex(index) {
+        this.screening_sync.screening_mode.current_index = index
+
+        this.updateThumbnail();
+    }
 
     updateThumbnail(event) {
 
@@ -310,42 +337,60 @@ class ScreeningTool {
         return this.calcOverlap(this.screeningTiles[this.currentIndex]);
     }
 
-    moveUp() {
+    moveUp(screened = true) {
 
-        this.screeningTiles[this.currentIndex]['Screened'] = true;
+        if (screened)
+            this.screeningTiles[this.currentIndex]['Screened'] = true;
 
-        if (this.currentIndex - this.x_steps >= 0)
-            this.currentIndex = this.currentIndex - this.x_steps;
-
-        return this.calcOverlap(this.screeningTiles[this.currentIndex]);
-    }
-
-    moveDown() {
-
-        this.screeningTiles[this.currentIndex]['Screened'] = true;
-
-        if (this.currentIndex + this.x_steps < this.x_steps * this.y_steps)
-            this.currentIndex = this.currentIndex + this.x_steps;
+        if (this.currentIndex - this.x_steps >= 0) {
+            if (screened)
+                this.currentIndex = this.currentIndex - this.x_steps;
+            else
+                this.setFakeCurrentIndex(this.currentIndex - this.x_steps)
+        }
 
         return this.calcOverlap(this.screeningTiles[this.currentIndex]);
     }
 
-    moveLeft() {
+    moveDown(screened = true) {
 
-        this.screeningTiles[this.currentIndex]['Screened'] = true;
+        if (screened)
+            this.screeningTiles[this.currentIndex]['Screened'] = true;
 
-        if (this.currentIndex - 1 >= 0)
-            this.currentIndex = this.currentIndex - 1;
-
+        if (this.currentIndex + this.x_steps < this.x_steps * this.y_steps) {
+            if (screened)
+                this.currentIndex = this.currentIndex + this.x_steps;
+            else
+                this.setFakeCurrentIndex(this.currentIndex + this.x_steps)
+        }
         return this.calcOverlap(this.screeningTiles[this.currentIndex]);
     }
 
-    moveRight() {
+    moveLeft(screened = true) {
 
-        this.screeningTiles[this.currentIndex]['Screened'] = true;
+        if (screened)
+            this.screeningTiles[this.currentIndex]['Screened'] = true;
 
-        if (this.currentIndex + 1 < this.x_steps * this.y_steps)
-            this.currentIndex = this.currentIndex + 1;
+        if (this.currentIndex - 1 >= 0) {
+            if (screened)
+                this.currentIndex = this.currentIndex - 1;
+            else
+                this.setFakeCurrentIndex(this.currentIndex - 1)
+        }
+        return this.calcOverlap(this.screeningTiles[this.currentIndex]);
+    }
+
+    moveRight(screened = true) {
+
+        if (screened)
+            this.screeningTiles[this.currentIndex]['Screened'] = true;
+
+        if (this.currentIndex + 1 < this.x_steps * this.y_steps) {
+            if (screened)
+                this.currentIndex = this.currentIndex + 1;
+            else
+                this.setFakeCurrentIndex(this.currentIndex + 1)
+        }
 
         return this.calcOverlap(this.screeningTiles[this.currentIndex]);
     }
