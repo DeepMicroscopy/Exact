@@ -16,6 +16,7 @@ from . import serializers
 import django_filters
 import base64
 
+import cv2
 import numpy as np
 import openslide
 from openslide import OpenSlide, open_slide
