@@ -5,7 +5,7 @@
 {% block additional_annotation_js %}
 
 <!-- Load TensorFlow.js. This is required to use MobileNet. -->
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.0.1"> </script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
 <!-- Load the MobileNet model. -->
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@1.0.0"> </script>
 <!-- Load the coco-ssd model. -->
@@ -46,6 +46,7 @@
 <script type="text/javascript" src="{% static 'annotations/js/plugin-handler.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/show-annotation-properties.js' %}"></script>
 
+<script type="text/javascript" src="{% static 'annotations/js/anchors.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/inference_tool.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/annotations.js' %}"></script>
 
@@ -482,6 +483,8 @@
                                                 <option value="classification">Classification</option>
                                                 <option value="object-detection">Object Detection</option>
                                                 <option value="segmentation">Segmentation</option>
+                                                <option value="retina-net">RetinaNet</option>
+                                                <option value="asthma">Asthma</option>
                                             </select>
                                     </div>
                                     <div class="card-body">

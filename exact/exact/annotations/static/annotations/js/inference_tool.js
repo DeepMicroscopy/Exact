@@ -36,8 +36,6 @@ class InferenceTool {
         var sel = document.getElementById('inference_select');
         
         if (sel.value == 'classification') {
-            document.getElementById("submit_inference_btn").disabled = true;
-
             // Load the model.
             document.getElementById("inf_card").innerHTML = "Loading model"; 
             mobilenet.load().then(model => {
@@ -58,9 +56,6 @@ class InferenceTool {
 
             // Empty array of vectors.
             this.array_vectors.splice(0, this.array_vectors.length);
-
-            // Clear result text
-            document.getElementById("inf_result_card").innerHTML = "";
 
             // Load the model.
             document.getElementById("inf_card").innerHTML = "Loading model"; 
@@ -119,9 +114,6 @@ class InferenceTool {
 
             // Empty array of coordinates
             this.array_poly_coordinates.splice(0, this.array_poly_coordinates.length);
-
-            // Clear result text
-            document.getElementById("inf_result_card").innerHTML = "";
 
             // Load the model
             document.getElementById("inf_card").innerHTML = "Loading model"; 
@@ -309,6 +301,300 @@ class InferenceTool {
                 });
                 */
             });
+        } else if (sel.value == 'retina-net') {
+            document.getElementById("submit_inference_btn").disabled = true;
+
+            // Empty array of vectors.
+            this.array_vectors.splice(0, this.array_vectors.length);
+
+            // Get original container size
+            var containerSize = this.viewer.viewport.containerSize;
+            var originalCSx = containerSize.x;
+            var originalCSy = containerSize.y;
+            
+            // Fit the image into container
+            var viewportBounds = this.viewer.viewport.getBounds();
+            var tiledImage = this.viewer.world.getItemAt(0); 
+            var imageBounds = tiledImage.viewportToImageRectangle(viewportBounds);
+            imageBounds.width = originalCSx;
+            imageBounds.height = originalCSy;
+            var newBounds = this.viewer.viewport.imageToViewportRectangle(imageBounds.x, imageBounds.y, imageBounds.width, imageBounds.height);
+            this.viewer.viewport.fitBounds(newBounds);
+
+            // Load fitted image
+            const img = this.viewer.canvas.children[0];
+            const ctx = img.getContext("2d");
+
+            var originalTensor = tf.browser.fromPixels(img);
+
+            originalTensor = tf.cast(originalTensor, 'float32').div(tf.scalar(255));
+            const mean = tf.tensor2d([0.917576, 0.91688, 0.92946], [1, 3]);
+            const std = tf.tensor2d([0.132308, 0.103768, 0.068725], [1, 3]);
+            originalTensor = originalTensor.sub(mean).div(std);
+            originalTensor = originalTensor.transpose([2, 0, 1]); //C, H, W
+
+            // Crop the image if necessary
+            if (originalCSx > 1024) {
+                originalTensor = originalTensor.slice([0, 0, 0], [-1, -1, 1024]);
+            };
+            if (originalCSy > 1024) {
+                originalTensor = originalTensor.slice([0, 0, 0], [-1, 1024, -1]);
+            };
+
+            const imageWidth = originalTensor.shape[2];
+            const imageHeight = originalTensor.shape[1];
+
+            // Pad the image to fit 1024x1024
+            const padWidth = 1024 - imageWidth;
+            const padHeight = 1024 - imageHeight;
+            const padding = [[0, 0], [0, padHeight], [0, padWidth]];
+            var paddedTensor = originalTensor.pad(padding).expandDims();
+
+            async function init() {
+                const modelUrl = 'https://storage.googleapis.com/exact-object-detection/web_model/model.json';
+                const model = await tf.loadGraphModel(modelUrl);
+                const outputTensor = model.predict(paddedTensor);
+                document.getElementById("inf_card").innerHTML = "Model running, please wait";
+                console.log(outputTensor);
+                model.dispose;
+
+                var class_pred = outputTensor[1];
+                var bbox_pred = outputTensor[2];
+                class_pred = class_pred.squeeze().sigmoid();
+                const class_pred_max = class_pred.max(1);
+                
+                const threshold = tf.tensor1d([0.5]);
+                const detect_mask = class_pred_max.greater(threshold);
+
+                // activ_to_bbox
+                const anchors = tf.tensor2d(returnAnchors());
+                bbox_pred = bbox_pred.squeeze().mul(tf.tensor2d([[0.1, 0.1, 0.2, 0.2]]));
+                var centers = anchors.slice([0, 2], [-1, -1]).mul(bbox_pred.slice([0, 0], [-1, 2])).add(anchors.slice([0, 0], [-1, 2]));
+                var sizes = anchors.slice([0, 2], [-1, -1]).mul(bbox_pred.slice([0, 2], [-1, -1]).exp());
+                bbox_pred= centers.concat(sizes, -1);
+
+                
+                class_pred = await tf.booleanMaskAsync(class_pred, detect_mask);
+                bbox_pred = await tf.booleanMaskAsync(bbox_pred, detect_mask);
+
+                // ctwh2tlbr
+                const top_left = bbox_pred.slice([0, 0], [-1, 2]).sub((bbox_pred.slice([0, 2], [-1, -1]).div(tf.scalar(2))));
+                const bot_right = bbox_pred.slice([0, 0], [-1, 2]).add((bbox_pred.slice([0, 2], [-1, -1]).div(tf.scalar(2))));
+                bbox_pred = top_left.concat(bot_right, -1).clipByValue(-1, 1);
+
+                var scores = class_pred.max(1);
+                var preds = class_pred.argMax(1);
+
+                // nms
+                const selectedIndices = await tf.image.nonMaxSuppressionAsync(bbox_pred, scores, 50, 0.9, 0.55);
+                scores = scores.gather(selectedIndices);
+                preds = preds.gather(selectedIndices);
+                bbox_pred = bbox_pred.gather(selectedIndices);
+
+                // tlbr2cthw
+                centers = (bbox_pred.slice([0, 0], [-1, 2]).add(bbox_pred.slice([0, 2], [-1, -1]))).div(tf.scalar(2));
+                sizes = bbox_pred.slice([0, 2], [-1, -1]).sub(bbox_pred.slice([0, 0], [-1, 2]));
+                bbox_pred = centers.concat(sizes, -1);
+
+                console.log('Break');
+
+                // rescale box
+                const t_sz = tf.tensor2d([1024, 1024], [1, 2]);
+                var bbox_left = bbox_pred.slice([0, 0], [-1, 2]).sub((bbox_pred.slice([0, 2], [-1, -1]).div(tf.scalar(2))));
+                bbox_left = (bbox_left.slice([0, 0], [-1, 2]).add(tf.scalar(1))).mul(t_sz).div(tf.scalar(2));
+                const bbox_right = bbox_pred.slice([0, 2], [-1, -1]).mul(t_sz).div(tf.scalar(2));
+                bbox_pred = bbox_left.concat(bbox_right, -1);
+
+                const length = preds.size;
+
+                // Convert tensors to arrays
+                bbox_pred = await bbox_pred.array();
+                scores = await scores.array();
+                preds = await preds.array();
+
+                // Draw boxes 
+                ctx.strokeStyle = "#00FFFF";
+                ctx.lineWidth = 4;
+                for (var i = 0; i < length; i++) {
+                    if (!(anno.selectedIndex == preds[i])) {
+                        continue;
+                    };
+
+                    const y = bbox_pred[i][0];
+                    const x = bbox_pred[i][1];
+                    const height = bbox_pred[i][2];
+                    const width = bbox_pred[i][3];
+                    ctx.strokeRect(x, y, width, height);
+
+                    // Convert bounding box coordinates to image coordinates.
+                    var topLeft = new OpenSeadragon.Point(x, y);
+                    topLeft = this.viewer.viewport.pointFromPixel(topLeft);
+                    topLeft = this.viewer.viewport.viewportToImageCoordinates(topLeft);
+                    var bottomRight = new OpenSeadragon.Point(x + width, y + height);
+                    bottomRight = this.viewer.viewport.pointFromPixel(bottomRight);
+                    bottomRight = this.viewer.viewport.viewportToImageCoordinates(bottomRight);
+                    var vector = {};
+                    vector["topleft"] = topLeft;
+                    vector["bottomright"] = bottomRight;
+                    this.array_vectors.push(vector);
+                };
+                document.getElementById("inf_card").innerHTML = "Object detection completed";
+                if (this.array_vectors.length > 0) {
+                    document.getElementById("submit_inference_btn").disabled = false;
+                };
+
+                return;
+            };
+            document.getElementById("inf_card").innerHTML = "Downloading Model";
+            let retinaNet = init.bind(this);
+            retinaNet();
+        } else if (sel.value == 'asthma') {
+            document.getElementById("submit_inference_btn").disabled = true;
+
+            // Empty array of vectors.
+            this.array_vectors.splice(0, this.array_vectors.length);
+
+            // Get original container size
+            var containerSize = this.viewer.viewport.containerSize;
+            var originalCSx = containerSize.x;
+            var originalCSy = containerSize.y;
+            
+            // Fit the image into container
+            var viewportBounds = this.viewer.viewport.getBounds();
+            var tiledImage = this.viewer.world.getItemAt(0); 
+            var imageBounds = tiledImage.viewportToImageRectangle(viewportBounds);
+            imageBounds.width = originalCSx;
+            imageBounds.height = originalCSy;
+            var newBounds = this.viewer.viewport.imageToViewportRectangle(imageBounds.x, imageBounds.y, imageBounds.width, imageBounds.height);
+            this.viewer.viewport.fitBounds(newBounds);
+
+            // Load fitted image
+            const img = this.viewer.canvas.children[0];
+            const ctx = img.getContext("2d");
+
+            var originalTensor = tf.browser.fromPixels(img);
+
+            originalTensor = tf.cast(originalTensor, 'float32').div(tf.scalar(255));
+            const mean = tf.tensor2d([0.885901, 0.85915, 0.893695], [1, 3]);
+            const std = tf.tensor2d([0.144371, 0.191175, 0.119497], [1, 3]);
+            originalTensor = originalTensor.sub(mean).div(std);
+            originalTensor = originalTensor.transpose([2, 0, 1]); //C, H, W
+
+            // Crop the image if necessary
+            if (originalCSx > 1024) {
+                originalTensor = originalTensor.slice([0, 0, 0], [-1, -1, 1024]);
+            };
+            if (originalCSy > 1024) {
+                originalTensor = originalTensor.slice([0, 0, 0], [-1, 1024, -1]);
+            };
+
+            const imageWidth = originalTensor.shape[2];
+            const imageHeight = originalTensor.shape[1];
+
+            // Pad the image to fit 1024x1024
+            const padWidth = 1024 - imageWidth;
+            const padHeight = 1024 - imageHeight;
+            const padding = [[0, 0], [0, padHeight], [0, padWidth]];
+            var paddedTensor = originalTensor.pad(padding).expandDims();
+
+            async function init() {
+                const modelUrl = 'https://storage.googleapis.com/exact-object-detection/asthma_model/model.json';
+                const model = await tf.loadGraphModel(modelUrl);
+                const outputTensor = await model.executeAsync(paddedTensor);
+                document.getElementById("inf_card").innerHTML = "Model running, please wait";
+                console.log(outputTensor);
+                model.dispose;
+
+                var class_pred = outputTensor[3];
+                var bbox_pred = outputTensor[0];
+                class_pred = class_pred.squeeze().sigmoid();
+                const class_pred_max = class_pred.max(1);
+                
+                const threshold = tf.tensor1d([0.5]);
+                const detect_mask = class_pred_max.greater(threshold);
+
+                // activ_to_bbox
+                const anchors = tf.tensor2d(returnAsthmaAnchors());
+                bbox_pred = bbox_pred.squeeze().mul(tf.tensor2d([[0.1, 0.1, 0.2, 0.2]]));
+                var centers = anchors.slice([0, 2], [-1, -1]).mul(bbox_pred.slice([0, 0], [-1, 2])).add(anchors.slice([0, 0], [-1, 2]));
+                var sizes = anchors.slice([0, 2], [-1, -1]).mul(bbox_pred.slice([0, 2], [-1, -1]).exp());
+                bbox_pred= centers.concat(sizes, -1);
+
+                
+                class_pred = await tf.booleanMaskAsync(class_pred, detect_mask);
+                bbox_pred = await tf.booleanMaskAsync(bbox_pred, detect_mask);
+
+                // ctwh2tlbr
+                const top_left = bbox_pred.slice([0, 0], [-1, 2]).sub((bbox_pred.slice([0, 2], [-1, -1]).div(tf.scalar(2))));
+                const bot_right = bbox_pred.slice([0, 0], [-1, 2]).add((bbox_pred.slice([0, 2], [-1, -1]).div(tf.scalar(2))));
+                bbox_pred = top_left.concat(bot_right, -1).clipByValue(-1, 1);
+
+                var scores = class_pred.max(1);
+                var preds = class_pred.argMax(1);
+
+                // nms
+                const selectedIndices = await tf.image.nonMaxSuppressionAsync(bbox_pred, scores, 50, 0.9, 0.55);
+                scores = scores.gather(selectedIndices);
+                preds = preds.gather(selectedIndices);
+                bbox_pred = bbox_pred.gather(selectedIndices);
+
+                // tlbr2cthw
+                centers = (bbox_pred.slice([0, 0], [-1, 2]).add(bbox_pred.slice([0, 2], [-1, -1]))).div(tf.scalar(2));
+                sizes = bbox_pred.slice([0, 2], [-1, -1]).sub(bbox_pred.slice([0, 0], [-1, 2]));
+                bbox_pred = centers.concat(sizes, -1);
+
+                console.log('Break');
+
+                // rescale box
+                const t_sz = tf.tensor2d([1024, 1024], [1, 2]);
+                var bbox_left = bbox_pred.slice([0, 0], [-1, 2]).sub((bbox_pred.slice([0, 2], [-1, -1]).div(tf.scalar(2))));
+                bbox_left = (bbox_left.slice([0, 0], [-1, 2]).add(tf.scalar(1))).mul(t_sz).div(tf.scalar(2));
+                const bbox_right = bbox_pred.slice([0, 2], [-1, -1]).mul(t_sz).div(tf.scalar(2));
+                bbox_pred = bbox_left.concat(bbox_right, -1);
+
+                const length = preds.size;
+
+                // Convert tensors to arrays
+                bbox_pred = await bbox_pred.array();
+                scores = await scores.array();
+                preds = await preds.array();
+
+                // Draw boxes 
+                ctx.strokeStyle = "#00FFFF";
+                ctx.lineWidth = 4;
+                for (var i = 0; i < length; i++) {
+                    if (!(anno.selectedIndex == preds[i])) {
+                        continue;
+                    };
+
+                    const y = bbox_pred[i][0];
+                    const x = bbox_pred[i][1];
+                    const height = bbox_pred[i][2];
+                    const width = bbox_pred[i][3];
+                    ctx.strokeRect(x, y, width, height);
+
+                    // Convert bounding box coordinates to image coordinates.
+                    var topLeft = new OpenSeadragon.Point(x, y);
+                    topLeft = this.viewer.viewport.pointFromPixel(topLeft);
+                    topLeft = this.viewer.viewport.viewportToImageCoordinates(topLeft);
+                    var bottomRight = new OpenSeadragon.Point(x + width, y + height);
+                    bottomRight = this.viewer.viewport.pointFromPixel(bottomRight);
+                    bottomRight = this.viewer.viewport.viewportToImageCoordinates(bottomRight);
+                    var vector = {};
+                    vector["topleft"] = topLeft;
+                    vector["bottomright"] = bottomRight;
+                    this.array_vectors.push(vector);
+                };
+                document.getElementById("inf_card").innerHTML = "Object detection completed";
+                if (this.array_vectors.length > 0) {
+                    document.getElementById("submit_inference_btn").disabled = false;
+                };
+
+                return;
+            };
+            document.getElementById("inf_card").innerHTML = "Downloading Model";
+            let asthmaNet = init.bind(this);
+            asthmaNet();
         };
     }
 
@@ -318,6 +604,10 @@ class InferenceTool {
             this.viewer.raiseEvent('add_detected_bounding_boxes', {});
         } else if (sel.value == 'segmentation') {
             this.viewer.raiseEvent('add_polygon_from_segmentation', {});
+        } else if (sel.value == 'retina-net') {
+            this.viewer.raiseEvent('add_detected_bounding_boxes', {});
+        } else if (sel.value == 'asthma') {
+            this.viewer.raiseEvent('add_detected_bounding_boxes', {});
         }
     }
 
@@ -325,5 +615,5 @@ class InferenceTool {
 
         $("#inference_update_btn").off("click");
         $("#submit_inference_btn").off("click");
-    }
-}
+    };
+};
