@@ -335,6 +335,76 @@ class BoundingBoxes {
         }
     }
 
+    initNewAnnotationFromInference(vector, selected_annotation_type) {
+
+        var canvasObject = undefined;
+        var selection_hit_type = 'fill';
+        switch (selected_annotation_type.vector_type) {
+            case 5:  // Polygon
+                var canvasObject = new paper.Path({
+                    closed: selected_annotation_type.closed,
+                });
+                canvasObject.data.type = "poly";
+                selection_hit_type = 'new';
+                for (var i = 0; i < vector.length; i++) {
+                    canvasObject.add(vector[i]);
+                };
+                //canvasObject.add(imagePoint);
+                //canvasObject.data.type = "poly";
+                //selection_hit_type = 'new';
+                break;
+
+            case 1:  // Rect
+                var topLeft = new paper.Point(vector.topleft);
+                var bottomRight = new paper.Point(vector.bottomright);
+
+                canvasObject = new paper.Path.Rectangle(topLeft, bottomRight);
+                canvasObject.data.type = "rect";
+
+                break;
+            case 6:
+            default:
+                var topLeft = new paper.Point(vector.topleft);
+                var bottomRight = new paper.Point(vector.bottomright);
+
+                canvasObject = new paper.Path.Rectangle(topLeft, bottomRight);
+                canvasObject.data.type = "fixed_rect";
+
+                break;
+
+        }
+
+        canvasObject.selected = true;
+        canvasObject.strokeColor = selected_annotation_type.color_code;
+        canvasObject.strokeWidth = this.strokeWidth;
+        canvasObject.name = this.uuidv4();
+        canvasObject.data.type_id = selected_annotation_type.id;
+        canvasObject.data.area_hit_test = selected_annotation_type.area_hit_test;
+
+        if (selected_annotation_type.area_hit_test)
+            canvasObject.fillColor = new paper.Color(0, 0, 0, 0.000001);
+
+        this.group.addChild(canvasObject);
+
+        // set object as selected
+        this.selection = {
+            type: selection_hit_type,
+            item: canvasObject
+        };
+
+        // return temp annotation
+        return {
+            annotation_type: selected_annotation_type,
+            id: -1,
+            vector: this.getAnnotationVector(canvasObject.name),
+            user: {id: null, username: "you"},
+            last_editor: {id: null, username: "you"},
+            image: this.imageid,
+            unique_identifier: canvasObject.name,
+            deleted: false
+        }
+    }
+
     drawAnnotation(annotation) {
         if (annotation.vector === null || annotation.deleted) {
             return;
