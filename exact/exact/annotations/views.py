@@ -49,6 +49,9 @@ def annotate(request, image_id):
 
         total_annotations = selected_image.annotations.filter(deleted=False).count()
         imageset_lock = selected_image.image_set.image_lock
+        asthma = selected_image.image_set.product_set.filter(Q(name__icontains="asthma") | Q(name__icontains="astma")).first()
+
+
         return render(request, 'annotations/annotate.html', {
             'team': selected_image.image_set.team,
             'selected_image': selected_image,
@@ -59,7 +62,8 @@ def annotate(request, image_id):
             'annotation_types': annotation_types,
             'HasMediaFiles': hasMediaFiles,
             'global_annotation_types': global_annotation_types,
-            'user_id': request.user.id
+            'user_id': request.user.id,
+            'asthma': asthma
         })
     else:
         return redirect(reverse('images:view_imageset', args=(selected_image.image_set.id,)))

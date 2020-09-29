@@ -424,6 +424,8 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         this.exact_sync = this.createSyncModules(annotationTypes, this.imageId, headers, this.viewer, user_id, collaboration_type);
         this.searchTool = new SearchTool(this.imageId, this.viewer, this.exact_sync);
 
+        this.asthmaAnalysis = new AsthmaAnalysis(this.imageId, this.viewer, this.exact_sync);
+
         this.showAnnotationProperties = new ShowAnnotationProperties(this.viewer, this.exact_sync);
 
         let team_id = parseInt($('#team_id').html());
@@ -1016,6 +1018,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         this.teamTool.destroy();
         this.searchTool.destroy();
         this.exact_sync.destroy();
+        this.asthmaAnalysis.destroy();
     }
 }
 
