@@ -20,7 +20,8 @@ class ScreeningTool {
     handleKeyUp(event) {
 
         if (event.target.id === "TEXTAREA"
-            || event.target.nodeName == 'INPUT')
+            || event.target.nodeName == 'INPUT'
+            || this.screening_sync.screening_mode === undefined)
             return;
 
         switch (event.keyCode) {

@@ -31,6 +31,7 @@
 <script type="text/javascript" src="{% static 'annotations/js/exact-imageset-viewer.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/openseadragon_filtering_viewer.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/searchTool.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/AsthmaAnalysis.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/teamTool.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/statistics-viewer.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/plugin-handler.js' %}"></script>
@@ -191,6 +192,17 @@
                                     href="#nav-item_team_statistics_tool" role="tab" aria-controls="home">Team</a>
                             </li>
                             {% endif %}
+
+                            {% if asthma  %}
+                            <li class="nav-item">
+                                <a class="nav-link" id="item_asthma" data-toggle="tab" href="#nav-item_asthma"
+                                    role="tab" aria-controls="home">Asthma</a>
+                            </li>
+                            {% endif %}
+
+
+
+
                         </ul>
 
                         <div class="tab-content" id="statistics_tabs_content">
@@ -387,31 +399,34 @@
                                         </div>
                                         <div class="d-flex justify-content-between">
                                             <label for="ContrastSlider">Contrast</label>
-                                            <input id="ContrastSlider" type="text" data-slider-min="0" data-slider-max="10"
-                                                data-slider-step="0.1" data-slider-value="1" data-slider-enabled="false" />
+                                            <input id="ContrastSlider" type="text" data-slider-min="0"
+                                                data-slider-max="10" data-slider-step="0.1" data-slider-value="1"
+                                                data-slider-enabled="false" />
                                             <input id="ContrastSlider-enabled" type="checkbox" />
                                         </div>
 
                                         <div class="d-flex justify-content-between">
                                             <label for="CLAHESlider">CLAHE</label>
                                             <input id="CLAHESlider" type="text" data-slider-min="0" data-slider-max="50"
-                                                data-slider-step="1" data-slider-value="1" data-slider-enabled="false" />
+                                                data-slider-step="1" data-slider-value="1"
+                                                data-slider-enabled="false" />
                                             <input id="CLAHESlider-enabled" type="checkbox" />
                                         </div>
 
                                         <div class="d-flex justify-content-between">
                                             <label for="THRESHOLDINGSlider">Thresholding</label>
-                                            <input id="THRESHOLDINGSlider" type="text" data-slider-min="0" data-slider-max="255"
-                                                data-slider-step="1" data-slider-value="128" data-slider-enabled="false" />
+                                            <input id="THRESHOLDINGSlider" type="text" data-slider-min="0"
+                                                data-slider-max="255" data-slider-step="1" data-slider-value="128"
+                                                data-slider-enabled="false" />
                                             <input id="THRESHOLDINGSlider-enabled" type="checkbox" />
                                         </div>
 
                                         <div class="d-flex justify-content-between">
                                             <div class="col">
-                                                <input id="Invert-enabled" type="checkbox" title="Invert"/> I
+                                                <input id="Invert-enabled" type="checkbox" title="Invert" /> I
                                             </div>
                                             <div class="col">
-                                                <input id="GREYSCALE-enabled" type="checkbox" title="Grey"/> S
+                                                <input id="GREYSCALE-enabled" type="checkbox" title="Grey" /> S
                                             </div>
                                             <div class="col">
                                                 <input id="Red-enabled" type="checkbox" checked=true /> R
@@ -432,24 +447,25 @@
                                 <div class="card">
                                     <div class="card-header">
                                         <div class="d-flex justify-content-between">
-                                                <input type="number" id="screeningResolutionX" placeholder="350"
-                                                    title="Screening tile size in pixel X" class="form-control"
-                                                    value={{ resolution_x }}>
-                                                <input type="number" id="screeningResolutionY" placeholder="350"
-                                                    title="Screening tile size in pixel Y" class="form-control" 
-                                                    value={{ resolution_y }}>
-                                                <button class="btn btn-primary" id="screening_resolution_update_btn">
-                                                    <image src="{% static 'images/play.svg' %}">
-                                                </button>
+                                            <input type="number" id="screeningResolutionX" placeholder="350"
+                                                title="Screening tile size in pixel X" class="form-control"
+                                                value={{ resolution_x }}>
+                                            <input type="number" id="screeningResolutionY" placeholder="350"
+                                                title="Screening tile size in pixel Y" class="form-control"
+                                                value={{ resolution_y }}>
+                                            <button class="btn btn-primary" id="screening_resolution_update_btn">
+                                                <image src="{% static 'images/play.svg' %}">
+                                            </button>
                                         </div>
                                     </div>
                                     <div class="card-body">
                                         <div class="collapse">
                                             <img id="screeningImage" alt="Screening mode not initialised!">
                                         </div>
-                                        
-                                        <canvas id="screeningImageOutput" alt="Screening mode not initialised!"></canvas>
-                             
+
+                                        <canvas id="screeningImageOutput"
+                                            alt="Screening mode not initialised!"></canvas>
+
                                     </div>
                                 </div>
                             </div>
@@ -462,30 +478,36 @@
                                             <thead>
                                                 <tr>
                                                     <th scope="col">User</th>
-                                                    <th scope="col" title="Show annotations created by this user">First</th>
-                                                    <th scope="col" title="Show annotations last edited by this user">Last</th>
+                                                    <th scope="col" title="Show annotations created by this user">First
+                                                    </th>
+                                                    <th scope="col" title="Show annotations last edited by this user">
+                                                        Last</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 <tr>
                                                     <td> Toggle All </td>
                                                     <td>
-                                                        <input id="ShowUserCreadedAnnotationsToggle" type="checkbox" checked/>
+                                                        <input id="ShowUserCreadedAnnotationsToggle" type="checkbox"
+                                                            checked />
                                                     </td>
                                                     <td>
-                                                        <input id="ShowUserLastEditedAnnotationsToggle" type="checkbox" checked/>
-                                                    </td> 
+                                                        <input id="ShowUserLastEditedAnnotationsToggle" type="checkbox"
+                                                            checked />
+                                                    </td>
                                                 </tr>
 
                                                 {% for user in team.members.all %}
                                                 <tr>
                                                     <td>{{ user.username }}</td>
                                                     <td>
-                                                        <input id="ShowUserCreadedAnnotations_{{user.id}}" type="checkbox" checked data-user_id={{user.id}}/>
+                                                        <input id="ShowUserCreadedAnnotations_{{user.id}}"
+                                                            type="checkbox" checked data-user_id={{user.id}} />
                                                     </td>
                                                     <td>
-                                                        <input id="ShowUserLastEditedAnnotations_{{user.id}}" type="checkbox" checked data-user_id={{user.id}}/>
-                                                    </td>     
+                                                        <input id="ShowUserLastEditedAnnotations_{{user.id}}"
+                                                            type="checkbox" checked data-user_id={{user.id}} />
+                                                    </td>
                                                 </tr>
                                                 {% endfor %}
                                             </tbody>
@@ -493,6 +515,79 @@
 
                                     </div>
                                 </div>
+                            </div>
+
+                            <div class="tab-pane fade" id="nav-item_asthma">
+
+                                <table style="white-space:nowrap; width: 100%; margin-top: 10px; text-align: center"
+                                    class="table table-striped table-bordered table-sm">
+                                    <tbody id="annotationSearchResults">
+                                        <tr>
+                                            <th>
+                                                <button class="btn btn-success" id="asthma_update_btn">
+                                                    <span class="fa fa-refresh"></span>
+                                                </button>
+
+                                            </th>
+                                            <th>Actual:</th>
+                                            <th>Healtly:</th>
+                                            <th>IAD:</th>
+                                            <th>RAO:</th>
+                                            <th> bacterial pneumonia: </th>
+                                        </tr>
+
+                                        <tr>
+                                            <td>Neutrophils</td>
+                                            <td id=asthma_neutrophils></td>
+                                            <td> &#060; 5 %</td>
+                                            <td>5–20 %</td>
+                                            <td> &#062; 20–25 %</td>
+                                            <td> &#060; 90 %</td>
+                                        </tr>
+
+                                        <tr>
+                                            <td>Macrophages</td>
+                                            <td id=asthma_macrophages></td>
+                                            <td> 50–70 %</td>
+                                            <td> </td>
+                                            <td> </td>
+                                            <td> </td>
+                                        </tr>
+
+                                        <tr>
+                                            <td>Eosinophils</td>
+                                            <td id=asthma_eosinophils></td>
+                                            <td> &#060; 0.5 %</td>
+                                            <td> &#062; 0.5 % </td>
+                                            <td> &#062; 0.5 % </td>
+                                            <td> </td>
+                                        </tr>
+
+                                        <tr>
+                                            <td>Mast Cells</td>
+                                            <td id=asthma_mast_cell></td>
+                                            <td> &#060; 1 %</td>
+                                            <td> &#062; 1 % </td>
+                                            <td> &#062; 1 % </td>
+                                            <td> </td>
+                                        </tr>
+
+                                        <tr>
+                                            <td>Total</td>
+                                            <td id=asthma_total></td>
+                                            <td> </td>
+                                            <td> </td>
+                                            <td> </td>
+                                            <td> </td>
+                                        </tr>
+                                    </tbody>
+
+                                </table>
+
+                                <a href="https://bib.vetmed.fu-berlin.de/pubdb/pub/23441-die-zytologie-von-tracheobronchialsekret-tbs-und-bronchoalveola/">
+                                    Robert Klopfleisch, Christof A. Bertram <br>
+                                    Die Zytologie von Tracheobronchialsekret (TBS) und bronchoalveolärer Lavage-Flüssigkeit (BALF) beim Pferd mit equinem Asthma:
+                                </a>
                             </div>
 
 
@@ -537,10 +632,10 @@
             </div>
         </div>
 
-        <div class="col h-100" id="annotationImage">            
-            <div  id="zoomSlider" style="width: 35vw;"></div> <!-- style="width: 25vw;" -->                            
+        <div class="col h-100" id="annotationImage">
+            <div id="zoomSlider" style="width: 35vw;"></div> <!-- style="width: 25vw;" -->
             <div class="col" id="openseadragon1" style="height: 85vh;"></div>
-            <div  id="frameSlider" style="width: 35vw;"></div>
+            <div id="frameSlider" style="width: 35vw;"></div>
         </div>
 
         <div class="col-3 collapse" style="max-height: 90vh; overflow-y: auto" id="imagesetThumbnails">
