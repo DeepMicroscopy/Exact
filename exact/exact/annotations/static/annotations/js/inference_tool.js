@@ -14,6 +14,9 @@ class InferenceTool {
 
         this.array_vectors = [];
         this.array_poly_coordinates = [];
+        this.model;
+        this.modelType = 'empty';
+      
     }
 
     initUiEvents(context) {
@@ -351,12 +354,18 @@ class InferenceTool {
             var paddedTensor = originalTensor.pad(padding).expandDims();
 
             async function init() {
-                const modelUrl = 'https://storage.googleapis.com/exact-object-detection/web_model/model.json';
-                const model = await tf.loadGraphModel(modelUrl);
-                const outputTensor = model.predict(paddedTensor);
+
+                var model;
+                if (this.model == undefined || this.modelType != 'retinaNet') {
+                    const modelUrl = 'https://storage.googleapis.com/exact-object-detection/web_model/model.json';
+                    this.model = await tf.loadGraphModel(modelUrl);
+                    this.modelType = 'retinaNet';
+                    model = this.model;
+                } else {
+                    model = this.model;
+                };
                 document.getElementById("inf_card").innerHTML = "Model running, please wait";
-                console.log(outputTensor);
-                model.dispose;
+                const outputTensor = model.predict(paddedTensor);
 
                 var class_pred = outputTensor[1];
                 var bbox_pred = outputTensor[2];
@@ -385,8 +394,8 @@ class InferenceTool {
                 var scores = class_pred.max(1);
                 var preds = class_pred.argMax(1);
 
-                // nms
-                const selectedIndices = await tf.image.nonMaxSuppressionAsync(bbox_pred, scores, 50, 0.9, 0.55);
+                var selectedIndices = await tf.image.nonMaxSuppressionWithScoreAsync(bbox_pred, scores, 50, 0.9, 0.55, 0.5);
+                selectedIndices = selectedIndices.selectedIndices;
                 scores = scores.gather(selectedIndices);
                 preds = preds.gather(selectedIndices);
                 bbox_pred = bbox_pred.gather(selectedIndices);
@@ -395,8 +404,6 @@ class InferenceTool {
                 centers = (bbox_pred.slice([0, 0], [-1, 2]).add(bbox_pred.slice([0, 2], [-1, -1]))).div(tf.scalar(2));
                 sizes = bbox_pred.slice([0, 2], [-1, -1]).sub(bbox_pred.slice([0, 0], [-1, 2]));
                 bbox_pred = centers.concat(sizes, -1);
-
-                console.log('Break');
 
                 // rescale box
                 const t_sz = tf.tensor2d([1024, 1024], [1, 2]);
@@ -498,12 +505,30 @@ class InferenceTool {
             var paddedTensor = originalTensor.pad(padding).expandDims();
 
             async function init() {
-                const modelUrl = 'https://storage.googleapis.com/exact-object-detection/asthma_model/model.json';
-                const model = await tf.loadGraphModel(modelUrl);
-                const outputTensor = await model.executeAsync(paddedTensor);
+
+                var model;
+                if (this.model == undefined || this.modelType != 'asthma') {
+                    const modelUrl = 'https://storage.googleapis.com/exact-object-detection/asthma_model/model.json';
+                    this.model = await tf.loadGraphModel(modelUrl);
+                    this.modelType = 'asthma';
+                    model = this.model;
+                } else {
+                    model = this.model;
+                };
                 document.getElementById("inf_card").innerHTML = "Model running, please wait";
-                console.log(outputTensor);
-                model.dispose;
+                const outputTensor = await model.executeAsync(paddedTensor);
+
+                var model;
+                if (this.model == undefined || this.modelType != 'asthma') {
+                    const modelUrl = 'https://storage.googleapis.com/exact-object-detection/asthma_model/model.json';
+                    this.model = await tf.loadGraphModel(modelUrl);
+                    this.modelType = 'asthma';
+                    model = this.model;
+                } else {
+                    model = this.model;
+                };
+                document.getElementById("inf_card").innerHTML = "Model running, please wait";
+                const outputTensor = await model.executeAsync(paddedTensor);
 
                 var class_pred = outputTensor[3];
                 var bbox_pred = outputTensor[0];
@@ -533,7 +558,8 @@ class InferenceTool {
                 var preds = class_pred.argMax(1);
 
                 // nms
-                const selectedIndices = await tf.image.nonMaxSuppressionAsync(bbox_pred, scores, 50, 0.9, 0.55);
+                var selectedIndices = await tf.image.nonMaxSuppressionWithScoreAsync(bbox_pred, scores, 50, 0.9, 0.55, 0.5);
+                selectedIndices = selectedIndices.selectedIndices;
                 scores = scores.gather(selectedIndices);
                 preds = preds.gather(selectedIndices);
                 bbox_pred = bbox_pred.gather(selectedIndices);
@@ -542,8 +568,6 @@ class InferenceTool {
                 centers = (bbox_pred.slice([0, 0], [-1, 2]).add(bbox_pred.slice([0, 2], [-1, -1]))).div(tf.scalar(2));
                 sizes = bbox_pred.slice([0, 2], [-1, -1]).sub(bbox_pred.slice([0, 0], [-1, 2]));
                 bbox_pred = centers.concat(sizes, -1);
-
-                console.log('Break');
 
                 // rescale box
                 const t_sz = tf.tensor2d([1024, 1024], [1, 2]);
