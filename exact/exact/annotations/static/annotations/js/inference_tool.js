@@ -14,9 +14,9 @@ class InferenceTool {
 
         this.array_vectors = [];
         this.array_poly_coordinates = [];
-
         this.model;
         this.modelType = 'empty';
+      
     }
 
     initUiEvents(context) {
@@ -353,8 +353,6 @@ class InferenceTool {
             const padding = [[0, 0], [0, padHeight], [0, padWidth]];
             var paddedTensor = originalTensor.pad(padding).expandDims();
 
-
-
             async function init() {
 
                 var model;
@@ -395,8 +393,7 @@ class InferenceTool {
 
                 var scores = class_pred.max(1);
                 var preds = class_pred.argMax(1);
-                
-                // nms
+
                 var selectedIndices = await tf.image.nonMaxSuppressionWithScoreAsync(bbox_pred, scores, 50, 0.9, 0.55, 0.5);
                 selectedIndices = selectedIndices.selectedIndices;
                 scores = scores.gather(selectedIndices);
@@ -508,6 +505,19 @@ class InferenceTool {
             var paddedTensor = originalTensor.pad(padding).expandDims();
 
             async function init() {
+
+                var model;
+                if (this.model == undefined || this.modelType != 'asthma') {
+                    const modelUrl = 'https://storage.googleapis.com/exact-object-detection/asthma_model/model.json';
+                    this.model = await tf.loadGraphModel(modelUrl);
+                    this.modelType = 'asthma';
+                    model = this.model;
+                } else {
+                    model = this.model;
+                };
+                document.getElementById("inf_card").innerHTML = "Model running, please wait";
+                const outputTensor = await model.executeAsync(paddedTensor);
+
                 var model;
                 if (this.model == undefined || this.modelType != 'asthma') {
                     const modelUrl = 'https://storage.googleapis.com/exact-object-detection/asthma_model/model.json';
