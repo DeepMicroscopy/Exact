@@ -306,7 +306,6 @@ class InferenceTool {
             });
         } else if (sel.value == 'retina-net') {
             document.getElementById("submit_inference_btn").disabled = true;
-
             // Empty array of vectors.
             this.array_vectors.splice(0, this.array_vectors.length);
 
@@ -457,6 +456,8 @@ class InferenceTool {
             retinaNet();
         } else if (sel.value == 'asthma') {
             document.getElementById("submit_inference_btn").disabled = true;
+            document.getElementById("inf_card").innerHTML = "Prepare inference, please wait";
+
 
             // Empty array of vectors.
             this.array_vectors.splice(0, this.array_vectors.length);
@@ -505,18 +506,6 @@ class InferenceTool {
             var paddedTensor = originalTensor.pad(padding).expandDims();
 
             async function init() {
-
-                var model;
-                if (this.model == undefined || this.modelType != 'asthma') {
-                    const modelUrl = 'https://storage.googleapis.com/exact-object-detection/asthma_model/model.json';
-                    this.model = await tf.loadGraphModel(modelUrl);
-                    this.modelType = 'asthma';
-                    model = this.model;
-                } else {
-                    model = this.model;
-                };
-                document.getElementById("inf_card").innerHTML = "Model running, please wait";
-                const outputTensor = await model.executeAsync(paddedTensor);
 
                 var model;
                 if (this.model == undefined || this.modelType != 'asthma') {
