@@ -306,6 +306,8 @@ class InferenceTool {
             });
         } else if (sel.value == 'retina-net') {
             document.getElementById("submit_inference_btn").disabled = true;
+            document.getElementById("inf_card").innerHTML = "Prepare inference, please wait";
+
             // Empty array of vectors.
             this.array_vectors.splice(0, this.array_vectors.length);
 
@@ -327,109 +329,128 @@ class InferenceTool {
             const img = this.viewer.canvas.children[0];
             const ctx = img.getContext("2d");
 
-            var originalTensor = tf.browser.fromPixels(img);
+            // Convert image to tensor and use tf.tidy to prevent memory leak
+            const paddedTensor = tf.tidy(() => {
+                var originalTensor = tf.browser.fromPixels(img);
 
-            originalTensor = tf.cast(originalTensor, 'float32').div(tf.scalar(255));
-            const mean = tf.tensor2d([0.917576, 0.91688, 0.92946], [1, 3]);
-            const std = tf.tensor2d([0.132308, 0.103768, 0.068725], [1, 3]);
-            originalTensor = originalTensor.sub(mean).div(std);
-            originalTensor = originalTensor.transpose([2, 0, 1]); //C, H, W
+                originalTensor = tf.cast(originalTensor, 'float32').div(tf.scalar(255));
+                const mean = tf.tensor2d([0.917576, 0.91688, 0.92946], [1, 3]);
+                const std = tf.tensor2d([0.132308, 0.103768, 0.068725], [1, 3]);
+                originalTensor = originalTensor.sub(mean).div(std);
+                originalTensor = originalTensor.transpose([2, 0, 1]); //C, H, W
 
-            // Crop the image if necessary
-            if (originalCSx > 1024) {
-                originalTensor = originalTensor.slice([0, 0, 0], [-1, -1, 1024]);
-            };
-            if (originalCSy > 1024) {
-                originalTensor = originalTensor.slice([0, 0, 0], [-1, 1024, -1]);
-            };
+                // Crop the image if necessary
+                if (originalCSx > 1024) {
+                    originalTensor = originalTensor.slice([0, 0, 0], [-1, -1, 1024]);
+                };
+                if (originalCSy > 1024) {
+                    originalTensor = originalTensor.slice([0, 0, 0], [-1, 1024, -1]);
+                };
 
-            const imageWidth = originalTensor.shape[2];
-            const imageHeight = originalTensor.shape[1];
+                const imageWidth = originalTensor.shape[2];
+                const imageHeight = originalTensor.shape[1];
 
-            // Pad the image to fit 1024x1024
-            const padWidth = 1024 - imageWidth;
-            const padHeight = 1024 - imageHeight;
-            const padding = [[0, 0], [0, padHeight], [0, padWidth]];
-            var paddedTensor = originalTensor.pad(padding).expandDims();
+                // Pad the image to fit 1024x1024
+                const padWidth = 1024 - imageWidth;
+                const padHeight = 1024 - imageHeight;
+                const padding = [[0, 0], [0, padHeight], [0, padWidth]];
+                return originalTensor.pad(padding).expandDims();
+            });
 
             async function init() {
 
-                var model;
                 if (this.model == undefined || this.modelType != 'retinaNet') {
                     const modelUrl = 'https://storage.googleapis.com/exact-object-detection/web_model/model.json';
                     this.model = await tf.loadGraphModel(modelUrl);
                     this.modelType = 'retinaNet';
-                    model = this.model;
-                } else {
-                    model = this.model;
                 };
                 document.getElementById("inf_card").innerHTML = "Model running, please wait";
-                const outputTensor = model.predict(paddedTensor);
-
-                var class_pred = outputTensor[1];
-                var bbox_pred = outputTensor[2];
-                class_pred = class_pred.squeeze().sigmoid();
-                const class_pred_max = class_pred.max(1);
-                
-                const threshold = tf.tensor1d([0.5]);
-                const detect_mask = class_pred_max.greater(threshold);
+                const outputTensor = this.model.predict(paddedTensor);
+                tf.dispose(paddedTensor);
 
                 // activ_to_bbox
-                const anchors = tf.tensor2d(returnAnchors());
-                bbox_pred = bbox_pred.squeeze().mul(tf.tensor2d([[0.1, 0.1, 0.2, 0.2]]));
-                var centers = anchors.slice([0, 2], [-1, -1]).mul(bbox_pred.slice([0, 0], [-1, 2])).add(anchors.slice([0, 0], [-1, 2]));
-                var sizes = anchors.slice([0, 2], [-1, -1]).mul(bbox_pred.slice([0, 2], [-1, -1]).exp());
-                bbox_pred= centers.concat(sizes, -1);
+                var class_pred;
+                var bbox_pred;
+                const detect_mask = tf.tidy(() => {
+                    class_pred = outputTensor[1];
+                    bbox_pred = outputTensor[2];
+                    class_pred = tf.keep(class_pred.squeeze().sigmoid());
+                    const class_pred_max = class_pred.max(1);
 
+                    const anchors = tf.tensor2d(returnAnchors());
+                    bbox_pred = bbox_pred.squeeze().mul(tf.tensor2d([[0.1, 0.1, 0.2, 0.2]]));
+                    const centers = anchors.slice([0, 2], [-1, -1]).mul(bbox_pred.slice([0, 0], [-1, 2])).add(anchors.slice([0, 0], [-1, 2]));
+                    const sizes = anchors.slice([0, 2], [-1, -1]).mul(bbox_pred.slice([0, 2], [-1, -1]).exp());
+                    bbox_pred = tf.keep(centers.concat(sizes, -1));
+
+                    const threshold = tf.tensor1d([0.5]);
+                    return class_pred_max.greater(threshold);
+                });
+                tf.dispose(outputTensor);
                 
-                class_pred = await tf.booleanMaskAsync(class_pred, detect_mask);
-                bbox_pred = await tf.booleanMaskAsync(bbox_pred, detect_mask);
+                const class_pred_masked = await tf.booleanMaskAsync(class_pred, detect_mask);
+                const bbox_pred_masked = await tf.booleanMaskAsync(bbox_pred, detect_mask);
 
                 // ctwh2tlbr
-                const top_left = bbox_pred.slice([0, 0], [-1, 2]).sub((bbox_pred.slice([0, 2], [-1, -1]).div(tf.scalar(2))));
-                const bot_right = bbox_pred.slice([0, 0], [-1, 2]).add((bbox_pred.slice([0, 2], [-1, -1]).div(tf.scalar(2))));
-                bbox_pred = top_left.concat(bot_right, -1).clipByValue(-1, 1);
+                const bbox_pred_tlbr = tf.tidy(() => {
+                    const top_left = bbox_pred_masked.slice([0, 0], [-1, 2]).sub((bbox_pred_masked.slice([0, 2], [-1, -1]).div(tf.scalar(2))));
+                    const bot_right = bbox_pred_masked.slice([0, 0], [-1, 2]).add((bbox_pred_masked.slice([0, 2], [-1, -1]).div(tf.scalar(2))));
+                    return top_left.concat(bot_right, -1).clipByValue(-1, 1);
+                })
+                tf.dispose(bbox_pred)
+                tf.dispose(bbox_pred_masked)
 
-                var scores = class_pred.max(1);
-                var preds = class_pred.argMax(1);
+                const scores = class_pred_masked.max(1);
+                const preds = class_pred_masked.argMax(1);
+                tf.dispose(class_pred);
+                tf.dispose(class_pred_masked);
+                tf.dispose(detect_mask);
 
-                var selectedIndices = await tf.image.nonMaxSuppressionWithScoreAsync(bbox_pred, scores, 50, 0.9, 0.55, 0.5);
-                selectedIndices = selectedIndices.selectedIndices;
-                scores = scores.gather(selectedIndices);
-                preds = preds.gather(selectedIndices);
-                bbox_pred = bbox_pred.gather(selectedIndices);
+                // nms
+                const nms = await tf.image.nonMaxSuppressionWithScoreAsync(bbox_pred_tlbr, scores, 50, 0.9, 0.55, 0.5);
+                const selectedIndices = nms.selectedIndices;
+                const scores_nms = scores.gather(selectedIndices);
+                const preds_nms = preds.gather(selectedIndices);
+                var bbox_pred_nms = bbox_pred_tlbr.gather(selectedIndices);
+                tf.dispose(scores);
+                tf.dispose(preds);
+                tf.dispose(bbox_pred_tlbr);
+                tf.dispose(selectedIndices);
+                tf.dispose(nms);
 
                 // tlbr2cthw
-                centers = (bbox_pred.slice([0, 0], [-1, 2]).add(bbox_pred.slice([0, 2], [-1, -1]))).div(tf.scalar(2));
-                sizes = bbox_pred.slice([0, 2], [-1, -1]).sub(bbox_pred.slice([0, 0], [-1, 2]));
-                bbox_pred = centers.concat(sizes, -1);
+                tf.tidy(() => {
+                    const centers = (bbox_pred_nms.slice([0, 0], [-1, 2]).add(bbox_pred_nms.slice([0, 2], [-1, -1]))).div(tf.scalar(2));
+                    const sizes = bbox_pred_nms.slice([0, 2], [-1, -1]).sub(bbox_pred_nms.slice([0, 0], [-1, 2]));
+                    bbox_pred_nms = centers.concat(sizes, -1);
 
-                // rescale box
-                const t_sz = tf.tensor2d([1024, 1024], [1, 2]);
-                var bbox_left = bbox_pred.slice([0, 0], [-1, 2]).sub((bbox_pred.slice([0, 2], [-1, -1]).div(tf.scalar(2))));
-                bbox_left = (bbox_left.slice([0, 0], [-1, 2]).add(tf.scalar(1))).mul(t_sz).div(tf.scalar(2));
-                const bbox_right = bbox_pred.slice([0, 2], [-1, -1]).mul(t_sz).div(tf.scalar(2));
-                bbox_pred = bbox_left.concat(bbox_right, -1);
+                    // rescale box
+                    const t_sz = tf.tensor2d([1024, 1024], [1, 2]);
+                    var bbox_left = bbox_pred_nms.slice([0, 0], [-1, 2]).sub((bbox_pred_nms.slice([0, 2], [-1, -1]).div(tf.scalar(2))));
+                    bbox_left = (bbox_left.slice([0, 0], [-1, 2]).add(tf.scalar(1))).mul(t_sz).div(tf.scalar(2));
+                    const bbox_right = bbox_pred_nms.slice([0, 2], [-1, -1]).mul(t_sz).div(tf.scalar(2));
+                    bbox_pred_nms = tf.keep(bbox_left.concat(bbox_right, -1));
+                })
 
-                const length = preds.size;
+                const length = preds_nms.size;
 
                 // Convert tensors to arrays
-                bbox_pred = await bbox_pred.array();
-                scores = await scores.array();
-                preds = await preds.array();
+                const bbox_pred_array = await bbox_pred_nms.array();
+                const scores_array = await scores_nms.array();
+                const preds_array = await preds_nms.array();
 
                 // Draw boxes 
                 ctx.strokeStyle = "#00FFFF";
                 ctx.lineWidth = 4;
                 for (var i = 0; i < length; i++) {
-                    if (!(anno.selectedIndex == preds[i])) {
+                    if (!(anno.selectedIndex == preds_array[i])) {
                         continue;
                     };
 
-                    const y = bbox_pred[i][0];
-                    const x = bbox_pred[i][1];
-                    const height = bbox_pred[i][2];
-                    const width = bbox_pred[i][3];
+                    const y = bbox_pred_array[i][0];
+                    const x = bbox_pred_array[i][1];
+                    const height = bbox_pred_array[i][2];
+                    const width = bbox_pred_array[i][3];
                     ctx.strokeRect(x, y, width, height);
 
                     // Convert bounding box coordinates to image coordinates.
@@ -444,6 +465,12 @@ class InferenceTool {
                     vector["bottomright"] = bottomRight;
                     this.array_vectors.push(vector);
                 };
+
+                // Dispose temporary tensors from memory
+                tf.dispose(bbox_pred_nms);
+                tf.dispose(scores_nms);
+                tf.dispose(preds_nms);
+
                 document.getElementById("inf_card").innerHTML = "Object detection completed";
                 if (this.array_vectors.length > 0) {
                     document.getElementById("submit_inference_btn").disabled = false;
@@ -480,110 +507,128 @@ class InferenceTool {
             const img = this.viewer.canvas.children[0];
             const ctx = img.getContext("2d");
 
-            var originalTensor = tf.browser.fromPixels(img);
+            // Convert image to tensor and use tf.tidy to prevent memory leak
+            const paddedTensor = tf.tidy(() => {
+                var originalTensor = tf.browser.fromPixels(img);
 
-            originalTensor = tf.cast(originalTensor, 'float32').div(tf.scalar(255));
-            const mean = tf.tensor2d([0.885901, 0.85915, 0.893695], [1, 3]);
-            const std = tf.tensor2d([0.144371, 0.191175, 0.119497], [1, 3]);
-            originalTensor = originalTensor.sub(mean).div(std);
-            originalTensor = originalTensor.transpose([2, 0, 1]); //C, H, W
+                originalTensor = tf.cast(originalTensor, 'float32').div(tf.scalar(255));
+                const mean = tf.tensor2d([0.885901, 0.85915, 0.893695], [1, 3]);
+                const std = tf.tensor2d([0.144371, 0.191175, 0.119497], [1, 3]);
+                originalTensor = originalTensor.sub(mean).div(std);
+                originalTensor = originalTensor.transpose([2, 0, 1]); //C, H, W
 
-            // Crop the image if necessary
-            if (originalCSx > 1024) {
-                originalTensor = originalTensor.slice([0, 0, 0], [-1, -1, 1024]);
-            };
-            if (originalCSy > 1024) {
-                originalTensor = originalTensor.slice([0, 0, 0], [-1, 1024, -1]);
-            };
+                // Crop the image if necessary
+                if (originalCSx > 1024) {
+                    originalTensor = originalTensor.slice([0, 0, 0], [-1, -1, 1024]);
+                };
+                if (originalCSy > 1024) {
+                    originalTensor = originalTensor.slice([0, 0, 0], [-1, 1024, -1]);
+                };
 
-            const imageWidth = originalTensor.shape[2];
-            const imageHeight = originalTensor.shape[1];
+                const imageWidth = originalTensor.shape[2];
+                const imageHeight = originalTensor.shape[1];
 
-            // Pad the image to fit 1024x1024
-            const padWidth = 1024 - imageWidth;
-            const padHeight = 1024 - imageHeight;
-            const padding = [[0, 0], [0, padHeight], [0, padWidth]];
-            var paddedTensor = originalTensor.pad(padding).expandDims();
+                // Pad the image to fit 1024x1024
+                const padWidth = 1024 - imageWidth;
+                const padHeight = 1024 - imageHeight;
+                const padding = [[0, 0], [0, padHeight], [0, padWidth]];
+                return originalTensor.pad(padding).expandDims();
+            });
 
             async function init() {
 
-                var model;
                 if (this.model == undefined || this.modelType != 'asthma') {
                     const modelUrl = 'https://storage.googleapis.com/exact-object-detection/asthma_model/model.json';
                     this.model = await tf.loadGraphModel(modelUrl);
                     this.modelType = 'asthma';
-                    model = this.model;
-                } else {
-                    model = this.model;
                 };
                 document.getElementById("inf_card").innerHTML = "Model running, please wait";
-                const outputTensor = await model.executeAsync(paddedTensor);
-
-                var class_pred = outputTensor[3];
-                var bbox_pred = outputTensor[0];
-                class_pred = class_pred.squeeze().sigmoid();
-                const class_pred_max = class_pred.max(1);
-                
-                const threshold = tf.tensor1d([0.5]);
-                const detect_mask = class_pred_max.greater(threshold);
+                const outputTensor = await this.model.executeAsync(paddedTensor);
 
                 // activ_to_bbox
-                const anchors = tf.tensor2d(returnAsthmaAnchors());
-                bbox_pred = bbox_pred.squeeze().mul(tf.tensor2d([[0.1, 0.1, 0.2, 0.2]]));
-                var centers = anchors.slice([0, 2], [-1, -1]).mul(bbox_pred.slice([0, 0], [-1, 2])).add(anchors.slice([0, 0], [-1, 2]));
-                var sizes = anchors.slice([0, 2], [-1, -1]).mul(bbox_pred.slice([0, 2], [-1, -1]).exp());
-                bbox_pred= centers.concat(sizes, -1);
+                var class_pred;
+                var bbox_pred;
+                const detect_mask = tf.tidy(() => {
+                    class_pred = outputTensor[3];
+                    bbox_pred = outputTensor[0];
+                    class_pred = tf.keep(class_pred.squeeze().sigmoid());
+                    const class_pred_max = class_pred.max(1);
+                    
+                    const anchors = tf.tensor2d(returnAsthmaAnchors());
+                    bbox_pred = bbox_pred.squeeze().mul(tf.tensor2d([[0.1, 0.1, 0.2, 0.2]]));
+                    var centers = anchors.slice([0, 2], [-1, -1]).mul(bbox_pred.slice([0, 0], [-1, 2])).add(anchors.slice([0, 0], [-1, 2]));
+                    var sizes = anchors.slice([0, 2], [-1, -1]).mul(bbox_pred.slice([0, 2], [-1, -1]).exp());
+                    bbox_pred = tf.keep(centers.concat(sizes, -1));
 
+                    const threshold = tf.tensor1d([0.5]);
+                    return class_pred_max.greater(threshold);
+                });
+                tf.dispose(paddedTensor);
+                tf.dispose(outputTensor);
                 
-                class_pred = await tf.booleanMaskAsync(class_pred, detect_mask);
-                bbox_pred = await tf.booleanMaskAsync(bbox_pred, detect_mask);
+                const class_pred_masked = await tf.booleanMaskAsync(class_pred, detect_mask);
+                const bbox_pred_masked = await tf.booleanMaskAsync(bbox_pred, detect_mask);
 
                 // ctwh2tlbr
-                const top_left = bbox_pred.slice([0, 0], [-1, 2]).sub((bbox_pred.slice([0, 2], [-1, -1]).div(tf.scalar(2))));
-                const bot_right = bbox_pred.slice([0, 0], [-1, 2]).add((bbox_pred.slice([0, 2], [-1, -1]).div(tf.scalar(2))));
-                bbox_pred = top_left.concat(bot_right, -1).clipByValue(-1, 1);
+                const bbox_pred_tlbr = tf.tidy(() => {
+                    const top_left = bbox_pred_masked.slice([0, 0], [-1, 2]).sub((bbox_pred_masked.slice([0, 2], [-1, -1]).div(tf.scalar(2))));
+                    const bot_right = bbox_pred_masked.slice([0, 0], [-1, 2]).add((bbox_pred_masked.slice([0, 2], [-1, -1]).div(tf.scalar(2))));
+                    return top_left.concat(bot_right, -1).clipByValue(-1, 1);
+                })
+                tf.dispose(bbox_pred)
+                tf.dispose(bbox_pred_masked)
 
-                var scores = class_pred.max(1);
-                var preds = class_pred.argMax(1);
+                const scores = class_pred_masked.max(1);
+                const preds = class_pred_masked.argMax(1);
+                tf.dispose(class_pred);
+                tf.dispose(class_pred_masked);
+                tf.dispose(detect_mask);
 
                 // nms
-                var selectedIndices = await tf.image.nonMaxSuppressionWithScoreAsync(bbox_pred, scores, 50, 0.9, 0.55, 0.5);
-                selectedIndices = selectedIndices.selectedIndices;
-                scores = scores.gather(selectedIndices);
-                preds = preds.gather(selectedIndices);
-                bbox_pred = bbox_pred.gather(selectedIndices);
+                const nms = await tf.image.nonMaxSuppressionWithScoreAsync(bbox_pred_tlbr, scores, 50, 0.9, 0.55, 0.5);
+                const selectedIndices = nms.selectedIndices;
+                const scores_nms = scores.gather(selectedIndices);
+                const preds_nms = preds.gather(selectedIndices);
+                var bbox_pred_nms = bbox_pred_tlbr.gather(selectedIndices);
+                tf.dispose(scores);
+                tf.dispose(preds);
+                tf.dispose(bbox_pred_tlbr);
+                tf.dispose(selectedIndices);
+                tf.dispose(nms);
 
                 // tlbr2cthw
-                centers = (bbox_pred.slice([0, 0], [-1, 2]).add(bbox_pred.slice([0, 2], [-1, -1]))).div(tf.scalar(2));
-                sizes = bbox_pred.slice([0, 2], [-1, -1]).sub(bbox_pred.slice([0, 0], [-1, 2]));
-                bbox_pred = centers.concat(sizes, -1);
+                tf.tidy(() => {
+                    const centers = (bbox_pred_nms.slice([0, 0], [-1, 2]).add(bbox_pred_nms.slice([0, 2], [-1, -1]))).div(tf.scalar(2));
+                    const sizes = bbox_pred_nms.slice([0, 2], [-1, -1]).sub(bbox_pred_nms.slice([0, 0], [-1, 2]));
+                    bbox_pred_nms = centers.concat(sizes, -1);
 
-                // rescale box
-                const t_sz = tf.tensor2d([1024, 1024], [1, 2]);
-                var bbox_left = bbox_pred.slice([0, 0], [-1, 2]).sub((bbox_pred.slice([0, 2], [-1, -1]).div(tf.scalar(2))));
-                bbox_left = (bbox_left.slice([0, 0], [-1, 2]).add(tf.scalar(1))).mul(t_sz).div(tf.scalar(2));
-                const bbox_right = bbox_pred.slice([0, 2], [-1, -1]).mul(t_sz).div(tf.scalar(2));
-                bbox_pred = bbox_left.concat(bbox_right, -1);
+                    // rescale box
+                    const t_sz = tf.tensor2d([1024, 1024], [1, 2]);
+                    var bbox_left = bbox_pred_nms.slice([0, 0], [-1, 2]).sub((bbox_pred_nms.slice([0, 2], [-1, -1]).div(tf.scalar(2))));
+                    bbox_left = (bbox_left.slice([0, 0], [-1, 2]).add(tf.scalar(1))).mul(t_sz).div(tf.scalar(2));
+                    const bbox_right = bbox_pred_nms.slice([0, 2], [-1, -1]).mul(t_sz).div(tf.scalar(2));
+                    bbox_pred_nms = tf.keep(bbox_left.concat(bbox_right, -1));
+                })
 
-                const length = preds.size;
+                const length = preds_nms.size;
 
                 // Convert tensors to arrays
-                bbox_pred = await bbox_pred.array();
-                scores = await scores.array();
-                preds = await preds.array();
+                const bbox_pred_array = await bbox_pred_nms.array();
+                const scores_array = await scores_nms.array();
+                const preds_array = await preds_nms.array();
 
                 // Draw boxes 
                 ctx.strokeStyle = "#00FFFF";
                 ctx.lineWidth = 4;
                 for (var i = 0; i < length; i++) {
-                    if (!(anno.selectedIndex == preds[i])) {
+                    if (!(anno.selectedIndex == preds_array[i])) {
                         continue;
                     };
 
-                    const y = bbox_pred[i][0];
-                    const x = bbox_pred[i][1];
-                    const height = bbox_pred[i][2];
-                    const width = bbox_pred[i][3];
+                    const y = bbox_pred_array[i][0];
+                    const x = bbox_pred_array[i][1];
+                    const height = bbox_pred_array[i][2];
+                    const width = bbox_pred_array[i][3];
                     ctx.strokeRect(x, y, width, height);
 
                     // Convert bounding box coordinates to image coordinates.
@@ -598,6 +643,12 @@ class InferenceTool {
                     vector["bottomright"] = bottomRight;
                     this.array_vectors.push(vector);
                 };
+
+                // Dispose temporary tensors from memory
+                tf.dispose(bbox_pred_nms);
+                tf.dispose(scores_nms);
+                tf.dispose(preds_nms);
+
                 document.getElementById("inf_card").innerHTML = "Object detection completed";
                 if (this.array_vectors.length > 0) {
                     document.getElementById("submit_inference_btn").disabled = false;
