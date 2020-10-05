@@ -1033,4 +1033,57 @@ class EXACTGlobalFrameAnnotationSync extends EXACTGlobalAnnotationSync {
         }
         this.saveAnnotation(annotation)
     }
+
+
+    saveAnnotation(annotation) {
+
+        var action = 'POST';
+        var url = this.API_1_ANNOTATIONS_BASE_URL + "annotations/";
+
+        var data = {
+            deleted: annotation.deleted,
+            annotation_type: annotation.annotation_type.id,
+            image: annotation.image,
+            vector: annotation.vector,
+            unique_identifier: annotation.unique_identifier
+        };
+
+        // edit instead of create
+        if (annotation.id !== -1) {
+
+            action = 'PATCH';
+            data.id = annotation.id;
+            url = url + annotation.id + "/";
+        }
+
+        url = url + "?" + this.API_1_ANNOTATION_EXPAND + this.API_1_ANNOTATION_FIELDS;
+
+        let context = this;
+        $.ajax(url, {
+            type: action, headers: this.gHeaders, dataType: 'json',
+            data: JSON.stringify(data), success: function (anno, textStatus, jqXHR) {
+                if (jqXHR.status === 200) {
+                    if (anno.deleted === true) {
+                        context.synchronisationNotifications("info", anno, "GlobalAnnotationDeleted")
+                    } else {
+                        context.synchronisationNotifications("info", anno, "GlobalAnnotationUpdated")
+                    }
+
+                } else if (jqXHR.status === 201) {
+                    context.synchronisationNotifications("info", anno, "GlobalAnnotationCreated")
+                }
+                anno.annotation_type = context.annotationTypes[anno.annotation_type]
+                context.annotations[anno.vector.frame][anno.annotation_type.id] = anno
+
+                context.viewer.raiseEvent('sync_UpdateStatisticsGlobal', {});
+            },
+            error: function (request, status, error) {
+                if (request.responseText !== undefined) {
+                    $.notify(request.responseText, { position: "bottom center", className: "error" });
+                } else {
+                    $.notify(`Server ERR_CONNECTION_TIMED_OUT`, { position: "bottom center", className: "error" });
+                }
+            }
+        });
+    }
 }
