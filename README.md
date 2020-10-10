@@ -47,9 +47,9 @@ Marzahl et al. [EXACT: A collaboration toolset for algorithm-aided annotation of
 | Describes basic viewer and plugin functions.  |  [![Datasets](https://img.youtube.com/vi/jGa80iXfHo0/0.jpg)](https://www.youtube.com/watch?v=jGa80iXfHo0)  |
 | Explains collaboratory annotation features  |  [![Datasets](https://img.youtube.com/vi/qsX7MoYhDEM/0.jpg)](https://www.youtube.com/watch?v=qsX7MoYhDEM)  |
 | Shows multiple types of datasets  |  [![Datasets](https://img.youtube.com/vi/yr6h2OffThU/0.jpg)](https://www.youtube.com/watch?v=yr6h2OffThU)  |
-| Explains the screening plugin for WSI  |  [![Datasets](https://img.youtube.com/vi/w7GHTEP2AYo/0.jpg)](https://www.youtube.com/watch?v=/w7GHTEP2AYo)  |
-| Syncronisation with the offline tool SlideRunner  |  [![Datasets](https://img.youtube.com/vi/Ch5nlnVwYcA/0.jpg)](https://www.youtube.com/watch?v=/Ch5nlnVwYcA)  |
-| Advanced polygon annotation operations  |  [![Datasets](https://img.youtube.com/vi/xVn9ghDQz1A/0.jpg)](https://www.youtube.com/watch?v=/xVn9ghDQz1A)  |
+| Explains the screening plugin for WSI  |  [![Datasets](https://img.youtube.com/vi/w7GHTEP2AYo/0.jpg)](https://www.youtube.com/watch?v=w7GHTEP2AYo)  |
+| Syncronisation with the offline tool SlideRunner  |  [![Datasets](https://img.youtube.com/vi/Ch5nlnVwYcA/0.jpg)](https://www.youtube.com/watch?v=Ch5nlnVwYcA)  |
+| Advanced polygon annotation operations  |  [![Datasets](https://img.youtube.com/vi/xVn9ghDQz1A/0.jpg)](https://www.youtube.com/watch?v=xVn9ghDQz1A)  |
 | REST-API Example | ```pip install EXCAT-Sync``` <br> [Code](https://github.com/ChristianMarzahl/EXACT-Sync) <br> [Notebook](https://colab.research.google.com/drive/1nOTyAVwzBDMSEAdgjbdpe7isGfeVpusK)  <br> [Notebook](https://colab.research.google.com/drive/1klUiGOQSeBJ7xifeOprUpwEKaeQ_9XSQ?usp=sharing)|
 
 ## Install
@@ -63,25 +63,6 @@ Checkout the latest release:
 
 ```
 git clone https://github.com/ChristianMarzahl/Exact.git
-```
-
-#### Development
-
-Copy and rename `settings.py.example` to `settings.py` in the exact folder.
-
-Modify the configuration files: `env.dev` and `env.dev.db` or use the default configuration. 
-
-Build and run the container:
-```
-docker-compose -f docker-compose.yml up -d --build
-docker-compose logs -f 
-```
-
-Navigate to http://localhost:8000/
-For default the super user login is:
-```
-User: exact
-Pw: exact
 ```
 
 #### Production
@@ -106,6 +87,25 @@ docker-compose -f docker-compose.prod.yml logs -f
 
 Navigate to  http://localhost:1337/
 
+
+#### Development
+
+Copy and rename `settings.py.example` to `settings.py` in the exact folder.
+
+Modify the configuration files: `env.dev` and `env.dev.db` or use the default configuration. 
+
+Build and run the container:
+```
+docker-compose -f docker-compose.yml up -d --build
+docker-compose logs -f 
+```
+
+Navigate to http://localhost:8000/
+For default the super user login is:
+```
+User: exact
+Pw: exact
+```
 
 ####  Cloud
 
