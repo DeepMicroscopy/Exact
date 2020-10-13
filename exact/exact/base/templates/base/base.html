@@ -33,6 +33,12 @@
 						<a href="https://github.com/ChristianMarzahl/exact" class="nav-link"> GitHub </a>
 						<a target="_blank" href="{% url 'base:problem' %}" class="nav-link"> Report an issue </a>
 						<a href="https://lme.tf.fau.de/person/marzahl/" class="nav-link"> About </a>
+						
+						{% load djversion_tags %}
+						{% project_version as VERSION %}
+						<textarea readonly cols="60" rows="6">
+							{{ VERSION }} 							
+						</textarea>
 					</div>
 				</li>
 			</ul>

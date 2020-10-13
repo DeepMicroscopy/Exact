@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/1.10/ref/settings/
 """
 
 import os
+from datetime import datetime
 from django.contrib.messages import constants as messages
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -50,7 +51,8 @@ INSTALLED_APPS = [
     'friendlytagloader',
     'plugins',
     'util',
-    'django_registration'
+    'django_registration',
+    "djversion",
 ]
 
 REST_FRAMEWORK = {
@@ -92,6 +94,10 @@ MIDDLEWARE = [
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.RemoteUserBackend',
     'django.contrib.auth.backends.ModelBackend',
+]
+
+TEMPLATE_CONTEXT_PROCESSORS = [
+    "djversion.context_processors.version",
 ]
 
 ROOT_URLCONF = 'exact.urls'
@@ -206,6 +212,15 @@ IMAGE_EXTENSION = {
     'png',
     'jpeg',
 }
+
+try:
+    from git import Repo
+    repo = Repo("")
+    DJVERSION_VERSION = f"Author: {repo.active_branch.commit.author.name} \n Branch:{repo.active_branch.name} \n Commit: {repo.active_branch.commit.hexsha} \n Summary: {repo.active_branch.commit.summary} \n Date:{repo.active_branch.commit.committed_datetime.date()} {repo.active_branch.commit.committed_datetime.time()}"
+except:
+    DJVERSION_VERSION = f"Branch: Master \n {datetime.now()}"
+    
+#DJVERSION_GIT_REPO_PATH = "https://github.com/ChristianMarzahl/Exact"
 
 # Sets the default expire time for new messages in days
 DEFAULT_EXPIRE_TIME = 7
