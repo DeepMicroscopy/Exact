@@ -29,3 +29,5 @@ pyvips
 pydicom
 ptvsd
 czifile
+django-project-version
+gitpython

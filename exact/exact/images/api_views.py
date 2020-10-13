@@ -26,6 +26,7 @@ import zipfile
 import hashlib
 from pathlib import Path
 from czifile import czi2tif
+from util.cellvizio import ReadableCellVizioMKTDataset # just until data access is pip installable
 
 from PIL import Image as PIL_Image
 from util.slide_server import SlideCache, SlideFile, PILBytesIO
