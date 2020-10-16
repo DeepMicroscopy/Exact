@@ -40,6 +40,9 @@ Marzahl et al. [EXACT: A collaboration toolset for algorithm-aided annotation of
 
 ## Documentation
 
+
+<img src="./doc/paper/Architecktur.svg">
+
 |   Describtion   |  Video  | 
 |---|---|
 | EXACT installation with Docker (en) |  [![Datasets](https://img.youtube.com/vi/-YH5cnWVrDg/0.jpg)](https://www.youtube.com/watch?v=-YH5cnWVrDg)  |
