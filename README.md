@@ -2,7 +2,8 @@
 
 This is a collaborative online tool for labeling image data.
 
-![ScreenShot](./doc/ExactBeispiel.png "Example annotation of a complete WSI")
+![ScreenShot](./doc/paper/ArchitekturAndView.svg "Example annotation of a complete WSI")
+
 
 ## Reference
 
@@ -40,8 +41,6 @@ Marzahl et al. [EXACT: A collaboration toolset for algorithm-aided annotation of
 
 ## Documentation
 
-
-<img src="./doc/paper/Architecktur.svg">
 
 |   Describtion   |  Video  | 
 |---|---|
