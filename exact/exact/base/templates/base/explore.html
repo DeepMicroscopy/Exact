@@ -451,11 +451,15 @@
                                                                 <a href="{% url 'AnnotationVersionView-list' %}?version={{ version.id }}"><span class="fa fa-window-maximize"> </span></a> 
                                                             </li>
                                                             <li>
-                                                                File: {{version.file}}
+                                                                File: 
+                                                                {% if version.file  %}
+                                                                    <a href="{{ version.file.url }}" download>{{ version.file }}</a>
+                                                                {% endif %}
                                                             </li>
                                                             <li>
                                                                 File Upload:
-                                                                <form method="Patch" enctype="multipart/form-data">
+                                                                <form action="{% url 'VersionView-add'  version.id  %}" method="POST" enctype="multipart/form-data">
+                                                                    {% csrf_token %}
                                                                     <input type="file" name="file" />
                                                                     <input type="submit" name="submit" value="Upload" />
                                                                 </form>

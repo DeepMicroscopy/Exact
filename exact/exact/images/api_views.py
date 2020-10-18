@@ -655,6 +655,19 @@ class SetVersionViewSet(viewsets.ModelViewSet):
 
         return response
 
+    @action(detail=True, methods=['POST'], name='Upload version meta file')
+    def add(self, request, pk=None, *args, **kwargs):
+        set_version = get_object_or_404(models.SetVersion, id=pk)
+
+        if "file" in request.FILES:
+            set_version.file = request.FILES["file"]
+            set_version.save()
+
+        if "api" in request.META['PATH_INFO']:
+            return super(SetVersionViewSet, self).retrieve(request, pk)
+        else:
+            return self.list(request, *args, **kwargs)
+
 
     def list(self, request, *args, **kwargs):
         if "api" in request.META['PATH_INFO']:
