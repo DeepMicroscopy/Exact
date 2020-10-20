@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'exact.images',
     'exact.users',
     'exact.tools',
+    'exact.datasets',
     'exact.administration',
     'django.contrib.admin',
     'exact.tagger_messages',

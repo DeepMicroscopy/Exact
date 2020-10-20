@@ -47,6 +47,7 @@ urlpatterns = [
     url(r'^users/', include('exact.users.urls')),
     url(r'^tagger_messages/', include('exact.tagger_messages.urls')),
     url(r'^tools/', include('exact.tools.urls')),
+    url(r'^datasets/', include('exact.datasets.urls')),
 
     url('', include(router.urls)),
 

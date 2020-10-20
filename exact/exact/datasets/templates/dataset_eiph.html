@@ -1,0 +1,89 @@
+{% load static %}
+
+<head>
+	<meta charset="utf-8">	
+	<link rel="stylesheet" type="text/css" href="{% static 'css/bootstrap.min.css' %}">
+	<link rel="stylesheet" type="text/css" href="{% static 'css/styles.css' %}">
+</head>
+
+<body>
+
+{% block content %}
+
+    <div class="card">
+        <div class="card-header">
+
+            <h3> EIPH </h3>
+
+        </div>
+
+        <div class="card-body" >
+
+            <table  class="table table-striped">
+                <tbody>
+                    <tr>
+                        <th>Describtion</th>
+                        <td>
+                            Exercise-induced pulmonary hemorrhage (EIPH)
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Example</th>
+                        <td>
+                            <img src="{% static "images/EIPH.png" %}" width="250" height="250">
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Labels</th>
+                        <td>Grade: 0; 1; 2; 3; 4</td>
+                    </tr>
+                    <tr>
+                        <th>Paper</th>
+                        <td>https://www.nature.com/articles/s41598-020-65958-2</td>
+                    </tr>
+                    <tr>
+                        <th>Images</th>
+                        <td>1 WSI</td>
+                    </tr>
+                    <tr>
+                        <th>Annotations</th>
+                        <td>1984</td>
+                    </tr>
+                    <tr>
+                        <th>Size</th>
+                        <td>184 MB.</td>
+                    </tr>
+                    <tr>
+                        <th>Requirements</th>
+                        <td>Internet</td>
+                    </tr>
+                </tbody>
+            </table>
+
+        </div>
+
+        <div class="card-footer">
+
+            <h4> Copy dataset</h4>
+
+            <form action="eiph/create/" method="post">
+                {% csrf_token %}
+                <table   class="table table-striped">
+                    {{ eiph_form.as_table }}
+                </table>
+                <input type="submit" value="Create Imageset">
+            </form>
+        </div>
+        
+    </div>
+
+    {% endblock %}
+
+    {% block additional_js %}
+
+        <script type="text/javascript" src="{% static 'scripts/jquery-3.2.1.min.js' %}"></script>
+        <script type="text/javascript" src="{% static 'scripts/bootstrap.min.js' %}"></script>
+
+    {% endblock additional_js %}
+
+</body>

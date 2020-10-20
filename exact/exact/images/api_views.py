@@ -277,169 +277,11 @@ class ImageViewSet(viewsets.ModelViewSet):
                         image_set=imageset,
                         checksum=fchecksum)
 
-                    # check if the file can be opened by OpenSlide if not convert it
-                    try:
-                        osr = OpenSlide(str(path))
-                        image.filename = path.name
-                    except:
-                        import pyvips
-                        old_path = path
-
-                        #check if it is a CellVizio MKT file by suffix and save each frame to a seperate file
-                        if Path(path).suffix.lower().endswith(".mkt"):
-                            reader = ReadableCellVizioMKTDataset(str(path))
-                            image.frames = reader.numberOfFrames
-                            image.channels = 1
-                            image.mpp = (float(reader.mpp_x) + float(reader.mpp_y)) / 2
-                            # create sub dir to save frames
-                            folder_path = Path(imageset.root_path()) / path.stem
-                            os.makedirs(str(folder_path), exist_ok =True)
-                            os.chmod(str(folder_path), 0o777)
-                            for frame_id in range(image.frames):
-                                height, width = reader.dimensions 
-                                np_image = np.array(reader.read_region(location=(0,0), size=(reader.dimensions), level=0, zLevel=frame_id))[:,:,0]
-                                linear = np_image.reshape(height * width * image.channels)
-                                vi = pyvips.Image.new_from_memory(np.ascontiguousarray(linear.data), height, width, image.channels, 'uchar')
-
-                                target_file = folder_path / "{}_{}_{}".format(1, frame_id + 1, path.name) #z-axis frame image
-                                vi.tiffsave(str(target_file), tile=True, compression='lzw', bigtiff=True, pyramid=True,  tile_width=256, tile_height=256)
-
-                                # save first frame as default file for thumbnail etc.
-                                if frame_id == 0:
-                                    image.filename = target_file.name
-                        # check if its a zeiss file
-                        elif  Path(path).suffix.lower().endswith(".czi"):
-                            path_temp = Path(path).with_suffix('.tif')
-                            path = Path(path).with_suffix('.tiff')
-
-                            czi2tif(str(old_path), tiffile=str(path_temp), bigtiff=True)
-
-                            vi = pyvips.Image.new_from_file(str(path_temp))
-                            vi.tiffsave(str(path), tile=True, compression='jpeg', bigtiff=True, pyramid=True, tile_width=256, tile_height=256, Q=90)
-
-                            os.remove(str(path_temp))
-                            image.filename = path.name
-                        # Videos
-                        elif Path(path).suffix.lower().endswith(".avi"):
-                            dtype_to_format = {
-                                'uint8': 'uchar',
-                                'int8': 'char',
-                                'uint16': 'ushort',
-                                'int16': 'short',
-                                'uint32': 'uint',
-                                'int32': 'int',
-                                'float32': 'float',
-                                'float64': 'double',
-                                'complex64': 'complex',
-                                'complex128': 'dpcomplex',
-                            }
-
-                            folder_path = Path(imageset.root_path()) / path.stem
-                            os.makedirs(str(folder_path), exist_ok =True)
-                            os.chmod(str(folder_path), 0o777)
-
-                            cap = cv2.VideoCapture(str(Path(path)))
-                            frame_id = 0
-                            while cap.isOpened():
-                                ret, frame = cap.read()
-                                if not ret:
-                                    # if video has just one frame copy file to top layer
-                                    if frame_id == 1:
-                                        copy_path = Path(path).with_suffix('.tiff')
-                                        shutil.copyfile(str(target_file), str(copy_path))
-                                        image.filename = copy_path.name
-                                    break
-
-                                height, width, bands = frame.shape
-                                linear = frame.reshape(width * height * bands)
-
-                                vi = pyvips.Image.new_from_memory(np.ascontiguousarray(linear.data), width, height, bands,
-                                                                    dtype_to_format[str(frame.dtype)])
-                                if dtype_to_format[str(frame.dtype)] not in ["uchar"]:
-                                    vi = vi.scaleimage()
-
-                                height, width, channels = vi.height, vi.width, vi.bands
-                                image.channels = channels
-
-                                target_file = folder_path / "{}_{}_{}".format(1, frame_id + 1, path.name) #z-axis frame image
-                                vi.tiffsave(str(target_file), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
-
-                                # save first frame as default file for thumbnail etc.
-                                if frame_id == 0:
-                                    image.filename = target_file.name
-                                frame_id += 1
-                                
-                            image.frames = frame_id
-                        # check if file is philips iSyntax
-                        elif Path(path).suffix.lower().endswith(".isyntax"):
-                            from util.ISyntaxContainer import ISyntaxContainer
-                            old_path = path
-                            path = Path(path).with_suffix('.tiff')
-
-                            converter = ISyntaxContainer(str(old_path))
-                            converter.convert(str(path), 0)
-                            image.objectivePower = 40
-                            image.filename = path.name
-                        # check if possible multi frame tiff
-                        elif path.suffix.lower().endswith(".tiff") or path.suffix.lower().endswith(".tif"):
-                            shape = tifffile.imread(str(path)).shape
-                            image_saved = False
-                            if len(shape) >= 3: # possible multi channel or frames
-                                #Possible formats (10, 300, 300, 3) (10, 300, 300)
-                                if (len(shape) == 4 and shape[-1] in [1, 3, 4]) or len(shape) == 3 and shape[-1] not in [1, 3, 4]: 
-                                    image_saved = True
-                                    frames = shape[0]
-                                    image.frames = frames
-
-                                    folder_path = Path(imageset.root_path()) / path.stem
-                                    os.makedirs(str(folder_path), exist_ok =True)
-                                    os.chmod(str(folder_path), 0o777)
-
-                                    for frame_id in range(shape[0]):
-                                        vi = pyvips.Image.new_from_file(str(path), page=frame_id)
-                                        vi = vi.scaleimage()
-                                        height, width, channels = vi.height, vi.width, vi.bands
-                                        image.channels = channels
-
-                                        target_file = folder_path / "{}_{}_{}".format(1, frame_id + 1, path.name) #z-axis frame image
-                                        vi.tiffsave(str(target_file), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
-
-                                        # save first frame as default file for thumbnail etc.
-                                        if frame_id == 0:
-                                            image.filename = target_file.name
-                            if image_saved == False:
-                                path = Path(path).with_suffix('.tiff')
-
-                                vi = pyvips.Image.new_from_file(str(old_path))
-                                vi.tiffsave(str(path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
-                                image.filename = path.name
-                        else:                            
-                            path = Path(path).with_suffix('.tiff')
-
-                            vi = pyvips.Image.new_from_file(str(old_path))
-                            vi.tiffsave(str(path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
-                            image.filename = path.name
-
-                    osr = OpenSlide(image.path())
-                    image.width, image.height = osr.level_dimensions[0]
-                    try:
-                        mpp_x = osr.properties[openslide.PROPERTY_NAME_MPP_X]
-                        mpp_y = osr.properties[openslide.PROPERTY_NAME_MPP_Y]
-                        image.mpp = (float(mpp_x) + float(mpp_y)) / 2
-                    except (KeyError, ValueError):
-                        image.mpp = 0
-                    try:
-                        image.objectivePower = osr.properties[openslide.PROPERTY_NAME_OBJECTIVE_POWER]
-                    except (KeyError, ValueError):
-                        image.objectivePower = 1
-                    image.save()
-
+                    image.save_file(path)
                     images.append(image)
-                except:
-                    error['unsupported'] = True
-                    os.remove(str(path))
 
-                errors.append(error)
+                except Exception as e:
+                    errors.append(e.message)
 
         queryset = self.get_queryset().filter(id__in=[image.id for image in images])
         page = self.paginate_queryset(queryset)
@@ -554,12 +396,7 @@ class ImageSetViewSet(viewsets.ModelViewSet):
         # add path and creator
         with transaction.atomic():
             image_set = models.ImageSet.objects.filter(id=response.data['id']).first()
-            image_set.path = '{}_{}_{}'.format(connection.settings_dict['NAME'], image_set.team.id,
-                                           image_set.id)
-            image_set.save()
-            folder_path = image_set.root_path()
-            os.makedirs(folder_path)
-            os.chmod(folder_path, 0o777)
+            image_set.create_folder()
         return response
 
     def list(self, request, *args, **kwargs):

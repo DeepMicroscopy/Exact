@@ -31,3 +31,5 @@ ptvsd
 czifile
 django-project-version
 gitpython
+gdown
+pandas

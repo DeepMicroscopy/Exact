@@ -1,0 +1,100 @@
+{% load static %}
+
+<head>
+	<meta charset="utf-8">	
+	<link rel="stylesheet" type="text/css" href="{% static 'css/bootstrap.min.css' %}">
+	<link rel="stylesheet" type="text/css" href="{% static 'css/styles.css' %}">
+</head>
+
+<body>
+
+{% block content %}
+
+    <div class="card">
+        <div class="card-header">
+
+            <h3> EIPH </h3>
+
+        </div>
+
+        <div class="card-body" >
+
+            <table  class="table table-striped">
+                <tbody>
+                    <tr>
+                        <th>Describtion</th>
+                        <td>
+                            Equine Exercise-induced pulmonary hemorrhage (EIPH) patches from the MICCAI paper: Are Fast Labeling Methods Reliable? A Case Study of Computer-Aided Expert Annotations on Microscopy Slides
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Example</th>
+                        <td>
+                            <img src="{% static "images/24_EIPH_576255 Turnbull blue.png" %}" width="250" height="250">
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Labels</th>
+                        <td>Grade: 0; 1; 2; 3; 4</td>
+                    </tr>
+                    <tr>
+                        <th>Paper</th>
+                        <td>
+                            @InProceedings{10.1007/978-3-030-59710-8_3, <br>
+                                author="Marzahl, Christian et al.", <br>
+                                title="Are Fast Labeling Methods Reliable? A Case Study of Computer-Aided Expert Annotations on Microscopy Slides", <br>
+                                booktitle="MICCAI", <br>
+                                year="2020", <br>
+                                publisher="Springer International Publishing", <br>
+                                address="Cham", <br>
+                                pages="24--32", <br>
+                                isbn="978-3-030-59710-8" <br>
+                                }
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Images</th>
+                        <td>20 Patches</td>
+                    </tr>
+                    <tr>
+                        <th>Annotations</th>
+                        <td>314</td>
+                    </tr>
+                    <tr>
+                        <th>Size</th>
+                        <td>8 MB.</td>
+                    </tr>
+                    <tr>
+                        <th>Requirements</th>
+                        <td>Internet</td>
+                    </tr>
+                </tbody>
+            </table>
+
+        </div>
+
+        <div class="card-footer">
+
+            <h4> Copy dataset</h4>
+
+            <form action="eiph_miccai/create/" method="post">
+                {% csrf_token %}
+                <table   class="table table-striped">
+                    {{ eiph_miccai_form.as_table }}
+                </table>
+                <input type="submit" value="Create Imageset">
+            </form>
+        </div>
+        
+    </div>
+
+    {% endblock %}
+
+    {% block additional_js %}
+
+        <script type="text/javascript" src="{% static 'scripts/jquery-3.2.1.min.js' %}"></script>
+        <script type="text/javascript" src="{% static 'scripts/bootstrap.min.js' %}"></script>
+
+    {% endblock additional_js %}
+
+</body>
