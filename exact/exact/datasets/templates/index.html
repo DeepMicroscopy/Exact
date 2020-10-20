@@ -1,0 +1,41 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block bodyblock %}
+<body>
+
+    {% block content %}
+
+    <div class="card">
+        <div class="card-header">
+
+            <h3> Demo Datasets </h3>
+
+        </div>
+
+        <div class="card-body" >
+            <div class="card-columns">
+
+                {% include "dataset_asthma_miccai.html" %}
+                {% include "dataset_eiph_miccai.html" %}
+                {% include "dataset_mitosis_miccai.html" %}
+                <!--{% include "dataset_asthma.html" %}
+                {% include "dataset_eiph.html" %}-->
+
+
+
+            </div>
+        </div>
+
+
+    {% endblock %}
+
+    {% block additional_js %}
+
+        <script type="text/javascript" src="{% static 'scripts/jquery-3.2.1.min.js' %}"></script>
+        <script type="text/javascript" src="{% static 'scripts/bootstrap.min.js' %}"></script>
+
+    {% endblock additional_js %}
+
+</body>
+{% endblock %}
