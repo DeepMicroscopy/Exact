@@ -4,6 +4,7 @@ import pandas as pd
 import hashlib
 import json
 import zipfile
+import urllib
 from pathlib import Path
 from django.shortcuts import render
 from django.http import HttpResponse
@@ -63,7 +64,7 @@ def create_mitos_wsi_cmc_dataset(request):
 
             # create imageset, product and annotation type etc.
             with transaction.atomic():
-                labels = {'mitotic figure':None}
+                labels = {'Mitotic cell look-alike':None, "Mitotic figure":None}
 
                 # create or load product
                 product = Product.objects.filter(name=product_name,team=team).first()
@@ -75,7 +76,7 @@ def create_mitos_wsi_cmc_dataset(request):
                     )
 
                 # create or load AnnotationType
-                for label, code in zip(labels.keys(), ["#0000FF"]):
+                for label, code in zip(labels.keys(), ["#21ff22", "#0000ef"]):
                     anno_type = AnnotationType.objects.filter(name=label,product=product).first()
                     if anno_type is None:
                         anno_type = AnnotationType.objects.create(
@@ -101,24 +102,19 @@ def create_mitos_wsi_cmc_dataset(request):
 
                 #create images
 
-                url = 'https://drive.google.com/uc?id=1IZ_BdFB19iMM9RvX-uoHfnSsBG9Dj0Tn'
+                url = form.data["database"]
+                annotations_path = download_path / "MITOS_WSI_CMC_MEL.txt"
+                gdown.download(url, str(annotations_path), quiet=True, proxy=form.data["proxy"])
 
-                zip_path = Path(image_set.root_path()) / "Mitosen.zip"
-                gdown.download(url, str(zip_path), quiet=True, proxy=form.data["proxy"])
+                annotations = pd.read_csv(annotations_path, delimiter="|")
 
-                # unpack zip-file
-                zip_ref = zipfile.ZipFile(str(zip_path), 'r')
-                zip_ref.extractall(image_set.root_path())
-                zip_ref.close()
-                # delete zip-file
-                os.remove(str(zip_path))
+                for url in form.cleaned_data["files"]:
 
-                filenames =  [Path(image_set.root_path())/f.filename for f in zip_ref.filelist if ".txt" not in f.filename]
-                annotations_path = Path(image_set.root_path()) / "ground truth.txt"
+                    file_name = [url_name[1] for url_name in  form.FILE_CHOICES if url_name[0] == url][0]
+                    file_path = Path(image_set.root_path()) / "{0}.svs".format(file_name)
 
-                annotations = pd.read_csv(annotations_path, delimiter="|",names=["file","class","vector","1","2","3","4","5","6","7","8"])
+                    urllib.request.urlretrieve(url, str(file_path))
 
-                for file_path in filenames:
                     image = Image.objects.filter(filename=file_path.name,image_set=image_set).first()
                     if image is None:
                         try:
@@ -142,7 +138,7 @@ def create_mitos_wsi_cmc_dataset(request):
                             for label, vector in zip(image_annotations["class"], image_annotations["vector"]):
 
                                 if label in labels:
-                                    vector = json.loads(vector)
+                                    vector = json.loads(vector.replace("'","\""))
                                     vector["x1"], vector["x2"], vector["y1"], vector["y2"] = int(vector["x1"]), int(vector["x2"]), int(vector["y1"]), int(vector["y2"])
                                     annotation_type = labels[label]
                                     anno = Annotation.objects.create(
