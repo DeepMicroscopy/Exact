@@ -48,6 +48,7 @@ Marzahl et al. [EXACT: A collaboration toolset for algorithm-aided annotation of
 | EXACT First steps (en) |  [![Datasets](https://img.youtube.com/vi/F3lV-IvT1M4/0.jpg)](https://www.youtube.com/watch?v=F3lV-IvT1M4)  |
 | EXACT Product and Annotationtype defintion (en) |  [![Datasets](https://img.youtube.com/vi/4XdWLaqy9UA/0.jpg)](https://www.youtube.com/watch?v=4XdWLaqy9UA)  |
 | EXACT Media Files (en) |  [![Datasets](https://img.youtube.com/vi/ygOY-CuSQ5k/0.jpg)](https://www.youtube.com/watch?v=ygOY-CuSQ5k)  |
+| Datasets (en) |  [![Datasets](https://img.youtube.com/vi/hi23nhz0rWQ/0.jpg)](https://www.youtube.com/watch?v=hi23nhz0rWQ)  |
 | Explains how teams, products and annotation types are created |  [![Datasets](https://img.youtube.com/vi/yr6h2OffThU/0.jpg)](https://www.youtube.com/watch?v=yr6h2OffThU)  |
 | Describes how to create, view and edit image sets and upload images.  |  [![Datasets](https://img.youtube.com/vi/Cay_ei5u7y0/0.jpg)](https://www.youtube.com/watch?v=Cay_ei5u7y0)  |
 | Describes basic viewer and plugin functions.  |  [![Datasets](https://img.youtube.com/vi/jGa80iXfHo0/0.jpg)](https://www.youtube.com/watch?v=jGa80iXfHo0)  |
