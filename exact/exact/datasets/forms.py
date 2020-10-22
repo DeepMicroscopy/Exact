@@ -17,7 +17,10 @@ class DatasetForm(forms.Form):
 
         self.fields['team'].queryset = Team.objects.filter(members=user)
 
+
     def is_valid(self):
+        super().is_valid()
+
 
         data = self.data['name']
         team = self.data['team']
@@ -28,6 +31,7 @@ class DatasetForm(forms.Form):
              raise ValidationError(_('Name team combination is already in use'))
 
         return True
+
 
 class MITOS_WSI_CMCDatasetForm(DatasetForm):
 

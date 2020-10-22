@@ -48,19 +48,21 @@ def index(request):
 
 
 def create_mitos_wsi_cmc_dataset(request):
+    download_path.mkdir(parents=True, exist_ok=True)
 
     # If this is a POST request then process the Form data
     if request.method == 'POST':
         
         # Create a form instance and populate it with data from the request (binding):
-        form = MITOS_WSI_CMCDatasetForm(request.POST)
+        new_form = MITOS_WSI_CMCDatasetForm(request.POST)
 
         # Check if the form is valid:
-        if form.is_valid():
+        if new_form.is_valid():
+            files = new_form.cleaned_data["files"]
             errors = []
-            team = get_object_or_404(Team, id=form.data['team'])
-            image_set_name = form.data["name"]
-            product_name = form.data["name"]+" Product"
+            team = get_object_or_404(Team, id=new_form.data['team'])
+            image_set_name = new_form.data["name"]
+            product_name = new_form.data["name"]+" Product"
 
             # create imageset, product and annotation type etc.
             with transaction.atomic():
@@ -102,15 +104,15 @@ def create_mitos_wsi_cmc_dataset(request):
 
                 #create images
 
-                url = form.data["database"]
+                url = new_form.data["database"]
                 annotations_path = download_path / "MITOS_WSI_CMC_MEL.txt"
-                gdown.download(url, str(annotations_path), quiet=True, proxy=form.data["proxy"])
+                gdown.download(url, str(annotations_path), quiet=True, proxy=new_form.data["proxy"])
 
                 annotations = pd.read_csv(annotations_path, delimiter="|")
 
-                for url in form.cleaned_data["files"]:
+                for url in files:
 
-                    file_name = [url_name[1] for url_name in  form.FILE_CHOICES if url_name[0] == url][0]
+                    file_name = [url_name[1] for url_name in  new_form.FILE_CHOICES if url_name[0] == url][0]
                     file_path = Path(image_set.root_path()) / "{0}.svs".format(file_name)
 
                     urllib.request.urlretrieve(url, str(file_path))
@@ -166,6 +168,7 @@ def create_mitos_wsi_cmc_dataset(request):
 
 
 def create_miccai_mitotic_dataset(request):
+    download_path.mkdir(parents=True, exist_ok=True)    
 
     # If this is a POST request then process the Form data
     if request.method == 'POST':
@@ -289,6 +292,7 @@ def create_miccai_mitotic_dataset(request):
 
 
 def create_miccai_asthma_dataset(request):
+    download_path.mkdir(parents=True, exist_ok=True)
 
     # If this is a POST request then process the Form data
     if request.method == 'POST':
@@ -413,6 +417,7 @@ def create_miccai_asthma_dataset(request):
 
 
 def create_miccai_eiph_dataset(request):
+    download_path.mkdir(parents=True, exist_ok=True)
 
     # If this is a POST request then process the Form data
     if request.method == 'POST':
@@ -536,6 +541,7 @@ def create_miccai_eiph_dataset(request):
 
 
 def create_asthma_dataset(request):
+    download_path.mkdir(parents=True, exist_ok=True)
 
     # If this is a POST request then process the Form data
     if request.method == 'POST':
