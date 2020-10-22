@@ -11,6 +11,9 @@ urlpatterns = [
     path('eiph_miccai/create/', views.create_miccai_eiph_dataset, name='create-miccai-eiph-dataset'),
     path('mitotic_miccai/create/', views.create_miccai_mitotic_dataset, name='create-miccai-mitotic-dataset'),
 
+    # SDATA
+    path('mitos_wsi_cmc/create/', views.create_mitos_wsi_cmc_dataset, name='create-mitos-wsi-cmc-dataset'),
+
     #path('eiph/create/', views.create_eiph_dataset, name='create-eiph-dataset'),
     #path('asthma/create/', views.create_asthma_dataset, name='create-asthma-dataset'),
 ]
