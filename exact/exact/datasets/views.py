@@ -14,7 +14,7 @@ from django.db import transaction
 from exact.users.models import User, Team
 from exact.administration.models import Product
 from exact.annotations.models import Annotation, AnnotationType
-from exact.datasets.forms import DatasetForm
+from exact.datasets.forms import DatasetForm, MITOS_WSI_CMCDatasetForm
 from exact.images.models import ImageSet, Image
 from exact.images.views import view_imageset
 
@@ -31,17 +31,142 @@ def index(request):
     asthma_miccai_form = DatasetForm(user=request.user)
     eiph_miccai_form = DatasetForm(user=request.user)
     mitotic_miccai_form = DatasetForm(user=request.user)
+    mitos_wsi_cmc_form = MITOS_WSI_CMCDatasetForm(user=request.user)
 
     context = {
         'asthma_miccai_form': asthma_miccai_form,
         'eiph_miccai_form': eiph_miccai_form,
         'mitotic_miccai_form': mitotic_miccai_form,
+        'mitos_wsi_cmc_form': mitos_wsi_cmc_form
 
         #'asthma_form': asthma_form,
         #'eiph_form': eiph_form,
     }
 
     return TemplateResponse(request, 'index.html', context)
+
+
+def create_mitos_wsi_cmc_dataset(request):
+
+    # If this is a POST request then process the Form data
+    if request.method == 'POST':
+        
+        # Create a form instance and populate it with data from the request (binding):
+        form = MITOS_WSI_CMCDatasetForm(request.POST)
+
+        # Check if the form is valid:
+        if form.is_valid():
+            errors = []
+            team = get_object_or_404(Team, id=form.data['team'])
+            image_set_name = form.data["name"]
+            product_name = form.data["name"]+" Product"
+
+            # create imageset, product and annotation type etc.
+            with transaction.atomic():
+                labels = {'mitotic figure':None}
+
+                # create or load product
+                product = Product.objects.filter(name=product_name,team=team).first()
+                if product is None:
+                    product = Product.objects.create(
+                        name=product_name,
+                        team=team,
+                        creator=request.user
+                    )
+
+                # create or load AnnotationType
+                for label, code in zip(labels.keys(), ["#0000FF"]):
+                    anno_type = AnnotationType.objects.filter(name=label,product=product).first()
+                    if anno_type is None:
+                        anno_type = AnnotationType.objects.create(
+                            name=label,
+                            vector_type=1,
+                            product=product,
+                            color_code=code
+                        )
+
+                    labels[label] = anno_type
+
+                #create imageset 
+                image_set = ImageSet.objects.filter(name=image_set_name,team=team).first()
+                if image_set is None:
+                    image_set = ImageSet.objects.create(
+                        team = team,
+                        creator = request.user,
+                        name = image_set_name,
+                    )
+                    image_set.product_set.add(product)
+                    image_set.create_folder()
+                    image_set.save()
+
+                #create images
+
+                url = 'https://drive.google.com/uc?id=1IZ_BdFB19iMM9RvX-uoHfnSsBG9Dj0Tn'
+
+                zip_path = Path(image_set.root_path()) / "Mitosen.zip"
+                gdown.download(url, str(zip_path), quiet=True, proxy=form.data["proxy"])
+
+                # unpack zip-file
+                zip_ref = zipfile.ZipFile(str(zip_path), 'r')
+                zip_ref.extractall(image_set.root_path())
+                zip_ref.close()
+                # delete zip-file
+                os.remove(str(zip_path))
+
+                filenames =  [Path(image_set.root_path())/f.filename for f in zip_ref.filelist if ".txt" not in f.filename]
+                annotations_path = Path(image_set.root_path()) / "ground truth.txt"
+
+                annotations = pd.read_csv(annotations_path, delimiter="|",names=["file","class","vector","1","2","3","4","5","6","7","8"])
+
+                for file_path in filenames:
+                    image = Image.objects.filter(filename=file_path.name,image_set=image_set).first()
+                    if image is None:
+                        try:
+                            # creates a checksum for image
+                            fchecksum = hashlib.sha512()
+                            with open(file_path, 'rb') as fil:
+                                buf = fil.read(10000)
+                                fchecksum.update(buf)
+                            fchecksum = fchecksum.digest()
+
+                            image = Image(
+                                name=file_path.name,
+                                image_set=image_set,
+                                checksum=fchecksum)
+
+                            image.save_file(file_path)
+
+                            image_annotations = annotations[annotations["file"] == file_path.name]
+
+                            # save annotations for image
+                            for label, vector in zip(image_annotations["class"], image_annotations["vector"]):
+
+                                if label in labels:
+                                    vector = json.loads(vector)
+                                    vector["x1"], vector["x2"], vector["y1"], vector["y2"] = int(vector["x1"]), int(vector["x2"]), int(vector["y1"]), int(vector["y2"])
+                                    annotation_type = labels[label]
+                                    anno = Annotation.objects.create(
+                                        annotation_type = annotation_type,
+                                        user = request.user,
+                                        image = image,
+                                        vector = vector 
+                                    )
+
+
+                        except Exception as e:
+                            errors.append(e.message)
+
+            # view image set
+            return view_imageset(request, image_set.id)
+
+    # If this is a GET (or any other method) create the default form.
+    form = MITOS_WSI_CMCDatasetForm(user=request.user)
+
+    context = {
+        'mitos_wsi_cmc_form': form,
+    }
+
+    return TemplateResponse(request, 'mitos_wsi_cmc_form.html', context)
 
 
 def create_miccai_mitotic_dataset(request):
