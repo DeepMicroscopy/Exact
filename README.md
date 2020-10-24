@@ -56,7 +56,13 @@ Marzahl et al. [EXACT: A collaboration toolset for algorithm-aided annotation of
 | Explains the screening plugin for WSI  |  [![Datasets](https://img.youtube.com/vi/w7GHTEP2AYo/0.jpg)](https://www.youtube.com/watch?v=w7GHTEP2AYo)  |
 | Syncronisation with the offline tool SlideRunner  |  [![Datasets](https://img.youtube.com/vi/Ch5nlnVwYcA/0.jpg)](https://www.youtube.com/watch?v=Ch5nlnVwYcA)  |
 | Advanced polygon annotation operations  |  [![Datasets](https://img.youtube.com/vi/xVn9ghDQz1A/0.jpg)](https://www.youtube.com/watch?v=xVn9ghDQz1A)  |
-| REST-API Example | ```pip install EXCAT-Sync``` <br> [Code](https://github.com/ChristianMarzahl/EXACT-Sync) <br> [Notebook](https://colab.research.google.com/drive/1nOTyAVwzBDMSEAdgjbdpe7isGfeVpusK)  <br> [Notebook](https://colab.research.google.com/drive/1klUiGOQSeBJ7xifeOprUpwEKaeQ_9XSQ?usp=sharing)|
+| Study and annotation modes (en)  |  [![AnnotationModes](https://img.youtube.com/vi/wjV-wHbrRjQ/0.jpg)](https://www.youtube.com/watch?v=wjV-wHbrRjQ)  |
+| AnnotationMaps (en)  |  [![Inference](https://img.youtube.com/vi/GAjvOSkLW8Q/0.jpg)](https://www.youtube.com/watch?v=GAjvOSkLW8Q)  |
+| DensityMaps  (en)  |  [![Inference](https://img.youtube.com/vi/BLdX6syS_z0/0.jpg)](https://www.youtube.com/watch?v=BLdX6syS_z0)  |
+| Cluster annotations (en)  |  [![Inference](https://img.youtube.com/vi/Wvz-Nv4dNOE/0.jpg)](https://www.youtube.com/watch?v=Wvz-Nv4dNOE)  |
+| AnnotationVersioning (en)  |  [![AnnotationVersioning](https://img.youtube.com/vi/WeOWxXaYc0g/0.jpg)](https://www.youtube.com/watch?v=WeOWxXaYc0g)  |
+| Inference (en)  |  [![Inference](https://img.youtube.com/vi/xP4YAp678EM/0.jpg)](https://www.youtube.com/watch?v=xP4YAp678EM)  |
+| REST-API Example | ```pip install EXCAT-Sync``` <br> [Code](https://github.com/ChristianMarzahl/EXACT-Sync) <br> [Notebook](https://colab.research.google.com/drive/1nOTyAVwzBDMSEAdgjbdpe7isGfeVpusK)  <br> [Notebook](https://colab.research.google.com/drive/1klUiGOQSeBJ7xifeOprUpwEKaeQ_9XSQ?usp=sharing) <br> [Browsable-API](https://documenter.getpostman.com/view/11308910/TVYF6xZo)|
 
 ## Install
 

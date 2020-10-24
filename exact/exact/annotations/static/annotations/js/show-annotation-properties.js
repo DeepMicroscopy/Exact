@@ -43,7 +43,7 @@ class ShowAnnotationProperties{
                             var audio = document.getElementById('audio');
                             if (audio !== undefined) {
                                 var source = document.getElementById('annotationAudio');
-                                source.src = media.file
+                                source.src = "/media" + media.file.split("media")[1]
                                 audio.load();
     
                                 if ($('#autoplay_media').is(':checked'))
