@@ -54,10 +54,11 @@
 					<a href="{% url 'ImageSetView-list' %}" class="nav-link">Explore</a>
 				</li>
 
+				{% if show_datasets %}
 				<li class="nav-item">
 					<a href="{% url 'datasets:index' %}" class="nav-link">Demo</a>
 				</li>
-				
+				{% endif %}
 				<!--
 				<li class="nav-item">
 					<a class="upper-bandage-parent" href="{% url 'tagger_messages:overview' %}">

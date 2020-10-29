@@ -208,6 +208,8 @@ IMAGE_PATH = os.path.join(BASE_DIR, 'images')  # the absolute path to the folder
 MEDIA_ROOT= os.path.join(BASE_DIR, 'media')
 MEDIA_URL= "/media/"
 
+SHOW_DEMO_DATASETS = True
+
 # filename extension of accepted imagefiles
 IMAGE_EXTENSION = {
     'png',
