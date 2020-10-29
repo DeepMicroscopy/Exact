@@ -254,8 +254,8 @@
                                         <ul>
                                             {% for version in imageset.set_versions.all %}
                                             <li>
-                                                {{ version.name }} ({{version.annotationversion_set.count}})
-                                                <a href="{% url 'AnnotationVersionView-list' %}?version={{ version.id }}"><span class="fa fa-new-window"> </span></a> 
+                                                
+                                                <a href="{% url 'AnnotationVersionView-list' %}?version={{ version.id }}"> {{ version.name }} ({{version.annotationversion_set.count}}) </a> 
                                             </li>
                                             {% endfor %}
                                         </ul>

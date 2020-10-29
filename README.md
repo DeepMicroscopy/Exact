@@ -41,12 +41,21 @@ Marzahl et al. [EXACT: A collaboration toolset for algorithm-aided annotation of
 
 ## Documentation
 
+Issues with the [notebooks](doc/README.md) on GitHub? Please use [NBViewer](https://nbviewer.jupyter.org/github/ChristianMarzahl/Exact/tree/master/doc/)
+
 
 |   Describtion   |  Video  | 
 |---|---|
 | EXACT installation with Docker (en) |  [![Datasets](https://img.youtube.com/vi/-YH5cnWVrDg/0.jpg)](https://www.youtube.com/watch?v=-YH5cnWVrDg)  |
 | EXACT First steps (en) |  [![Datasets](https://img.youtube.com/vi/F3lV-IvT1M4/0.jpg)](https://www.youtube.com/watch?v=F3lV-IvT1M4)  |
 | EXACT Product and Annotationtype defintion (en) |  [![Datasets](https://img.youtube.com/vi/4XdWLaqy9UA/0.jpg)](https://www.youtube.com/watch?v=4XdWLaqy9UA)  |
+| Study and annotation modes (en)  |  [![AnnotationModes](https://img.youtube.com/vi/wjV-wHbrRjQ/0.jpg)](https://www.youtube.com/watch?v=wjV-wHbrRjQ) <br> [Code](doc/DownloadStudyAnnotations.ipynb) |
+| AnnotationMaps (en)  |  [![Inference](https://img.youtube.com/vi/GAjvOSkLW8Q/0.jpg)](https://www.youtube.com/watch?v=GAjvOSkLW8Q) <br> [Code](doc/AnnotationMap.ipynb)  |
+| DensityMaps  (en)  |  [![Inference](https://img.youtube.com/vi/BLdX6syS_z0/0.jpg)](https://www.youtube.com/watch?v=BLdX6syS_z0)  <br> [Code](doc/Create_DensityWSI-Equine.ipynb) |
+| Cluster annotations (en)  |  [![Inference](https://img.youtube.com/vi/Wvz-Nv4dNOE/0.jpg)](https://www.youtube.com/watch?v=Wvz-Nv4dNOE)  <br> [Code](doc/ClusterCells.ipynb)|
+| Cluster sounds (en)  |  [![Inference](https://img.youtube.com/vi/j0IlBcmJeLE/0.jpg)](https://www.youtube.com/watch?v=j0IlBcmJeLE)  |
+| AnnotationVersioning (en)  |  [![AnnotationVersioning](https://img.youtube.com/vi/WeOWxXaYc0g/0.jpg)](https://www.youtube.com/watch?v=WeOWxXaYc0g)  |
+| Inference (en)  |  [![Inference](https://img.youtube.com/vi/xP4YAp678EM/0.jpg)](https://www.youtube.com/watch?v=xP4YAp678EM) <br> [Code](doc/Inference Asthma.ipynb) |
 | EXACT Media Files (en) |  [![Datasets](https://img.youtube.com/vi/ygOY-CuSQ5k/0.jpg)](https://www.youtube.com/watch?v=ygOY-CuSQ5k)  |
 | Datasets (en) |  [![Datasets](https://img.youtube.com/vi/hi23nhz0rWQ/0.jpg)](https://www.youtube.com/watch?v=hi23nhz0rWQ)  |
 | Explains how teams, products and annotation types are created |  [![Datasets](https://img.youtube.com/vi/yr6h2OffThU/0.jpg)](https://www.youtube.com/watch?v=yr6h2OffThU)  |
@@ -57,7 +66,7 @@ Marzahl et al. [EXACT: A collaboration toolset for algorithm-aided annotation of
 | Explains the screening plugin for WSI  |  [![Datasets](https://img.youtube.com/vi/w7GHTEP2AYo/0.jpg)](https://www.youtube.com/watch?v=w7GHTEP2AYo)  |
 | Syncronisation with the offline tool SlideRunner  |  [![Datasets](https://img.youtube.com/vi/Ch5nlnVwYcA/0.jpg)](https://www.youtube.com/watch?v=Ch5nlnVwYcA)  |
 | Advanced polygon annotation operations  |  [![Datasets](https://img.youtube.com/vi/xVn9ghDQz1A/0.jpg)](https://www.youtube.com/watch?v=xVn9ghDQz1A)  |
-| REST-API Example | ```pip install EXCAT-Sync``` <br> [Code](https://github.com/ChristianMarzahl/EXACT-Sync) <br> [Notebook](https://colab.research.google.com/drive/1nOTyAVwzBDMSEAdgjbdpe7isGfeVpusK)  <br> [Notebook](https://colab.research.google.com/drive/1klUiGOQSeBJ7xifeOprUpwEKaeQ_9XSQ?usp=sharing)|
+| REST-API Example | ```pip install EXCAT-Sync``` <br> [Code](https://github.com/ChristianMarzahl/EXACT-Sync) <br> [Notebook](https://colab.research.google.com/drive/1nOTyAVwzBDMSEAdgjbdpe7isGfeVpusK)  <br> [Notebook](https://colab.research.google.com/drive/1klUiGOQSeBJ7xifeOprUpwEKaeQ_9XSQ?usp=sharing) <br> [Browsable-API](https://documenter.getpostman.com/view/11308910/TVYF6xZo)|
 
 ## Install
 
