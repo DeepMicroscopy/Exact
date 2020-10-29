@@ -337,7 +337,7 @@ def export_format(export_format_name, imageset):
                             #CRUD Infos
                             '%%first_editor': annotation.user.username,
                             '%%first_timepoint': annotation.time,
-                            '%%first_editor': annotation.last_editor.username,
+                            '%%last_editor':  annotation.last_editor.username if annotation.last_editor is not None else -1,
                             '%%last_timepoint': annotation.last_edit_time,
                             '%%UUID': annotation.unique_identifier,
                             '%%meta_data': annotation.meta_data,
@@ -444,7 +444,7 @@ def export_format(export_format_name, imageset):
                     #CRUD Infos
                     '%%first_editor': annotation.user.username,
                     '%%first_timepoint': annotation.time,
-                    '%%last_editor': annotation.last_editor.username,
+                    '%%last_editor': annotation.last_editor.username if annotation.last_editor is not None else -1,
                     '%%last_timepoint': annotation.last_edit_time,
                     '%%UUID': annotation.unique_identifier,
                     '%%meta_data': annotation.meta_data,
