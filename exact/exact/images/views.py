@@ -219,6 +219,7 @@ def upload_image(request, imageset_id):
         if request.FILES is None:
             return HttpResponseBadRequest('Must have files attached!')
         json_files = []
+        errors = []
         for f in list(request.FILES.values()):#request.FILES.getlist('files[]'):
             error = {
                 'duplicates': 0,

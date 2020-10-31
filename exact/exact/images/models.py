@@ -10,6 +10,8 @@ from django.db.models import Count, Q, Sum
 from django.db.models.expressions import F
 
 import os
+import numpy as np
+import cv2
 import openslide
 from openslide import OpenSlide, open_slide
 from czifile import czi2tif
@@ -163,6 +165,7 @@ class Image(models.Model):
                                 self.filename = copy_path.name
                             break
 
+                        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                         height, width, bands = frame.shape
                         linear = frame.reshape(width * height * bands)
 
