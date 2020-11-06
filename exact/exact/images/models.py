@@ -113,15 +113,15 @@ class Image(models.Model):
                     for frame_id in range(self.frames):
                         height, width = reader.dimensions 
                         np_image = np.array(reader.read_region(location=(0,0), size=(reader.dimensions), level=0, zLevel=frame_id))[:,:,0]
-                        linear = np_image.reshape(height * width * image.channels)
-                        vi = pyvips.Image.new_from_memory(np.ascontiguousarray(linear.data), height, width, image.channels, 'uchar')
+                        linear = np_image.reshape(height * width * self.channels)
+                        vi = pyvips.Image.new_from_memory(np.ascontiguousarray(linear.data), height, width, self.channels, 'uchar')
 
                         target_file = folder_path / "{}_{}_{}".format(1, frame_id + 1, path.name) #z-axis frame image
                         vi.tiffsave(str(target_file), tile=True, compression='lzw', bigtiff=True, pyramid=True,  tile_width=256, tile_height=256)
 
                         # save first frame as default file for thumbnail etc.
                         if frame_id == 0:
-                            image.filename = target_file.name
+                            self.filename = target_file.name
                 # check if its a zeiss file
                 elif  Path(path).suffix.lower().endswith(".czi"):
                     path_temp = Path(path).with_suffix('.tif')
