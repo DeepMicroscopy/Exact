@@ -199,6 +199,8 @@ The following settings should probably be changed:
 
 For the database, postgresql is used. Install it by running `sudo apt install postgresql`
 
+You will also need opencv3. You can install that by running `apt install python3-opencv`
+
 Initialize the database cluster with `sudo -iu postgres initdb --locale en_US.UTF-8 -D '/var/lib/postgres/data'`.
 
 Note: It may be that initdb is not in your current PATH (seems to be default for postgresql >= 10), in this case, you have to specify the proper path to initdb, e.g:
@@ -219,20 +221,20 @@ CREATE DATABASE exact WITH OWNER exact ENCODING UTF8;
 
 where of course the password and the user should be adapted to the ones specified in the database settings in the settings.py.
 
-To initialize the database, run `./manage.py migrate`
+To initialize the database, run `python3 manage.py migrate`
 
-To create an administrator user, run `./manage.py createsuperuser`.
+To create an administrator user, run `python3 manage.py createsuperuser`.
 
-`./manage.py runserver` starts the server with the configuration given in the settings.py file.
+`python3 manage.py runserver` starts the server with the configuration given in the settings.py file.
 
 To create annotation types, log into the application and click on Administration at the very bottom of the home page.
 
 For **production** systems it is necessary to run the following commands after each upgrade
 
 ```bash
-./manage.py migrate
-./manage.py compilemessages
-./manage.py collectstatic
+python3 manage.py migrate
+python3 manage.py compilemessages
+python3 manage.py collectstatic
 ```
 
 Our production uwisgi config is
@@ -302,7 +304,7 @@ server {
 
 ```
 pip install -U -r requirements.txt
-./manage.py migrate
+python3 manage.py migrate
 ```
 
 for additional steps on some releases see instructions
@@ -310,7 +312,7 @@ in [UPGRADE.md](https://github.com/ChristianMarzahl/exact/blob/master/UPGRADE.md
 
 
 If you want to provide zip files of image sets, set `ENABLE_ZIP_DOWNLOAD = True` in your `settings.py`.
-A daemon that creates and updates the zip files is necessary, you can start it with `./manage.py runzipdaemon`.
+A daemon that creates and updates the zip files is necessary, you can start it with `python3 manage.py runzipdaemon`.
 Please take into account that the presence of zip files will double your storage requirement.
 
 Zip archive download via a script is also possible. The URL is `/images/imageset/<id>/download/`. A successful request
