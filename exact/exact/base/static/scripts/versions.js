@@ -1,5 +1,10 @@
+function include_server_subdir(url) {
+  sub_dir =  window.location.pathname.split("/annotations")[0]
+  if (sub_dir === "") { return url } else { return sub_dir + url }
+}
+
 (function() {
-  const API_IMAGES_BASE_URL = '/api/v1/images/';
+  const API_IMAGES_BASE_URL = include_server_subdir('/api/v1/images/');
   const FEEDBACK_DISPLAY_TIME = 3000;
 
   var gCsrfToken;
