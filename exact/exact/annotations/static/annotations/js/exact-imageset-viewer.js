@@ -2,13 +2,13 @@
 
 class EXACTImageSetViewer {
 
-    constructor(image_set_id, image_id, image_url, gHeaders, user_id, url_parameters) {
+    constructor(image_set_id, image_id, server_url, gHeaders, user_id, url_parameters) {
 
         this.image_set_id = image_set_id;
         this.gHeaders = gHeaders;
         this.user_id = user_id;
         this.image_id = image_id;
-        this.image_url = image_url;
+        this.server_url = server_url;
         this.ready = false; // true if alle needed informations are loaded from EXACT
         this.url_parameters = url_parameters;
 
@@ -154,7 +154,7 @@ class EXACTImageSetViewer {
         window.history.pushState("object or string",  `${image_information.name}`, `/annotations/${imageId}/`);
 
         const options = {url_parameters: url_parameters};
-        this.exact_viewer = EXACTViewer.factoryCreateViewer(this.image_url, this.image_id, options,
+        this.exact_viewer = EXACTViewer.factoryCreateViewer(this.server_url, this.image_id, options,
             image_information, annotation_types, this.gHeaders, this.user_id, collaboration_type);
 
         this.scrollImageList(this.image_id);
