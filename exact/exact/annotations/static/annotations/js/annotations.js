@@ -1,3 +1,9 @@
+function include_server_subdir(url) {
+    sub_dir =  window.location.pathname.split("/annotations")[0]
+    if (sub_dir === "") { return url } else { return sub_dir + url }
+}
+
+
 (function () {
 
     // TODO: Find a solution for url resolvings
