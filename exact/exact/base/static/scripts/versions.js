@@ -1,5 +1,5 @@
 function include_server_subdir(url) {
-  sub_dir =  window.location.pathname.split("/annotations")[0]
+  sub_dir =  window.location.pathname.split("/images/imageset/")[0]
   if (sub_dir === "") { return url } else { return sub_dir + url }
 }
 

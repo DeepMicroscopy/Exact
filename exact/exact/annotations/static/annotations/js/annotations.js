@@ -32,10 +32,10 @@ function include_server_subdir(url) {
             "X-CSRFTOKEN": gCsrfToken
         };
 
-        let image_url = window.location.origin;
+        let server_url = window.location.origin + window.location.pathname.split("/annotations")[0];
         let user_id = parseInt($('#user_id').html());
 
-        exact_imageset_viewer = new EXACTImageSetViewer(gImageSetId, gImageId, image_url, gHeaders, user_id, url_parameters);
+        exact_imageset_viewer = new EXACTImageSetViewer(gImageSetId, gImageId, server_url, gHeaders, user_id, url_parameters);
 
         // Expand Annotations Menu
         $('#loadAnnotationMenu').click(function (event) {
