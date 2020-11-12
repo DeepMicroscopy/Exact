@@ -56,6 +56,7 @@ Issues with the [notebooks](doc/README.md) on GitHub? Please use [NBViewer](http
 | Cluster sounds (en)  |  [![Inference](https://img.youtube.com/vi/j0IlBcmJeLE/0.jpg)](https://www.youtube.com/watch?v=j0IlBcmJeLE)  |
 | AnnotationVersioning (en)  |  [![AnnotationVersioning](https://img.youtube.com/vi/WeOWxXaYc0g/0.jpg)](https://www.youtube.com/watch?v=WeOWxXaYc0g)  |
 | Inference (en)  |  [![Inference](https://img.youtube.com/vi/xP4YAp678EM/0.jpg)](https://www.youtube.com/watch?v=xP4YAp678EM) <br> [Code](doc/Inference Asthma.ipynb) |
+| Segmentation (en)  |  [![Inference](https://img.youtube.com/vi/AMwMvMVriGw/0.jpg)](https://www.youtube.com/watch?v=AMwMvMVriGw) <br> [Code](doc/Segmentation.ipynb) |
 | EXACT Media Files (en) |  [![Datasets](https://img.youtube.com/vi/ygOY-CuSQ5k/0.jpg)](https://www.youtube.com/watch?v=ygOY-CuSQ5k)  |
 | Datasets (en) |  [![Datasets](https://img.youtube.com/vi/hi23nhz0rWQ/0.jpg)](https://www.youtube.com/watch?v=hi23nhz0rWQ)  |
 | Explains how teams, products and annotation types are created (de) |  [![Datasets](https://img.youtube.com/vi/yr6h2OffThU/0.jpg)](https://www.youtube.com/watch?v=yr6h2OffThU)  |
