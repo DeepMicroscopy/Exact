@@ -6,7 +6,7 @@ class PluginHandler {
         this.gHeaders = gHeaders;
         this.viewer = viewer;
 
-        this.API_IMAGES_BASE_URL = '/images/api/';
+        this.API_IMAGES_BASE_URL = include_server_subdir('/images/api/');
 
         this.initViewerEventHandler(viewer);
     }

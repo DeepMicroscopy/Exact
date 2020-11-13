@@ -1,3 +1,8 @@
+function include_server_subdir(url) {
+  sub_dir =  window.location.pathname.split("/images/image_sets_explore/")[0]
+  if (sub_dir === "") { return url } else { return sub_dir + url }
+}
+
 let csrfToken = $('[name="csrfmiddlewaretoken"]').first().val();
 let headers = {
   "Content-Type": 'application/json',
@@ -12,7 +17,7 @@ $('#tagbox').autocomplete({
     let params = {
       query: query_array[query_array.length - 1]
     };
-    $.ajax('/images/api/imageset/tag/autocomplete/?' + $.param(params), {
+    $.ajax(include_server_subdir('/images/api/imageset/tag/autocomplete/?') + $.param(params), {
       type: 'GET',
       headers: headers,
       dataType: 'json',
