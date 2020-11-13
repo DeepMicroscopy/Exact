@@ -1,6 +1,11 @@
+function include_server_subdir(url) {
+    sub_dir =  window.location.pathname.split("/images/imageset/")[0]
+    if (sub_dir === "") { return url } else { return sub_dir + url }
+}
+
 (function () {
-    const API_IMAGES_BASE_URL = '/images/api/imageset/';
-    const ADMINISTRATION_BASE_URL = '/administration/products/';
+    const API_IMAGES_BASE_URL = include_server_subdir('/images/api/imageset/');
+    const ADMINISTRATION_BASE_URL = include_server_subdir('/administration/products/');
     const FEEDBACK_DISPLAY_TIME = 3000;
 
     var gCsrfToken;

@@ -7,7 +7,7 @@ class EXACTTeamSync {
         this.users = {};
         this.viewer = viewer;
 
-        this.API_1_TEAMS_BASE_URL = `/api/v1/users/teams/${team_id}/?expand=members`;
+        this.API_1_TEAMS_BASE_URL = include_server_subdir(`/api/v1/users/teams/${team_id}/?expand=members`);
         this.loadTeamInformation(this.API_1_TEAMS_BASE_URL, this);
     }
 
@@ -47,8 +47,8 @@ class EXACTScreeningModeSync {
         this.screening_mode;
         this.thumbnail_image;
 
-        this.API_1_SCREENING_BASE_URL = '/api/v1/images/screening_modes/';
-        this.API_1_IMAGES_BASE_URL = '/api/v1/images/images/'; 
+        this.API_1_SCREENING_BASE_URL = include_server_subdir('/api/v1/images/screening_modes/');
+        this.API_1_IMAGES_BASE_URL = include_server_subdir('/api/v1/images/images/'); 
 
         this.loadScreeningMode(imageId, user_id, this);
     }
@@ -168,7 +168,7 @@ class EXACTImageSetSync {
         // Collaborative = 0; COMPETITIVE = 1;
         this.collaboration_type = 0;
 
-        this.API_1_IMAGES_BASE_URL = '/api/v1/images/';
+        this.API_1_IMAGES_BASE_URL = include_server_subdir('/api/v1/images/');
     }
 
     // load needed imageset information like:
@@ -260,7 +260,7 @@ class EXACTImageSync {
         this.imageId = imageId;
         this.gHeaders = gHeaders;
 
-        this.API_IMAGES_BASE_URL = '/images/api/'; // TODO: Repleace with V1 version
+        this.API_IMAGES_BASE_URL = include_server_subdir('/images/api/'); // TODO: Repleace with V1 version
     }
 
     imageOpend() {
@@ -372,8 +372,8 @@ class EXACTAnnotationSync {
         this.refreshAnnotationsFromServer;
         this.upDateFromServerInterval = updateInterval;
 
-        this.API_ANNOTATIONS_BASE_URL = '/annotations/api/';
-        this.API_1_ANNOTATIONS_BASE_URL = '/api/v1/annotations/';
+        this.API_ANNOTATIONS_BASE_URL = include_server_subdir('/annotations/api/');
+        this.API_1_ANNOTATIONS_BASE_URL = include_server_subdir('/api/v1/annotations/');
         this.API_1_ANNOTATION_EXPAND = 'expand=user,last_editor,uploaded_media_files&';
         this.API_1_FILTERS = 'image=' + imageId + '&'
         if (this.collaboration_type === 1) {

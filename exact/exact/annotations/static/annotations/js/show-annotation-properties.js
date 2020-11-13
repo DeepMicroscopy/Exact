@@ -23,17 +23,17 @@ class ShowAnnotationProperties{
             if (annotation !== undefined) {
 
                 $("#annotationFirstEditor").text(annotation.user.username);
-                $("#annotationFirstEditor").attr("href",`/users/user/${annotation.user.id}/`);
+                $("#annotationFirstEditor").attr("href", include_server_subdir(`/users/user/${annotation.user.id}/`));
     
                 $("#annotationLastEditor").text(annotation.last_editor.username);
-                $("#annotationLastEditor").attr("href",`/users/user/${annotation.last_editor.id}/`);
+                $("#annotationLastEditor").attr("href", include_server_subdir(`/users/user/${annotation.last_editor.id}/`));
     
                 $("#annotationRemark").val(annotation.description);
     
                 $("#annotationVerified").val(annotation.verified_by_user.toString());
     
                 $("#annotationUniqueID").text(annotation.unique_identifier);
-                $("#annotationUniqueID").attr("href",`/annotations/annotations_explore/?&page=1&unique_identifier=${annotation.unique_identifier}`);
+                $("#annotationUniqueID").attr("href", include_server_subdir(`/annotations/annotations_explore/?&page=1&unique_identifier=${annotation.unique_identifier}`));
     
                 // set media file 
                 if (annotation.uploaded_media_files !== undefined) {
@@ -43,7 +43,7 @@ class ShowAnnotationProperties{
                             var audio = document.getElementById('audio');
                             if (audio !== undefined) {
                                 var source = document.getElementById('annotationAudio');
-                                source.src = "/media" + media.file.split("media")[1]
+                                source.src = include_server_subdir("/media" + media.file.split("media")[1])
                                 audio.load();
     
                                 if ($('#autoplay_media').is(':checked'))
