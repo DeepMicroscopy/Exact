@@ -151,7 +151,7 @@ class EXACTImageSetViewer {
         $('#active_image_name').text(image_information.name);
 
         //Update URL
-        window.history.pushState("object or string",  `${image_information.name}`, `/annotations/${imageId}/`);
+        window.history.pushState("object or string",  `${image_information.name}`, include_server_subdir(`/annotations/${imageId}/`));
 
         const options = {url_parameters: url_parameters};
         this.exact_viewer = EXACTViewer.factoryCreateViewer(this.server_url, this.image_id, options,

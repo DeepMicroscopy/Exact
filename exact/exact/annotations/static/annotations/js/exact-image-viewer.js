@@ -146,7 +146,7 @@ class EXACTViewer {
 
             window.history.pushState("object or string",
                 `${this.userData.imageInformation.name}`,
-                `/annotations/${this.userData.imageInformation.id}/?xmin=${xmin}&ymin=${ymin}&xmax=${xmax}&ymax=${ymax}`);
+                include_server_subdir(`/annotations/${this.userData.imageInformation.id}/?xmin=${xmin}&ymin=${ymin}&xmax=${xmax}&ymax=${ymax}`));
 
         }, this);
 
