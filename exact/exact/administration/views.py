@@ -20,7 +20,6 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_200_OK, \
     HTTP_403_FORBIDDEN
 
-@staff_member_required
 def products(request):
     teams = Team.objects.filter(members=request.user)
     return render(request, 'administration/product.html', {
@@ -29,7 +28,7 @@ def products(request):
         'teams': teams
     })
 
-@staff_member_required
+
 def product(request, product_id):
     selected_product = get_object_or_404(Product, id=product_id)
     return render(request, 'administration/product.html', {
@@ -40,16 +39,14 @@ def product(request, product_id):
         'teams': Team.objects.filter(members=request.user)
     })
 
-@staff_member_required
+
 def create_product(request):
     if request.method == 'POST':
         form = ProductCreationForm(request.POST)
 
         if form.is_valid():
-            if Product.objects.filter(name=form.cleaned_data.get('name'), team=form.cleaned_data.get('team')).exists():
-                form.add_error(
-                    'name',
-                    _('The name team combination is already in use by an product.'))
+            if request.user.has_perm('administration.add_product') == False:
+                messages.error(request, _('Missing rights to create products'))
             else:
                 with transaction.atomic():
                     form.instance.creator = request.user
@@ -57,16 +54,19 @@ def create_product(request):
 
                 messages.success(request, _('The product was created successfully.'))
                 return redirect(reverse('administration:product', args=(product.id,)))
-    else:
-        return redirect(reverse('administration:product'))
+        else:
+            messages.error(request, _('The name team combination is already in use by an product.'))
+
+    return redirect(reverse('administration:products'))
 
 
-@staff_member_required
 def edit_product(request, product_id):
     selected_product = get_object_or_404(Product, id=product_id)
     if request.method == 'POST':
         if Product.objects.filter(name=request.POST['name'], team_id=request.POST['team']).exclude(id=selected_product.id).exists():
             messages.error(request, _('The name team combination is already in use by an product.'))
+        elif request.user.has_perm('administration.change_product') == False:
+            messages.error(request, _('Missing rights to change a product'))
         else:
             selected_product.name = request.POST['name']
             selected_product.description = request.POST['description']
@@ -77,7 +77,7 @@ def edit_product(request, product_id):
             messages.success(request, _('The product was edited successfully.'))
     return redirect(reverse('administration:product', args=(product_id, )))
 
-@staff_member_required
+
 def annotation_types(request):
     form = AnnotationTypeCreationForm()
     form.fields['product'].queryset = Product.objects.filter(team__in=Team.objects.filter(members=request.user))
@@ -90,7 +90,6 @@ def annotation_types(request):
     })
 
 
-@staff_member_required
 def annotation_type(request, annotation_type_id):
     creation_form = AnnotationTypeCreationForm()
     creation_form.fields['product'].queryset = Product.objects.filter(team__in=Team.objects.filter(members=request.user))
@@ -231,17 +230,13 @@ def api_create_annotation_type(request) -> Response:
     }, status=HTTP_201_CREATED)
 
 
-@staff_member_required
 def create_annotation_type(request):
     if request.method == 'POST':
         form = AnnotationTypeCreationForm(request.POST)
 
         if form.is_valid():
-            if AnnotationType.objects.filter(name=form.cleaned_data.get('name'),
-                                             product=form.cleaned_data.get('product')).exists():
-                form.add_error(
-                    'name',
-                    _('The name is already in use by an annotation type.'))
+            if request.user.has_perm('annotations.add_annotationtype') == False:
+                messages.error(request, _('Missing rights to create annotation type'))
             else:
                 with transaction.atomic():
 
@@ -249,16 +244,38 @@ def create_annotation_type(request):
 
                 messages.success(request, _('The annotation type was created successfully.'))
                 return redirect(reverse('administration:annotation_type', args=(type.id,)))
-    else:
-        return redirect(reverse('administration:annotation_types'))
+        else:
+            messages.error(request, _('The name is already in use by an annotation type.'))
+    
+    return redirect(reverse('administration:annotation_types'))
 
 
-@staff_member_required
+def delete_annotation_type(request, annotation_type_id):
+    selected_annotation_type = get_object_or_404(AnnotationType, id=annotation_type_id)
+
+    if request.method == 'GET':
+        if request.user.has_perm('annotations.delete_annotationtype'):
+            if selected_annotation_type.annotation_set.exists() == True:
+                messages.error(request, _('A used annotation type can not be deleted.'))
+            else:
+                messages.success(request, _('The annotation type was deleted successfully.'))
+                selected_annotation_type.delete()
+                return redirect(reverse('administration:annotation_types'))
+                
+        else:
+            messages.error(request, _('Missing rights to delete annotation type.'))
+
+
+    return redirect(reverse('administration:annotation_type', args=(annotation_type_id, )))
+
+
 def edit_annotation_type(request, annotation_type_id):
     selected_annotation_type = get_object_or_404(AnnotationType, id=annotation_type_id)
     if request.method == 'POST':
         if not request.POST['name'] == selected_annotation_type.name and AnnotationType.objects.filter(name=request.POST['name']).exists():
             messages.error(request, _('The name is already in use by an annotation type.'))
+        elif request.user.has_perm('annotations.change_annotationtype') == False:
+            messages.error(request, _('Missing rights to change annotation type'))
         else:
             selected_annotation_type.name = request.POST['name']
             selected_annotation_type.active = 'active' in request.POST
