@@ -124,7 +124,7 @@ class SearchTool {
                     // First Editor
                     var column = document.createElement("th");
                     var name_link = document.createElement("a");
-                    name_link.setAttribute('href', `/users/user/${item.user.id}/`);
+                    name_link.setAttribute('href', include_server_subdir(`/users/user/${item.user.id}/`));
                     name_link.textContent = item.user.username;
                     column.appendChild(name_link);
                     row.appendChild(column);
@@ -132,7 +132,7 @@ class SearchTool {
                     // First Editor
                     var column = document.createElement("th");
                     name_link = document.createElement("a");
-                    name_link.setAttribute('href', `/users/user/${item.last_editor.id}/`);
+                    name_link.setAttribute('href', include_server_subdir(`/users/user/${item.last_editor.id}/`));
                     name_link.textContent = item.last_editor.username;
                     column.appendChild(name_link);
                     row.appendChild(column);
