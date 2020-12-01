@@ -208,7 +208,7 @@ class Image(models.Model):
                             frames = shape[0]
                             self.frames = frames
 
-                            folder_path = Path(imageset.root_path()) / path.stem
+                            folder_path = Path(self.image_set.root_path()) / path.stem
                             os.makedirs(str(folder_path), exist_ok =True)
                             os.chmod(str(folder_path), 0o777)
 
@@ -230,6 +230,14 @@ class Image(models.Model):
                             vi = pyvips.Image.new_from_file(str(old_path))
                             vi.tiffsave(str(path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
                             self.filename = path.name
+                    else:
+                        path = Path(path).with_suffix('.tiff')
+                        if old_path == path:
+                            path = Path(path).with_suffix('.tif')
+
+                        vi = pyvips.Image.new_from_file(str(old_path))
+                        vi.tiffsave(str(path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
+                        self.filename = path.name
                 else:                            
                     path = Path(path).with_suffix('.tiff')
 
