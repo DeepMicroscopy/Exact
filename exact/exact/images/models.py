@@ -21,6 +21,7 @@ from PIL import Image as PIL_Image
 
 from datetime import datetime
 from pathlib import Path
+import tifffile
 
 from exact.users.models import Team
 
