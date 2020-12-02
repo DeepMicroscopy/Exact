@@ -64,9 +64,9 @@ RUN mkdir $APP_HOME/media
 RUN mkdir $APP_HOME/images
 WORKDIR $APP_HOME
 
-
+ENV DEBIAN_FRONTEND="noninteractive" TZ="SystemV"
 # install dependencies
-RUN apt-get update && apt-get install -y python3-pip python3-openslide libvips libvips-dev netcat \
+RUN apt-get update && apt-get install -y python3-pip python3-openslide libvips libvips-dev python3-opencv  netcat \
     && rm -rf /var/lib/apt/lists/*
 
 

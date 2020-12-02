@@ -25,7 +25,7 @@ class AnnotationFilterSet(django_filters.FilterSet):
 
     class Meta:
        model = models.Annotation
-       fields = {'vector_y': [], 'vector_x': [],        
+       fields = { 
         'id': ['exact'],
         'time': ['exact', 'lte', 'gte', 'range'],
         'last_edit_time': ['exact', 'lte', 'gte', 'range'],
@@ -38,9 +38,6 @@ class AnnotationFilterSet(django_filters.FilterSet):
         'annotation_type': ['exact'], #, 'range'
         'verified_by': ['exact', 'range'], #, 'range'
         'annotationversion': ['exact'],
-        'meta_data__isnull': [],
-        'vector__isnull': [],
-        'vector_type': []
        }
 
     def get_vector_type(self, queryset, field_name, value):
@@ -213,7 +210,6 @@ class AnnotationVersionFilterSet(django_filters.FilterSet):
 
             'deleted': ['exact'],
             'annotation_type': ['exact'],
-            'has_changes': ['exact'],
        }
 
     def get_has_changes(self, queryset, name, value):

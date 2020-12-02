@@ -3,7 +3,6 @@ from typing import Set
 from django.db import connection
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.contrib.postgres.fields import JSONField
 from django.db import models
 
 from django.db.models import Count, Q, Sum
@@ -428,11 +427,11 @@ class ImageSet(models.Model):
 
     @property
     def prio_symbol(self):
-        if self.priority is -1:
+        if self.priority == -1:
             return '<span class="glyphicon glyphicon-download" data-toggle="tooltip" data-placement="right" title="Low labeling priority"></span>'
-        elif self.priority is 0:
+        elif self.priority == 0:
             return ''
-        elif self.priority is 1:
+        elif self.priority == 1:
             return '<span class="glyphicon glyphicon-exclamation-sign" data-toggle="tooltip" data-placement="right" title="High labeling priority"></span>'
 
 
@@ -541,7 +540,7 @@ class ScreeningMode(models.Model):
                              on_delete=models.SET_NULL,
                              null=True)
 
-    screening_tiles = JSONField(null=True)
+    screening_tiles = models.JSONField(null=True)
 
     x_steps = models.IntegerField(default=0)
     y_steps = models.IntegerField(default=0)

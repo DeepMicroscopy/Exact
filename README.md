@@ -200,7 +200,7 @@ The following settings should probably be changed:
 
 For the database, postgresql is used. Install it by running `sudo apt install postgresql`
 
-You will also need opencv3. You can install that by running `apt install python3-opencv`
+You will also need opencv3 and other packages. You can install that by running `apt-get update && apt-get install python3-pip dos2unix python3-openslide python3-opencv  libvips libvips-dev`
 
 Initialize the database cluster with `sudo -iu postgres initdb --locale en_US.UTF-8 -D '/var/lib/postgres/data'`.
 
