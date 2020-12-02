@@ -4,7 +4,8 @@ FROM ubuntu:18.04 as builder
 # set work directory
 WORKDIR /usr/src/exact
 
-RUN apt-get update && apt-get install -y python3-pip python3-openslide libvips libvips-dev netcat gdebi libtinyxml2.6.2v5 libgles2-mesa libegl1-mesa \
+ENV DEBIAN_FRONTEND="noninteractive" TZ="SystemV"
+RUN apt-get update && apt-get install -y python3-pip python3-openslide python3-opencv  libvips libvips-dev netcat gdebi libtinyxml2.6.2v5 libgles2-mesa libegl1-mesa \
     && rm -rf /var/lib/apt/lists/*
 
 # set environment variables

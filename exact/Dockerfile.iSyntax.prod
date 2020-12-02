@@ -65,9 +65,9 @@ RUN mkdir $APP_HOME/images
 RUN mkdir $APP_HOME/iSyntax
 WORKDIR $APP_HOME
 
-
+ENV DEBIAN_FRONTEND="noninteractive" TZ="SystemV"
 # install dependencies
-RUN apt-get update && apt-get install -y python3-pip python3-openslide libvips libvips-dev netcat gdebi libtinyxml2.6.2v5 libgles2-mesa libegl1-mesa \
+RUN apt-get update && apt-get install -y python3-pip python3-opencv  python3-openslide libvips libvips-dev netcat gdebi libtinyxml2.6.2v5 libgles2-mesa libegl1-mesa \
     && rm -rf /var/lib/apt/lists/*
 
 

@@ -4,7 +4,8 @@ FROM ubuntu:18.04 as builder
 # set work directory
 WORKDIR /usr/src/exact
 
-RUN apt-get update && apt-get install -y python3-pip dos2unix python3-openslide libvips libvips-dev netcat\
+ENV DEBIAN_FRONTEND="noninteractive" TZ="SystemV"
+RUN apt-get update && apt-get install -y python3-pip dos2unix python3-openslide python3-opencv  libvips libvips-dev netcat\
     && rm -rf /var/lib/apt/lists/*
 
 # set environment variables

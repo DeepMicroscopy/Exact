@@ -1,9 +1,0 @@
-Django>=2.0,<2.1
-djangorestframework
-django-widget-tweaks
-fasteners
-Pillow
-psycopg2-binary
-django-registration
-django-friendly-tag-loader
-pyvips
