@@ -301,6 +301,20 @@ server {
 }
 ```
 
+### Verification E-Mails
+
+Please add credentials to the settings.py
+
+```python
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.googlemail.com' # for example gmail
+EMAIL_PORT = '587'
+EMAIL_HOST_USER = 'example@gmail.com'
+EMAIL_HOST_PASSWORD = 'example'
+EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
+```
+
 ### Upgrade
 
 ```
