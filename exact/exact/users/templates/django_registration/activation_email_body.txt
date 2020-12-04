@@ -1,4 +1,27 @@
 You have requested an account for {{ site.name }}
 
-Please click the following link to finish the registration:
+Please click the following link to finish the registration for https:
 https://{{ site.domain }}{% url 'django_registration_activate' activation_key %}
+
+or http:
+http://{{ site.domain }}{% url 'django_registration_activate' activation_key %}
+
+If you need help or upload rights, please contact the server administrator by answering to this e-mail. 
+
+First steps:
+Youtube: https://www.youtube.com/playlist?list=PLuA57h8TbJncBwIg_IJIP61EeAdYt4DSs
+
+GitHub: https://github.com/ChristianMarzahl/Exact
+
+Paper: 
+https://arxiv.org/abs/2004.14595
+
+@misc{marzahl2020exact,
+    title={EXACT: A collaboration toolset for algorithm-aided annotation of almost everything},
+    author={Christian Marzahl and Marc Aubreville and Christof A. Bertram and Jennifer Maier and Christian Bergler and Christine Kröger and Jörn Voigt and Robert Klopfleisch and Andreas Maier},
+    year={2020},
+    eprint={2004.14595},
+    archivePrefix={arXiv},
+    primaryClass={cs.HC}
+}
+
