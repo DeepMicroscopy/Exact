@@ -109,7 +109,7 @@ class Image(models.Model):
                     # create sub dir to save frames
                     folder_path = Path(self.image_set.root_path()) / path.stem
                     os.makedirs(str(folder_path), exist_ok =True)
-                    os.chmod(str(folder_path), 0o666)
+                    os.chmod(str(folder_path), 0o777)
                     for frame_id in range(self.frames):
                         height, width = reader.dimensions 
                         np_image = np.array(reader.read_region(location=(0,0), size=(reader.dimensions), level=0, zLevel=frame_id))[:,:,0]
@@ -151,7 +151,7 @@ class Image(models.Model):
 
                     folder_path = Path(self.image_set.root_path()) / path.stem
                     os.makedirs(str(folder_path), exist_ok =True)
-                    os.chmod(str(folder_path), 0o666)
+                    os.chmod(str(folder_path), 0o777)
 
                     cap = cv2.VideoCapture(str(Path(path)))
                     frame_id = 0
@@ -209,7 +209,7 @@ class Image(models.Model):
 
                             folder_path = Path(self.image_set.root_path()) / path.stem
                             os.makedirs(str(folder_path), exist_ok =True)
-                            os.chmod(str(folder_path), 0o666)
+                            os.chmod(str(folder_path), 0o777)
 
                             for frame_id in range(shape[0]):
                                 vi = pyvips.Image.new_from_file(str(path), page=frame_id)
@@ -355,7 +355,7 @@ class ImageSet(models.Model):
 
         folder_path = self.root_path()
         os.makedirs(folder_path, exist_ok=True)
-        os.chmod(folder_path, 0o666)
+        os.chmod(folder_path, 0o777)
 
 
     @property
