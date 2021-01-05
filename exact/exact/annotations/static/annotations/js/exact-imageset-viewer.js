@@ -31,10 +31,14 @@ class EXACTImageSetViewer {
 
         switch (event.keyCode) {
             case 69: //e load next image
-                this.loadAdjacentImage(1);
+                if (!event.shiftKey) {
+                    this.loadAdjacentImage(1);
+                }                
                 break;
             case 81: //q load last image
-                this.loadAdjacentImage(-1);
+                if (!event.shiftKey) {
+                    this.loadAdjacentImage(-1);
+                }
                 break;
             case 70: //f
                 this.verifyImage();
