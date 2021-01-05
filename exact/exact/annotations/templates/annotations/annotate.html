@@ -230,7 +230,7 @@
                                             data-annotation_type_id={{ annotation_type.id }}>
                                             {{ annotation_type.name }}
                                         </td>
-                                        <td>{{ forloop.counter0 }}</td>
+                                        <td>{{ forloop.counter }}</td>
                                         <td id="{{ annotation_type.name }}_{{ annotation_type.id }}">
                                             {{ annotation_type.node_count }}</td>
                                         <td style="background-color: {{ annotation_type.color_code }}">
@@ -256,6 +256,7 @@
                                     class="table table-striped table-bordered table-sm">
                                     <tr>
                                         <th class="text-center">Label</th>
+                                        <th class="text-center">Key</th>
                                         <th></th>
                                     </tr>
 
@@ -264,6 +265,7 @@
                                     <tr>
 
                                         <td>{{ annotation_type.name }}</td>
+                                        <td> Shift + {{ forloop.counter }}</td>
                                         <td>
                                             <input type="checkbox" id="GlobalAnnotation_{{ annotation_type.id }}"
                                                 data-annotation_type_id={{ annotation_type.id }}>
@@ -613,8 +615,8 @@
 
                                     <option value="{{ annotation_type.id }}" name="{{ annotation_type.name }}"
                                         id="annotation_type_{{ annotation_type.id }}"
-                                        data-annotation_type_key={{ forloop.counter0 }}>
-                                        {{ annotation_type.name }} ({{forloop.counter0}})
+                                        data-annotation_type_key={{ forloop.counter }}>
+                                        {{ annotation_type.name }} ({{forloop.counter}})
                                     </option>
 
                                     {% endfor %}

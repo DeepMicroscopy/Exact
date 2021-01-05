@@ -135,7 +135,7 @@ class Image(models.Model):
                     os.remove(str(path_temp))
                     self.filename = path.name
                 # Videos
-                elif Path(path).suffix.lower().endswith(".avi"):
+                elif Path(path).suffix.lower() in [".avi", ".mp4"]:
                     dtype_to_format = {
                                     'uint8': 'uchar',
                                     'int8': 'char',
