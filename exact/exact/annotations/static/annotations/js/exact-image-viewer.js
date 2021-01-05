@@ -1509,12 +1509,32 @@ class EXACTViewerGlobalLocalAnnotations extends EXACTViewerLocalAnnotations {
 
         // register for global annotation type interactions
         // set global annotation initialy to false
+        let key_number = 1;
+        this.globalAnnotationTypeKeyToIdLookUp = {};
         for (let annotation_type of Object.values(annotationTypesGlobal)) {
-            this.setUiGlobalAnnotation(annotation_type, false)
-            $('#GlobalAnnotation_' + annotation_type.id).change(this.uiGlobalAnnotationChanged.bind(this))
+            this.setUiGlobalAnnotation(annotation_type, false);
+            $('#GlobalAnnotation_' + annotation_type.id).change(this.uiGlobalAnnotationChanged.bind(this));
+
+            this.globalAnnotationTypeKeyToIdLookUp[key_number] = annotation_type.id;
+
+            key_number += 1
         }
 
         this.initGlobalEventHandler(this.viewer);
+    }
+
+    changeGlobalAnnotationTypeByKey(annotationKeyNumber) {
+
+        if (annotationKeyNumber in this.globalAnnotationTypeKeyToIdLookUp) {
+            let annotation_type_id = this.globalAnnotationTypeKeyToIdLookUp[annotationKeyNumber];
+
+            // invert current global annotation
+            let active = !$("#GlobalAnnotation_" + annotation_type_id).prop("checked");
+            $("#GlobalAnnotation_" + annotation_type_id).prop("checked", active);
+
+            // Update annotation server side
+            this.exact_sync_global.changeGlobalAnnotation(annotation_type_id, active);
+        }
     }
 
     handleKeyUp(event) {
