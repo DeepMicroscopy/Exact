@@ -71,7 +71,6 @@ Issues with the [notebooks](doc/README.md) on GitHub? Please use [NBViewer](http
 
 ## Install
 
-
 ### Docker
 
 Install Docker
@@ -159,6 +158,8 @@ docker push **************.dkr.ecr.eu-central-1.amazonaws.com/exact:latest
 The Server is also runnig on Windows but I would recommend to use docker in that case. 
 
 ### MacOS or Linux 
+
+Ubuntu20.04 has a known [issue](https://github.com/libvips/libvips/issues/1401) with openslide. Fix: Build [pixman](https://gitlab.freedesktop.org/pixman/pixman/-/blob/master/INSTALL) 
 
 Install libvips and verify by executing the comand `vips`:
 ```
@@ -326,13 +327,25 @@ for additional steps on some releases see instructions
 in [UPGRADE.md](https://github.com/ChristianMarzahl/exact/blob/master/UPGRADE.md)
 
 
-If you want to provide zip files of image sets, set `ENABLE_ZIP_DOWNLOAD = True` in your `settings.py`.
-A daemon that creates and updates the zip files is necessary, you can start it with `python3 manage.py runzipdaemon`.
-Please take into account that the presence of zip files will double your storage requirement.
 
-Zip archive download via a script is also possible. The URL is `/images/imageset/<id>/download/`. A successful request
-returns HTTP 200 OK and the zip file. When the file generation is still in progress, HTTP 202 ACCEPTED is returned.
-For an empty image set, HTTP 204 NO CONTENT is returned instead of an empty zip archive.
+### Key shortcuts
+
+#### Viewer
+
+| Key       | Modifier     | Function      |
+|-----------|:------------:|:------------------:| 
+| Del       |              | Delete annotation  |
+| Escape    |              | Cancel editing     |
+| Enter     |              | Confirm / Save     |
+| 0,1,2,3,4 |              | Change label of local annotations |
+| 0,1,2,3,4 |  Shift       | Change label of global annotations |
+| q         |              | Previous image     |
+| q         |  Shift       | Previous frame     |
+| e         |              | Next image         |
+| e         |  Shift       | Next frame         |
+| r         |              | Rotate image (Warning: annotations are not affected)        |
+| f         |              | Flip image   (Warning: annotations are not affected)        |
+
 
 ## REST-API
 
