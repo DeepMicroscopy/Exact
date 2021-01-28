@@ -250,7 +250,7 @@ class BoundingBoxes {
         switch (selected_annotation_type.vector_type) {
             case 2:  // POINT or Elipse
                 var rectangle = new paper.Rectangle(imagePoint,
-                    new paper.Size(selected_annotation_type.default_width, selected_annotation_type.default_hight));
+                    new paper.Size(selected_annotation_type.default_width, selected_annotation_type.default_height));
                 canvasObject = new paper.Shape.Ellipse(rectangle);
                 canvasObject.position = imagePoint;
                 canvasObject.data.type = "circle";
@@ -275,7 +275,7 @@ class BoundingBoxes {
 
             case 1:  // Rect
                 canvasObject = new paper.Path.Rectangle(imagePoint,
-                    new paper.Size(selected_annotation_type.default_width, selected_annotation_type.default_hight));
+                    new paper.Size(selected_annotation_type.default_width, selected_annotation_type.default_height));
                 canvasObject.position = imagePoint;
                 canvasObject.data.type = "rect";
 
@@ -283,7 +283,7 @@ class BoundingBoxes {
             case 6:
             default:
                 canvasObject = new paper.Path.Rectangle(imagePoint,
-                    new paper.Size(selected_annotation_type.default_width, selected_annotation_type.default_hight));
+                    new paper.Size(selected_annotation_type.default_width, selected_annotation_type.default_height));
                 canvasObject.position = imagePoint;
                 canvasObject.data.type = "fixed_rect";
 
