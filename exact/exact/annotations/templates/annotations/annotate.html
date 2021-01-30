@@ -111,8 +111,7 @@
                             </button>
 
                             {% if 'delete_images' in imageset_perms and not imageset_lock %}
-                            <button type="button" class="btn btn-danger" id="delete-button" data-toggle="modal"
-                                data-target="#deleteModal">
+                            <button type="button" class="btn btn-danger" id="deleteImageButton">
                                 <image src="{% static 'images/trash2.svg' %}">
                             </button>
                             {% endif %}
@@ -676,6 +675,7 @@
 </div>
 
 
+<!--
 {% if 'delete_images' in imageset_perms and not imageset_lock %}
 <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel">
     <div class="modal-dialog" role="document">
@@ -703,5 +703,5 @@
     </div>
 </div>
 {% endif %}
-
+-->
 {% endblock %}
