@@ -367,6 +367,20 @@
                                     </span>
                                 </div>
 
+                                <div class="d-flex justify-content-between" 
+                                        style="overflow-x: auto; flex-wrap: nowrap; overflow-y: hidden">     
+
+                                    <button type="button" class="annotate_button btn btn-primary" id="back_button_search">
+                                        <image src="{% static 'images/backspace.svg' %}"> 
+                                    </button>
+
+                                    <input type="text" id="currentSearchElement" title="Current ID" class="form-control">
+                                    
+                                    <button type="button" class="annotate_button btn btn-primary" id="next_button_search">
+                                        <image src="{% static 'images/BackspaceReverse.svg' %}"> 
+                                    </button>
+                                </div>
+
                                 <table style="width: 100%; margin-top: 10px; text-align: center"
                                     class="table table-striped table-bordered table-sm">
                                     <tbody id="annotationSearchResults">
