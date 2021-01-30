@@ -111,8 +111,7 @@
                             </button>
 
                             {% if 'delete_images' in imageset_perms and not imageset_lock %}
-                            <button type="button" class="btn btn-danger" id="delete-button" data-toggle="modal"
-                                data-target="#deleteModal">
+                            <button type="button" class="btn btn-danger" id="deleteImageButton">
                                 <image src="{% static 'images/trash2.svg' %}">
                             </button>
                             {% endif %}
@@ -365,6 +364,20 @@
                                             <image src="{% static 'images/search.svg' %}">
                                         </button>
                                     </span>
+                                </div>
+
+                                <div class="d-flex justify-content-between" 
+                                        style="overflow-x: auto; flex-wrap: nowrap; overflow-y: hidden">     
+
+                                    <button type="button" class="annotate_button btn btn-primary" id="back_button_search">
+                                        <image src="{% static 'images/backspace.svg' %}"> 
+                                    </button>
+
+                                    <input type="text" id="currentSearchElement" title="Current ID" class="form-control">
+                                    
+                                    <button type="button" class="annotate_button btn btn-primary" id="next_button_search">
+                                        <image src="{% static 'images/BackspaceReverse.svg' %}"> 
+                                    </button>
                                 </div>
 
                                 <table style="width: 100%; margin-top: 10px; text-align: center"
@@ -662,6 +675,7 @@
 </div>
 
 
+<!--
 {% if 'delete_images' in imageset_perms and not imageset_lock %}
 <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel">
     <div class="modal-dialog" role="document">
@@ -689,5 +703,5 @@
     </div>
 </div>
 {% endif %}
-
+-->
 {% endblock %}
