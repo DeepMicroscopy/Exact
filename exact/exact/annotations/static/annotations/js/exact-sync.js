@@ -163,12 +163,35 @@ class EXACTImageSetSync {
 
         this.annotation_types = {};
         this.imageInformation = {};
-        this.main_annotation_type;
+        this.main_annotation_type = null;
 
         // Collaborative = 0; COMPETITIVE = 1;
         this.collaboration_type = 0;
 
         this.API_1_IMAGES_BASE_URL = include_server_subdir('/api/v1/images/');
+    }
+
+    deleteImage(imageId) {
+
+        let url = `${this.API_1_IMAGES_BASE_URL}images/${imageId}/`
+        let context = this
+
+        delete this.imageInformation[imageId];
+
+        $.ajax(url, {
+            type: 'DELETE', headers: context.gHeaders, dataType: 'json',
+            success: function (data) {
+                $.notify(`Successfully deleted`, { position: "bottom center", className: "info" });
+            },
+            error: function (request, status, error) {
+                if (request.responseText !== undefined) {
+                    $.notify(request.responseText, { position: "bottom center", className: "error" });
+                } else {
+                    $.notify(`Server ERR_CONNECTION_TIMED_OUT`, { position: "bottom center", className: "error" });
+                }
+            }
+        });
+
     }
 
     // load needed imageset information like:
@@ -260,7 +283,7 @@ class EXACTImageSync {
         this.imageId = imageId;
         this.gHeaders = gHeaders;
 
-        this.API_IMAGES_BASE_URL = include_server_subdir('/images/api/'); // TODO: Repleace with V1 version
+        this.API_IMAGES_BASE_URL = include_server_subdir('/images/api/'); // TODO: Repleace with V1 version        
     }
 
     imageOpend() {
@@ -276,8 +299,11 @@ class EXACTImageSync {
 
         // notify server that the image was opend 
         $.ajax(this.API_IMAGES_BASE_URL + 'image/closed/' + this.imageId, {
-            type: 'GET',
-            headers: this.gHeaders
+            type: 'GET', headers: this.gHeaders,
+            success: function (data) {
+            },
+            error: function (request, status, error) {
+            }
         });
     }
 
