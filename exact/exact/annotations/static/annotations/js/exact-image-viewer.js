@@ -1,7 +1,7 @@
 // JS file for handling the openseadragon viewer
 
 class EXACTViewer {
-    constructor(server_url, options, imageInformation, gHeaders, user_id) {
+    constructor(server_url, options, imageInformation, gHeaders, user_id, browser_sync) {
 
         this.imageId = imageInformation['id'];
         this.imageInformation = imageInformation;
@@ -10,7 +10,8 @@ class EXACTViewer {
         this.user_id = user_id;
         this.options = options;
         this.showNavigator = true;
-
+        this.browser_sync = browser_sync;
+        this.browser_sync.getChannelObject("GetImageInformation").onmessage = this.sendImageInformation.bind(this);
 
         this.viewer = this.createViewer(options);
         this.exact_image_sync = new EXACTImageSync(this.imageId, this.gHeaders, this.viewer);
@@ -25,7 +26,7 @@ class EXACTViewer {
     }
 
     static factoryCreateViewer(server_url, imageId, options, imageInformation, annotationTypes = undefined,
-        headers = undefined, user_id = undefined, collaboration_type = 0, drawAnnotations = true, strokeWidth = 5) {
+        headers = undefined, user_id = undefined, collaboration_type = 0, browser_sync = undefined, drawAnnotations = true, strokeWidth = 5) {
 
         if (imageInformation['depth'] == 1 && imageInformation['frames'] == 1) {
             options.tileSources = [server_url + `/images/image/${imageId}/1/1/tile/`]
@@ -67,36 +68,36 @@ class EXACTViewer {
                 }
             }
 
-            // crate viewer with global and local support
+            // create viewer with global and local support
             if (Object.keys(global_annotation_types).length > 0
                 && Object.keys(local_annotation_types).length > 0) {
                 if (imageInformation['frames'] > 1) {
                     return new EXACTViewerGlobalLocalAnnotationsFrames(server_url, options, imageInformation, collaboration_type, local_annotation_types, global_annotation_types,
-                        headers, user_id, drawAnnotations, strokeWidth)
+                        headers, user_id, drawAnnotations, strokeWidth, browser_sync)
                 } else {
                     return new EXACTViewerGlobalLocalAnnotations(server_url, options, imageInformation, collaboration_type, local_annotation_types, global_annotation_types,
-                        headers, user_id, drawAnnotations, strokeWidth)
+                        headers, user_id, drawAnnotations, strokeWidth, browser_sync)
                 }
             } else if (Object.keys(global_annotation_types).length > 0) {
                 if (imageInformation['frames'] > 1) {
                     return new EXACTViewerGlobalAnnotationsFrame(server_url, options, imageInformation, collaboration_type, annotationTypes,
-                        headers, user_id)
+                        headers, user_id, browser_sync)
                 } else {
                     return new EXACTViewerGlobalAnnotations(server_url, options, imageInformation, collaboration_type, annotationTypes,
-                        headers, user_id)
+                        headers, user_id, browser_sync)
                 }
             } else {
                 if (imageInformation['frames'] > 1) {
                     return new EXACTViewerLocalAnnotationsFrames(server_url, options, imageInformation, collaboration_type, annotationTypes,
-                        headers, user_id, drawAnnotations, strokeWidth);
+                        headers, user_id, drawAnnotations, strokeWidth, browser_sync);
                 } else {
                     return new EXACTViewerLocalAnnotations(server_url, options, imageInformation, collaboration_type, annotationTypes,
-                        headers, user_id, drawAnnotations, strokeWidth);
+                        headers, user_id, drawAnnotations, strokeWidth, browser_sync);
                 }
             }
         } else {
             // create viewer without the option to handle annotations
-            return new EXACTViewer(server_url, options, imageInformation, headers, user_id);
+            return new EXACTViewer(server_url, options, imageInformation, headers, user_id, browser_sync);
         }
     }
 
@@ -121,6 +122,12 @@ class EXACTViewer {
         const viewer_options = Object.assign(default_options, options);
 
         return OpenSeadragon(viewer_options);
+    }
+
+    sendImageInformation(e) {
+        this.browser_sync.getChannelObject("ReceiveImageInformation").postMessage({
+            "imageInformation": this.imageInformation
+        });
     }
 
     imageOpend() {
@@ -410,9 +417,9 @@ class EXACTViewer {
 class EXACTViewerLocalAnnotations extends EXACTViewer {
 
     constructor(server_url, options, imageInformation, collaboration_type, annotationTypes,
-        headers, user_id, drawAnnotations = true, strokeWidth = 5) {
+        headers, user_id, drawAnnotations = true, strokeWidth = 5, browser_sync) {
 
-        super(server_url, options, imageInformation, headers, user_id);
+        super(server_url, options, imageInformation, headers, user_id, browser_sync);
 
         this.y_button_start = 150;
         this.annotationsToggle = true;
@@ -426,7 +433,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         this.initToolEventHandler(this.viewer);
 
         this.exact_sync = this.createSyncModules(annotationTypes, this.imageId, headers, this.viewer, user_id, collaboration_type);
-        this.searchTool = new SearchTool(this.imageId, this.viewer, this.exact_sync);
+        this.searchTool = new SearchTool(this.imageId, this.viewer, this.exact_sync, this.browser_sync);
 
         this.asthmaAnalysis = new AsthmaAnalysis(this.imageId, this.viewer, this.exact_sync);
 
@@ -1043,9 +1050,9 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 class EXACTViewerLocalAnnotationsFrames extends EXACTViewerLocalAnnotations {
 
     constructor(server_url, options, imageInformation, collaboration_type, annotationTypes,
-        headers, user_id, drawAnnotations = true, strokeWidth = 5, frame = 1) {
+        headers, user_id, drawAnnotations = true, strokeWidth = 5, frame = 1, browser_sync) {
 
-        super(server_url, options, imageInformation, collaboration_type, annotationTypes, headers, user_id);
+        super(server_url, options, imageInformation, collaboration_type, annotationTypes, headers, user_id, browser_sync);
         this.frames = imageInformation['frames']
         this.frame = 1;
     }
@@ -1180,9 +1187,9 @@ class EXACTViewerLocalAnnotationsFrames extends EXACTViewerLocalAnnotations {
 class EXACTViewerGlobalAnnotationsFrame extends EXACTViewer {
 
     constructor(server_url, options, imageInformation, collaboration_type, annotationTypes,
-        headers, user_id) {
+        headers, user_id, browser_sync) {
 
-        super(server_url, options, imageInformation, headers, user_id);
+        super(server_url, options, imageInformation, headers, user_id, browser_sync);
 
         this.globalAnnotationTypeKeyToIdLookUp = {}
         this.frames = imageInformation['frames']
@@ -1356,9 +1363,9 @@ class EXACTViewerGlobalAnnotationsFrame extends EXACTViewer {
 class EXACTViewerGlobalAnnotations extends EXACTViewer {
 
     constructor(server_url, options, imageInformation, collaboration_type, annotationTypes,
-        headers, user_id) {
+        headers, user_id, browser_sync) {
 
-        super(server_url, options, imageInformation, headers, user_id);
+        super(server_url, options, imageInformation, headers, user_id, browser_sync);
         this.exact_sync = this.createSyncModules(annotationTypes, this.imageId, headers, this.viewer, user_id, collaboration_type);
 
         this.globalAnnotationTypeKeyToIdLookUp = {}
@@ -1499,10 +1506,10 @@ class EXACTViewerGlobalAnnotations extends EXACTViewer {
 class EXACTViewerGlobalLocalAnnotations extends EXACTViewerLocalAnnotations {
 
     constructor(server_url, options, imageInformation, collaboration_type, annotationTypesLocal, annotationTypesGlobal,
-        headers, user_id, drawAnnotations = true, strokeWidth = 5) {
+        headers, user_id, drawAnnotations = true, strokeWidth = 5, browser_sync) {
 
         super(server_url, options, imageInformation, collaboration_type, annotationTypesLocal, headers,
-            user_id, drawAnnotations, strokeWidth);
+            user_id, drawAnnotations, strokeWidth, browser_sync);
 
         this.exact_sync_global = new EXACTGlobalAnnotationSync(annotationTypesGlobal,
             this.imageId, headers, this.viewer, user_id, collaboration_type)

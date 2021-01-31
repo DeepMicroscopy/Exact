@@ -12,12 +12,15 @@ class EXACTImageSetViewer {
         this.ready = false; // true if alle needed informations are loaded from EXACT
         this.url_parameters = url_parameters;
 
-        this.exact_viewer;
+        this.exact_viewer = undefined;
 
         this.exact_imageset_sync = new EXACTImageSetSync(image_set_id, gHeaders);
         this.exact_imageset_sync.loadImageSetInformation(this.imageSetInformationLoaded.bind(this), this.exact_imageset_sync)
 
         this.filteredImageInformation = {}
+
+        this.browser_sync = new EXACTBrowserSync();
+        //export default EXACTBrowserSync;
 
         this.initUiEvents();
     }
@@ -187,7 +190,7 @@ class EXACTImageSetViewer {
 
         const options = {url_parameters: url_parameters};
         this.exact_viewer = EXACTViewer.factoryCreateViewer(this.server_url, this.image_id, options,
-            image_information, annotation_types, this.gHeaders, this.user_id, collaboration_type);
+            image_information, annotation_types, this.gHeaders, this.user_id, collaboration_type, this.browser_sync);
 
         this.scrollImageList(this.image_id);
     }

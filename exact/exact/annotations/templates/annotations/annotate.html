@@ -35,6 +35,7 @@
 <script type="text/javascript" src="{% static 'annotations/js/statistics-viewer.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/plugin-handler.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/show-annotation-properties.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/exact-browser-sync.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/annotations.js' %}"></script>
 
 <script type="text/javascript" src="{% static 'annotations/js/bootstrap-slider.min.js' %}"></script>
@@ -198,7 +199,10 @@
                             </li>
                             {% endif %}
 
-
+                            <li class="nav-item">
+                                <a class="nav-link" id="item_browsersync" data-toggle="tab" href="#nav-item_browsersync"
+                                    role="tab" aria-controls="home">Sync</a>
+                            </li>
 
 
                         </ul>
@@ -602,6 +606,41 @@
                                     Robert Klopfleisch, Christof A. Bertram <br>
                                     Die Zytologie von Tracheobronchialsekret (TBS) und bronchoalveolärer Lavage-Flüssigkeit (BALF) beim Pferd mit equinem Asthma:
                                 </a>
+                            </div>
+
+
+                            <div class="tab-pane fade" id="nav-item_browsersync">
+
+                                <div class="input-group">
+                                    <select id="sync_browser_image" name="Open images">  </select>
+                                    <span class="input-group-btn">
+                                        <button class="btn btn-primary" id="search_browserimages_btn">
+                                            <image src="{% static 'images/search.svg' %}">
+                                        </button>
+                                    </span>
+                                </div>
+
+                                <table style="white-space:nowrap; width: 100%; margin-top: 10px; text-align: center"
+                                    class="table table-striped table-bordered table-sm">
+
+                                    <tbody id="syncBrowserOptions">
+                                        <tr>
+                                            <th>Sync</th>
+                                            <th>Active</th>
+                                        </tr>
+
+                                        <tr>
+                                            <td>Search</td>
+                                            <td> 
+                                                <input id="SyncBrowserSearch-enabled" type="checkbox" />
+                                            </td>
+                                        </tr>
+
+
+                                    </tbody>
+                            
+                                </table>
+
                             </div>
 
 
