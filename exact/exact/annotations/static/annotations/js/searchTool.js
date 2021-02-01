@@ -45,26 +45,35 @@ class SearchTool {
             this.imageInformations[event.data.imageInformation.id] = event.data.imageInformation
         
             let image_list =  $('#sync_browser_image');
-            image_list.append(`<option>${event.data.imageInformation.name}</option>`);
+            image_list.append(`<option data-image_id=${event.data.imageInformation.id}>${event.data.imageInformation.name}</option>`);
+
+            if($('#sync_browser_image > option').length == 1) {
+                $("#sync_browser_image").trigger("change");
+            }
         
         }
     }
 
     setSelectedSearchAnnotation(event) {
-        if (document.visibilityState == 'visible'){
+        if (document.visibilityState == 'visible' && 
+                $("#SyncBrowserSearch-enabled").prop("checked")){
 
             let sended_annotation = event.data.annotation;
 
-            var all_annotations = Object.values(this.exact_sync.annotations);
+            let selectedImageName = $( "select#sync_browser_image" ).val();
+            if (sended_annotation.image in this.imageInformations &&
+                this.imageInformations[sended_annotation.image].name === selectedImageName) {
+                var all_annotations = Object.values(this.exact_sync.annotations);
 
-            // filter by annotation type or uuid
-            let annotations = all_annotations.filter(function (item) {
-                return item.unique_identifier === sended_annotation.unique_identifier;
-            });
-
-            if (annotations.length > 0) {
-                let annotation = annotations[0]
-                this.viewer.raiseEvent('search_ShowAnnotation', { annotation });                
+                // filter by annotation type or uuid
+                let annotations = all_annotations.filter(function (item) {
+                    return item.unique_identifier === sended_annotation.unique_identifier;
+                });
+    
+                if (annotations.length > 0) {
+                    let annotation = annotations[0]
+                    this.viewer.raiseEvent('search_ShowAnnotation', { annotation });                
+                }   
             }
         }
     }

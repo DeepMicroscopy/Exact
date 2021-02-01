@@ -11,13 +11,15 @@ class EXACTViewer {
         this.options = options;
         this.showNavigator = true;
         this.browser_sync = browser_sync;
-        this.browser_sync.getChannelObject("GetImageInformation").onmessage = this.sendImageInformation.bind(this);
-
+    
         this.viewer = this.createViewer(options);
         this.exact_image_sync = new EXACTImageSync(this.imageId, this.gHeaders, this.viewer);
 
         this.initViewerEventHandler(this.viewer, imageInformation);
+        this.initBrowserSycEvents();
+        this.initRegistrationEvents();
 
+        this.registration = null;
         this.filterImage = new OpenseadragonFilteringViewer(this.viewer);
         this.pluginHandler = new PluginHandler(this.imageId, gHeaders, this.viewer);
         this.screeningTool = new ScreeningTool(imageInformation, user_id, gHeaders, this.viewer);
@@ -124,6 +126,65 @@ class EXACTViewer {
         return OpenSeadragon(viewer_options);
     }
 
+    initRegistrationEvents() {
+
+        $("#sync_browser_image").on("change",this.createRegistration.bind(this));
+    }
+
+    createRegistration(event) {
+
+        this.registration = new QuadTree(this.viewer, this.imageInformation["name"], 
+                                    $( "select#sync_browser_image" ).val(), this.browser_sync);
+    }
+
+
+
+    initBrowserSycEvents() {
+
+        this.browser_sync.getChannelObject("GetImageInformation").onmessage = 
+                this.sendImageInformation.bind(this);
+
+        this.browser_sync.getChannelObject("ImageViewPort").onmessage = 
+                    this.reseiveCurrentViewPortCoordinages.bind(this);
+
+    }
+
+    reseiveCurrentViewPortCoordinages(event) {
+
+        if (document.visibilityState == 'visible' && 
+                $("#SyncBrowserViewpoint-enabled").prop("checked")) {
+
+            let selectedImageName = $("select#sync_browser_image").val();
+            if(event.data.image_name === selectedImageName) {
+
+                let x_min = event.data.x_min;
+                let y_min = event.data.y_min;
+                let x_max = event.data.x_max;
+                let y_max = event.data.y_max;
+
+
+                if (this.registration != null) {
+                    x_min, y_min = this.registration.transformAffine(x_min, y_min);
+                    x_max, y_max = this.registration.transformAffine(x_max, y_max);
+
+                }
+
+                this.viewCoordinates(x_min, y_min, x_max, y_max);
+            }
+        }        
+    }
+
+    sendCurrentViewPortCoordinates(coordinates) {
+        this.browser_sync.getChannelObject("ImageViewPort").postMessage({
+            "imageId": this.imageId,
+            "image_name": this.imageInformation["name"],
+            "x_min": coordinates.x_min, 
+            "y_min": coordinates.y_min,
+            "x_max": coordinates.x_max,
+            "y_max": coordinates.y_max,
+        });
+    }
+
     sendImageInformation(e) {
         this.browser_sync.getChannelObject("ReceiveImageInformation").postMessage({
             "imageInformation": this.imageInformation
@@ -151,6 +212,15 @@ class EXACTViewer {
             let xmax = Math.round(imageRect.x + imageRect.width);
             let ymax = Math.round(imageRect.y + imageRect.height);
 
+
+            let coordinates = {
+                "x_min": xmin, 
+                "y_min": ymin,
+                "x_max": xmax,
+                "y_max": ymax,
+            }
+            event.userData.sendCurrentViewPortCoordinates(coordinates);
+
             window.history.pushState("object or string",
                 `${this.userData.imageInformation.name}`,
                 include_server_subdir(`/annotations/${this.userData.imageInformation.id}/?xmin=${xmin}&ymin=${ymin}&xmax=${xmax}&ymax=${ymax}`));
@@ -159,8 +229,10 @@ class EXACTViewer {
 
         viewer.addHandler("viewCoordinates", function (event) {
 
-            var coodinates = event.coordinates;
-            event.userData.viewCoordinates(coodinates.x_min, coodinates.y_min, coodinates.x_max, coodinates.y_max);
+            var coordinates = event.coordinates;
+
+            event.userData.sendCurrentViewPortCoordinates(coordinates);
+            event.userData.viewCoordinates(coordinates.x_min, coordinates.y_min, coordinates.x_max, coordinates.y_max);
 
         }, this);
 
@@ -740,6 +812,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
     }
 
     initUiEvents(annotation_types) {
+
 
         $(document).keyup(this.handleKeyUp.bind(this));
         $('select#annotation_type_id').change(this.changeAnnotationTypeByComboxbox.bind(this));

@@ -36,6 +36,7 @@
 <script type="text/javascript" src="{% static 'annotations/js/plugin-handler.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/show-annotation-properties.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/exact-browser-sync.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/exact-quad-tree.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/annotations.js' %}"></script>
 
 <script type="text/javascript" src="{% static 'annotations/js/bootstrap-slider.min.js' %}"></script>
@@ -627,6 +628,7 @@
                                         <tr>
                                             <th>Sync</th>
                                             <th>Active</th>
+                                            <th>Update</th>
                                         </tr>
 
                                         <tr>
@@ -636,7 +638,61 @@
                                             </td>
                                         </tr>
 
+                                        <tr>
+                                            <td>Viewpoint</td>
+                                            <td> 
+                                                <input id="SyncBrowserViewpoint-enabled" type="checkbox" />
+                                            </td>
 
+                                            <td>
+                                                <span class="input-group-btn">
+                                                    <button class="btn btn-primary" id="update_browser_sync_images_btn">
+                                                        <image src="{% static 'images/search.svg' %}">
+                                                    </button>
+                                                </span>
+                                            </td>
+                                        </tr>
+
+                                        <tr>
+                                            <td>
+                                                <tbody id="registrationTables">
+                                                    <tr>
+                                                        <td>
+                                                            <input type="number" id="registration00" placeholder=1 class="form-control">
+                                                        </td>
+                                                        <td>
+                                                            <input type="number" id="registration01" placeholder=0 class="form-control">
+                                                        </td>
+                                                        <td>
+                                                            <input type="number" id="registration02" placeholder=0 class="form-control">
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>
+                                                            <input type="number" id="registration10" placeholder=0 class="form-control">
+                                                        </td>
+                                                        <td>
+                                                            <input type="number" id="registration11" placeholder=1 class="form-control">
+                                                        </td>
+                                                        <td>
+                                                            <input type="number" id="registration12" placeholder=0 class="form-control">
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>
+                                                            <input type="number" id="registration20" placeholder=0 class="form-control">
+                                                        </td>
+                                                        <td>
+                                                            <input type="number" id="registration21" placeholder=0 class="form-control">
+                                                        </td>
+                                                        <td>
+                                                            <input type="number" id="registration22" placeholder=1 class="form-control">
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </td>
+
+                                        </tr>
                                     </tbody>
                             
                                 </table>
