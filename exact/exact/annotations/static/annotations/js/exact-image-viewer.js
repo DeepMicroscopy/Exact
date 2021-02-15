@@ -164,8 +164,8 @@ class EXACTViewer {
 
 
                 if (this.registration != null) {
-                    x_min, y_min = this.registration.transformAffine(x_min, y_min);
-                    x_max, y_max = this.registration.transformAffine(x_max, y_max);
+                    [x_min, y_min] = this.registration.transformAffine(x_min, y_min);
+                    [x_max, y_max] = this.registration.transformAffine(x_max, y_max);
 
                 }
 

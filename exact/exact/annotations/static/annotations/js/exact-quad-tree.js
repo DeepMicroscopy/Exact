@@ -93,7 +93,7 @@ class QuadTree {
         var new_y = Math.round(this.homography.doubleAt(1,0) * x + 
                     this.homography.doubleAt(1,1) * y + this.homography.doubleAt(1,2))         
 
-        return new_x, new_y
+        return [new_x, new_y];
     }
 
     calcHomographyFromBoundary(source_boundary, target_boundary) {
