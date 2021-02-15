@@ -252,6 +252,17 @@ def upload_image(request, imageset_id):
                 # delete zip-file
                 os.remove(os.path.join(imageset.root_path(), zipname))
                 filenames = [f.filename for f in zip_ref.filelist]
+
+                # remove mrxs dat files
+                if any(".mrxs" in f for f in filenames):
+                    filenames = [name for name in filenames if ".mrxs" in name]
+                # remove vms data files
+                # check if vms is in any images then just save the vms files
+                # else for each jpg a new image will be created in the databse
+                if any(".vms" in f for f in filenames):
+                    filenames = [name for name in filenames if ".vms" in name]
+                
+
                 filenames.sort()
                 duplicat_count = 0
                 for filename in filenames:
@@ -266,17 +277,11 @@ def upload_image(request, imageset_id):
                             with open(file_path, 'rb') as fil:
                                 while True:
                                     buf = fil.read(10000)
-                                    if not buf:
-                                        break
                                     fchecksum.update(buf)
+                                    break
                             fchecksum = fchecksum.digest()
 
-                            # check if vms is in any images then just save the vms files
-                            # else for each jpg a new image will be created in the databse
-                            if any(".vms" in f for f in filenames) and ".vms" in filename:
-                                file_list[file_path] = fchecksum
-                            elif(any(".vms" in f for f in filenames) == False):
-                                file_list[file_path] = fchecksum
+                            file_list[file_path] = fchecksum
 
                         except IsADirectoryError:
                             error['directories'] = True

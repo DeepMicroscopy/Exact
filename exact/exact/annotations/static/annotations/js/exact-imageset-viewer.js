@@ -12,13 +12,15 @@ class EXACTImageSetViewer {
         this.ready = false; // true if alle needed informations are loaded from EXACT
         this.url_parameters = url_parameters;
 
-        this.exact_viewer;
+        this.exact_viewer = undefined;
 
         this.exact_imageset_sync = new EXACTImageSetSync(image_set_id, gHeaders);
         this.exact_imageset_sync.loadImageSetInformation(this.imageSetInformationLoaded.bind(this), this.exact_imageset_sync)
 
-        this.imageInformation = {};
         this.filteredImageInformation = {}
+
+        this.browser_sync = new EXACTBrowserSync();
+        //export default EXACTBrowserSync;
 
         this.initUiEvents();
     }
@@ -31,10 +33,14 @@ class EXACTImageSetViewer {
 
         switch (event.keyCode) {
             case 69: //e load next image
-                this.loadAdjacentImage(1);
+                if (!event.shiftKey) {
+                    this.loadAdjacentImage(1);
+                }                
                 break;
             case 81: //q load last image
-                this.loadAdjacentImage(-1);
+                if (!event.shiftKey) {
+                    this.loadAdjacentImage(-1);
+                }
                 break;
             case 70: //f
                 this.verifyImage();
@@ -54,13 +60,44 @@ class EXACTImageSetViewer {
         $('#filter_update_btn').on('click', this.filterImageList.bind(this));
 
         $('#loadImagesetThumbnails').on('click', this.loadThumbnails.bind(this));
+
+
+        $('#deleteImageButton').on('click', this.deleteImage.bind(this));
     }
 
     loadThumbnails() {
-        let image_ids = Object.keys(this.imageInformation).map(x => parseInt(x));
+        let image_ids = Object.keys(this.exact_imageset_sync.imageInformation).map(x => parseInt(x));
         for (let image_id of image_ids) {
             if ($('#imageThumbnail_' + image_id).attr("src") === undefined) {
                 $('#imageThumbnail_' + image_id).attr("src", include_server_subdir(`/api/v1/images/images/${image_id}/thumbnail`));
+            }
+        }
+    }
+
+    deleteImage(event) {
+
+        let result = confirm(`Do you really want to permanently delete this image (${this.exact_viewer.imageInformation.name}) from the imageset?!`);
+
+        if (result) {
+            
+            let image_ids = Object.keys(this.filteredImageInformation).map(x => parseInt(x));
+            let current_index = image_ids.indexOf(this.image_id);
+
+            this.exact_imageset_sync.deleteImage(this.image_id);
+
+            $('#annotate_image_link_' + this.image_id).hide();
+            $('#thumbnailCard_' + this.image_id).hide();
+
+            delete this.filteredImageInformation[this.image_id];
+            this.updateFilteredImageSet(Object.values(this.filteredImageInformation)) 
+
+            image_ids = Object.keys(this.filteredImageInformation).map(x => parseInt(x));
+            if (current_index < Object.keys(this.filteredImageInformation).length) {
+                this.loadAdjacentImage(1)
+            } else if (current_index - 1 >= 0) {
+                this.loadAdjacentImage(-1)
+            } else {
+                $("#filter_images").notify(`Empty filter please change filter`, { position: "bottom center", className: "error" });
             }
         }
     }
@@ -72,10 +109,8 @@ class EXACTImageSetViewer {
         //use url parameter just for the first image
         this.url_parameters = undefined;
 
-        this.imageInformation = this.exact_imageset_sync.imageInformation;
-
         //register for imagelists click events 
-        let image_ids = Object.keys(this.imageInformation).map(x => parseInt(x));
+        let image_ids = Object.keys(this.exact_imageset_sync.imageInformation).map(x => parseInt(x));
         for (let image_id of image_ids) {
             $('#annotate_image_link_' + image_id).click(this.imageLinkClicked.bind(this));
             $('#imageThumbnail_' + image_id).click(this.imageLinkClicked.bind(this));
@@ -90,14 +125,14 @@ class EXACTImageSetViewer {
         this.filteredImageInformation = {}
 
         // set visibility of all image links to false
-        let image_ids = Object.keys(this.imageInformation).map(x => parseInt(x));
+        let image_ids = Object.keys(this.exact_imageset_sync.imageInformation).map(x => parseInt(x));
         for (let image_id of image_ids) {
             $('#annotate_image_link_' + image_id).hide();
             $('#thumbnailCard_' + image_id).hide();
         }
 
         for (let image of images) {
-            this.filteredImageInformation[image.id] = this.imageInformation[image.id];
+            this.filteredImageInformation[image.id] = this.exact_imageset_sync.imageInformation[image.id];
             $('#annotate_image_link_' + image.id).show();
             $('#thumbnailCard_' + image.id).show();
         }
@@ -155,7 +190,7 @@ class EXACTImageSetViewer {
 
         const options = {url_parameters: url_parameters};
         this.exact_viewer = EXACTViewer.factoryCreateViewer(this.server_url, this.image_id, options,
-            image_information, annotation_types, this.gHeaders, this.user_id, collaboration_type);
+            image_information, annotation_types, this.gHeaders, this.user_id, collaboration_type, this.browser_sync);
 
         this.scrollImageList(this.image_id);
     }

@@ -1,7 +1,7 @@
 // JS file for handling the openseadragon viewer
 
 class EXACTViewer {
-    constructor(server_url, options, imageInformation, gHeaders, user_id) {
+    constructor(server_url, options, imageInformation, gHeaders, user_id, browser_sync) {
 
         this.imageId = imageInformation['id'];
         this.imageInformation = imageInformation;
@@ -10,13 +10,16 @@ class EXACTViewer {
         this.user_id = user_id;
         this.options = options;
         this.showNavigator = true;
-
-
+        this.browser_sync = browser_sync;
+    
         this.viewer = this.createViewer(options);
         this.exact_image_sync = new EXACTImageSync(this.imageId, this.gHeaders, this.viewer);
 
         this.initViewerEventHandler(this.viewer, imageInformation);
+        this.initBrowserSycEvents();
+        this.initRegistrationEvents();
 
+        this.registration = null;
         this.filterImage = new OpenseadragonFilteringViewer(this.viewer);
         this.pluginHandler = new PluginHandler(this.imageId, gHeaders, this.viewer);
         this.screeningTool = new ScreeningTool(imageInformation, user_id, gHeaders, this.viewer);
@@ -25,7 +28,7 @@ class EXACTViewer {
     }
 
     static factoryCreateViewer(server_url, imageId, options, imageInformation, annotationTypes = undefined,
-        headers = undefined, user_id = undefined, collaboration_type = 0, drawAnnotations = true, strokeWidth = 5) {
+        headers = undefined, user_id = undefined, collaboration_type = 0, browser_sync = undefined, drawAnnotations = true, strokeWidth = 5) {
 
         if (imageInformation['depth'] == 1 && imageInformation['frames'] == 1) {
             options.tileSources = [server_url + `/images/image/${imageId}/1/1/tile/`]
@@ -67,36 +70,36 @@ class EXACTViewer {
                 }
             }
 
-            // crate viewer with global and local support
+            // create viewer with global and local support
             if (Object.keys(global_annotation_types).length > 0
                 && Object.keys(local_annotation_types).length > 0) {
-                    if (imageInformation['frames'] > 1) {
-                        return new EXACTViewerGlobalLocalAnnotationsFrames(server_url, options, imageInformation, collaboration_type, local_annotation_types, global_annotation_types,
-                            headers, user_id, drawAnnotations, strokeWidth)
-                    } else {
-                        return new EXACTViewerGlobalLocalAnnotations(server_url, options, imageInformation, collaboration_type, local_annotation_types, global_annotation_types,
-                            headers, user_id, drawAnnotations, strokeWidth)
-                    }
+                if (imageInformation['frames'] > 1) {
+                    return new EXACTViewerGlobalLocalAnnotationsFrames(server_url, options, imageInformation, collaboration_type, local_annotation_types, global_annotation_types,
+                        headers, user_id, drawAnnotations, strokeWidth, browser_sync)
+                } else {
+                    return new EXACTViewerGlobalLocalAnnotations(server_url, options, imageInformation, collaboration_type, local_annotation_types, global_annotation_types,
+                        headers, user_id, drawAnnotations, strokeWidth, browser_sync)
+                }
             } else if (Object.keys(global_annotation_types).length > 0) {
                 if (imageInformation['frames'] > 1) {
                     return new EXACTViewerGlobalAnnotationsFrame(server_url, options, imageInformation, collaboration_type, annotationTypes,
-                        headers, user_id)
+                        headers, user_id, browser_sync)
                 } else {
                     return new EXACTViewerGlobalAnnotations(server_url, options, imageInformation, collaboration_type, annotationTypes,
-                        headers, user_id)
+                        headers, user_id, browser_sync)
                 }
             } else {
                 if (imageInformation['frames'] > 1) {
                     return new EXACTViewerLocalAnnotationsFrames(server_url, options, imageInformation, collaboration_type, annotationTypes,
-                        headers, user_id, drawAnnotations, strokeWidth);
+                        headers, user_id, drawAnnotations, strokeWidth, browser_sync);
                 } else {
                     return new EXACTViewerLocalAnnotations(server_url, options, imageInformation, collaboration_type, annotationTypes,
-                        headers, user_id, drawAnnotations, strokeWidth);
+                        headers, user_id, drawAnnotations, strokeWidth, browser_sync);
                 }
             }
         } else {
             // create viewer without the option to handle annotations
-            return new EXACTViewer(server_url, options, imageInformation, headers, user_id);
+            return new EXACTViewer(server_url, options, imageInformation, headers, user_id, browser_sync);
         }
     }
 
@@ -123,6 +126,71 @@ class EXACTViewer {
         return OpenSeadragon(viewer_options);
     }
 
+    initRegistrationEvents() {
+
+        $("#sync_browser_image").on("change",this.createRegistration.bind(this));
+    }
+
+    createRegistration(event) {
+
+        this.registration = new QuadTree(this.viewer, this.imageInformation["name"], 
+                                    $( "select#sync_browser_image" ).val(), this.browser_sync);
+    }
+
+
+
+    initBrowserSycEvents() {
+
+        this.browser_sync.getChannelObject("GetImageInformation").onmessage = 
+                this.sendImageInformation.bind(this);
+
+        this.browser_sync.getChannelObject("ImageViewPort").onmessage = 
+                    this.reseiveCurrentViewPortCoordinages.bind(this);
+
+    }
+
+    reseiveCurrentViewPortCoordinages(event) {
+
+        if (document.visibilityState == 'visible' && 
+                $("#SyncBrowserViewpoint-enabled").prop("checked")) {
+
+            let selectedImageName = $("select#sync_browser_image").val();
+            if(event.data.image_name === selectedImageName) {
+
+                let x_min = event.data.x_min;
+                let y_min = event.data.y_min;
+                let x_max = event.data.x_max;
+                let y_max = event.data.y_max;
+
+
+                if (this.registration != null) {
+                    [x_min, y_min] = this.registration.transformAffine(x_min, y_min);
+                    [x_max, y_max] = this.registration.transformAffine(x_max, y_max);
+
+                }
+
+                this.viewCoordinates(x_min, y_min, x_max, y_max);
+            }
+        }        
+    }
+
+    sendCurrentViewPortCoordinates(coordinates) {
+        this.browser_sync.getChannelObject("ImageViewPort").postMessage({
+            "imageId": this.imageId,
+            "image_name": this.imageInformation["name"],
+            "x_min": coordinates.x_min, 
+            "y_min": coordinates.y_min,
+            "x_max": coordinates.x_max,
+            "y_max": coordinates.y_max,
+        });
+    }
+
+    sendImageInformation(e) {
+        this.browser_sync.getChannelObject("ReceiveImageInformation").postMessage({
+            "imageInformation": this.imageInformation
+        });
+    }
+
     imageOpend() {
         this.exact_image_sync.imageOpend();
     }
@@ -144,6 +212,15 @@ class EXACTViewer {
             let xmax = Math.round(imageRect.x + imageRect.width);
             let ymax = Math.round(imageRect.y + imageRect.height);
 
+
+            let coordinates = {
+                "x_min": xmin, 
+                "y_min": ymin,
+                "x_max": xmax,
+                "y_max": ymax,
+            }
+            event.userData.sendCurrentViewPortCoordinates(coordinates);
+
             window.history.pushState("object or string",
                 `${this.userData.imageInformation.name}`,
                 include_server_subdir(`/annotations/${this.userData.imageInformation.id}/?xmin=${xmin}&ymin=${ymin}&xmax=${xmax}&ymax=${ymax}`));
@@ -152,8 +229,10 @@ class EXACTViewer {
 
         viewer.addHandler("viewCoordinates", function (event) {
 
-            var coodinates = event.coordinates;
-            event.userData.viewCoordinates(coodinates.x_min, coodinates.y_min, coodinates.x_max, coodinates.y_max);
+            var coordinates = event.coordinates;
+
+            event.userData.sendCurrentViewPortCoordinates(coordinates);
+            event.userData.viewCoordinates(coordinates.x_min, coordinates.y_min, coordinates.x_max, coordinates.y_max);
 
         }, this);
 
@@ -249,9 +328,9 @@ class EXACTViewer {
 
         viewer.addHandler('page', function (event) {
 
-            if (this.userData.frameSlider !== undefined && 
+            if (this.userData.frameSlider !== undefined &&
                 event.page + 1 !== this.userData.frameSlider.getValue()) {
-    
+
                 this.userData.frameSlider.setValue(event.page + 1);
             }
         }, this);
@@ -261,7 +340,7 @@ class EXACTViewer {
         // add frame slider if frames > 1
         // or add zoome slider if objective power is greater than 1
         let objectivePower = imageInformation['objectivePower'];
-        let frames =  imageInformation['frames'];
+        let frames = imageInformation['frames'];
         if (frames > 1) {
             this.frameSlider = new Slider("#frameSlider", {
                 ticks_snap_bounds: 1,
@@ -315,6 +394,10 @@ class EXACTViewer {
         viewer.buttons.element.appendChild(showNavigationButton.element);
     }
 
+    handleKeyUp(event) {
+        return;
+    }
+
     initUiEvents() {
         return;
     }
@@ -352,12 +435,12 @@ class EXACTViewer {
             this.gZoomSlider.destroy();
         }
 
-        if (this.frameSlider  !== undefined) {
+        if (this.frameSlider !== undefined) {
             this.frameSlider.destroy();
         }
 
         this.imageClosed();
-        this.viewer.destroy(); 
+        this.viewer.destroy();
         this.screeningTool.destroy();
     }
 
@@ -406,9 +489,9 @@ class EXACTViewer {
 class EXACTViewerLocalAnnotations extends EXACTViewer {
 
     constructor(server_url, options, imageInformation, collaboration_type, annotationTypes,
-        headers, user_id, drawAnnotations = true, strokeWidth = 5) {
+        headers, user_id, drawAnnotations = true, strokeWidth = 5, browser_sync) {
 
-        super(server_url, options, imageInformation, headers, user_id);
+        super(server_url, options, imageInformation, headers, user_id, browser_sync);
 
         this.y_button_start = 150;
         this.annotationsToggle = true;
@@ -422,7 +505,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         this.initToolEventHandler(this.viewer);
 
         this.exact_sync = this.createSyncModules(annotationTypes, this.imageId, headers, this.viewer, user_id, collaboration_type);
-        this.searchTool = new SearchTool(this.imageId, this.viewer, this.exact_sync);
+        this.searchTool = new SearchTool(this.imageId, this.viewer, this.exact_sync, this.browser_sync);
 
         this.asthmaAnalysis = new AsthmaAnalysis(this.imageId, this.viewer, this.exact_sync);
 
@@ -441,18 +524,18 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         viewer.addHandler("team_ChangeCreatorAnnotationsVisibility", function (event) {
 
             for (let anno of Object.values(this.userData.exact_sync.annotations)) {
-                if (anno.user.id === event.User){
+                if (anno.user.id === event.User) {
                     this.userData.tool.updateAnnotationVisibility(anno.unique_identifier, event.Checked);
-                }                
+                }
             }
         }, this);
 
         viewer.addHandler("team_ChangeLastEditedAnnotationsVisibility", function (event) {
 
             for (let anno of Object.values(this.userData.exact_sync.annotations)) {
-                if (anno.last_editor.id === event.User){
+                if (anno.last_editor.id === event.User) {
                     this.userData.tool.updateAnnotationVisibility(anno.unique_identifier, event.Checked);
-                }                
+                }
             }
         }, this);
 
@@ -649,45 +732,59 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 this.deleteAnnotation();
                 break;
 
-            case 48: //0
-            case 96: //0
-                this.changeAnnotationTypeByKey(0);
-                break;
             case 49: //1
             case 97: //1
-                this.changeAnnotationTypeByKey(1);
+                if (!event.shiftKey) {
+                    this.changeAnnotationTypeByKey(1);
+                }
                 break;
             case 50: //2
             case 98: //2
-                this.changeAnnotationTypeByKey(2);
+                if (!event.shiftKey) {
+                    this.changeAnnotationTypeByKey(2);
+                }
                 break;
             case 51: //3
             case 99: //3
-                this.changeAnnotationTypeByKey(3);
+                if (!event.shiftKey) {
+                    this.changeAnnotationTypeByKey(3);
+                }
                 break;
             case 52: //4
             case 100: //4
-                this.changeAnnotationTypeByKey(4);
+                if (!event.shiftKey) {
+                    this.changeAnnotationTypeByKey(4);
+                }
                 break;
             case 53: //5
             case 101: //5
-                this.changeAnnotationTypeByKey(5);
+                if (!event.shiftKey) {
+                    this.changeAnnotationTypeByKey(5);
+                }
                 break;
             case 54: //6
             case 102: //6
-                this.changeAnnotationTypeByKey(6);
+                if (!event.shiftKey) {
+                    this.changeAnnotationTypeByKey(6);
+                }
                 break;
             case 55: //7
             case 103: //7
-                this.changeAnnotationTypeByKey(7);
+                if (!event.shiftKey) {
+                    this.changeAnnotationTypeByKey(7);
+                }
                 break;
             case 56: //8
             case 104: //8
-                this.changeAnnotationTypeByKey(8);
+                if (!event.shiftKey) {
+                    this.changeAnnotationTypeByKey(8);
+                }
                 break;
             case 57: //9
             case 105: //9
-                this.changeAnnotationTypeByKey(9);
+                if (!event.shiftKey) {
+                    this.changeAnnotationTypeByKey(9);
+                }
                 break;
 
             case 66: //b
@@ -715,6 +812,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
     }
 
     initUiEvents(annotation_types) {
+
 
         $(document).keyup(this.handleKeyUp.bind(this));
         $('select#annotation_type_id').change(this.changeAnnotationTypeByComboxbox.bind(this));
@@ -811,7 +909,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             })
         ]
 
-        
+
         this.annotationButtons.forEach(element => {
             this.viewer.addControl(element.element, { anchor: OpenSeadragon.ControlAnchor.ABSOLUTE, top: this.y_button_start, left: 5 });
             this.y_button_start += 45;
@@ -1022,13 +1120,36 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
     }
 }
 
-class EXACTViewerLocalAnnotationsFrames extends EXACTViewerLocalAnnotations{
+class EXACTViewerLocalAnnotationsFrames extends EXACTViewerLocalAnnotations {
 
     constructor(server_url, options, imageInformation, collaboration_type, annotationTypes,
-        headers, user_id, drawAnnotations = true, strokeWidth = 5, frame=1) {
+        headers, user_id, drawAnnotations = true, strokeWidth = 5, frame = 1, browser_sync) {
 
-        super(server_url, options, imageInformation, collaboration_type, annotationTypes, headers, user_id);
+        super(server_url, options, imageInformation, collaboration_type, annotationTypes, headers, user_id, browser_sync);
+        this.frames = imageInformation['frames']
         this.frame = 1;
+    }
+
+    handleKeyUp(event) {
+
+        super.handleKeyUp(event);
+
+        if (event.target.id === "TEXTAREA"
+            || event.target.nodeName == 'INPUT')
+            return;
+
+        switch (event.keyCode) {
+            case 69: //e load next frame
+                if (event.shiftKey && this.frame < this.frames) {
+                    this.viewer.goToPage(this.frame);
+                }
+                break;
+            case 81: //q load last frame
+                if (event.shiftKey && this.frame > 0) {
+                    this.viewer.goToPage(this.frame - 2);
+                }
+                break;
+        }
     }
 
     initViewerEventHandler(viewer, imageInformation) {
@@ -1051,7 +1172,7 @@ class EXACTViewerLocalAnnotationsFrames extends EXACTViewerLocalAnnotations{
         }, this);
     }
 
-    initUiEvents(annotation_types) { 
+    initUiEvents(annotation_types) {
 
         super.initUiEvents(annotation_types);
 
@@ -1075,23 +1196,23 @@ class EXACTViewerLocalAnnotationsFrames extends EXACTViewerLocalAnnotations{
 
         let prevFrame = this.frame - 1;
         if (prevFrame >= 1) {
-            
+
             let preFrameAnnotations = this.filterFrameAnnotations(this.exact_sync.annotations, prevFrame);
-            
+
             // generate new uuids and ids
             let frameAnnotations = preFrameAnnotations.map(anno => {
                 return {
                     annotation_type: anno.annotation_type,
                     id: -1,
                     vector: anno.vector,
-                    user: {id: null, username: "you"},
-                    last_editor: {id: null, username: "you"},
+                    user: { id: null, username: "you" },
+                    last_editor: { id: null, username: "you" },
                     image: anno.image,
                     unique_identifier: this.tool.uuidv4(),
                     deleted: false
                 }
             });
-            
+
             this.tool.drawExistingAnnotations(frameAnnotations);
 
             for (let annotation of frameAnnotations) {
@@ -1107,11 +1228,11 @@ class EXACTViewerLocalAnnotationsFrames extends EXACTViewerLocalAnnotations{
         // init new tool
         if (this.tool !== undefined) {
             this.tool.clear();
-        } 
+        }
 
         this.tool = this.createDrawingModule(this.viewer, this.imageId, this.imageInformation);
 
-        let frameAnnotations =this.filterFrameAnnotations(this.exact_sync.annotations, this.frame);
+        let frameAnnotations = this.filterFrameAnnotations(this.exact_sync.annotations, this.frame);
 
         this.tool.drawExistingAnnotations(frameAnnotations);
 
@@ -1126,7 +1247,7 @@ class EXACTViewerLocalAnnotationsFrames extends EXACTViewerLocalAnnotations{
         return Object.values(annotations).filter(function (item) {
             return item.vector.frame === frame_id && item.deleted === false
         });
-    } 
+    }
 
     getAnnotationVector(unique_identifier) {
         let vector = this.tool.getAnnotationVector(unique_identifier);
@@ -1139,18 +1260,105 @@ class EXACTViewerLocalAnnotationsFrames extends EXACTViewerLocalAnnotations{
 class EXACTViewerGlobalAnnotationsFrame extends EXACTViewer {
 
     constructor(server_url, options, imageInformation, collaboration_type, annotationTypes,
-        headers, user_id) {
+        headers, user_id, browser_sync) {
 
-        super(server_url, options, imageInformation, headers, user_id);
+        super(server_url, options, imageInformation, headers, user_id, browser_sync);
+
+        this.globalAnnotationTypeKeyToIdLookUp = {}
+        this.frames = imageInformation['frames']
         this.frame = 1;
 
-        this.exact_sync = this.createSyncModules(annotationTypes, this.imageId, headers, this.viewer, user_id, collaboration_type, frames=imageInformation['frames']);
+        this.exact_sync = this.createSyncModules(annotationTypes, this.imageId, headers, this.viewer, user_id, collaboration_type, frames = imageInformation['frames']);
 
         // register for global annotation type interactions
         // set global annotation initialy to false
+        let key_number = 1;
         for (let annotation_type of Object.values(annotationTypes)) {
-            this.setUiGlobalAnnotation(annotation_type, false)
-            $('#GlobalAnnotation_' + annotation_type.id).change(this.uiGlobalAnnotationChanged.bind(this))
+            this.setUiGlobalAnnotation(annotation_type, false);
+            $('#GlobalAnnotation_' + annotation_type.id).change(this.uiGlobalAnnotationChanged.bind(this));
+
+            this.globalAnnotationTypeKeyToIdLookUp[key_number] = annotation_type.id;
+
+            key_number += 1
+        }
+
+        $(document).keyup(this.handleKeyUp.bind(this));
+    }
+
+    handleKeyUp(event) {
+
+        super.handleKeyUp(event);
+
+        if (event.target.id === "TEXTAREA"
+            || event.target.nodeName == 'INPUT')
+            return;
+
+        switch (event.keyCode) {
+            case 69: //e load next frame
+                if (event.shiftKey && this.frame < this.frames) {
+                    this.viewer.goToPage(this.frame);
+                }
+                break;
+            case 81: //q load last frame
+                if (event.shiftKey && this.frame > 0) {
+                    this.viewer.goToPage(this.frame - 2);
+                }
+                break;
+
+            case 49: //1
+            case 97: //1
+                if (event.shiftKey) {
+                    this.changeGlobalAnnotationTypeByKey(1);
+                }
+                break;
+            case 50: //2
+            case 98: //2
+                if (event.shiftKey) {
+                    this.changeGlobalAnnotationTypeByKey(2);
+                }
+                break;
+            case 51: //3
+            case 99: //3
+                if (event.shiftKey) {
+                    this.changeGlobalAnnotationTypeByKey(3);
+                }
+                break;
+            case 52: //4
+            case 100: //4
+                if (event.shiftKey) {
+                    this.changeGlobalAnnotationTypeByKey(4);
+                }
+                break;
+            case 53: //5
+            case 101: //5
+                if (event.shiftKey) {
+                    this.changeGlobalAnnotationTypeByKey(5);
+                }
+                break;
+            case 54: //6
+            case 102: //6
+                if (event.shiftKey) {
+                    this.changeGlobalAnnotationTypeByKey(6);
+                }
+                break;
+            case 55: //7
+            case 103: //7
+                if (event.shiftKey) {
+                    this.changeGlobalAnnotationTypeByKey(7);
+                }
+                break;
+            case 56: //8
+            case 104: //8
+                if (event.shiftKey) {
+                    this.changeGlobalAnnotationTypeByKey(8);
+                }
+                break;
+            case 57: //9
+            case 105: //9
+                if (event.shiftKey) {
+                    this.changeGlobalAnnotationTypeByKey(9);
+                }
+                break;
         }
     }
 
@@ -1161,12 +1369,12 @@ class EXACTViewerGlobalAnnotationsFrame extends EXACTViewer {
         viewer.addHandler('sync_GlobalAnnotations', function (event) {
             if (event.annotation.vector.frame == event.userData.frame) {
                 event.userData.setUiGlobalAnnotation(event.annotation.annotation_type, !event.annotation.deleted);
-            }            
+            }
         }, this);
 
         viewer.addHandler('page', function (event) {
 
-            event.userData.newPageLoaded(event.page + 1)
+            event.userData.newPageLoaded(event.page + 1);
         }, this);
     }
 
@@ -1181,6 +1389,20 @@ class EXACTViewerGlobalAnnotationsFrame extends EXACTViewer {
 
         for (let anno of Object.values(this.exact_sync.annotations[frame_id])) {
             this.setUiGlobalAnnotation(anno.annotation_type, !anno.deleted)
+        }
+    }
+
+    changeGlobalAnnotationTypeByKey(annotationKeyNumber) {
+
+        if (annotationKeyNumber in this.globalAnnotationTypeKeyToIdLookUp) {
+            let annotation_type_id = this.globalAnnotationTypeKeyToIdLookUp[annotationKeyNumber];
+
+            // invert current global annotation
+            let active = !$("#GlobalAnnotation_" + annotation_type_id).prop("checked");
+            $("#GlobalAnnotation_" + annotation_type_id).prop("checked", active);
+
+            // Update annotation server side
+            this.exact_sync.changeGlobalAnnotation(annotation_type_id, active, this.frame);
         }
     }
 
@@ -1214,16 +1436,106 @@ class EXACTViewerGlobalAnnotationsFrame extends EXACTViewer {
 class EXACTViewerGlobalAnnotations extends EXACTViewer {
 
     constructor(server_url, options, imageInformation, collaboration_type, annotationTypes,
-        headers, user_id) {
+        headers, user_id, browser_sync) {
 
-        super(server_url, options, imageInformation, headers, user_id);
+        super(server_url, options, imageInformation, headers, user_id, browser_sync);
         this.exact_sync = this.createSyncModules(annotationTypes, this.imageId, headers, this.viewer, user_id, collaboration_type);
+
+        this.globalAnnotationTypeKeyToIdLookUp = {}
 
         // register for global annotation type interactions
         // set global annotation initialy to false
+        let key_number = 1;
         for (let annotation_type of Object.values(annotationTypes)) {
-            this.setUiGlobalAnnotation(annotation_type, false)
-            $('#GlobalAnnotation_' + annotation_type.id).change(this.uiGlobalAnnotationChanged.bind(this))
+            this.setUiGlobalAnnotation(annotation_type, false);
+            $('#GlobalAnnotation_' + annotation_type.id).change(this.uiGlobalAnnotationChanged.bind(this));
+
+            this.globalAnnotationTypeKeyToIdLookUp[key_number] = annotation_type.id;
+
+            key_number += 1
+        }
+
+        $(document).keyup(this.handleKeyUp.bind(this));
+    }
+
+    handleKeyUp(event) {
+
+        super.handleKeyUp(event);
+
+        if (event.target.id === "TEXTAREA"
+            || event.target.nodeName == 'INPUT')
+            return;
+
+        switch (event.keyCode) {
+
+            case 49: //1
+            case 97: //1
+                if (event.shiftKey) {
+                    this.changeGlobalAnnotationTypeByKey(1);
+                }
+                break;
+            case 50: //2
+            case 98: //2
+                if (event.shiftKey) {
+                    this.changeGlobalAnnotationTypeByKey(2);
+                }
+                break;
+            case 51: //3
+            case 99: //3
+                if (event.shiftKey) {
+                    this.changeGlobalAnnotationTypeByKey(3);
+                }
+                break;
+            case 52: //4
+            case 100: //4
+                if (event.shiftKey) {
+                    this.changeGlobalAnnotationTypeByKey(4);
+                }
+                break;
+            case 53: //5
+            case 101: //5
+                if (event.shiftKey) {
+                    this.changeGlobalAnnotationTypeByKey(5);
+                }
+                break;
+            case 54: //6
+            case 102: //6
+                if (event.shiftKey) {
+                    this.changeGlobalAnnotationTypeByKey(6);
+                }
+                break;
+            case 55: //7
+            case 103: //7
+                if (event.shiftKey) {
+                    this.changeGlobalAnnotationTypeByKey(7);
+                }
+                break;
+            case 56: //8
+            case 104: //8
+                if (event.shiftKey) {
+                    this.changeGlobalAnnotationTypeByKey(8);
+                }
+                break;
+            case 57: //9
+            case 105: //9
+                if (event.shiftKey) {
+                    this.changeGlobalAnnotationTypeByKey(9);
+                }
+                break;
+        }
+    }
+
+    changeGlobalAnnotationTypeByKey(annotationKeyNumber) {
+
+        if (annotationKeyNumber in this.globalAnnotationTypeKeyToIdLookUp) {
+            let annotation_type_id = this.globalAnnotationTypeKeyToIdLookUp[annotationKeyNumber];
+
+            // invert current global annotation
+            let active = !$("#GlobalAnnotation_" + annotation_type_id).prop("checked");
+            $("#GlobalAnnotation_" + annotation_type_id).prop("checked", active);
+
+            // Update annotation server side
+            this.exact_sync.changeGlobalAnnotation(annotation_type_id, active);
         }
     }
 
@@ -1267,22 +1579,109 @@ class EXACTViewerGlobalAnnotations extends EXACTViewer {
 class EXACTViewerGlobalLocalAnnotations extends EXACTViewerLocalAnnotations {
 
     constructor(server_url, options, imageInformation, collaboration_type, annotationTypesLocal, annotationTypesGlobal,
-        headers, user_id, drawAnnotations = true, strokeWidth = 5) {
+        headers, user_id, drawAnnotations = true, strokeWidth = 5, browser_sync) {
 
         super(server_url, options, imageInformation, collaboration_type, annotationTypesLocal, headers,
-            user_id, drawAnnotations, strokeWidth);
+            user_id, drawAnnotations, strokeWidth, browser_sync);
 
         this.exact_sync_global = new EXACTGlobalAnnotationSync(annotationTypesGlobal,
             this.imageId, headers, this.viewer, user_id, collaboration_type)
 
         // register for global annotation type interactions
         // set global annotation initialy to false
+        let key_number = 1;
+        this.globalAnnotationTypeKeyToIdLookUp = {};
         for (let annotation_type of Object.values(annotationTypesGlobal)) {
-            this.setUiGlobalAnnotation(annotation_type, false)
-            $('#GlobalAnnotation_' + annotation_type.id).change(this.uiGlobalAnnotationChanged.bind(this))
+            this.setUiGlobalAnnotation(annotation_type, false);
+            $('#GlobalAnnotation_' + annotation_type.id).change(this.uiGlobalAnnotationChanged.bind(this));
+
+            this.globalAnnotationTypeKeyToIdLookUp[key_number] = annotation_type.id;
+
+            key_number += 1
         }
 
         this.initGlobalEventHandler(this.viewer);
+    }
+
+    changeGlobalAnnotationTypeByKey(annotationKeyNumber) {
+
+        if (annotationKeyNumber in this.globalAnnotationTypeKeyToIdLookUp) {
+            let annotation_type_id = this.globalAnnotationTypeKeyToIdLookUp[annotationKeyNumber];
+
+            // invert current global annotation
+            let active = !$("#GlobalAnnotation_" + annotation_type_id).prop("checked");
+            $("#GlobalAnnotation_" + annotation_type_id).prop("checked", active);
+
+            // Update annotation server side
+            this.exact_sync_global.changeGlobalAnnotation(annotation_type_id, active);
+        }
+    }
+
+    handleKeyUp(event) {
+
+        super.handleKeyUp(event);
+
+        if (event.target.id === "TEXTAREA"
+            || event.target.nodeName == 'INPUT')
+            return;
+
+        switch (event.keyCode) {
+
+            case 49: //1
+            case 97: //1
+                if (event.shiftKey) {
+                    this.changeGlobalAnnotationTypeByKey(1);
+                }
+                break;
+            case 50: //2
+            case 98: //2
+                if (event.shiftKey) {
+                    this.changeGlobalAnnotationTypeByKey(2);
+                }
+                break;
+            case 51: //3
+            case 99: //3
+                if (event.shiftKey) {
+                    this.changeGlobalAnnotationTypeByKey(3);
+                }
+                break;
+            case 52: //4
+            case 100: //4
+                if (event.shiftKey) {
+                    this.changeGlobalAnnotationTypeByKey(4);
+                }
+                break;
+            case 53: //5
+            case 101: //5
+                if (event.shiftKey) {
+                    this.changeGlobalAnnotationTypeByKey(5);
+                }
+                break;
+            case 54: //6
+            case 102: //6
+                if (event.shiftKey) {
+                    this.changeGlobalAnnotationTypeByKey(6);
+                }
+                break;
+            case 55: //7
+            case 103: //7
+                if (event.shiftKey) {
+                    this.changeGlobalAnnotationTypeByKey(7);
+                }
+                break;
+            case 56: //8
+            case 104: //8
+                if (event.shiftKey) {
+                    this.changeGlobalAnnotationTypeByKey(8);
+                }
+                break;
+            case 57: //9
+            case 105: //9
+                if (event.shiftKey) {
+                    this.changeGlobalAnnotationTypeByKey(9);
+                }
+                break;
+        }
     }
 
     initGlobalEventHandler(viewer) {
@@ -1318,21 +1717,106 @@ class EXACTViewerGlobalLocalAnnotations extends EXACTViewerLocalAnnotations {
 class EXACTViewerGlobalLocalAnnotationsFrames extends EXACTViewerLocalAnnotationsFrames {
 
     constructor(server_url, options, imageInformation, collaboration_type, annotationTypesLocal, annotationTypesGlobal,
-        headers, user_id, drawAnnotations = true, strokeWidth = 5, frame=1) {
+        headers, user_id, drawAnnotations = true, strokeWidth = 5, frame = 1) {
 
         super(server_url, options, imageInformation, collaboration_type, annotationTypesLocal, headers,
             user_id, drawAnnotations, strokeWidth);
 
-        this.frames=imageInformation['frames']
+        this.globalAnnotationTypeKeyToIdLookUp = {}
+        this.frames = imageInformation['frames']
         this.frame = 1;
 
-        this.exact_sync_global = new  EXACTGlobalFrameAnnotationSync(annotationTypesGlobal, this.imageId, this.gHeaders, this.viewer, this.user_id, collaboration_type, this.frames)
+        this.exact_sync_global = new EXACTGlobalFrameAnnotationSync(annotationTypesGlobal, this.imageId, this.gHeaders, this.viewer, this.user_id, collaboration_type, this.frames)
 
         // register for global annotation type interactions
         // set global annotation initialy to false
+        let key_number = 1;
         for (let annotation_type of Object.values(annotationTypesGlobal)) {
             this.setUiGlobalAnnotation(annotation_type, false)
             $('#GlobalAnnotation_' + annotation_type.id).change(this.uiGlobalAnnotationChanged.bind(this))
+
+            this.globalAnnotationTypeKeyToIdLookUp[key_number] = annotation_type.id;
+            key_number += 1
+        }
+    }
+
+    handleKeyUp(event) {
+
+        super.handleKeyUp(event);
+
+        if (event.target.id === "TEXTAREA"
+            || event.target.nodeName == 'INPUT')
+            return;
+
+        switch (event.keyCode) {
+            case 49: //1
+            case 97: //1
+                if (event.shiftKey) {
+                    this.changeGlobalAnnotationTypeByKey(1);
+                }
+                break;
+            case 50: //2
+            case 98: //2
+                if (event.shiftKey) {
+                    this.changeGlobalAnnotationTypeByKey(2);
+                }
+                break;
+            case 51: //3
+            case 99: //3
+                if (event.shiftKey) {
+                    this.changeGlobalAnnotationTypeByKey(3);
+                }
+                break;
+            case 52: //4
+            case 100: //4
+                if (event.shiftKey) {
+                    this.changeGlobalAnnotationTypeByKey(4);
+                }
+                break;
+            case 53: //5
+            case 101: //5
+                if (event.shiftKey) {
+                    this.changeGlobalAnnotationTypeByKey(5);
+                }
+                break;
+            case 54: //6
+            case 102: //6
+                if (event.shiftKey) {
+                    this.changeGlobalAnnotationTypeByKey(6);
+                }
+                break;
+            case 55: //7
+            case 103: //7
+                if (event.shiftKey) {
+                    this.changeGlobalAnnotationTypeByKey(7);
+                }
+                break;
+            case 56: //8
+            case 104: //8
+                if (event.shiftKey) {
+                    this.changeGlobalAnnotationTypeByKey(8);
+                }
+                break;
+            case 57: //9
+            case 105: //9
+                if (event.shiftKey) {
+                    this.changeGlobalAnnotationTypeByKey(9);
+                }
+                break;
+        }
+    }
+
+    changeGlobalAnnotationTypeByKey(annotationKeyNumber) {
+
+        if (annotationKeyNumber in this.globalAnnotationTypeKeyToIdLookUp) {
+            let annotation_type_id = this.globalAnnotationTypeKeyToIdLookUp[annotationKeyNumber];
+
+            // invert current global annotation
+            let active = !$("#GlobalAnnotation_" + annotation_type_id).prop("checked");
+            $("#GlobalAnnotation_" + annotation_type_id).prop("checked", active);
+
+            // Update annotation server side
+            this.exact_sync_global.changeGlobalAnnotation(annotation_type_id, active, this.frame);
         }
     }
 
@@ -1343,7 +1827,7 @@ class EXACTViewerGlobalLocalAnnotationsFrames extends EXACTViewerLocalAnnotation
         viewer.addHandler('sync_GlobalAnnotations', function (event) {
             if (event.annotation.vector.frame == event.userData.frame) {
                 event.userData.setUiGlobalAnnotation(event.annotation.annotation_type, !event.annotation.deleted);
-            }            
+            }
         }, this);
     }
 

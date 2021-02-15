@@ -35,6 +35,8 @@
 <script type="text/javascript" src="{% static 'annotations/js/statistics-viewer.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/plugin-handler.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/show-annotation-properties.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/exact-browser-sync.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/exact-quad-tree.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/annotations.js' %}"></script>
 
 <script type="text/javascript" src="{% static 'annotations/js/bootstrap-slider.min.js' %}"></script>
@@ -111,8 +113,7 @@
                             </button>
 
                             {% if 'delete_images' in imageset_perms and not imageset_lock %}
-                            <button type="button" class="btn btn-danger" id="delete-button" data-toggle="modal"
-                                data-target="#deleteModal">
+                            <button type="button" class="btn btn-danger" id="deleteImageButton">
                                 <image src="{% static 'images/trash2.svg' %}">
                             </button>
                             {% endif %}
@@ -199,7 +200,10 @@
                             </li>
                             {% endif %}
 
-
+                            <li class="nav-item">
+                                <a class="nav-link" id="item_browsersync" data-toggle="tab" href="#nav-item_browsersync"
+                                    role="tab" aria-controls="home">Sync</a>
+                            </li>
 
 
                         </ul>
@@ -230,7 +234,7 @@
                                             data-annotation_type_id={{ annotation_type.id }}>
                                             {{ annotation_type.name }}
                                         </td>
-                                        <td>{{ forloop.counter0 }}</td>
+                                        <td>{{ forloop.counter }}</td>
                                         <td id="{{ annotation_type.name }}_{{ annotation_type.id }}">
                                             {{ annotation_type.node_count }}</td>
                                         <td style="background-color: {{ annotation_type.color_code }}">
@@ -256,6 +260,7 @@
                                     class="table table-striped table-bordered table-sm">
                                     <tr>
                                         <th class="text-center">Label</th>
+                                        <th class="text-center">Key</th>
                                         <th></th>
                                     </tr>
 
@@ -264,6 +269,7 @@
                                     <tr>
 
                                         <td>{{ annotation_type.name }}</td>
+                                        <td> Shift + {{ forloop.counter }}</td>
                                         <td>
                                             <input type="checkbox" id="GlobalAnnotation_{{ annotation_type.id }}"
                                                 data-annotation_type_id={{ annotation_type.id }}>
@@ -363,6 +369,20 @@
                                             <image src="{% static 'images/search.svg' %}">
                                         </button>
                                     </span>
+                                </div>
+
+                                <div class="d-flex justify-content-between" 
+                                        style="overflow-x: auto; flex-wrap: nowrap; overflow-y: hidden">     
+
+                                    <button type="button" class="annotate_button btn btn-primary" id="back_button_search">
+                                        <image src="{% static 'images/backspace.svg' %}"> 
+                                    </button>
+
+                                    <input type="text" id="currentSearchElement" title="Current ID" class="form-control">
+                                    
+                                    <button type="button" class="annotate_button btn btn-primary" id="next_button_search">
+                                        <image src="{% static 'images/BackspaceReverse.svg' %}"> 
+                                    </button>
                                 </div>
 
                                 <table style="width: 100%; margin-top: 10px; text-align: center"
@@ -590,6 +610,96 @@
                             </div>
 
 
+                            <div class="tab-pane fade" id="nav-item_browsersync">
+
+                                <div class="input-group">
+                                    <select id="sync_browser_image" name="Open images">  </select>
+                                    <span class="input-group-btn">
+                                        <button class="btn btn-primary" id="search_browserimages_btn">
+                                            <image src="{% static 'images/search.svg' %}">
+                                        </button>
+                                    </span>
+                                </div>
+
+                                <table style="white-space:nowrap; width: 100%; margin-top: 10px; text-align: center"
+                                    class="table table-striped table-bordered table-sm">
+
+                                    <tbody id="syncBrowserOptions">
+                                        <tr>
+                                            <th>Sync</th>
+                                            <th>Active</th>
+                                            <th>Update</th>
+                                        </tr>
+
+                                        <tr>
+                                            <td>Search</td>
+                                            <td> 
+                                                <input id="SyncBrowserSearch-enabled" type="checkbox" />
+                                            </td>
+                                        </tr>
+
+                                        <tr>
+                                            <td>Viewpoint</td>
+                                            <td> 
+                                                <input id="SyncBrowserViewpoint-enabled" type="checkbox" />
+                                            </td>
+
+                                            <td>
+                                                <span class="input-group-btn">
+                                                    <button class="btn btn-primary" id="update_browser_sync_images_btn">
+                                                        <image src="{% static 'images/search.svg' %}">
+                                                    </button>
+                                                </span>
+                                            </td>
+                                        </tr>
+
+                                        <tr>
+                                            <td>
+                                                <tbody id="registrationTables">
+                                                    <tr>
+                                                        <td>
+                                                            <input type="number" id="registration00" placeholder=1 class="form-control">
+                                                        </td>
+                                                        <td>
+                                                            <input type="number" id="registration01" placeholder=0 class="form-control">
+                                                        </td>
+                                                        <td>
+                                                            <input type="number" id="registration02" placeholder=0 class="form-control">
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>
+                                                            <input type="number" id="registration10" placeholder=0 class="form-control">
+                                                        </td>
+                                                        <td>
+                                                            <input type="number" id="registration11" placeholder=1 class="form-control">
+                                                        </td>
+                                                        <td>
+                                                            <input type="number" id="registration12" placeholder=0 class="form-control">
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>
+                                                            <input type="number" id="registration20" placeholder=0 class="form-control">
+                                                        </td>
+                                                        <td>
+                                                            <input type="number" id="registration21" placeholder=0 class="form-control">
+                                                        </td>
+                                                        <td>
+                                                            <input type="number" id="registration22" placeholder=1 class="form-control">
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </td>
+
+                                        </tr>
+                                    </tbody>
+                            
+                                </table>
+
+                            </div>
+
+
                         </div>
                     </div>
                     <div class="card-footer">
@@ -613,8 +723,8 @@
 
                                     <option value="{{ annotation_type.id }}" name="{{ annotation_type.name }}"
                                         id="annotation_type_{{ annotation_type.id }}"
-                                        data-annotation_type_key={{ forloop.counter0 }}>
-                                        {{ annotation_type.name }} ({{forloop.counter0}})
+                                        data-annotation_type_key={{ forloop.counter }}>
+                                        {{ annotation_type.name }} ({{forloop.counter}})
                                     </option>
 
                                     {% endfor %}
@@ -660,6 +770,7 @@
 </div>
 
 
+<!--
 {% if 'delete_images' in imageset_perms and not imageset_lock %}
 <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel">
     <div class="modal-dialog" role="document">
@@ -687,5 +798,5 @@
     </div>
 </div>
 {% endif %}
-
+-->
 {% endblock %}
