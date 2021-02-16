@@ -87,11 +87,19 @@ class QuadTree {
     }
 
     transformAffine(x, y) {
+        /*
         var new_x = Math.round(this.homography.doubleAt(0,0) * x + 
                         this.homography.doubleAt(0,1) * y + this.homography.doubleAt(0,2))
 
         var new_y = Math.round(this.homography.doubleAt(1,0) * x + 
                     this.homography.doubleAt(1,1) * y + this.homography.doubleAt(1,2))         
+        */
+       var new_x = Math.round(parseFloat($('#registration00').val()) * x + 
+                        parseFloat($('#registration01').val()) * y + parseFloat($('#registration02').val()))
+
+        var new_y = Math.round(parseFloat($('#registration10').val()) * x + 
+                        parseFloat($('#registration11').val()) * y + parseFloat($('#registration12').val()))     
+
 
         return [new_x, new_y];
     }
@@ -129,7 +137,5 @@ class QuadTree {
         $('#registration21').val(this.homography.doubleAt(2,1));
         $('#registration22').val(this.homography.doubleAt(2,2));
 
-    }
-
-    
+    }    
 }
