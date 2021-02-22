@@ -9,16 +9,19 @@ This is a collaborative online tool for labeling image data.
 
 This paper describes the EXACT-Server in depth. Please cite if you use this tool in your research:
 
-Marzahl et al. [EXACT: A collaboration toolset for algorithm-aided annotation of almost everything](https://arxiv.org/abs/2004.14595) 
+Marzahl et al. [EXACT: A collaboration toolset for algorithm-aided annotation of almost everything](https://www.nature.com/articles/s41598-021-83827-4) 
 
 ```
 @misc{marzahl2020exact,
-    title={EXACT: A collaboration toolset for algorithm-aided annotation of almost everything},
+    title={EXACT: a collaboration toolset for algorithm-aided annotation of images with annotation version control},
     author={Christian Marzahl and Marc Aubreville and Christof A. Bertram and Jennifer Maier and Christian Bergler and Christine Kröger and Jörn Voigt and Robert Klopfleisch and Andreas Maier},
-    year={2020},
-    eprint={2004.14595},
-    archivePrefix={arXiv},
-    primaryClass={cs.HC}
+  journal={Scientific Reports},
+  doi={s41598-021-83827-4},
+  volume={10},
+  number={1},
+  pages={1--10},
+  year={2021},
+  publisher={Nature Publishing Group}
 }
 ```
 
