@@ -12,17 +12,23 @@ This paper describes the EXACT-Server in depth. Please cite if you use this tool
 Marzahl et al. [EXACT: A collaboration toolset for algorithm-aided annotation of almost everything](https://www.nature.com/articles/s41598-021-83827-4) 
 
 ```
-@misc{marzahl2020exact,
-    title={EXACT: a collaboration toolset for algorithm-aided annotation of images with annotation version control},
-    author={Christian Marzahl and Marc Aubreville and Christof A. Bertram and Jennifer Maier and Christian Bergler and Christine Kröger and Jörn Voigt and Robert Klopfleisch and Andreas Maier},
-  journal={Scientific Reports},
-  doi={s41598-021-83827-4},
-  volume={10},
-  number={1},
-  pages={1--10},
-  year={2021},
-  publisher={Nature Publishing Group}
+﻿@Article{marzahl2021exact,
+title={EXACT: a collaboration toolset for algorithm-aided annotation of images with annotation version control},
+author={Marzahl, Christian and Aubreville, Marc and Bertram, Christof A. and Maier, Jennifer and Bergler, Christian and Kr{\"o}ger, Christine and Voigt, J{\"o}rn and Breininger, Katharina and Klopfleisch, Robert and Maier, Andreas},
+journal={Scientific Reports},
+year={2021},
+month={Feb},
+day={23},
+volume={11},
+number={1},
+pages={4343},
+abstract={In many research areas, scientific progress is accelerated by multidisciplinary access to image data and their interdisciplinary annotation. However, keeping track of these annotations to ensure a high-quality multi-purpose data set is a challenging and labour intensive task. We developed the open-source online platform EXACT (EXpert Algorithm Collaboration Tool) that enables the collaborative interdisciplinary analysis of images from different domains online and offline. EXACT supports multi-gigapixel medical whole slide images as well as image series with thousands of images. The software utilises a flexible plugin system that can be adapted to diverse applications such as counting mitotic figures with a screening mode, finding false annotations on a novel validation view, or using the latest deep learning image analysis technologies. This is combined with a version control system which makes it possible to keep track of changes in the data sets and, for example, to link the results of deep learning experiments to specific data set versions. EXACT is freely available and has already been successfully applied to a broad range of annotation tasks, including highly diverse applications like deep learning supported cytology scoring, interdisciplinary multi-centre whole slide image tumour annotation, and highly specialised whale sound spectroscopy clustering.},
+issn={2045-2322},
+doi={10.1038/s41598-021-83827-4},
+url={https://doi.org/10.1038/s41598-021-83827-4}
 }
+
+
 ```
 
 ## Features
