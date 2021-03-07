@@ -1,7 +1,7 @@
 import os, stat
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404
-from rest_framework.status import HTTP_400_BAD_REQUEST
+from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_202_ACCEPTED, HTTP_201_CREATED
 from django.http import HttpResponseBadRequest, HttpResponse
 from django.template.response import TemplateResponse
 from rest_framework.response import Response
@@ -172,6 +172,28 @@ class ImageViewSet(viewsets.ModelViewSet):
             return HttpResponse(buf.getvalue(), content_type='image/png')
         else:
             return Response({"Error":'Image patch not valid max size 2048x2048 pixel or size negativ'}, status=HTTP_400_BAD_REQUEST)
+
+
+
+    @action(detail=True, methods=['POST'], name='Create the registration between two slides')
+    def register_images(self, request, pk=None):
+
+        source_image = get_object_or_404(models.Image, id=pk)
+        target_image = get_object_or_404(models.Image, id=int(request.data.get("target_image", 0)))
+
+        image_registration = models.ImageRegistration.objects.filter(source_image=source_image, target_image=target_image).first()        
+
+        # register the two images
+        return_status = HTTP_202_ACCEPTED    
+        if image_registration is None:
+
+            image_registration = models.ImageRegistration(source_image=source_image, target_image=target_image)        
+            return_status = HTTP_201_CREATED
+        
+        image_registration.perform_registration(**request.data)
+
+        return Response(serializers.ImageRegistrationSerializer(image_registration).data, return_status)
+
 
     def create(self, request):
         image_type = int(request.POST.get('image_type', 0))
@@ -568,3 +590,23 @@ class ScreeningModeViewSet(viewsets.ModelViewSet):
 
         response = super().partial_update(request, *args, **kwargs)
         return response
+
+
+class ImageRegistrationViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.DjangoModelPermissions]
+    serializer_class = serializers.ImageRegistrationSerializer
+    filterset_fields = {
+       'id': ['exact'],
+       'target_image': ['exact'],
+       'source_image': ['exact'],
+       'registration_error': ['range'],
+       'runtime': ['range'],
+    }
+
+    def get_queryset(self):
+        user = self.request.user
+        return  models.ImageRegistration.objects.filter(source_image__image_set__team__in=user.team_set.all()).select_related('source_image', 'target_image').order_by('id')
+
+
+
+
