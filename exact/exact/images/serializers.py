@@ -2,7 +2,7 @@ from rest_framework.serializers import ModelSerializer
 
 from exact.administration.serializers import ProductSerializer
 from exact.users.serializers import UserSerializer, TeamSerializer
-from exact.images.models import ImageSet, Image, SetTag, ScreeningMode, SetVersion
+from exact.images.models import ImageSet, Image, SetTag, ScreeningMode, SetVersion, ImageRegistration
 from typing import Dict, Any
 from rest_flex_fields import FlexFieldsModelSerializer
 
@@ -82,7 +82,23 @@ class ScreeningModeSerializer(FlexFieldsModelSerializer):
             "user": (UserSerializer, {'read_only': True}),
         }
 
+class ImageRegistrationSerializer(FlexFieldsModelSerializer):
+    class Meta:
+        model = ImageRegistration
+        fields = (
+            'id',
+            'source_image',
+            'target_image',
+            'transformation_matrix',
+            'registration_error',
+            'runtime',
+            'file'
+        )
 
+        expandable_fields = {
+            "source_image": (ImageSerializer, {'read_only': True}),
+            "target_image": (UserSerializer, {'read_only': True}),
+        }
 
 class ImageSetSerializer(FlexFieldsModelSerializer):
     class Meta:

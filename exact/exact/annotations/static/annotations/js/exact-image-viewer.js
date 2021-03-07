@@ -1,7 +1,7 @@
 // JS file for handling the openseadragon viewer
 
 class EXACTViewer {
-    constructor(server_url, options, imageInformation, gHeaders, user_id) {
+    constructor(server_url, options, imageInformation, gHeaders, user_id, browser_sync) {
 
         this.imageId = imageInformation['id'];
         this.imageInformation = imageInformation;
@@ -10,13 +10,16 @@ class EXACTViewer {
         this.user_id = user_id;
         this.options = options;
         this.showNavigator = true;
-
-
+        this.browser_sync = browser_sync;
+    
         this.viewer = this.createViewer(options);
         this.exact_image_sync = new EXACTImageSync(this.imageId, this.gHeaders, this.viewer);
 
         this.initViewerEventHandler(this.viewer, imageInformation);
+        this.initBrowserSycEvents();
+        this.initRegistrationEvents();
 
+        this.registration = null;
         this.filterImage = new OpenseadragonFilteringViewer(this.viewer);
         this.pluginHandler = new PluginHandler(this.imageId, gHeaders, this.viewer);
         this.screeningTool = new ScreeningTool(imageInformation, user_id, gHeaders, this.viewer);
@@ -25,7 +28,7 @@ class EXACTViewer {
     }
 
     static factoryCreateViewer(server_url, imageId, options, imageInformation, annotationTypes = undefined,
-        headers = undefined, user_id = undefined, collaboration_type = 0, drawAnnotations = true, strokeWidth = 5) {
+        headers = undefined, user_id = undefined, collaboration_type = 0, browser_sync = undefined, drawAnnotations = true, strokeWidth = 5) {
 
         if (imageInformation['depth'] == 1 && imageInformation['frames'] == 1) {
             options.tileSources = [server_url + `/images/image/${imageId}/1/1/tile/`]
@@ -67,36 +70,36 @@ class EXACTViewer {
                 }
             }
 
-            // crate viewer with global and local support
+            // create viewer with global and local support
             if (Object.keys(global_annotation_types).length > 0
                 && Object.keys(local_annotation_types).length > 0) {
                 if (imageInformation['frames'] > 1) {
                     return new EXACTViewerGlobalLocalAnnotationsFrames(server_url, options, imageInformation, collaboration_type, local_annotation_types, global_annotation_types,
-                        headers, user_id, drawAnnotations, strokeWidth)
+                        headers, user_id, drawAnnotations, strokeWidth, browser_sync)
                 } else {
                     return new EXACTViewerGlobalLocalAnnotations(server_url, options, imageInformation, collaboration_type, local_annotation_types, global_annotation_types,
-                        headers, user_id, drawAnnotations, strokeWidth)
+                        headers, user_id, drawAnnotations, strokeWidth, browser_sync)
                 }
             } else if (Object.keys(global_annotation_types).length > 0) {
                 if (imageInformation['frames'] > 1) {
                     return new EXACTViewerGlobalAnnotationsFrame(server_url, options, imageInformation, collaboration_type, annotationTypes,
-                        headers, user_id)
+                        headers, user_id, browser_sync)
                 } else {
                     return new EXACTViewerGlobalAnnotations(server_url, options, imageInformation, collaboration_type, annotationTypes,
-                        headers, user_id)
+                        headers, user_id, browser_sync)
                 }
             } else {
                 if (imageInformation['frames'] > 1) {
                     return new EXACTViewerLocalAnnotationsFrames(server_url, options, imageInformation, collaboration_type, annotationTypes,
-                        headers, user_id, drawAnnotations, strokeWidth);
+                        headers, user_id, drawAnnotations, strokeWidth, browser_sync);
                 } else {
                     return new EXACTViewerLocalAnnotations(server_url, options, imageInformation, collaboration_type, annotationTypes,
-                        headers, user_id, drawAnnotations, strokeWidth);
+                        headers, user_id, drawAnnotations, strokeWidth, browser_sync);
                 }
             }
         } else {
             // create viewer without the option to handle annotations
-            return new EXACTViewer(server_url, options, imageInformation, headers, user_id);
+            return new EXACTViewer(server_url, options, imageInformation, headers, user_id, browser_sync);
         }
     }
 
@@ -123,6 +126,71 @@ class EXACTViewer {
         return OpenSeadragon(viewer_options);
     }
 
+    initRegistrationEvents() {
+
+        $("#sync_browser_image").on("change",this.createRegistration.bind(this));
+    }
+
+    createRegistration(event) {
+
+        this.registration = new QuadTree(this.viewer, this.imageInformation["name"], 
+                                    $( "select#sync_browser_image" ).val(), this.browser_sync);
+    }
+
+
+
+    initBrowserSycEvents() {
+
+        this.browser_sync.getChannelObject("GetImageInformation").onmessage = 
+                this.sendImageInformation.bind(this);
+
+        this.browser_sync.getChannelObject("ImageViewPort").onmessage = 
+                    this.reseiveCurrentViewPortCoordinages.bind(this);
+
+    }
+
+    reseiveCurrentViewPortCoordinages(event) {
+
+        if (document.visibilityState == 'visible' && 
+                $("#SyncBrowserViewpoint-enabled").prop("checked")) {
+
+            let selectedImageName = $("select#sync_browser_image").val();
+            if(event.data.image_name === selectedImageName) {
+
+                let x_min = event.data.x_min;
+                let y_min = event.data.y_min;
+                let x_max = event.data.x_max;
+                let y_max = event.data.y_max;
+
+
+                if (this.registration != null) {
+                    [x_min, y_min] = this.registration.transformAffine(x_min, y_min);
+                    [x_max, y_max] = this.registration.transformAffine(x_max, y_max);
+
+                }
+
+                this.viewCoordinates(x_min, y_min, x_max, y_max);
+            }
+        }        
+    }
+
+    sendCurrentViewPortCoordinates(coordinates) {
+        this.browser_sync.getChannelObject("ImageViewPort").postMessage({
+            "imageId": this.imageId,
+            "image_name": this.imageInformation["name"],
+            "x_min": coordinates.x_min, 
+            "y_min": coordinates.y_min,
+            "x_max": coordinates.x_max,
+            "y_max": coordinates.y_max,
+        });
+    }
+
+    sendImageInformation(e) {
+        this.browser_sync.getChannelObject("ReceiveImageInformation").postMessage({
+            "imageInformation": this.imageInformation
+        });
+    }
+
     imageOpend() {
         this.exact_image_sync.imageOpend();
     }
@@ -144,6 +212,15 @@ class EXACTViewer {
             let xmax = Math.round(imageRect.x + imageRect.width);
             let ymax = Math.round(imageRect.y + imageRect.height);
 
+
+            let coordinates = {
+                "x_min": xmin, 
+                "y_min": ymin,
+                "x_max": xmax,
+                "y_max": ymax,
+            }
+            event.userData.sendCurrentViewPortCoordinates(coordinates);
+
             window.history.pushState("object or string",
                 `${this.userData.imageInformation.name}`,
                 include_server_subdir(`/annotations/${this.userData.imageInformation.id}/?xmin=${xmin}&ymin=${ymin}&xmax=${xmax}&ymax=${ymax}`));
@@ -152,8 +229,10 @@ class EXACTViewer {
 
         viewer.addHandler("viewCoordinates", function (event) {
 
-            var coodinates = event.coordinates;
-            event.userData.viewCoordinates(coodinates.x_min, coodinates.y_min, coodinates.x_max, coodinates.y_max);
+            var coordinates = event.coordinates;
+
+            event.userData.sendCurrentViewPortCoordinates(coordinates);
+            event.userData.viewCoordinates(coordinates.x_min, coordinates.y_min, coordinates.x_max, coordinates.y_max);
 
         }, this);
 
@@ -410,9 +489,9 @@ class EXACTViewer {
 class EXACTViewerLocalAnnotations extends EXACTViewer {
 
     constructor(server_url, options, imageInformation, collaboration_type, annotationTypes,
-        headers, user_id, drawAnnotations = true, strokeWidth = 5) {
+        headers, user_id, drawAnnotations = true, strokeWidth = 5, browser_sync) {
 
-        super(server_url, options, imageInformation, headers, user_id);
+        super(server_url, options, imageInformation, headers, user_id, browser_sync);
 
         this.y_button_start = 150;
         this.annotationsToggle = true;
@@ -426,7 +505,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         this.initToolEventHandler(this.viewer);
 
         this.exact_sync = this.createSyncModules(annotationTypes, this.imageId, headers, this.viewer, user_id, collaboration_type);
-        this.searchTool = new SearchTool(this.imageId, this.viewer, this.exact_sync);
+        this.searchTool = new SearchTool(this.imageId, this.viewer, this.exact_sync, this.browser_sync);
 
         this.asthmaAnalysis = new AsthmaAnalysis(this.imageId, this.viewer, this.exact_sync);
 
@@ -733,6 +812,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
     }
 
     initUiEvents(annotation_types) {
+
 
         $(document).keyup(this.handleKeyUp.bind(this));
         $('select#annotation_type_id').change(this.changeAnnotationTypeByComboxbox.bind(this));
@@ -1043,9 +1123,9 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 class EXACTViewerLocalAnnotationsFrames extends EXACTViewerLocalAnnotations {
 
     constructor(server_url, options, imageInformation, collaboration_type, annotationTypes,
-        headers, user_id, drawAnnotations = true, strokeWidth = 5, frame = 1) {
+        headers, user_id, drawAnnotations = true, strokeWidth = 5, frame = 1, browser_sync) {
 
-        super(server_url, options, imageInformation, collaboration_type, annotationTypes, headers, user_id);
+        super(server_url, options, imageInformation, collaboration_type, annotationTypes, headers, user_id, browser_sync);
         this.frames = imageInformation['frames']
         this.frame = 1;
     }
@@ -1180,9 +1260,9 @@ class EXACTViewerLocalAnnotationsFrames extends EXACTViewerLocalAnnotations {
 class EXACTViewerGlobalAnnotationsFrame extends EXACTViewer {
 
     constructor(server_url, options, imageInformation, collaboration_type, annotationTypes,
-        headers, user_id) {
+        headers, user_id, browser_sync) {
 
-        super(server_url, options, imageInformation, headers, user_id);
+        super(server_url, options, imageInformation, headers, user_id, browser_sync);
 
         this.globalAnnotationTypeKeyToIdLookUp = {}
         this.frames = imageInformation['frames']
@@ -1356,9 +1436,9 @@ class EXACTViewerGlobalAnnotationsFrame extends EXACTViewer {
 class EXACTViewerGlobalAnnotations extends EXACTViewer {
 
     constructor(server_url, options, imageInformation, collaboration_type, annotationTypes,
-        headers, user_id) {
+        headers, user_id, browser_sync) {
 
-        super(server_url, options, imageInformation, headers, user_id);
+        super(server_url, options, imageInformation, headers, user_id, browser_sync);
         this.exact_sync = this.createSyncModules(annotationTypes, this.imageId, headers, this.viewer, user_id, collaboration_type);
 
         this.globalAnnotationTypeKeyToIdLookUp = {}
@@ -1499,10 +1579,10 @@ class EXACTViewerGlobalAnnotations extends EXACTViewer {
 class EXACTViewerGlobalLocalAnnotations extends EXACTViewerLocalAnnotations {
 
     constructor(server_url, options, imageInformation, collaboration_type, annotationTypesLocal, annotationTypesGlobal,
-        headers, user_id, drawAnnotations = true, strokeWidth = 5) {
+        headers, user_id, drawAnnotations = true, strokeWidth = 5, browser_sync) {
 
         super(server_url, options, imageInformation, collaboration_type, annotationTypesLocal, headers,
-            user_id, drawAnnotations, strokeWidth);
+            user_id, drawAnnotations, strokeWidth, browser_sync);
 
         this.exact_sync_global = new EXACTGlobalAnnotationSync(annotationTypesGlobal,
             this.imageId, headers, this.viewer, user_id, collaboration_type)

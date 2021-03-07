@@ -33,3 +33,6 @@ django-project-version==0.13.0
 gitpython==3.1.11
 gdown==3.12.2
 pandas==1.1.4
+qt-wsi-registration>=0.0.6
+EXCAT-Sync>=0.0.22
+pyyaml
