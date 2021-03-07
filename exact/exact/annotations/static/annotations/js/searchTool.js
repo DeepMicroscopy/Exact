@@ -1,17 +1,30 @@
 
 
 class SearchTool {
-    constructor(image_id, viewer, exact_sync) {
+    constructor(image_id, viewer, exact_sync, browser_sync) {
         this.image_id = image_id;
         this.viewer = viewer;
         this.exact_sync = exact_sync;
         this.currentAnnotation = null;
         this.all_annotations = [];
         this.search_offset = 2
+        this.browser_sync = browser_sync;
+
+        this.imageInformations = {}
 
         this.searchFields = ['@id', '@label', '@first editor', '@last editor', '@remark'];
 
         this.initUiEvents();
+        this.initBrowserSycEvents();
+    }
+
+    initBrowserSycEvents() {
+
+        this.browser_sync.getChannelObject("ReceiveImageInformation").onmessage = 
+                    this.setImageInformation.bind(this);
+
+        this.browser_sync.getChannelObject("SendSelectedSearchAnnotation").onmessage = 
+                    this.setSelectedSearchAnnotation.bind(this);
     }
 
     initUiEvents() {
@@ -22,6 +35,59 @@ class SearchTool {
         $('#next_button_search').click(this.nextOneSearchElement.bind(this)); 
 
         $('#currentSearchElement').keypress(this.setCurrentAnnotationByKey.bind(this));
+
+        $('#search_browserimages_btn').click(this.requestAllOpenImages.bind(this)); 
+    }
+
+    setImageInformation(event) {
+
+        if (!(event.data.imageInformation.id in this.imageInformations)) {
+            this.imageInformations[event.data.imageInformation.id] = event.data.imageInformation
+        
+            let image_list =  $('#sync_browser_image');
+            image_list.append(`<option data-image_id=${event.data.imageInformation.id}>${event.data.imageInformation.name}</option>`);
+
+            if($('#sync_browser_image > option').length == 1) {
+                $("#sync_browser_image").trigger("change");
+            }
+        
+        }
+    }
+
+    setSelectedSearchAnnotation(event) {
+        if (document.visibilityState == 'visible' && 
+                $("#SyncBrowserSearch-enabled").prop("checked")){
+
+            let sended_annotation = event.data.annotation;
+
+            let selectedImageName = $( "select#sync_browser_image" ).val();
+            if (sended_annotation.image in this.imageInformations &&
+                this.imageInformations[sended_annotation.image].name === selectedImageName) {
+                var all_annotations = Object.values(this.exact_sync.annotations);
+
+                // filter by annotation type or uuid
+                let annotations = all_annotations.filter(function (item) {
+                    return item.unique_identifier === sended_annotation.unique_identifier;
+                });
+    
+                if (annotations.length > 0) {
+                    let annotation = annotations[0]
+                    this.viewer.raiseEvent('search_ShowAnnotation', { annotation });                
+                }   
+            }
+        }
+    }
+
+    requestAllOpenImages() {
+        this.browser_sync.getChannelObject("GetImageInformation").postMessage({
+            "request": "getImageInformation"
+        });
+    }
+
+    sendSelectedSearchAnnotation(annotation) {
+        this.browser_sync.getChannelObject("SendSelectedSearchAnnotation").postMessage({
+            "annotation": annotation
+        });
     }
 
     setCurrentAnnotationByKey(event) {
@@ -56,6 +122,8 @@ class SearchTool {
             $("#currentSearchElement").val(this.currentAnnotation.id);
 
             let annotation = this.currentAnnotation;
+
+            this.sendSelectedSearchAnnotation(annotation);
             this.viewer.raiseEvent('search_ShowAnnotation', { annotation });
         }
     }
@@ -74,6 +142,8 @@ class SearchTool {
             $("#currentSearchElement").val(this.currentAnnotation.id);
 
             let annotation = this.currentAnnotation;
+
+            this.sendSelectedSearchAnnotation(annotation);
             this.viewer.raiseEvent('search_ShowAnnotation', { annotation });
         }
     }
@@ -86,6 +156,8 @@ class SearchTool {
         $("#currentSearchElement").val(this.currentAnnotation.id);
 
         let annotation = this.currentAnnotation;
+
+        this.sendSelectedSearchAnnotation(annotation);
         this.viewer.raiseEvent('search_ShowAnnotation', { annotation });
     }
 
@@ -101,7 +173,7 @@ class SearchTool {
         $("#currentSearchElement").val("");
 
         // save found annotations
-        var all_annotations = Object.values(this.exact_sync.annotations)
+        var all_annotations = Object.values(this.exact_sync.annotations);
 
         if (searchText) {
 

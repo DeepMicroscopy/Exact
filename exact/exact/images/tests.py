@@ -1,87 +1,51 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
+from rest_framework import status
+from rest_framework.test import APITestCase
 
-from exact.images.models import ImageSet
+from exact.images.models import ImageSet, Image
 from exact.users.models import Team, TeamMembership
+from pathlib import Path
+import shutil
 
+class ImageRegistrationTestCase(APITestCase):
 
-class ImageTest(TestCase):
     def setUp(self):
+
+        self.team = Team.objects.create(name='test_annotation')
         self.user = get_user_model().objects.create_user(
-            username='foo', email='foo@bar.baz', password='foobar123')
-        self.team = Team.objects.create(name='aa')
-        self.image_set = ImageSet.objects.create(name='foo', location='foo', team=self.team)
+            username='foo', email='12@13', password='foobar123', team=self.team, is_superuser=True, is_staff=True, is_active=True)
+        
+        self.client.login(username=self.user.username, password="foobar123")
 
-    def test_permissions_nonpublic_nonmember(self):
-        """Test if the permissions are correct."""
-        self.assertEquals(self.image_set.get_perms(self.user), set())
-
-    def test_permissions_public_nonmember(self):
-        """Test if the permissions are correct."""
-        self.image_set.public = True
+        self.image_set = ImageSet.objects.create(name='foo',  team=self.team)
+        self.image_set.create_folder()
         self.image_set.save()
-        self.assertEquals(self.image_set.get_perms(self.user), {
-            'annotate',
-            'delete_annotation',
-            'edit_annotation',
-            'read',
-        })
 
-    def test_permissions_nonpublic_member(self):
-        """Test if the permissions are correct."""
-        TeamMembership.objects.create(user=self.user, team=self.team)
-        self.assertEquals(self.image_set.get_perms(self.user), {
-            'annotate',
-            'create_export',
-            'delete_annotation',
-            'delete_export',
-            'delete_set',
-            'edit_annotation',
-            'edit_set',
-            'read',
-        })
+        folder =  self.image_set.root_path()
+        shutil.copy("doc/examples/images/A_CCMCT_22108_1.svs", Path(folder) / "A_CCMCT_22108_1.svs")
+        shutil.copy("doc/examples/images/N2_CCMCT_22108_1.ndpi", Path(folder) / "N2_CCMCT_22108_1.ndpi")
+        
+        source_path = Path(Path(folder) / "A_CCMCT_22108_1.svs")
+        target_path = Path(Path(folder) / "N2_CCMCT_22108_1.ndpi")
 
-    def test_permissions_public_member(self):
-        """Test if the permissions are correct."""
-        self.image_set.public = True
-        self.image_set.save()
-        TeamMembership.objects.create(user=self.user, team=self.team)
-        self.assertEquals(self.image_set.get_perms(self.user), {
-            'annotate',
-            'create_export',
-            'delete_annotation',
-            'delete_export',
-            'delete_set',
-            'edit_annotation',
-            'edit_set',
-            'read',
-        })
+        self.source_image = Image.objects.create(name=source_path.name, image_set=self.image_set)
+        self.source_image.save_file(source_path)
+        self.target_image = Image.objects.create(name=target_path.name, image_set=self.image_set)
+        self.target_image.save_file(target_path)
 
-    def test_permissions_nonpublic_admin(self):
-        """Test if the permissions are correct."""
-        TeamMembership.objects.create(
-            user=self.user, team=self.team, is_admin=True)
-        self.assertEquals(self.image_set.get_perms(self.user), {
-            'annotate',
-            'create_export',
-            'delete_annotation',
-            'delete_export',
-            'edit_annotation',
-            'edit_set',
-            'read',
-        })
+    def test_create_registration(self):
 
-    def test_permissions_public_admin(self):
-        """Test if the permissions are correct."""
-        self.image_set.public = True
-        self.image_set.save()
-        TeamMembership.objects.create(user=self.user, team=self.team, is_admin=True)
-        self.assertEquals(self.image_set.get_perms(self.user), {
-            'annotate',
-            'create_export',
-            'delete_annotation',
-            'delete_export',
-            'edit_annotation',
-            'edit_set',
-            'read',
-        })
+        data = {"source_image": self.source_image.id, "target_image": self.target_image.id}
+        response = self.client.post("/api/v1/images/registration/", data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        print()
+
+
+    def test_register_images(self):
+
+        data = {"target_image": self.target_image.id, "target_depth": 0}
+        response = self.client.post(f"/api/v1/images/images/{self.source_image.id}/register_images/", data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)

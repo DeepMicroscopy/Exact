@@ -30,7 +30,7 @@ schema_view = get_schema_view(
         description="API to interact with the EXACT Server",
         version="1.0.0",
         url=r"/api/v1/",
-        patterns=router.urls,
+        patterns=router_api.urls,
         urlconf='exact.urls'
     )
 

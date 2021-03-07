@@ -12,6 +12,9 @@ import os
 import numpy as np
 import cv2
 import openslide
+import pickle
+from django.core.files.base import ContentFile
+import json
 from openslide import OpenSlide, open_slide
 from czifile import czi2tif
 from util.cellvizio import ReadableCellVizioMKTDataset # just until data access is pip installable
@@ -258,8 +261,8 @@ class Image(models.Model):
                 self.objectivePower = 1
             self.save()
         except Exception as e:
-            if path.exists():
-                os.remove(str(path))
+            #if path.exists():
+            #    os.remove(str(path))
             raise
 
     def __str__(self):
@@ -553,3 +556,66 @@ class ScreeningMode(models.Model):
 
     def __str__(self):
         return u'ScreeningMode: {0} '.format(self.image.name, self.user.username)
+
+
+def registration_directory_path(instance, filename):
+    return f"registration/{instance.source_image.id}_{instance.target_image.id}.pickle"
+
+class ImageRegistration(models.Model):
+
+    class Meta:
+        unique_together = [
+            'source_image',
+            'target_image',
+        ]
+
+    source_image = models.ForeignKey(Image, on_delete=models.CASCADE, related_name='source_image')
+    target_image = models.ForeignKey(Image, on_delete=models.CASCADE, related_name='target_image')
+
+    transformation_matrix = models.JSONField(null=True)
+    registration_error = models.FloatField(default=-1)
+    
+    runtime = models.IntegerField(default=-1)
+    file = models.FileField(upload_to=registration_directory_path, null=True)
+
+    def __str__(self):
+        return f'Registration: Source: {self.source_image.name} Target: {self.target_image.name} Transformation: {self.transformation_matrix}'
+
+    def perform_registration(self, maxFeatures:int=512, crossCheck:bool=False, flann:bool=False, ratio:float=0.7, use_gray:bool=False, 
+                                homography:bool=True, filter_outliner:bool=False, target_depth:int=0,  thumbnail_size:tuple=(2048, 2048), **kwargs):
+
+        import qt_wsi_reg.registration_tree as registration
+
+        parameters = {
+                # feature extractor parameters
+                "point_extractor": "sift",  #orb , sift
+                "maxFeatures": maxFeatures, 
+                "crossCheck": crossCheck, 
+                "flann": flann,
+                "ratio": ratio, 
+                "use_gray": use_gray,
+
+                # QTree parameter 
+                "homography": homography,
+                "filter_outliner": filter_outliner,
+                "debug": False,
+                "target_depth": target_depth,
+                "run_async": False,
+                "thumbnail_size": thumbnail_size
+            }
+
+        soure_path = self.source_image.path()
+        targert_path = self.target_image.path()
+
+        qtree = registration.RegistrationQuadTree(source_slide_path=soure_path, target_slide_path=targert_path, **parameters)
+        self.registration_error = qtree.mean_reg_error
+        self.runtime = qtree.run_time
+        self.transformation_matrix = {"t_00": qtree.b[0][0], "t_01": qtree.b[0][1],   "t_02": qtree.t[0], 
+                                        "t_10": qtree.b[1][0], "t_11": qtree.b[1][1], "t_12": qtree.t[1], 
+                                        "t_20": 0,              "t_21": 0,            "t_22": 0}
+
+        content = pickle.dumps(qtree)
+        fid = ContentFile(content)
+        self.file.save(f"{self.id}.pickle", fid)
+
+        self.save()

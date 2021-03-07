@@ -17,6 +17,7 @@ router_api.register(r'images/image_sets', images_views.ImageSetViewSet, basename
 router_api.register(r'images/set_tags', images_views.SetTagViewSet, basename='SetTag')
 router_api.register(r'images/set_versions', images_views.SetVersionViewSet, basename='SetVersion')
 router_api.register(r'images/screening_modes', images_views.ScreeningModeViewSet, basename='ScreeningMode')
+router_api.register(r'images/registration', images_views.ImageRegistrationViewSet, basename='ImageRegistration')
 
 router_api.register(r'annotations/annotations', annotations_views.AnnotationViewSet, basename='Annotation')
 router_api.register(r'annotations/annotation_versions', annotations_views.AnnotationVersionViewSet, basename='AnnotationVersion')
