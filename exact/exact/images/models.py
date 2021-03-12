@@ -561,6 +561,8 @@ class ScreeningMode(models.Model):
 def registration_directory_path(instance, filename):
     return f"registration/{instance.source_image.id}_{instance.target_image.id}.pickle"
 
+
+qt_cache = {}
 class ImageRegistration(models.Model):
 
     class Meta:
@@ -619,3 +621,59 @@ class ImageRegistration(models.Model):
         self.file.save(f"{self.id}.pickle", fid)
 
         self.save()
+
+    def create_inverse_registration(self):
+
+        new_transformation_matrix = {
+                                        "t_00": 1 + (1 - self.transformation_matrix["t_00"]), 
+                                        "t_01": self.transformation_matrix["t_01"] * -1,
+                                        "t_02": self.transformation_matrix["t_02"] * -1, 
+
+                                        "t_10": self.transformation_matrix["t_10"] * -1,  
+                                        "t_11": 1 + (1 - self.transformation_matrix["t_11"]),
+                                        "t_12": self.transformation_matrix["t_12"] * -1,  
+
+                                        "t_20": self.transformation_matrix["t_20"],              
+                                        "t_21": self.transformation_matrix["t_21"],     
+                                        "t_22": self.transformation_matrix["t_22"], 
+                                    }
+
+        new_registration = ImageRegistration.objects.create(source_image=self.target_image, target_image=self.source_image, 
+                                            registration_error=self.registration_error, runtime=self.runtime, transformation_matrix=new_transformation_matrix)
+
+        new_registration.save()
+        return new_registration
+    
+    def convert_coodinates(self, vector):
+
+        qt = None
+        if self.file.name !=  "":
+            if self.file.name not in qt_cache:
+                qt = pickle.load(open(str(self.file.path), "rb" ))
+                qt_cache[self.file.name] = qt
+            else:
+                qt = qt_cache[self.file.name]
+
+        annos = []
+        for i in range(1, (len(vector) // 2) + 1):
+            x = vector.get('x' + str(i))
+            y = vector.get('y' + str(i))
+            w = 0
+            h = 0
+            annos.append([x, y, w, h])
+
+        
+        result_vector = {}
+        if qt is not None:
+            trans_annos = qt.transform_boxes(annos)
+
+            for id, box in enumerate(trans_annos):
+                result_vector[f"x{id+1}"] = box[0]
+                result_vector[f"y{id+1}"] = box[1]
+        else:
+            for id, box in enumerate(annos):
+                x,y = box[:2]
+                result_vector[f"x{id+1}"] = self.transformation_matrix["t_00"] * x + self.transformation_matrix["t_01"] * y + self.transformation_matrix["t_02"]
+                result_vector[f"y{id+1}"] = self.transformation_matrix["t_10"] * x + self.transformation_matrix["t_11"] * y + self.transformation_matrix["t_12"]
+
+        return result_vector

@@ -14,6 +14,7 @@ ENV PYTHONUNBUFFERED 1
 
 # install dependencies
 RUN pip3 install --upgrade pip
+RUN pip3 install numpy==1.19.4
 COPY ./requirements.txt /usr/src/exact/requirements.txt
 
 RUN pip3 install -r requirements.txt
