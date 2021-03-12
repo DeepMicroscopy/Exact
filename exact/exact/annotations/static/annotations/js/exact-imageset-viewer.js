@@ -19,16 +19,12 @@ class EXACTImageSetViewer {
 
         this.filteredImageInformation = {}
 
-        this.browser_sync = new EXACTBrowserSync();
-        //export default EXACTBrowserSync;
-
         this.initUiEvents();
     }
 
     handleKeyUp(event) {
 
-        if (event.target.id === "TEXTAREA"
-            || event.target.nodeName == 'INPUT')
+        if (["textarea", "text", "number"].includes(event.target.type))
             return;
 
         switch (event.keyCode) {
@@ -103,6 +99,8 @@ class EXACTImageSetViewer {
     }
 
     imageSetInformationLoaded() {
+
+        
         this.ready = true;
         this.displayImage(this.image_id, this.url_parameters);
 
@@ -190,7 +188,7 @@ class EXACTImageSetViewer {
 
         const options = {url_parameters: url_parameters};
         this.exact_viewer = EXACTViewer.factoryCreateViewer(this.server_url, this.image_id, options,
-            image_information, annotation_types, this.gHeaders, this.user_id, collaboration_type, this.browser_sync);
+            image_information, annotation_types, this.gHeaders, this.user_id, collaboration_type);
 
         this.scrollImageList(this.image_id);
     }

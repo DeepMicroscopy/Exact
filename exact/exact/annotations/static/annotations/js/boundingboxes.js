@@ -525,10 +525,10 @@ class BoundingBoxes {
         // if annotation was found zoom to annotation
         if (item !== undefined) {
             const vpRect = this.viewer.viewport.imageToViewportRectangle(new OpenSeadragon.Rect(
-                item.bounds.topLeft.x,
-                item.bounds.topLeft.y,
-                item.bounds.width,
-                item.bounds.height
+                item.bounds.topLeft.x - 2 * item.bounds.width,
+                item.bounds.topLeft.y - 2 * item.bounds.height,
+                item.bounds.width + 2 * item.bounds.width,
+                item.bounds.height + 2 * item.bounds.height
             ));
             const vpPos = this.viewer.viewport.imageToViewportCoordinates(item.bounds.centerX, item.bounds.centerY)
             this.viewer.viewport.fitBoundsWithConstraints(new OpenSeadragon.Rect(

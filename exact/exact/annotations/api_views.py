@@ -26,16 +26,16 @@ class AnnotationFilterSet(django_filters.FilterSet):
     class Meta:
        model = models.Annotation
        fields = { 
-        'id': ['exact'],
+        'id': ['exact', 'in'],
         'time': ['exact', 'lte', 'gte', 'range'],
         'last_edit_time': ['exact', 'lte', 'gte', 'range'],
-        'unique_identifier': ['exact', 'contains'],
+        'unique_identifier': ['exact', 'contains', 'in'],
         'description': ['exact', 'contains'],
         'deleted': ['exact'],
 
-        'image': ['exact'], #, 'range'
+        'image': ['exact', 'in'], #, 'range'
         'user': ['exact'],
-        'annotation_type': ['exact'], #, 'range'
+        'annotation_type': ['exact', 'in'], #, 'range'
         'verified_by': ['exact', 'range'], #, 'range'
         'annotationversion': ['exact'],
        }
@@ -268,9 +268,9 @@ class AnnotationTypeViewSet(viewsets.ModelViewSet):
     #queryset = models.AnnotationType.objects.all().select_related('product')
     serializer_class = serializers.AnnotationTypeSerializer
     filterset_fields = {
-       'id': ['exact'],
-       'name': ['exact', 'contains'],
-       'vector_type': ['exact', 'lte', 'gte', 'range'],
+       'id': ['exact', 'in'],
+       'name': ['exact', 'contains'], 
+       'vector_type': ['exact', 'lte', 'gte', 'range', 'in'],
        'active': ['exact'],
        'product': ['exact'],
    }

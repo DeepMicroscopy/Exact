@@ -1,4 +1,8 @@
 # Exact
+[![PyPI version fury.io](https://badge.fury.io/py/EXCAT-Sync.svg)](https://pypi.python.org/pypi/EXCAT-Sync/)
+[![MIT license](https://img.shields.io/badge/License-MIT-blue.svg)](https://lbesson.mit-license.org/)
+
+
 
 This is a collaborative online tool for labeling image data.
 

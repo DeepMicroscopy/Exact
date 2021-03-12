@@ -2,7 +2,7 @@ import os, stat
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_202_ACCEPTED, HTTP_201_CREATED
-from django.http import HttpResponseBadRequest, HttpResponse
+from django.http import HttpResponseBadRequest, HttpResponse, HttpResponseNotFound
 from django.template.response import TemplateResponse
 from rest_framework.response import Response
 from rest_framework import viewsets, permissions, renderers
@@ -16,6 +16,7 @@ from . import serializers
 import django_filters
 import base64
 
+import json
 import cv2
 import numpy as np
 import openslide
@@ -41,9 +42,9 @@ class ImageFilterSet(django_filters.FilterSet):
     class Meta:
         model = models.Image
         fields = {
-            'id': ['exact'],
-            'name': ['exact', 'contains'],
-            'filename': ['exact', 'contains'],
+            'id': ['exact', 'in'],
+            'name': ['exact', 'contains', 'in'],
+            'filename': ['exact', 'contains', 'in'],
             'time': ['exact', 'contains'],
             'mpp': ['exact', 'range'],
             'objectivePower': ['exact', 'range'],
@@ -192,8 +193,10 @@ class ImageViewSet(viewsets.ModelViewSet):
         
         image_registration.perform_registration(**request.data)
 
-        return Response(serializers.ImageRegistrationSerializer(image_registration).data, return_status)
+        if request.data.get("create_inverse_registration", False):
+            image_registration.create_inverse_registration()
 
+        return Response(serializers.ImageRegistrationSerializer(image_registration).data, return_status)
 
     def create(self, request):
         image_type = int(request.POST.get('image_type', 0))
@@ -372,9 +375,9 @@ class ImageSetFilterSet(django_filters.FilterSet):
     class Meta:
         model = models.ImageSet
         fields = {
-            'id': ['exact'],
+            'id': ['exact', 'in'],
             'path': ['exact', 'contains'],
-            'name': ['exact', 'contains'],
+            'name': ['exact', 'contains', 'in'],
             'location': ['exact', 'contains'],
             'description': ['exact', 'contains'],
             'time': ['exact', 'range'],
@@ -596,9 +599,9 @@ class ImageRegistrationViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
     serializer_class = serializers.ImageRegistrationSerializer
     filterset_fields = {
-       'id': ['exact'],
-       'target_image': ['exact'],
-       'source_image': ['exact'],
+       'id': ['exact', 'in'],
+       'target_image': ['exact', 'in'],
+       'source_image': ['exact', 'in'],
        'registration_error': ['range'],
        'runtime': ['range'],
     }
@@ -608,5 +611,25 @@ class ImageRegistrationViewSet(viewsets.ModelViewSet):
         return  models.ImageRegistration.objects.filter(source_image__image_set__team__in=user.team_set.all()).select_related('source_image', 'target_image').order_by('id')
 
 
+    @action(detail=True, methods=['GET'], name='Convert coordinates form the source to the target domain')
+    def convert_coodinates(self, request, pk=None):
+        image_registration = get_object_or_404(models.ImageRegistration, id=pk)   
+
+        vector = request.query_params.get("vector", None) 
+        if vector is None:
+            return HttpResponseBadRequest('vector parameter not set')
+
+        vector = json.loads(vector.replace("\'", "\""))
+
+        result_vector = image_registration.convert_coodinates(vector)
+
+        return Response(result_vector, HTTP_202_ACCEPTED)
 
 
+    @action(detail=True, methods=['GET'], name='Convert coordinates form the source to the target domain')
+    def create_inverse_registration(self, request, pk=None):
+        image_registration = get_object_or_404(models.ImageRegistration, id=pk)   
+
+        new_registration = image_registration.create_inverse_registration()
+
+        return Response(serializers.ImageRegistrationSerializer(new_registration).data, HTTP_201_CREATED)

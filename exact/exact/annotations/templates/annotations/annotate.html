@@ -272,7 +272,8 @@
                                         <td> Shift + {{ forloop.counter }}</td>
                                         <td>
                                             <input type="checkbox" id="GlobalAnnotation_{{ annotation_type.id }}"
-                                                data-annotation_type_id={{ annotation_type.id }}>
+                                                data-annotation_type_id={{ annotation_type.id }}
+                                                data-key_number={{ forloop.counter }}>
                                         </td>
                                     </tr>
 
@@ -618,6 +619,9 @@
                                         <button class="btn btn-primary" id="search_browserimages_btn">
                                             <image src="{% static 'images/search.svg' %}">
                                         </button>
+                                    </span>
+                                    <span class="input-group-btn" id="open_registration_image_visibility">
+                                        <a href="" id="open_registration_image"><span class="fa fa-window-maximize  fa-2x"> </span></a>
                                     </span>
                                 </div>
 
