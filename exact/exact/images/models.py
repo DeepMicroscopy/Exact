@@ -229,6 +229,9 @@ class Image(models.Model):
                         if image_saved == False:
                             path = Path(path).with_suffix('.tiff')
 
+                            if old_path == path:
+                                path = Path(path).with_suffix('.tif')
+
                             vi = pyvips.Image.new_from_file(str(old_path))
                             vi.tiffsave(str(path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
                             self.filename = path.name
