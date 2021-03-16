@@ -162,6 +162,7 @@ DATABASES = {
     }
 }
 
+
 UPLOAD_FS_GROUP = os.environ.get("UPLOAD_FS_GROUP", 33)
 
 AUTH_USER_MODEL = 'users.User'
@@ -209,6 +210,37 @@ MEDIA_ROOT= os.path.join(BASE_DIR, 'media')
 MEDIA_URL= "/media/"
 
 SHOW_DEMO_DATASETS = True
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname};{asctime};{module};{process:d};{thread:d};{message}',
+            'style': '{',
+        },
+    },
+	'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'file_info': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': IMAGE_PATH + '/exact_info.log', # ensure write access
+			'formatter': 'verbose'
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'], # include 'file_info',  to start logging to file
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
+}
+
 
 # filename extension of accepted imagefiles
 IMAGE_EXTENSION = {
