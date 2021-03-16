@@ -1,3 +1,4 @@
+import logging
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -57,6 +58,7 @@ import zipfile
 import hashlib
 import json
 import imghdr
+from timeit import default_timer as timer
 from datetime import date, timedelta, datetime
 from pathlib import Path
 import re
@@ -73,6 +75,7 @@ from czifile import czi2tif
 
 
 # TODO: Add to cache
+logger = logging.getLogger('django')
 image_cache = SlideCache(cache_size=10)
 plugin_finder = PluginFinder(image_cache)
 
@@ -545,16 +548,20 @@ def view_image_tile(request, image_id, z_dimension, frame, level, tile_path):
         return HttpResponseForbidden()
 
     file_path = os.path.join(settings.IMAGE_PATH, image.path(z_dimension, frame))
-    slide = image_cache.get(file_path)
-
-
-    tile = slide.get_tile(level, (col, row))
 
     try:
+        slide = image_cache.get(file_path)
+
+        start = timer()
+        tile = slide.get_tile(level, (col, row))
+
         buf = PILBytesIO()
         tile.save(buf, format, quality=90)
         response = HttpResponse(buf.getvalue(), content_type='image/%s' % format)
+        
+        load_from_drive_time = timer() - start
 
+        logger.info(f"{load_from_drive_time:.4f};{request.path}")
         return response
     except:
         return HttpResponseBadRequest()
