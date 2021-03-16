@@ -490,7 +490,13 @@ class EXACTAnnotationSync {
                 if (data.results.length > 0) {
                     let annotations = data.results;
                     context.viewer.raiseEvent('sync_drawAnnotations', { annotations });
+                    context.viewer.raiseEvent('sync_drawHeatmap', { annotations });
                 }
+
+                // if (data.results.length > 0) {
+                //     let annotations_heatmap = data.results;
+                //     context.viewer.raiseEvent('sync_drawHeatmap', { annotations_heatmap });
+                // }
 
                 if (data.next !== null) {
                     context.viewer.raiseEvent('sync_UpdateStatistics', {});

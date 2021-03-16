@@ -219,6 +219,8 @@ Note: It may be that initdb is not in your current PATH (seems to be default for
 
 To start the postgresql server, run `sudo systemctl start postgresql.service`. If the server should always be started on boot, run `sudo systemctl enable postgresql.service`.
 
+(May need to start one time with: `service postgresql start `)
+
 Then, create the user and the database by running
 
 `sudo -iu postgres psql`
@@ -228,6 +230,8 @@ and then, in the postgres environment
 ```
 CREATE USER exact PASSWORD 'exact';
 CREATE DATABASE exact WITH OWNER exact ENCODING UTF8;
+
+CREATE USER bnapora PASSWORD 'bnapora';
 ```
 
 where of course the password and the user should be adapted to the ones specified in the database settings in the settings.py.
@@ -238,9 +242,15 @@ To create an administrator user, run `python3 manage.py createsuperuser`.
 
 `python3 manage.py runserver` starts the server with the configuration given in the settings.py file.
 
+To create SSH Tunnel to Postgres Db
+ssh -M 0 -f -nNT -L 5432:127.0.0.1:5432 root@64be5a7c43e5
+ssh -M 0 -f -nNT -L 8000:localhost:8000 root@64be5a7c43e5
+
 To create annotation types, log into the application and click on Administration at the very bottom of the home page.
 
 For **production** systems it is necessary to run the following commands after each upgrade
+
+
 
 ```bash
 python3 manage.py migrate

@@ -15,7 +15,9 @@ class BoundingBoxes {
             tolerance: 2
         };
 
-
+        var heatmap_cfg = {backgroundColor: 'rgba(0,0,0,0)',maxOpacity: 0.5,minOpacity: 0.25}
+		this.heatmap = new HeatmapOverlay(this.viewer, heatmap_cfg);
+        this.group_heatmap = new paper.Group();
 
         this.imageid = imageid;
         this.image_width = imageSize["width"];
@@ -353,7 +355,6 @@ class BoundingBoxes {
                 rect.data.type = "rect";
                 rect.data.type_id = annotation.annotation_type.id;
                 rect.data.area_hit_test = annotation.annotation_type.area_hit_test;
-
                 this.group.addChild(rect);
                 break;
 
@@ -480,6 +481,85 @@ class BoundingBoxes {
 
             this.drawAnnotation(annotation)
         }
+
+        this.overlay.resize();
+        this.overlay.resizecanvas();
+    }
+
+    updateHeatmapVisbility(annotation_type_id, visibility ) {
+        console.log('annotation_type_id=', annotation_type_id, ' / visbility=', visibility);
+        
+        var tempDIV = document.getElementById('hmDIV');
+        if (visibility == true) {
+            tempDIV.style.visibility = "visible";
+        } else {
+            tempDIV.style.visibility = "hidden";
+        }
+    }
+
+    drawHeatmap(annotations, drawHeatmap=true) {
+        if (annotations === undefined ||
+            annotations.length === 0 ||
+            !drawHeatmap) {
+
+            return;
+        }
+
+        for (var anno_hm of annotations) {
+            // console.log('anno_hm=', anno_hm.vector);
+            if (anno_hm.vector === null || this.getItemFromUUID(anno_hm.unique_identifier) !== undefined) {
+                continue;
+            }            
+        }
+
+        //*************Added Heatmap Test Data Generation */
+        var hs_radius=10; 
+        var hs_intensity = 1;
+        // now generate some random data
+        var points = [];
+        var max = 0;
+        // var width = 80000;
+        // var height = 60000;
+        // var len = 300;
+        var len = annotations.length;
+        // console.log('drawHeatmap().annotations_len=', len);
+        // console.log('annotations=', annotations);
+        for (var anno_hm of annotations) {
+            var x_pos = anno_hm.vector.x1 + ((anno_hm.vector.x2-anno_hm.vector.x1)/2);
+            var y_pos = anno_hm.vector.y1 + ((anno_hm.vector.y2-anno_hm.vector.y1)/2);
+            var point = {
+                x: x_pos, 
+                y: y_pos,
+                value: hs_intensity,
+                radius: hs_radius
+            };
+            points.push(point);
+            // console.log('hm_coord=', point);
+            }            
+        var data = {
+            max: max,
+            data: points
+        };
+        //*****End Data Generation */
+        //*****Start Heatmap Gen */
+        var heatmap_data = data
+        this.group_heatmap.addChild(this.heatmap.setData(heatmap_data));
+
+		// this.viewer.addOverlay(this.heatmap.setData(heatmap_data));
+        // if (this.heatmap.heatmap._store._data.length !== 0) {
+        //     this.viewer.addOverlay(this.heatmap.addData());
+        // } else {
+        //     this.viewer.addOverlay(this.heatmap.loadData());
+        // };
+
+        //*****End Heatmap Gen */
+        // if (this.heatmap.heatmap._store._data.length !== 0) {
+        //     this.group_heatmap.addChild(this.heatmap.addData());
+        // } else {
+        //     this.group_heatmap.addChild(this.heatmap.loadData());
+        // };
+
+        // this.group.addChild(heatmap.setData(heatmap_data));
 
         this.overlay.resize();
         this.overlay.resizecanvas();

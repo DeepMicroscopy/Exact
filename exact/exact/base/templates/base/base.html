@@ -18,8 +18,8 @@
 	
 	{% block selectorblock %}{% endblock %}
 	<nav class="navbar navbar-light bg-light fixed-top navbar-expand-md">
-		<a class="navbar-brand exact-logo" href="https://lme.tf.fau.de/person/marzahl/" target="_blank">
-			<img src="{% static 'symbols/exact_small.png' %}" height="40px">
+		<a class="navbar-brand exact-logo" href="http://www.gestaltdiagnostics.com/" target="_blank">
+			<img src="{% static 'symbols/gestalt_logo.png' %}" height="40px">
 		</a>
 
 		<div id="navbar" class="navbar-collapse collapse">
@@ -27,12 +27,12 @@
 				<li class="nav-item dropdown">
 					<a href="#" class="dropdown-toggle nav-link" data-toggle="dropdown" role="button"
 						aria-haspopup="true" aria-expanded="false" id="exactNavbarDropdown">
-						EXACT Label Server
+						About Exact
 					</a>
 					<div class="dropdown-menu" aria-labelledby="exactNavbarDropdown">
-						<a href="https://github.com/ChristianMarzahl/exact" class="nav-link"> GitHub </a>
+						<a href="https://github.com/bnapora/exact" class="nav-link"> GitHub </a>
 						<a target="_blank" href="{% url 'base:problem' %}" class="nav-link"> Report an issue </a>
-						<a href="https://lme.tf.fau.de/person/marzahl/" class="nav-link"> About </a>
+						<a href="https://www.gestaltdiagnostics.com" class="nav-link"> About </a>
 						
 						{% load djversion_tags %}
 						{% project_version as VERSION %}

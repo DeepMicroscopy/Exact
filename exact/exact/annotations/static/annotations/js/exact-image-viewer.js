@@ -44,6 +44,7 @@ class EXACTViewer {
                     tileSources.push(path);
                 }
             }
+            
             options.tileSources = tileSources;
             options.sequenceMode = true;
             options.showReferenceStrip = true;
@@ -119,6 +120,19 @@ class EXACTViewer {
             timeout: 120000,
             sequenceMode: false,
             showReferenceStrip: false,
+            // //Added tileSources Default for test
+            // //Comment out tileSources config in Factory method to test gs tileprovider-svs
+            // //Need to enable tileprovider to run on Linux
+            // tileSources:   {
+            //     height: 81548,
+            //     width:  107999,
+            //     tileSize: 256,
+            //     minLevel: 0,
+            //     maxLevel: 9,
+            //     getTileUrl: function( level, x, y ){
+            //         return "http://127.0.0.1:8001/wsisvs/getCvImage/" + "/" + "c91a842257ed2add5134" + "/" + "256" + "/" + level + "/" + y + "/" + x;
+            //     }
+            // }
         };
 
         const viewer_options = Object.assign(default_options, options);
@@ -801,18 +815,30 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             case 89: // 'y'
                 this.uiShowAnnotationsToggle();
                 break;
+            case 90: // '?'
+                this.uiShowHeatmapToggle();
+                break;
         }
     }
 
     initToolEventHandler(viewer) {
 
         viewer.addHandler('sync_drawAnnotations', function (event) {
+            if (event.annotations[0].annotation_type.name.match != "")
             event.userData.tool.drawExistingAnnotations(event.annotations, event.userData.drawAnnotations);
+        }, this);
+
+        viewer.addHandler('sync_drawHeatmap', function (event) {
+            // console.log('addHandler-annotations.length=', event.annotations.length)
+            var mito_check = event.annotations[0].annotation_type.name.match(/look-alike/gi);
+            if (typeof mito_check == 'undefined' || mito_check == null) {
+                event.userData.tool.drawHeatmap(event.annotations, event.userData.drawHeatmap);
+            };
+
         }, this);
     }
 
     initUiEvents(annotation_types) {
-
 
         $(document).keyup(this.handleKeyUp.bind(this));
         $('select#annotation_type_id').change(this.changeAnnotationTypeByComboxbox.bind(this));
@@ -840,6 +866,18 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         });
         this.viewer.buttons.buttons.push(element);
         this.viewer.buttons.element.appendChild(element.element);
+
+        let element_heatmap = new OpenSeadragon.Button({
+            tooltip: 'Draw Heatmap',
+            name: "DrawHeatmap",
+            srcRest: this.viewer.prefixUrl + `flip_rest.png`,
+            srcGroup: this.viewer.prefixUrl + `flip_grouphover.png`,
+            srcHover: this.viewer.prefixUrl + `flip_hover.png`,
+            srcDown: this.viewer.prefixUrl + `flip_pressed.png`,
+            onClick: this.uiShowHeatmapToggle.bind(this),
+        });
+        this.viewer.buttons.buttons.push(element_heatmap);
+        this.viewer.buttons.element.appendChild(element_heatmap.element);
 
 
         // Register Annotation Buttons
@@ -930,6 +968,16 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         this.annotationVisibility(this.annotationsToggle);
     }
 
+    uiShowHeatmapToggle() {
+        if (this.heatmapToggle === true) {
+            this.heatmapToggle = false;
+        } else {
+            this.heatmapToggle = true;
+        }      
+
+        this.heatmapVisibility(this.heatmapToggle);
+    }
+
     changeAnnotationTypeByComboxbox() {
         let annotation_type_id = $('#annotation_type_id').children(':selected').val();
 
@@ -953,6 +1001,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         var annotation_type_id = parseInt(event.target.dataset.annotation_type_id);
 
         this.changeAnnotationTypeVisibility(annotation_type_id, event.currentTarget.checked);
+        this.changeHeatmapTypeVisibility(annotation_type_id, event.currentTarget.checked);
     }
 
     createDrawingModule(viewer, imageId, imageInformation) {
@@ -1007,8 +1056,19 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         }
     }
 
+    heatmapVisibility(drawHeatmap= true) {
+
+        for (const annotation_type_id in this.annotationTypes) {
+            this.tool.updateHeatmapVisbility(annotation_type_id, drawHeatmap);
+        }
+    }
+
     changeAnnotationTypeVisibility(annotation_type_id, visibility) {
         this.tool.updateVisbility(annotation_type_id, visibility);
+    }
+
+    changeHeatmapTypeVisibility(annotation_type_id, visibility) {
+        // this.tool.updateHeatmapVisbility(annotation_type_id, visibility);
     }
 
     verifyAnnotation(annotation) {
@@ -1167,8 +1227,17 @@ class EXACTViewerLocalAnnotationsFrames extends EXACTViewerLocalAnnotations {
         viewer.addHandler('sync_drawAnnotations', function (event) {
 
             let annotations = event.userData.filterFrameAnnotations(event.annotations);
-
             event.userData.tool.drawExistingAnnotations(annotations);
+
+
+        }, this);
+
+        viewer.addHandler('sync_drawHeatmap', function (event) {
+            
+            console.log('addHandler-annotations.length=', event.annotations.length)
+            let annotations = event.userData.filterFrameAnnotations(event.annotations);
+            event.userData.tool.drawHeatmap(event.annotations, event.userData.drawHeatmap);
+
         }, this);
     }
 
@@ -1218,6 +1287,7 @@ class EXACTViewerLocalAnnotationsFrames extends EXACTViewerLocalAnnotations {
             for (let annotation of frameAnnotations) {
                 this.finishAnnotation(annotation)
             }
+
         }
     }
 
@@ -1866,4 +1936,39 @@ class EXACTViewerGlobalLocalAnnotationsFrames extends EXACTViewerLocalAnnotation
 
         this.exact_sync_global.destroy();
     }
-}
+};
+// function gen_heatmap_data(ds_size, hs_radius, hs_intensity){
+//     // now generate some random data
+//     var points = [];
+//     var max = 0;
+//     var width = 80000;
+//     var height = 60000;
+//     // var len = 300;
+//     var len = ds_size;
+
+//     while (len--) {
+//     //   var val = Math.floor(Math.random()*100);
+//         // var val = 10;
+//         var val = hs_intensity;
+//         // now also with custom radius
+//     //   var radius = Math.floor(Math.random()*70);
+//         // var radius = 5;
+//         var radius = hs_radius;
+
+//         max = Math.max(max, val);
+//         var point = {
+//         x: Math.floor(Math.random()*width),
+//         y: Math.floor(Math.random()*height),
+//         value: val,
+//         // radius configuration on point basis
+//         radius: radius
+//         };
+//         points.push(point);
+//     }
+//     // heatmap data format
+//     var data = {
+//         max: max,
+//         data: points
+//     };
+//     return data;	
+// };

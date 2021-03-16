@@ -180,7 +180,7 @@ USE_L10N = True
 
 USE_TZ = False
 
-PROBLEMS_URL = 'https://github.com/ChristianMarzahl/exact/issues'
+PROBLEMS_URL = 'https://github.com/bnapora/exact/issues'
 PROBLEMS_TEXT = ''
 
 LOGIN_URL = '/user/login/'
