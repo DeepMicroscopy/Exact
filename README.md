@@ -108,9 +108,9 @@ Build and run the container:
 ```
 
 docker-compose -f docker-compose.prod.yml up -d --build
-docker-compose -f docker-compose.prod.yml exec web python manage.py migrate --noinput 
-docker-compose -f docker-compose.prod.yml exec web python manage.py createsuperuser
-docker-compose -f docker-compose.prod.yml exec web python manage.py collectstatic --no-input --clear
+docker-compose -f docker-compose.prod.yml exec web python3 manage.py migrate --noinput 
+docker-compose -f docker-compose.prod.yml exec web python3 manage.py createsuperuser
+docker-compose -f docker-compose.prod.yml exec web python3 manage.py collectstatic --no-input --clear
 docker-compose -f docker-compose.prod.yml logs -f
 ```
 
@@ -147,11 +147,10 @@ Copy and rename `settings.py.example` to `settings.py` in the exact folder.
 
 Build and run the container:
 ```
-docker-compose -f docker-compose.prod.aws-db.yml down -v --remove-orphans
 docker-compose -f docker-compose.prod.aws-db.yml up -d --build
-docker-compose -f docker-compose.prod.aws-db.yml exec web python manage.py migrate --noinput
-docker-compose -f docker-compose.prod.aws-db.yml exec web python manage.py createsuperuser
-docker-compose -f docker-compose.prod.aws-db.yml exec web python manage.py collectstatic --no-input --clear
+docker-compose -f docker-compose.prod.aws-db.yml exec web python3 manage.py migrate --noinput
+docker-compose -f docker-compose.prod.aws-db.yml exec web python3 manage.py createsuperuser
+docker-compose -f docker-compose.prod.aws-db.yml exec web python3 manage.py collectstatic --no-input --clear
 docker-compose -f docker-compose.prod.aws-db.yml logs -f
 ```
 
