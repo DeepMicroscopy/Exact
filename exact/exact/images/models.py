@@ -467,11 +467,13 @@ class ImageSet(models.Model):
         images = Image.objects.filter(image_set=self).order_by('name')
 
         if self.collaboration_type == ImageSet.CollaborationTypes.COLLABORATIVE:
+
             unverified = images.filter(Q(annotations__annotation_type__active=True, annotations__deleted=False,
                                        annotations__verifications__verified=False) |
                                        Q(annotations__annotation_type__active=True, annotations__deleted=False,
                                        annotations__verifications=None))\
                 .distinct()
+
             unannotated = images.annotate(annotation_count=Count('annotations')).filter(annotation_count__exact=0).distinct()
 
             # TODO_ Convert to single query
