@@ -10,6 +10,11 @@ from rest_framework.settings import api_settings
 from rest_framework.decorators import action
 from django.db.models import Q, Count
 from django.db import transaction, connection
+
+from django.core.cache import cache
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
+
 from exact.annotations.models import Annotation, AnnotationVersion
 from . import models
 from . import serializers
@@ -106,8 +111,12 @@ class ImageViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['GET'], name='Get Thumbnail for image PK')
     def thumbnail(self, request, pk=None):
-        image = get_object_or_404(models.Image, id=pk)
 
+        response = cache.get(f"{pk}_thumbnail")
+        if response is not None:
+            return response
+
+        image = get_object_or_404(models.Image, id=pk)
         file_path = image.path()
 
         if Path(image.thumbnail_path()).exists():
@@ -120,7 +129,9 @@ class ImageViewSet(viewsets.ModelViewSet):
         buf = PILBytesIO()
         tile.save(buf, 'png', quality=90)
 
-        return HttpResponse(buf.getvalue(), content_type='image/png')
+        response = HttpResponse(buf.getvalue(), content_type='image/png') 
+        cache.set(f"{pk}_thumbnail", response, None)
+        return response
 
     @action(detail=True, methods=['GET'], name='Get slide information from image PK')
     def slide_information(self, request, pk=None):
@@ -423,6 +434,9 @@ class ImageSetViewSet(viewsets.ModelViewSet):
             image_set = models.ImageSet.objects.filter(id=response.data['id']).first()
             image_set.create_folder()
         return response
+
+    def retrieve(self, request, *args, **kwargs):
+        return super(ImageSetViewSet, self).retrieve(request, *args, **kwargs)
 
     def list(self, request, *args, **kwargs):
         if "api" in request.META['PATH_INFO']:

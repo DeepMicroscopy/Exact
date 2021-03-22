@@ -13,6 +13,7 @@ Including another URLconf
     1. Import the include() function: from django.conf.urls import url, include
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
+import logging
 from django.conf.urls import url, include
 from django.urls import path
 from django.contrib import admin
@@ -24,6 +25,8 @@ from django_registration.backends.activation.views import RegistrationView
 from .api import router, router_api
 from .users.forms import UserRegistrationForm
 from rest_framework.schemas import get_schema_view
+
+logger = logging.getLogger('django')
 
 schema_view = get_schema_view(
         title="EXACT - API",
@@ -57,6 +60,12 @@ urlpatterns = [
     #path('auth/', include('djoser.urls.authtoken')),
 ] + static(settings.MEDIA_URL, document_root= settings.MEDIA_ROOT)
 
+if settings.DEBUG:
+    try:
+        import debug_toolbar
+        urlpatterns += [path('__debug__/', include(debug_toolbar.urls))]
+    except ImportError as e:
+        logger.error(e)
 
 def handler500(request):
     """500 error handler which includes ``request`` in the context.

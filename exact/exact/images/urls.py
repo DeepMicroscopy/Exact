@@ -19,14 +19,14 @@ urlpatterns = [
     url(r'^image/upload/(\d+)/$', views.upload_image, name='upload_image'),
     url(r'^image/(\d+)/(\d+)/(\d+)/tile/$', views.view_image, name='view_image'),
     url(r'^image/view_thumbnail(\d+)/$', views.view_thumbnail, name='view_thumbnail'),
-    url(r'^image/(\d+)/(\d+)/(\d+)/tile_files/(\d+)/(\d+_\d+.(?:png|jpeg))/$', views.view_image_tile, name='view_image_tile'),
+    url(r'^image/(\d+)/(\d+)/(\d+)/tile_files/(\d+)/(\d+_\d+.(?:png|jpeg))$', views.view_image_tile, name='view_image_tile'),
     url(r'^api/image/verify/$', views.api_verify_image, name='verify_image'),
 
     url(r'^api/image/plugins/$', views.image_plugins, name='plugins'),
 
 
     url(r'^api/image/navigator_overlay_status/$', views.navigator_overlay_status, name='navigator_overlay_status'),
-    url(r'^image/(\d+)_navigator_overlay/(\d+)/(\d+)/(\d+)/(\d+_\d+.(?:png|jpeg))/$',
+    url(r'^image/(\d+)_navigator_overlay/(\d+)/(\d+)/(\d+)/(\d+_\d+.(?:png|jpeg))$',
         views.view_image_navigator_overlay_tile, name='view_image_navigator_overlay_tile'),
 
     url(r'^api/image/statistics/$', views.image_statistics, name='image_statistics'),

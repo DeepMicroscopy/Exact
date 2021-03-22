@@ -25,7 +25,12 @@ SECRET_KEY = os.environ.get("SECRET_KEY", default='DEV KEY PLEASE CHANGE IN PROD
 DEBUG = int(os.environ.get("DEBUG", default=0))
 
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", default='127.0.0.1').split(" ")
+INTERNAL_IPS = ['127.0.0.1']
 
+
+# Caching
+DJANGO_REDIS_IGNORE_EXCEPTIONS = True
+SESSIONS_ENGINE='django.contrib.sessions.backends.cache'
 
 # Application definition
 
@@ -81,6 +86,7 @@ REST_FRAMEWORK = {
 
 
 MIDDLEWARE = [
+    #'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
