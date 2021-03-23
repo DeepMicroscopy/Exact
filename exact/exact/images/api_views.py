@@ -1,4 +1,5 @@
 import os, stat
+from timeit import default_timer as timer
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_202_ACCEPTED, HTTP_201_CREATED
@@ -10,8 +11,9 @@ from rest_framework.settings import api_settings
 from rest_framework.decorators import action
 from django.db.models import Q, Count
 from django.db import transaction, connection
+from django.http import JsonResponse
 
-from django.core.cache import cache
+from django.core.cache import caches
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 
@@ -21,6 +23,7 @@ from . import serializers
 import django_filters
 import base64
 
+import sys
 import json
 import cv2
 import numpy as np
@@ -37,6 +40,12 @@ from util.cellvizio import ReadableCellVizioMKTDataset # just until data access 
 from PIL import Image as PIL_Image
 from util.slide_server import SlideCache, SlideFile, PILBytesIO
 image_cache = SlideCache(cache_size=10)
+
+cache = caches['default']
+try:
+    tiles_cache = caches['tiles_cache']
+except:
+    tiles_cache = cache
 
 class ImageFilterSet(django_filters.FilterSet):
     image_type = django_filters.ChoiceFilter(choices=models.Image.SOURCE_TYPES)
@@ -109,12 +118,68 @@ class ImageViewSet(viewsets.ModelViewSet):
         user = self.request.user
         return  models.Image.objects.filter(image_set__team__in=user.team_set.all()).select_related('image_set')
 
+    @action(detail=True, methods=['PATCH'], name='Updates the image cach')
+    def update_image_cache(self, request, pk=None):
+
+        image = get_object_or_404(models.Image, id=pk)
+
+        mem_size = int(request.POST.get("mem_size_mb", 5))
+        z_dimension = int(request.POST.get("z_dimension", 1))
+        frame = int(request.POST.get("frame", 1))
+
+        slide = image_cache.get(image.path())
+
+        keys = {}
+        results = {}
+        num_tiles = 0
+        sum_cache = 0
+        for level, tiles in enumerate(slide.level_tiles):
+            #level += 1
+            num_x_tiles, num_y_tiles = tiles
+
+            start = timer()
+            for col in range(num_x_tiles):
+                for row in range(num_y_tiles):
+
+                    cache_key = f"{pk}/{z_dimension}/{frame}/{level}/{col}/{row}"
+                    if tiles_cache.has_key(cache_key) == False:
+
+                        tile = slide.get_tile(level, (col, row))
+
+                        buf = PILBytesIO()
+                        tile.save(buf, "jpeg", quality=90)
+                        image_buf = buf.getvalue()
+                        tiles_cache.set(cache_key, image_buf, 7*24*24)
+
+                        buffer_size = sys.getsizeof(image_buf) / (1024 ** 2) # bytes to MBytes
+                        keys[cache_key] = buffer_size
+
+                        sum_cache += buffer_size
+                        num_tiles += 1
+
+                    if sum_cache > mem_size:
+                        break
+                if sum_cache > mem_size:
+                    break
+
+            results[level] = {
+                "Level": level,
+                "Size_MB": sum(keys.values()),
+                "Tiles": tiles,
+                "Total": num_tiles,
+                "Sec.": timer() - start
+            }
+
+            if sum_cache > mem_size:
+                 break
+        return JsonResponse(results)
+
     @action(detail=True, methods=['GET'], name='Get Thumbnail for image PK')
     def thumbnail(self, request, pk=None):
 
-        response = cache.get(f"{pk}_thumbnail")
-        if response is not None:
-            return response
+        buffer = cache.get(f"{pk}_thumbnail")
+        if buffer is not None:
+            return HttpResponse(buffer, content_type='image/png')
 
         image = get_object_or_404(models.Image, id=pk)
         file_path = image.path()
@@ -128,10 +193,10 @@ class ImageViewSet(viewsets.ModelViewSet):
 
         buf = PILBytesIO()
         tile.save(buf, 'png', quality=90)
+        buffer = buf.getvalue()
+        cache.set(f"{pk}_thumbnail", buffer, None)
 
-        response = HttpResponse(buf.getvalue(), content_type='image/png') 
-        cache.set(f"{pk}_thumbnail", response, None)
-        return response
+        return HttpResponse(buffer, content_type='image/png')
 
     @action(detail=True, methods=['GET'], name='Get slide information from image PK')
     def slide_information(self, request, pk=None):
@@ -333,6 +398,9 @@ class ImageViewSet(viewsets.ModelViewSet):
         # remove image from file system
         if Path(image.path()).exists(): os.remove(image.path())
         if Path(image.original_path()).exists(): os.remove(image.original_path())
+        # remove from tile cache
+        cache_key = f"*{pk}/*/*/*/*/*"
+        tiles_cache.delete_pattern(cache_key)        
         # remove image from db
         return super().destroy(request, pk)
         
@@ -436,7 +504,17 @@ class ImageSetViewSet(viewsets.ModelViewSet):
         return response
 
     def retrieve(self, request, *args, **kwargs):
-        return super(ImageSetViewSet, self).retrieve(request, *args, **kwargs)
+
+        cache_key = request.META["PATH_INFO"] + request.META["QUERY_STRING"]
+
+        data = cache.get(cache_key)
+        instance = self.get_object() # check if user has access
+        if data is None:
+            serializer = self.get_serializer(instance)
+            data = serializer.data
+            cache.set(cache_key, data, 24*60*60)
+
+        return Response(data)
 
     def list(self, request, *args, **kwargs):
         if "api" in request.META['PATH_INFO']:

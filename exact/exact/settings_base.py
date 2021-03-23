@@ -32,6 +32,25 @@ INTERNAL_IPS = ['127.0.0.1']
 DJANGO_REDIS_IGNORE_EXCEPTIONS = True
 SESSIONS_ENGINE='django.contrib.sessions.backends.cache'
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+        'OPTIONS': {
+            'MAX_ENTRIES': 1000
+        }, 
+        "KEY_PREFIX": os.environ.get("SQL_DATABASE", default='exact')
+    },
+    'tiles_cache': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+        'OPTIONS': {
+            'MAX_ENTRIES': 1000
+        }, 
+        "KEY_PREFIX": os.environ.get("SQL_DATABASE", default='exact')
+    }
+}
+
 # Application definition
 
 INSTALLED_APPS = [

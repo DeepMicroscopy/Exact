@@ -14,7 +14,7 @@ from django.http import HttpResponseForbidden, HttpResponse, HttpResponseBadRequ
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.response import TemplateResponse
 from django.utils.translation import ugettext_lazy as _
-from django.core.cache import cache
+from django.core.cache import caches
 from json import JSONDecodeError
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import ParseError
@@ -44,7 +44,6 @@ from exact.tagger_messages.models import Message, TeamMessage, GlobalMessage
 from util.slide_server import SlideCache, SlideFile, PILBytesIO
 from util.cellvizio import ReadableCellVizioMKTDataset # just until data access is pip installable
 
-
 from plugins.pluginFinder import PluginFinder
 from plugins.ExactServerPlugin import UpdatePolicy, ViewPolicy, NavigationViewOverlayStatus
 
@@ -72,13 +71,18 @@ import openslide
 from openslide import OpenSlide, open_slide
 from PIL import Image as PIL_Image
 from czifile import czi2tif
-
+from django.core.cache import cache
 
 # TODO: Add to cache
 logger = logging.getLogger('django')
 image_cache = SlideCache(cache_size=10)
 plugin_finder = PluginFinder(image_cache)
 
+cache = caches['default']
+try:
+    tiles_cache = caches['tiles_cache']
+except:
+    tiles_cache = cache
 
 @login_required
 def explore_imageset(request, *args, **kwargs):
@@ -369,48 +373,17 @@ def view_image(request, image_id, z_dimension:int=1, frame:int=1):
     if not image.image_set.has_perm('read', request.user):
         return HttpResponseForbidden()
 
-    response = cache.get(request.path)
-    if response is not None:
-        return response
+    cache_key = f"{image_id}_{z_dimension}_{frame}_get_dzi"
+    value = cache.get(cache_key)
+    if value is not None:
+        return HttpResponse(value, content_type='application/xml')
     
     file_path = os.path.join(settings.IMAGE_PATH, image.path(z_dimension, frame))
     slide = image_cache.get(file_path)
+    value = slide.get_dzi("jpeg")
 
-    response = HttpResponse(slide.get_dzi("jpeg"), content_type='application/xml')
-    cache.set(request.path, response, None)
-    return response
-
-
-@login_required
-def view_thumbnail(request, image_id):
-    """
-    This view is to authenticate direct access to the images via nginx auth_request directive
-
-    it will return forbidden on if the user is not authenticated
-    """
-    # TODO: replace with API call!!!!!!!!
-  
-    response = cache.get(f"{image_id}_thumbnail")
-    if response is not None:
-        return response
-
-    image = get_object_or_404(Image, id=image_id)
-    file_path = image.path()
-
-    if Path(image.thumbnail_path()).exists():
-        tile = PIL_Image.open(image.thumbnail_path())
-    else:
-        slide = image_cache.get(file_path)
-        tile = slide._osr.get_thumbnail((128,128))
-        tile.save(image.thumbnail_path())
-
-    buf = PILBytesIO()
-    tile.save(buf, 'png', quality=90)
-
-    response = HttpResponse(buf.getvalue(), content_type='image/png') 
-    cache.set(f"{image_id}_thumbnail", response, None)
-    return response
-
+    cache.set(cache_key, value, None)
+    return HttpResponse(value, content_type='application/xml')
 
 @login_required
 @api_view(['GET'])
@@ -519,13 +492,14 @@ def view_image_tile(request, image_id, z_dimension, frame, level, tile_path):
     col = int(results.group(1))
     row = int(results.group(2))
     format = results.group(3)
+    cache_key = f"{image_id}/{z_dimension}/{frame}/{level}/{col}/{row}"
 
     start = timer()
-    response = cache.get(request.path)
-    if response is not None:
+    buffer = tiles_cache.get(cache_key)
+    if buffer is not None:
         load_from_drive_time = timer() - start
         logger.info(f"{load_from_drive_time:.4f};{request.path};C")
-        return response
+        return HttpResponse(buffer, content_type='image/%s' % format)
 
     image = get_object_or_404(Image, id=image_id)
     if not image.image_set.has_perm('read', request.user):
@@ -540,14 +514,14 @@ def view_image_tile(request, image_id, z_dimension, frame, level, tile_path):
 
         buf = PILBytesIO()
         tile.save(buf, format, quality=90)
-        response = HttpResponse(buf.getvalue(), content_type='image/%s' % format)
+        buffer = buf.getvalue()
             
         load_from_drive_time = timer() - start
 
         logger.info(f"{load_from_drive_time:.4f};{request.path}")
 
-        cache.set(request.path, response, None)
-        return response
+        tiles_cache.set(cache_key, buffer, 7*24*60*60)
+        return HttpResponse(buffer, content_type='image/%s' % format)
     except:
         return HttpResponseBadRequest()
 
@@ -679,15 +653,15 @@ def view_imageset(request, image_set_id):
         annotation_types = AnnotationType.objects.filter(annotation__image__image_set=imageset,
                                                          active=True,  annotation__deleted=False,
                                                          annotation__user=request.user)\
-            .distinct().order_by('sort_order')\
-            .annotate(count=Count('annotation', filter=~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED)))
+            .order_by('sort_order')\
+            .annotate(count=Count('annotation', distinct=True, filter=~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED)))
                       #in_image_count=Count('annotation', filter=Q(annotation__verifications__verified=True, annotation__user=request.user) & ~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED)),
                       #not_in_image_count=Count('annotation', filter=Q(annotation__verifications__verified=False, annotation__user=request.user) & ~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED)))
     else:
 
         annotation_types = AnnotationType.objects.filter(annotation__image__image_set=imageset, active=True, annotation__deleted=False)\
-            .distinct().order_by('sort_order')\
-            .annotate(count=Count('annotation', filter=~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED)))
+            .order_by('sort_order')\
+            .annotate(count=Count('annotation', distinct=True, filter=~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED)))
                       #in_image_count=Count('annotation', filter=(Q(annotation__verifications__verified=True)
                       #                                           & ~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED))),
                       #not_in_image_count=Count('annotation', filter=(Q(annotation__verifications__verified=False)
