@@ -4,12 +4,17 @@ import datetime
 from typing import Set, Union
 from enum import Enum, IntEnum
 
+from django.core.cache import cache
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import models, connection
 from django.db.models import Subquery, F, IntegerField, OuterRef, Count
 from django.db.models.functions import Coalesce
 from django.utils.functional import cached_property
+
+from django.core.cache import cache
+from django.db.models.signals import post_delete, post_save, m2m_changed
+from django.dispatch import receiver
 
 from exact.images.models import Image, ImageSet, SetVersion
 from exact.users.models import Team
@@ -557,6 +562,13 @@ class AnnotationType(models.Model):
                 self.node_count == int(len(vector) // 2)):
             return False
         return True
+
+# Annotation types signals for del the cache
+@receiver([post_save, post_delete], sender=AnnotationType)
+def annotation_type_changed_handler(sender, instance, **kwargs):
+    # delte cached imageset information used in JS
+    for image_set in instance.product.imagesets.all():
+        cache.delete_pattern(f"*/api/v1/images/image_sets/{image_set.id}/*")
 
 
 class Export(models.Model):

@@ -8,6 +8,10 @@ from django.db import models
 from django.db.models import Count, Q, Sum
 from django.db.models.expressions import F
 
+from django.core.cache import cache
+from django.db.models.signals import post_delete, post_save, m2m_changed
+from django.dispatch import receiver
+
 import os
 import numpy as np
 import cv2
@@ -26,6 +30,7 @@ from pathlib import Path
 import tifffile
 
 from exact.users.models import Team
+
 
 
 class Image(models.Model):
@@ -82,13 +87,13 @@ class Image(models.Model):
         return os.path.join(self.image_set.root_path(), Path(self.get_file_name(depth, frame)).stem + self.thumbnail_extension )
 
     def delete(self, *args, **kwargs):
-        self.image_set.zip_state = ImageSet.ZipState.INVALID
-        self.image_set.save(update_fields=('zip_state',))
+        #self.image_set.zip_state = ImageSet.ZipState.INVALID
+        #self.image_set.save(update_fields=('zip_state',))
         super(Image, self).delete(*args, **kwargs)
 
     def save(self, *args, **kwargs):
-        self.image_set.zip_state = ImageSet.ZipState.INVALID
-        self.image_set.save(update_fields=('zip_state',))
+        #self.image_set.zip_state = ImageSet.ZipState.INVALID
+        #self.image_set.save(update_fields=('zip_state',))
         super(Image, self).save(*args, **kwargs)
 
 
@@ -274,6 +279,12 @@ class Image(models.Model):
     def __repr__(self):
         return u'Image: {0}'.format(self.name)
 
+# Image signals for del the cache
+@receiver([post_save, post_delete, m2m_changed], sender=Image)
+def image_changed_handler(sender, instance, **kwargs):
+
+    # delte cached imageset information used in JS
+    cache.delete_pattern(f"*/api/v1/images/image_sets/{instance.image_set_id}/*")
 
 class ImageSet(models.Model):
     class Meta:
@@ -467,11 +478,13 @@ class ImageSet(models.Model):
         images = Image.objects.filter(image_set=self).order_by('name')
 
         if self.collaboration_type == ImageSet.CollaborationTypes.COLLABORATIVE:
+
             unverified = images.filter(Q(annotations__annotation_type__active=True, annotations__deleted=False,
                                        annotations__verifications__verified=False) |
                                        Q(annotations__annotation_type__active=True, annotations__deleted=False,
                                        annotations__verifications=None))\
                 .distinct()
+
             unannotated = images.annotate(annotation_count=Count('annotations')).filter(annotation_count__exact=0).distinct()
 
             # TODO_ Convert to single query
@@ -514,6 +527,12 @@ class ImageSet(models.Model):
 
         return images
 
+# ImageSet for del the cache
+@receiver([post_save, post_delete, m2m_changed], sender=ImageSet)
+def imageset_changed_handler(sender, instance, **kwargs):
+
+    # delte cached imageset information used in JS
+    cache.delete_pattern(f"*/api/v1/images/image_sets/{instance.id}/*")
 
 class SetTag(models.Model):
     name = models.CharField(max_length=100, unique=True)
