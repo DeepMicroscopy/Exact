@@ -50,6 +50,7 @@ url={https://doi.org/10.1038/s41598-021-83827-4}
 * label verification
 * upload of existing labels
 * WSI [viewer](https://openseadragon.github.io/) 
+* [Caching](redis/CACHING.md)
 
 
 ## Documentation
@@ -103,6 +104,8 @@ Additional features:
 Copy the files `env.dev` and `env.dev.db`, rename to `env.prod` and `env.prod.db` and change settings according to your preferences.
 
 Copy and rename `settings.py.example` to `settings.py` in the exact folder.
+
+Enable caching in the `settings.py` according to the [documentation](redis/CACHING.md).
 
 Build and run the container:
 ```
