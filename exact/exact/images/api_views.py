@@ -1,3 +1,4 @@
+import logging
 import os, stat
 from timeit import default_timer as timer
 from django.core.paginator import Paginator
@@ -41,6 +42,7 @@ from PIL import Image as PIL_Image
 from util.slide_server import SlideCache, SlideFile, PILBytesIO
 image_cache = SlideCache(cache_size=10)
 
+logger = logging.getLogger('django')
 cache = caches['default']
 try:
     tiles_cache = caches['tiles_cache']
@@ -123,9 +125,9 @@ class ImageViewSet(viewsets.ModelViewSet):
 
         image = get_object_or_404(models.Image, id=pk)
 
-        mem_size = int(request.POST.get("mem_size_mb", 5))
-        z_dimension = int(request.POST.get("z_dimension", 1))
-        frame = int(request.POST.get("frame", 1))
+        mem_size = int(request.data.get("mem_size_mb", 5))
+        z_dimension = int(request.data.get("z_dimension", 1))
+        frame = int(request.data.get("frame", 1))
 
         slide = image_cache.get(image.path())
 
@@ -177,8 +179,10 @@ class ImageViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['GET'], name='Get Thumbnail for image PK')
     def thumbnail(self, request, pk=None):
 
+        start = timer()
         buffer = cache.get(f"{pk}_thumbnail")
         if buffer is not None:
+            logger.info(f"{timer() - start:.4f};{request.path};C")
             return HttpResponse(buffer, content_type='image/png')
 
         image = get_object_or_404(models.Image, id=pk)
@@ -196,6 +200,7 @@ class ImageViewSet(viewsets.ModelViewSet):
         buffer = buf.getvalue()
         cache.set(f"{pk}_thumbnail", buffer, None)
 
+        logger.info(f"{timer() - start:.4f};{request.path};")
         return HttpResponse(buffer, content_type='image/png')
 
     @action(detail=True, methods=['GET'], name='Get slide information from image PK')

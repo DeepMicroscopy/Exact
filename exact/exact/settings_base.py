@@ -34,19 +34,19 @@ SESSIONS_ENGINE='django.contrib.sessions.backends.cache'
 
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'unique-snowflake',
-        'OPTIONS': {
+        'BACKEND': os.environ.get("CACHE_BACKEND", default='django.core.cache.backends.locmem.LocMemCache'),
+        'LOCATION': os.environ.get("CACHE_LOCATION", default='unique-snowflake'),
+        'OPTIONS': os.environ.get("CACHE_OPTIONS", default={
             'MAX_ENTRIES': 1000
-        }, 
+        }),
         "KEY_PREFIX": os.environ.get("SQL_DATABASE", default='exact')
     },
     'tiles_cache': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'unique-snowflake',
-        'OPTIONS': {
+        'BACKEND': os.environ.get("CACHE_BACKEND_TILES", default='django.core.cache.backends.locmem.LocMemCache'),
+        'LOCATION': os.environ.get("CACHE_LOCATION_TILES", default='unique-snowflake'),
+        'OPTIONS': os.environ.get("CACHE_OPTIONS_TILES", default={
             'MAX_ENTRIES': 1000
-        }, 
+        }),
         "KEY_PREFIX": os.environ.get("SQL_DATABASE", default='exact')
     }
 }
@@ -252,8 +252,10 @@ LOGGING = {
         },
         'file_info': {
             'level': 'INFO',
-            'class': 'logging.FileHandler',
+            'class':'logging.handlers.RotatingFileHandler',
             'filename': IMAGE_PATH + '/exact_info.log', # ensure write access
+            'backupCount': 5,
+            'maxBytes': 1024*1024*5, # 5 MB
 			'formatter': 'verbose'
         },
     },
