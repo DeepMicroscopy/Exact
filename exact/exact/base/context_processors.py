@@ -9,7 +9,8 @@ def base_data(request):
 
     if request.user.is_authenticated:
         my_teams = Team.objects.filter(members=request.user)
-        unread_message_count = TeamMessage.in_range(TeamMessage.get_messages_for_user(request.user).filter(~Q(read_by=request.user))).count()
+        unread_message_count = 0
+        #unread_message_count = TeamMessage.in_range(TeamMessage.get_messages_for_user(request.user).filter(~Q(read_by=request.user))).count()
     else:
         my_teams = None
         unread_message_count = 0

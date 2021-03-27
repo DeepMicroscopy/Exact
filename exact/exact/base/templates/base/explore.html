@@ -158,7 +158,7 @@
                                             </th>
 
                                             <th>
-                                                <img id="image" src="{% url 'images:view_thumbnail' image.id %}" alt="Thumbnail {{image.name}} not found!" style="float:right; width:128px;height:128px;" data-imageid="{{ image.id }}">
+                                                <img id="image" src="/api/v1/images/images/{{image.id}}/thumbnail/" alt="Thumbnail {{image.name}} not found!" style="float:right; width:128px;height:128px;" data-imageid="{{ image.id }}">
                                             </th>
                                         </tr>
 
@@ -246,7 +246,7 @@
 
                                                 {% if annotation.annotation_type.vector_type == 7 %}
                                                     <th>
-                                                        <img id="image" src="{% url 'images:view_thumbnail' annotation.image.id %}" alt="Thumbnail {{annotation.image.name}} not found!" style="float:right; width:128px;height:128px;" data-imageid="{{ annotation.image.id }}">
+                                                        <img id="image" src="/api/v1/images/images/{{image.id}}/thumbnail/" alt="Thumbnail {{annotation.image.name}} not found!" style="float:right; width:128px;height:128px;" data-imageid="{{ annotation.image.id }}">
                                                     </th>
                                                 {% endif %}
 

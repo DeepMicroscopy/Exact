@@ -25,7 +25,31 @@ SECRET_KEY = os.environ.get("SECRET_KEY", default='DEV KEY PLEASE CHANGE IN PROD
 DEBUG = int(os.environ.get("DEBUG", default=0))
 
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", default='127.0.0.1').split(" ")
+INTERNAL_IPS = ['127.0.0.1']
 
+
+# Caching
+DJANGO_REDIS_IGNORE_EXCEPTIONS = True
+SESSIONS_ENGINE='django.contrib.sessions.backends.cache'
+
+CACHES = {
+    'default': {
+        'BACKEND': os.environ.get("CACHE_BACKEND", default='django.core.cache.backends.locmem.LocMemCache'),
+        'LOCATION': os.environ.get("CACHE_LOCATION", default='unique-snowflake'),
+        'OPTIONS': os.environ.get("CACHE_OPTIONS", default={
+            'MAX_ENTRIES': 1000
+        }),
+        "KEY_PREFIX": os.environ.get("SQL_DATABASE", default='exact')
+    },
+    'tiles_cache': {
+        'BACKEND': os.environ.get("CACHE_BACKEND_TILES", default='django.core.cache.backends.locmem.LocMemCache'),
+        'LOCATION': os.environ.get("CACHE_LOCATION_TILES", default='unique-snowflake'),
+        'OPTIONS': os.environ.get("CACHE_OPTIONS_TILES", default={
+            'MAX_ENTRIES': 1000
+        }),
+        "KEY_PREFIX": os.environ.get("SQL_DATABASE", default='exact')
+    }
+}
 
 # Application definition
 
@@ -81,6 +105,7 @@ REST_FRAMEWORK = {
 
 
 MIDDLEWARE = [
+    #'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -227,8 +252,10 @@ LOGGING = {
         },
         'file_info': {
             'level': 'INFO',
-            'class': 'logging.FileHandler',
+            'class':'logging.handlers.RotatingFileHandler',
             'filename': IMAGE_PATH + '/exact_info.log', # ensure write access
+            'backupCount': 5,
+            'maxBytes': 1024*1024*5, # 5 MB
 			'formatter': 'verbose'
         },
     },
