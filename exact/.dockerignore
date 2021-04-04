@@ -1,1 +1,4 @@
 /images/*
+/doc/*
+EXACT-API.yml
+/exact/datasets/downloads/*

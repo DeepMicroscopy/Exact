@@ -1,0 +1,560 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: VPC
+
+Parameters:
+
+  EnvStageName:
+    Type: String
+    Default: tree-april
+    Description: "The Environment name (e.g. dev, prod, etc.)"
+
+  CIDRBlockIP:
+    Description: The first two values of the IP for the VPC
+    Type: String
+    MinLength: '3'
+    MaxLength: '7'
+    Default: 10.20
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})"
+    ConstraintDescription: must be a valid start to an IP range of the form x.x
+
+  AvailabilityZone1:
+    Description: The first availability zone in the region
+    Default: eu-central-1a
+    Type: AWS::EC2::AvailabilityZone::Name
+    ConstraintDescription: Must be a valid availability zone
+
+  AvailabilityZone2:
+    Description: The second availability zone in the region
+    Default: eu-central-1b
+    Type: AWS::EC2::AvailabilityZone::Name
+    ConstraintDescription: Must be a valid availability zone
+
+  ELBIngressPort:
+    Description: The ELB ingress port used by security groups
+    Type: Number
+    MinValue: 0
+    MaxValue: 65535
+    ConstraintDescription: TCP ports must be between 0 - 65535
+    Default: 443
+
+  ELBHttpIngressPort:
+    Description: The ELB ingress port used by security groups
+    Type: Number
+    MinValue: 0
+    MaxValue: 65535
+    ConstraintDescription: TCP ports must be between 0 - 65535
+    Default: 80
+
+  AppIngressPort:
+    Description: The application ingress port used by security groups
+    Type: Number
+    MinValue: 0
+    MaxValue: 65535
+    ConstraintDescription: TCP ports must be between 0 - 65535
+    Default: 80
+
+  DbInVpc:
+    Type: String
+    Default: true
+    AllowedValues:
+      - true
+      - false
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Region Availability Zones
+        Parameters:
+          - AvailabilityZone1
+          - AvailabilityZone2
+      - Label:
+          default: Ingress Ports
+        Parameters:
+          - ELBIngressPort
+          - AppIngressPort
+    ParameterLabels:
+      AvailabilityZone1:
+        default: Availability Zone 1
+      AvailabilityZone2:
+        default: Availability Zone 2
+      ELBIngressPort:
+        default: Load Balancer Port
+      AppIngressPort:
+        default: Application Port
+
+Conditions:
+  CreateDbSecurityGroup: !Equals [ !Ref DbInVpc, true ]
+
+Mappings:
+
+  # Maps CIDR blocks to VPC and various subnets
+  CIDRMap:
+    VPC:
+      CIDR: ".0.0/16"
+    Public1:
+      CIDR: ".2.0/24"
+    Public2:
+      CIDR: ".3.0/24"
+    Private1:
+      CIDR: ".64.0/19"
+    Private2:
+      CIDR: ".96.0/19"
+
+Resources:
+
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Sub
+        - "${beg_ip}${sec_val}"
+        - beg_ip: !Ref CIDRBlockIP
+          sec_val: !FindInMap [ CIDRMap, VPC, CIDR ]
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+      - Key: Name
+        Value: !Ref "AWS::StackName"
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Sub
+        - "${beg_ip}${sec_val}"
+        - beg_ip: !Ref CIDRBlockIP
+          sec_val: !FindInMap [ CIDRMap, Public1, CIDR ]
+      AvailabilityZone: !Ref AvailabilityZone1
+      Tags:
+      - Key: Name
+        Value: !Sub "${AWS::StackName}-PublicSubnet1"
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    DependsOn:
+      - PublicSubnet1
+      - PrivateSubnet1
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Sub
+        - "${beg_ip}${sec_val}"
+        - beg_ip: !Ref CIDRBlockIP
+          sec_val: !FindInMap [ CIDRMap, Public2, CIDR ]
+      AvailabilityZone: !Ref AvailabilityZone2
+      Tags:
+      - Key: Name
+        Value: !Sub "${AWS::StackName}-PublicSubnet2"
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Sub
+        - "${beg_ip}${sec_val}"
+        - beg_ip: !Ref CIDRBlockIP
+          sec_val: !FindInMap [ CIDRMap, Private1, CIDR ]
+      AvailabilityZone: !Ref AvailabilityZone1
+      Tags:
+      - Key: Name
+        Value: !Sub "${AWS::StackName}-PrivateSubnet1"
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    DependsOn:
+      - PublicSubnet1
+      - PrivateSubnet1
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Sub
+        - "${beg_ip}${sec_val}"
+        - beg_ip: !Ref CIDRBlockIP
+          sec_val: !FindInMap [ CIDRMap, Private2, CIDR ]
+      AvailabilityZone: !Ref AvailabilityZone2
+      Tags:
+      - Key: Name
+        Value: !Sub "${AWS::StackName}-PrivateSubnet2"
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-igw"
+
+  VPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+      - Key: Name
+        Value: !Sub "${AWS::StackName}-public-rt"
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: VPCGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnetRouteTableAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicSubnetRouteTableAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicSubnetNetworkAclAssociation1:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      NetworkAclId: !GetAtt VPC.DefaultNetworkAcl
+
+  PublicSubnetNetworkAclAssociation2:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      NetworkAclId: !GetAtt VPC.DefaultNetworkAcl
+
+  ELBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable HTTP/HTTPs ingress
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+      - CidrIp: 0.0.0.0/0
+        IpProtocol: tcp
+        ToPort: !Ref ELBIngressPort
+        FromPort: !Ref ELBIngressPort
+      - CidrIp: 0.0.0.0/0
+        IpProtocol: tcp
+        ToPort: !Ref ELBHttpIngressPort  # ALB should redirect to HTTPS
+        FromPort: !Ref ELBHttpIngressPort
+      Tags:
+      - Key: Name
+        Value: !Sub "${AWS::StackName}-ELBSecurityGroup"
+
+  ELBSecurityGroupToAppEgress:
+    Type: AWS::EC2::SecurityGroupEgress  # prevent security group circular references
+    Properties:
+      GroupId: !Ref ELBSecurityGroup
+      IpProtocol: tcp
+      ToPort: !Ref AppIngressPort
+      FromPort: !Ref AppIngressPort
+      DestinationSecurityGroupId: !Ref AppSecurityGroup
+
+  AppSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable access from ELB to app
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+      - SourceSecurityGroupId: !Ref ELBSecurityGroup
+        IpProtocol: tcp
+        ToPort: !Ref AppIngressPort
+        FromPort: !Ref AppIngressPort
+      - SourceSecurityGroupId: !Ref BastionSecurityGroup
+        IpProtocol: tcp
+        ToPort: 22
+        FromPort: 22
+      Tags:
+      - Key: Name
+        Value: !Sub "${AWS::StackName}-AppSecurityGroup"
+
+  AppSecurityGroupFromELBIngress:
+    Type: AWS::EC2::SecurityGroupIngress  # prevent security group circular references
+    Properties:
+      GroupId: !Ref AppSecurityGroup
+      IpProtocol: tcp
+      ToPort: !Ref AppIngressPort
+      FromPort: !Ref AppIngressPort
+      SourceSecurityGroupId: !Ref ELBSecurityGroup
+
+  AppSecurityGroupFromAppSecurityGroupIngressTcp:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AppSecurityGroup
+      IpProtocol: tcp
+      ToPort: 65535
+      FromPort: 0
+      SourceSecurityGroupId: !Ref AppSecurityGroup
+
+  AppSecurityGroupFromAppSecurityGroupIngressUdp:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AppSecurityGroup
+      IpProtocol: udp
+      ToPort: 65535
+      FromPort: 0
+      SourceSecurityGroupId: !Ref AppSecurityGroup
+
+  BastionSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable access to the bastion host
+      VpcId: !Ref VPC
+      SecurityGroupEgress:
+      - CidrIp: 0.0.0.0/0
+        IpProtocol: tcp
+        ToPort: 65535
+        FromPort: 0
+      Tags:
+      - Key: Name
+        Value: !Sub "${AWS::StackName}-BastionSecurityGroup"
+
+  BastionSecurityGroupToAppEgress:
+    Type: AWS::EC2::SecurityGroupEgress  # prevent security group circular references
+    Properties:
+      GroupId: !Ref BastionSecurityGroup
+      IpProtocol: tcp
+      ToPort: 22
+      FromPort: 22
+      DestinationSecurityGroupId: !Ref AppSecurityGroup
+
+  #####################################################
+  # Database security groups, only create if required #
+  #####################################################
+  DbSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Condition: CreateDbSecurityGroup
+    Properties:
+      GroupDescription: Enable access to the RDS DB
+      VpcId: !Ref VPC
+      SecurityGroupEgress:
+      - CidrIp: 0.0.0.0/0
+        IpProtocol: tcp
+        ToPort: 6379
+        FromPort: 6379
+      - CidrIp: 0.0.0.0/0
+        IpProtocol: tcp
+        ToPort: 5432
+        FromPort: 5432
+      Tags:
+      - Key: Name
+        Value: !Sub "${AWS::StackName}-DbSecurityGroup"
+
+  DbSecurityGroupFromBastionIngressRedis:
+    Type: AWS::EC2::SecurityGroupIngress  # prevent security group circular references
+    Condition: CreateDbSecurityGroup
+    Properties:
+      GroupId: !Ref DbSecurityGroup
+      IpProtocol: tcp
+      ToPort: 6379  # Redis
+      FromPort: 6379
+      SourceSecurityGroupId: !Ref BastionSecurityGroup
+
+  DbSecurityGroupFromBastionIngressPostgres:
+    Type: AWS::EC2::SecurityGroupIngress  # prevent security group circular references
+    Condition: CreateDbSecurityGroup
+    Properties:
+      GroupId: !Ref DbSecurityGroup
+      IpProtocol: tcp
+      ToPort: 5432  # Postgres
+      FromPort: 5432
+      SourceSecurityGroupId: !Ref BastionSecurityGroup
+
+  DbSecurityGroupFromAppIngressRedis:
+    Type: AWS::EC2::SecurityGroupIngress  # prevent security group circular references
+    Condition: CreateDbSecurityGroup
+    Properties:
+      GroupId: !Ref DbSecurityGroup
+      IpProtocol: tcp
+      ToPort: 6379
+      FromPort: 6379
+      SourceSecurityGroupId: !Ref AppSecurityGroup
+
+  DbSecurityGroupFromAppIngressPostgres:
+    Type: AWS::EC2::SecurityGroupIngress  # prevent security group circular references
+    Condition: CreateDbSecurityGroup
+    Properties:
+      GroupId: !Ref DbSecurityGroup
+      IpProtocol: tcp
+      ToPort: 5432
+      FromPort: 5432
+      SourceSecurityGroupId: !Ref AppSecurityGroup
+
+  #############################################################################
+  # NAT-related resources                                                     #
+  #                                                                           #
+  # NAT is used to allow instances in private subnets to communicate with AWS #
+  # services, and pull down code and updates.                                 #
+  #############################################################################
+  NatGateway1:
+    DependsOn: VPCGatewayAttachment
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatEIP1a.AllocationId
+      SubnetId: !Ref PublicSubnet1
+
+  NatEIP1a:
+    DependsOn: VPCGatewayAttachment
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+
+  NatRouteTable1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+      - Key: Name
+        Value: !Sub "${AWS::StackName}-private-nat-1"
+
+  NatRoute1:
+    Type: AWS::EC2::Route
+    DependsOn: VPCGatewayAttachment
+    Properties:
+      RouteTableId: !Ref NatRouteTable1
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway1
+
+  PrivateSubnetRouteTableAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet1
+      RouteTableId: !Ref NatRouteTable1
+
+  PrivateSubnetRouteTableAssociationSingleNatGateway:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet2
+      RouteTableId: !Ref NatRouteTable1
+
+  #############################################################
+  # S3 Endpoint                                               #
+  # Enables access to S3 by the resources from within the VPC #
+  #############################################################
+  S3Endpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal: '*'
+            Action:
+              - 's3:*'
+            Resource:
+              - '*'
+      RouteTableIds:
+        - !Ref PublicRouteTable
+        - !Ref NatRouteTable1
+      ServiceName: !Join
+        - ''
+        - - com.amazonaws.
+          - !Ref 'AWS::Region'
+          - .s3
+      VpcId: !Ref VPC
+
+Outputs:
+
+  Name:
+    Description: VPC Stack Name
+    Value: !Ref AWS::StackName
+    Export:
+      Name: !Sub "${AWS::StackName}-Name"
+
+  VPCId:
+    Description: VPC ID
+    Value: !Ref VPC
+    Export:
+      Name: !Sub "${AWS::StackName}-VpcID-${EnvStageName}"
+
+  VpcCidr:
+    Description: Vpc cidr block
+    Value: !Sub
+      - "${beg_ip}${sec_val}"
+      - beg_ip: !Ref CIDRBlockIP
+        sec_val: !FindInMap [ CIDRMap, VPC, CIDR ]
+    Export:
+      Name: !Sub "${AWS::StackName}-vpc-cidr-${EnvStageName}"
+
+  PublicSubnet1:
+    Description: Public subnet 1 ID
+    Value: !Ref PublicSubnet1
+    Export:
+      Name: !Sub "${AWS::StackName}-PublicSubnet1ID-${EnvStageName}"
+
+  PublicSubnet2:
+    Description: Public subnet 2 ID
+    Value: !Ref PublicSubnet2
+    Export:
+      Name: !Sub "${AWS::StackName}-PublicSubnet2ID-${EnvStageName}"
+
+  PrivateSubnet1:
+    Description: Private subnet 1 ID
+    Value: !Ref PrivateSubnet1
+    Export:
+      Name: !Sub "${AWS::StackName}-PrivateSubnet1ID-${EnvStageName}"
+
+  PrivateSubnet2:
+    Description: Private subnet 2 ID
+    Value: !Ref PrivateSubnet2
+    Export:
+      Name: !Sub "${AWS::StackName}-PrivateSubnet2ID-${EnvStageName}"
+
+  ELBSecurityGroup:
+    Description: Security group ID for Internet-facing ELB
+    Value: !GetAtt ELBSecurityGroup.GroupId
+    Export:
+      Name: !Sub "${AWS::StackName}-ELBSecurityGroupID-${EnvStageName}"
+
+  AppSecurityGroup:
+    Description: Security group ID for app behind ELB
+    Value: !GetAtt AppSecurityGroup.GroupId
+    Export:
+      Name: !Sub "${AWS::StackName}-AppSecurityGroupID-${EnvStageName}"
+
+  BastionSecurityGroup:
+    Description: Security group ID for bastion host
+    Value: !GetAtt BastionSecurityGroup.GroupId
+    Export:
+      Name: !Sub "${AWS::StackName}-BastionGroupID-${EnvStageName}"
+
+  ELBIngressPort:
+    Description: ELB ingress port
+    Value: !Ref ELBIngressPort
+    Export:
+      Name: !Sub "${AWS::StackName}-ELBIngressPort-${EnvStageName}"
+
+  AppIngressPort:
+    Description: App ingress port
+    Value: !Ref AppIngressPort
+    Export:
+      Name: !Sub "${AWS::StackName}-AppIngressPort-${EnvStageName}"
+
+  DbSecurityGroup:
+    Description: The security group for database resources
+    Condition: CreateDbSecurityGroup
+    Value: !GetAtt DbSecurityGroup.GroupId
+    Export:
+      Name: !Sub "${AWS::StackName}-DbSecurityGroup-${EnvStageName}"
+
+  AppSecurityGroup:
+    Description: Security groups to be given to Lambda functions in this VPC
+    Value: !Join [',', [!GetAtt AppSecurityGroup.GroupId]]
+    Export:
+      Name: !Sub "${AWS::StackName}-AppSecurityGroup-${EnvStageName}"
+
+  AppSubnets:
+    Description: Subnets to be given to the Lambda functions in this VPC.
+    Value: !Join [',', [!Ref PrivateSubnet1, !Ref PrivateSubnet2]]
+    Export:
+      Name: !Sub "${AWS::StackName}-AppSubnets-${EnvStageName}"
+
+  LoadBalancerSubnets:
+    Description: Subnets to be given to the Load Balancers in this VPC.
+    Value: !Join [',', [!Ref PublicSubnet1, !Ref PublicSubnet2]]
+    Export:
+      Name: !Sub "${AWS::StackName}-LoadBalancerSubnets-${EnvStageName}"

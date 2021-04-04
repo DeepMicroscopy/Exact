@@ -1,0 +1,341 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Django sample app with Celery service
+
+Parameters:
+  EnvStageName:
+    Default: tree-april
+    Description: The environment name (e.g. dev, prod, etc.)
+    Type: String
+  Region:
+    Default: eu-central-1
+    Description: The region to deploy the code to
+    Type: String
+  EcsCommonStackName:
+    Default: my-cluster-resources
+    Description: The stack name for the common ECS resources
+    Type: String
+  VpcStackName:
+    Default: my-vpc-stack
+    Description: The name of the stack that has been deployed which contains the VPC information
+      (i.e. subnets, security groups) needed to put the ECS task definition & service into
+    Type: String
+  DjangoAppContainerName:
+    Default: django_ecs_app
+    Description: The name of the container that serves the django app
+    Type: String
+  DjangoAppServiceName:
+    Default: django-ecs-app-service
+    Description: The ECS service name for the django app
+    Type: String
+  DjangoTaskName:
+    Default: django-ecs-app-task
+    Description: The ECS task name for the django app
+    Type: String
+  NginxContainerName:
+    Default: ecs_nginx
+    Description: The name of the nginx container
+    Type: String
+  NginxTaskName:
+    Default: nginx-app-task
+    Description: The ECS task name for nginx
+    Type: String
+  AppContainerPort:
+    Type: Number
+    Description: Container port of app requiring ELB exposure
+    Default: 80
+  AutoScalingTargetValue:
+    Type: Number
+    Description: target CPU utilization (%)
+    Default: 50
+    
+
+Mappings:
+  appConfigs:
+    tree-april:
+      redis: "tree-redis-cache.cnysys.0001.euc1.cache.amazonaws.com:6379"
+      djangoAppSecret: "arn:aws:secretsmanager:eu-central-1:298068947512:secret:Tree_Schema-QktESy"
+      loadbalancerCertArn: "arn:aws:acm:eu-central-1:298068947512:certificate/327169bc-2f5b-4021-ac3d-b484f521cff9"
+
+
+Resources:
+
+  #################
+  # ECS resources #
+  #################
+
+  DjangoAppLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Join ['/', ["/aws/ecs", "ecs-example-app", !Ref DjangoAppServiceName]]
+
+  #CeleryAppLogGroup:
+  #  Type: AWS::Logs::LogGroup
+  #  Properties:
+  #    LogGroupName: !Join ['/', ["/aws/ecs", "ecs-example-app", !Ref CeleryAppServiceName]]
+
+  DjangoAppTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    DependsOn:
+      - DjangoAppLogGroup
+      #- CeleryAppLogGroup
+    Properties:
+      Family: !Join ['', [!Ref DjangoAppServiceName, DjangoAppTaskDefinition]]
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: 256
+      Memory: "0.5GB"
+      ExecutionRoleArn:
+        Fn::ImportValue:
+          Fn::Join:
+            - "-"
+            - - !Ref EcsCommonStackName
+              - ECSExecutionRole
+              - !Ref EnvStageName
+              - 'Arn'
+      TaskRoleArn:
+        Fn::ImportValue:
+          Fn::Join:
+            - "-"
+            - - !Ref EcsCommonStackName
+              - EcsTaskRole
+              - !Ref EnvStageName
+              - 'Arn'
+      ContainerDefinitions:
+        - Name: !Ref DjangoAppContainerName
+          Image: !Sub "${AWS::AccountId}.dkr.ecr.${Region}.amazonaws.com/${DjangoAppContainerName}:0.0.1"
+          PortMappings:
+            - ContainerPort: 8000
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region: !Ref AWS::Region
+              awslogs-group: !Ref DjangoAppLogGroup
+              awslogs-stream-prefix: ecs
+          EntryPoint:
+            - "/cmds/entrypoint"
+          Command:
+            - "/cmds/start"
+          Secrets:
+            - Name: DJANGO_ECS_SECRETS
+              ValueFrom: !FindInMap [ appConfigs, !Ref EnvStageName, djangoAppSecret ]
+          Environment:
+            - Name: AWS_REGION
+              Value: !Ref Region
+            - Name: DJANGO_SETTINGS_MODULE
+              Value: exact.settings_aws
+            - Name: REDIS_HOST
+              Value: !FindInMap [ appConfigs, !Ref EnvStageName, redis ]
+            - Name: MY_STATIC_CDN
+              Value: !ImportValue
+                Fn::Join:
+                  - "-"
+                  - - !Ref EcsCommonStackName
+                    - 'CloudFrontDomainName'
+                    - !Ref EnvStageName
+            - Name: AWS_STORAGE_BUCKET_NAME
+              Value: !ImportValue
+                Fn::Join:
+                  - "-"
+                  - - !Ref EcsCommonStackName
+                    - 'StaticFilesBucket'
+                    - !Ref EnvStageName
+        - Name: !Ref NginxTaskName
+          Image: !Sub "${AWS::AccountId}.dkr.ecr.${Region}.amazonaws.com/${NginxContainerName}:0.0.1"
+          PortMappings:
+            - ContainerPort: !Ref AppContainerPort
+          DependsOn:
+            - ContainerName: !Ref DjangoAppContainerName
+              Condition: START
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region: !Ref AWS::Region
+              awslogs-group: !Ref DjangoAppLogGroup
+              awslogs-stream-prefix: ecs   
+  DjangoAppService:
+    Type: AWS::ECS::Service
+    DependsOn:
+      - DjangoAppHttpListener
+      - DjangoAppHttpsListener
+    Properties:
+      ServiceName: !Ref DjangoAppServiceName
+      Cluster:
+        Fn::ImportValue:
+          Fn::Join:
+            - "-"
+            - - !Ref EcsCommonStackName
+              - GeneralECSCluster
+              - !Ref EnvStageName
+      TaskDefinition: !Ref DjangoAppTaskDefinition
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 100
+        MaximumPercent: 200
+      DesiredCount: 1
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets: !Split
+            - ","
+            - Fn::ImportValue:
+                Fn::Join:
+                  - "-"
+                  - - !Ref VpcStackName
+                    - AppSubnets
+                    - !Ref EnvStageName
+          SecurityGroups: !Split
+            - ','
+            - Fn::ImportValue:
+                Fn::Join:
+                  - '-'
+                  - - !Ref VpcStackName
+                    - AppSecurityGroup
+                    - !Ref EnvStageName
+      LoadBalancers:
+        - ContainerName: !Ref NginxTaskName 
+          ContainerPort: !Ref AppContainerPort
+          TargetGroupArn: !Ref DjangoAppTargetGroup
+
+  AutoScalingTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MinCapacity: 1
+      MaxCapacity: 1
+      ResourceId:
+        Fn::Join:
+          - "/"
+          - - service
+            - Fn::ImportValue:
+                Fn::Join:
+                  - "-"
+                  - - !Ref EcsCommonStackName
+                    - 'GeneralECSCluster'
+                    - !Ref EnvStageName
+            - !GetAtt DjangoAppService.Name
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+      RoleARN:
+        Fn::ImportValue:
+          Fn::Join:
+            - "-"
+            - - !Ref EcsCommonStackName
+              - 'ECSAutoScalingRole'
+              - !Ref EnvStageName
+              - 'Arn'
+
+  AutoScalingPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: !Join ['', [!Ref DjangoAppServiceName, AutoScalingPolicy]]
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: !Ref AutoScalingTarget
+      TargetTrackingScalingPolicyConfiguration:
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+        ScaleInCooldown: 75
+        ScaleOutCooldown: 30
+        TargetValue: 50
+
+  AutoScalingPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: !Join ['', [!Ref DjangoAppServiceName, AutoScalingPolicy]]
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: !Ref AutoScalingTarget
+      TargetTrackingScalingPolicyConfiguration:
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ECSServiceAverageMemoryUtilization
+        ScaleInCooldown: 60
+        ScaleOutCooldown: 20
+        TargetValue: 40
+
+
+  ###########################
+  # Load balancer resources #
+  ###########################
+
+  DjangoAppLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      LoadBalancerAttributes:
+      - Key: 'idle_timeout.timeout_seconds'
+        Value: 60
+      - Key: 'routing.http2.enabled'
+        Value: 'true'
+      - Key: 'access_logs.s3.enabled'
+        Value: 'false'
+      Scheme: internet-facing
+      SecurityGroups: !Split
+        - ','
+        - Fn::ImportValue:
+            Fn::Join:
+              - '-'
+              - - !Ref VpcStackName
+                - ELBSecurityGroupID
+                - !Ref EnvStageName
+      Subnets: !Split
+        - ","
+        - Fn::ImportValue:
+            Fn::Join:
+              - "-"
+              - - !Ref VpcStackName
+                - LoadBalancerSubnets
+                - !Ref EnvStageName
+      Type: application
+
+  DjangoAppHttpsListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      Certificates:
+      - CertificateArn: !FindInMap [ appConfigs, !Ref EnvStageName, loadbalancerCertArn ]
+      DefaultActions:
+      - TargetGroupArn: !Ref DjangoAppTargetGroup
+        Type: forward
+      LoadBalancerArn: !Ref DjangoAppLoadBalancer
+      Port: 443
+      Protocol: HTTPS
+
+  DjangoAppHttpListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - RedirectConfig:
+            Host: "#{host}"
+            Path: "/#{path}"
+            Port: 443
+            Protocol: "HTTPS"
+            Query: "#{query}"
+            StatusCode: HTTP_301
+          Type: redirect
+      LoadBalancerArn: !Ref DjangoAppLoadBalancer
+      Port: 80
+      Protocol: HTTP
+
+  DjangoAppTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Port: !Ref AppContainerPort
+      HealthCheckPath: '/health/'
+      HealthCheckProtocol: HTTP
+      HealthCheckIntervalSeconds: 90
+      HealthCheckTimeoutSeconds: 60
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 2
+      Matcher:
+        HttpCode: '200-299'
+      Protocol: HTTP
+      TargetType: ip
+      TargetGroupAttributes:
+      - Key: deregistration_delay.timeout_seconds
+        Value: 60
+      VpcId:
+        Fn::ImportValue:
+          Fn::Join:
+            - '-'
+            - - !Ref VpcStackName
+              - VpcID
+              - !Ref EnvStageName
+

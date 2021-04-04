@@ -1,0 +1,299 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Common, reusable components
+
+Parameters:
+  EnvStageName:
+    Type: String
+    Default: tree-april
+    Description: "The Environment name (e.g. dev, prod, etc.)"
+  Region:
+    Type: String
+    Default: eu-central-1
+    Description: "The Environment name (e.g. dev, prod, etc.)"
+  YourUserId:
+    Type: String
+    Default: your-username
+    Description: "The user ID that should have direct access to S3 static files resources"
+
+Resources:
+
+  ###############
+  # ECS Cluster #
+  ###############
+  GeneralECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub "${AWS::StackName}-GeneralECSCluster-${EnvStageName}"
+
+  ###########################################
+  # ECS Required Roles with Custom Policies #
+  ###########################################
+
+  # A role needed by ECS to pull from ECS and to create log streams
+  ECSExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-ECSExecutionRole-${EnvStageName}"
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy'
+
+  ECSExecutionRolePolicy:
+    Type: AWS::IAM::Policy
+    DependsOn:
+      - EcsTaskRole
+    Description: Setting IAM Policy for updating S3 notification configs
+    Properties:
+      PolicyName: !Sub "${AWS::StackName}-ECSExecutionRole-${EnvStageName}"
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - secretsmanager:GetSecretValue
+            Resource: # Any resource
+              - "*"
+      Roles:
+        - !Ref ECSExecutionRole
+
+  # A role for the containers
+  EcsTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-EcsTaskRole-${EnvStageName}"
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: 'sts:AssumeRole'
+
+  ECSTaskRolePolicy:
+    Type: AWS::IAM::Policy
+    DependsOn:
+      - EcsTaskRole
+    Description: Setting IAM Policy for updating S3 notification configs
+    Properties:
+      PolicyName: !Sub "${AWS::StackName}-ECSTaskRolePolicy-${EnvStageName}"
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - logs:*
+              - cloudwatch:*
+            Resource: # Any resource
+              - "*"
+      Roles:
+        - !Ref EcsTaskRole
+
+  ###############################
+  # Roles with Managed Policies #
+  ###############################
+  # A role needed for auto scaling
+  ECSAutoScalingRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-ECSAutoScalingRole-${EnvStageName}"
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceAutoscaleRole'
+
+  #####################
+  # Common S3 Buckets #
+  #####################
+  # Bucket for all code deploy resources
+
+  # Bucket names must be globally unique, so make sure you update the
+  # second value in the !Join for the bucket names!
+
+  CodeDeployBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Join
+        - "-"
+        - - !Ref EnvStageName
+          - "my-ecs-example-code-deploy"
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  LogOutputBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Join
+        - "-"
+        - - !Ref EnvStageName
+          - "my-ecs-example-logs"
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+
+  StaticFilesBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: PublicRead
+      BucketName: !Join
+        - "-"
+        - - !Ref EnvStageName
+          - "my-ecs-example-static-files"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - "*"
+            AllowedMethods:
+              - GET
+              - HEAD
+            AllowedOrigins:
+              - "*"
+            MaxAge: "3000"
+
+  StaticFilesOriginAccessIdentiity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: Access to static files from CloudFront
+
+  StaticFilesCloudFront:
+    Type: AWS::CloudFront::Distribution
+    DependsOn:
+      - StaticFilesOriginAccessIdentiity
+      - StaticFilesBucket
+    Properties:
+      DistributionConfig:
+        Origins:
+        - DomainName: !Join
+            - ""
+            - - !Ref StaticFilesBucket
+              - !Sub ".s3-${Region}.amazonaws.com"
+          Id: myS3Origin
+          S3OriginConfig:
+            OriginAccessIdentity: !Join
+              - ""
+              - - "origin-access-identity/cloudfront/"
+                - !Ref StaticFilesOriginAccessIdentiity
+        Enabled: 'true'
+        Comment: Serve static files from CloudFront
+        Logging:
+          IncludeCookies: 'false'
+          Bucket: !Join
+            - ""
+            - - !Ref LogOutputBucket
+              - ".s3.amazonaws.com"
+          Prefix: cloudfront
+        PriceClass: PriceClass_100
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: 'true'
+        DefaultCacheBehavior:
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+          Compress: true
+          DefaultTTL: 86400
+          ForwardedValues:
+            QueryString: false
+            Headers:
+              - Access-Control-Request-Headers
+              - Access-Control-Request-Method
+              - Access-Control-Allow-Origin
+              - Origin
+          MaxTTL: 864000
+          MinTTL: 0
+          TargetOriginId: myS3Origin
+          ViewerProtocolPolicy: allow-all
+        IPV6Enabled: true
+
+
+  StaticFilesBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    DependsOn:
+      - StaticFilesBucket
+      - StaticFilesOriginAccessIdentiity
+    Properties:
+      Bucket: !Ref StaticFilesBucket
+      PolicyDocument:
+        Statement:
+          - Action:
+              - "s3:GetObject"
+            Effect: "Allow"
+            Resource:
+              - !GetAtt StaticFilesBucket.Arn
+              - Fn::Join:
+                - ""
+                - - !GetAtt StaticFilesBucket.Arn
+                  - "/*"
+            Principal:
+              AWS: !Join
+                - ""
+                - - "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity "
+                  - !Ref StaticFilesOriginAccessIdentiity
+
+
+Outputs:
+
+  GeneralECSCluster:
+    Description: The general purpose ECS cluster for Tree Schema
+    Value: !Ref GeneralECSCluster
+    Export:
+      Name: !Sub "${AWS::StackName}-GeneralECSCluster-${EnvStageName}"
+
+  ECSAutoScalingRole:
+    Description: The Arn of the ECSAutoScalingRole
+    Value: !GetAtt ECSAutoScalingRole.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-ECSAutoScalingRole-${EnvStageName}-Arn"
+
+  ECSTaskRole:
+    Description: The arn of the EcsTaskRole
+    Value: !GetAtt EcsTaskRole.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-EcsTaskRole-${EnvStageName}-Arn"
+
+  ECSExecutionRole:
+    Description: The arn of the ECSExecutionRole
+    Value: !GetAtt ECSExecutionRole.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-ECSExecutionRole-${EnvStageName}-Arn"
+
+  CloudFrontDomainName:
+    Description: The cloudfront CDN for the static files
+    Value: !GetAtt StaticFilesCloudFront.DomainName
+    Export:
+      Name: !Sub "${AWS::StackName}-CloudFrontDomainName-${EnvStageName}"
+
+  StaticFilesBucket:
+    Description: The static files bucket for Tree Schema
+    Value: !Ref StaticFilesBucket
+    Export:
+      Name: !Sub "${AWS::StackName}-StaticFilesBucket-${EnvStageName}"
+

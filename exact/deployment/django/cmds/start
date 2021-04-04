@@ -1,0 +1,3 @@
+#!/bin/bash
+python3 /home/app/web/exact/manage.py migrate --noinput
+PYTHONWARNINGS="ignore" /usr/local/bin/gunicorn exact.wsgi:application --bind 0.0.0.0:8000 --chdir=/home/app/web/exact --workers=1 --threads=2

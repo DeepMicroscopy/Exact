@@ -36,3 +36,12 @@ pandas==1.1.4
 qt-wsi-registration>=0.0.6
 EXCAT-Sync>=0.0.22
 pyyaml
+django-redis>=4.12.1
+Collectfast==2.1.0  # https://github.com/antonagestam/collectfast
+django-storages[boto3]==1.9.1  # https://github.com/jschneier/django-storages
+
+matplotlib==3.3.4
+open3d==0.12.0
+scipy==1.5.4
+scikit_learn==0.24.1
+transformations==2020.1.1

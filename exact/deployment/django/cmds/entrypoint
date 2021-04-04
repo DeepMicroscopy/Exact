@@ -1,0 +1,45 @@
+#!/bin/bash
+
+set -o errexit
+set -o pipefail
+set -o nounset
+
+
+export POSTGRES_USER=$(python3 -c "import os, json; print(json.loads(os.environ['DJANGO_ECS_SECRETS'])['POSTGRES_USER'])")
+export POSTGRES_PASSWORD=$(python3 -c "import os, json; print(json.loads(os.environ['DJANGO_ECS_SECRETS'])['POSTGRES_PASSWORD'])")
+export POSTGRES_HOST=$(python3 -c "import os, json; print(json.loads(os.environ['DJANGO_ECS_SECRETS'])['POSTGRES_HOST'])")
+export POSTGRES_PORT=$(python3 -c "import os, json; print(json.loads(os.environ['DJANGO_ECS_SECRETS'])['POSTGRES_PORT'])")
+export POSTGRES_DB=$(python3 -c "import os, json; print(json.loads(os.environ['DJANGO_ECS_SECRETS'])['POSTGRES_DB'])")
+
+export DATABASE_URL="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}"
+
+postgres_ready() {
+python << END
+import json
+import sys
+
+import psycopg2
+
+DJANGO_ECS_SECRETS = ${DJANGO_ECS_SECRETS}
+
+try:
+    psycopg2.connect(
+        dbname=DJANGO_ECS_SECRETS['POSTGRES_DB'],
+        user=DJANGO_ECS_SECRETS['POSTGRES_USER'],
+        password=DJANGO_ECS_SECRETS['POSTGRES_PASSWORD'],
+        host=DJANGO_ECS_SECRETS['POSTGRES_HOST'],
+        port=DJANGO_ECS_SECRETS['POSTGRES_PORT'],
+    )
+except psycopg2.OperationalError:
+    sys.exit(-1)
+sys.exit(0)
+
+END
+}
+until postgres_ready; do
+  >&2 echo 'Waiting for PostgreSQL to become available...'
+  sleep 1
+done
+>&2 echo 'PostgreSQL is available'
+
+exec "$@"

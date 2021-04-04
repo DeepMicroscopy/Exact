@@ -11,7 +11,7 @@ WORKDIR /usr/src/app
 
 ENV DEBIAN_FRONTEND="noninteractive" TZ="SystemV"
 # install dependencies
-RUN apt-get update && apt-get install --yes  --no-install-recommends build-essential gcc python3-dev python3-pip python3-openslide libvips libvips-dev python3-opencv dos2unix \
+RUN apt-get update && apt-get install --yes  --no-install-recommends build-essential gcc python3-dev python3-pip python3-openslide libvips libvips-dev python3-opencv \
     && rm -rf /var/lib/apt/lists/*
 
 
@@ -28,18 +28,13 @@ COPY . /usr/src/app/
 #RUN flake8 --ignore=E501,F401 .
 
 # install dependencies
-COPY ./requirements.txt .
+COPY ./exact/requirements.txt .
 RUN pip3 wheel --no-deps  --wheel-dir /usr/src/app/wheels -r requirements.txt
 
 
 # copy entrypoint.sh and convert to linux format 
 #RUN apt-get update && apt-get install -y dos2unix
-COPY ./entrypoint.prod.sh /usr/src/app/entrypoint.prod.sh
-
-RUN dos2unix /usr/src/app/entrypoint.prod.sh
-
-RUN chmod +x /usr/src/app/entrypoint.prod.sh
-
+#COPY ./entrypoint.prod.sh /usr/src/app/entrypoint.prod.sh
 
 #########
 # FINAL #
@@ -72,7 +67,7 @@ RUN pip3 install --no-cache  /wheels/*
 RUN rm -rf /wheels
 
 # copy entrypoint-prod.sh
-COPY --from=builder /usr/src/app/entrypoint.prod.sh $APP_HOME
+#COPY --from=builder /usr/src/app/entrypoint.prod.sh $APP_HOME
 
 # copy project
 COPY . $APP_HOME
@@ -82,7 +77,3 @@ COPY . $APP_HOME
 
 # change to the app user
 #USER app
-
-
-# run entrypoint.prod.sh
-ENTRYPOINT ["/home/app/web/entrypoint.prod.sh"]
