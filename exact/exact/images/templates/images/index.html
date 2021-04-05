@@ -15,7 +15,7 @@
                                 <div class="col-sm-3">
                                     <div class="card">
                                         <a href="{% url 'annotations:annotate' last_image_action.image.id %}">
-                                            <img class="card-img-top" src="{% url 'images:view_thumbnail' last_image_action.image.id %}"
+                                            <img class="card-img-top" src="/api/v1/images/images/{{last_image_action.image.id}}/thumbnail/"
                                                 alt="Thumbnail {{image.name}} not found!" data-imageid="{{ last_image_action.image.id }}">
                                         </a>
                                         <div class="card-body">
@@ -35,7 +35,7 @@
                                             {% for image in imageset.images.all|slice:":1" %}
                                                 {% if image.id is not None %}
                                                     <a href="{% url 'annotations:annotate' image.id %}">
-                                                        <img class="card-img-top" src="{% url 'images:view_thumbnail' image.id %}"
+                                                        <img class="card-img-top" src="/api/v1/images/images/{{image.id}}/thumbnail/"
                                                             alt="Thumbnail {{image.name}} not found!" data-imageid="{{ image.id }}">
                                                     </a>
                                                 {% endif %}
@@ -59,7 +59,7 @@
                                 <div class="card">
                                     {% for image in imageset.images.all|slice:":1" %}
                                         <a href="{% url 'annotations:annotate' image.id %}">
-                                            <img class="card-img-top" src="{% url 'images:view_thumbnail' image.id %}"
+                                            <img class="card-img-top" src="/api/v1/images/images/{{image.id}}/thumbnail/"
                                                 alt="Thumbnail {{image.name}} not found!" data-imageid="{{ image.id }}">
                                         </a>
                                     {% endfor %}
@@ -116,7 +116,7 @@
                                                     <div class="card">
                                                         {% for image in imageset.images.all|slice:":1" %}
                                                             <a href="{% url 'annotations:annotate' image.id %}">
-                                                                <img class="card-img-top" src="{% url 'images:view_thumbnail' image.id %}"
+                                                                <img class="card-img-top" src="/api/v1/images/images/{{image.id}}/thumbnail/"
                                                                     alt="Thumbnail {{image.name}} not found!" data-imageid="{{ image.id }}">
                                                             </a>
                                                         {% endfor %}
