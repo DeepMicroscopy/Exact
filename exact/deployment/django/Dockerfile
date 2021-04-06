@@ -28,7 +28,7 @@ COPY . /usr/src/app/
 #RUN flake8 --ignore=E501,F401 .
 
 # install dependencies
-COPY ./exact/requirements.txt .
+COPY ./requirements.txt .
 RUN pip3 wheel --no-deps  --wheel-dir /usr/src/app/wheels -r requirements.txt
 
 
@@ -63,6 +63,7 @@ WORKDIR $APP_HOME
 RUN pip3 install --upgrade pip  && pip3 install setuptools wheel
 COPY --from=builder /usr/src/app/wheels /wheels
 RUN pip3 install --no-cache  /wheels/*
+RUN pip3 install django-storages[boto3]==1.9.1
 
 RUN rm -rf /wheels
 

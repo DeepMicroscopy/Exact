@@ -4,6 +4,15 @@ Description: >
   Django sample app with Celery service
 
 Parameters:
+  DjangoSuperuserUsername:
+    Description: The django super user name
+    Type: String
+  DjangoSuperuserPassword:
+    Description: The django super user password
+    Type: String
+  DjangoSuperuserEmail:
+    Description: The django super user email
+    Type: String
   EnvStageName:
     Default: tree-april
     Description: The environment name (e.g. dev, prod, etc.)
@@ -49,7 +58,10 @@ Parameters:
     Type: Number
     Description: target CPU utilization (%)
     Default: 50
-    
+  ConnMaxAge:
+    Description: The number of seconds how long the db connection should be open
+    Type: Number
+    Default: 0
 
 Mappings:
   appConfigs:
@@ -115,9 +127,13 @@ Resources:
               awslogs-group: !Ref DjangoAppLogGroup
               awslogs-stream-prefix: ecs
           EntryPoint:
-            - "/cmds/entrypoint"
+            - "./deployment/django/cmds/entrypoint"
           Command:
-            - "/cmds/start"
+            - "./deployment/django/cmds/start"
+          MountPoint:
+            -  ContainerPath: "/usr/share/exact_images"
+            -  ReadOnly: false
+            -  SourceVolume: "efs-exact"
           Secrets:
             - Name: DJANGO_ECS_SECRETS
               ValueFrom: !FindInMap [ appConfigs, !Ref EnvStageName, djangoAppSecret ]
@@ -126,6 +142,14 @@ Resources:
               Value: !Ref Region
             - Name: DJANGO_SETTINGS_MODULE
               Value: exact.settings_aws
+            - Name: DJANGO_SUPERUSER_PASSWORD
+              Value: !Ref DjangoSuperuserPassword
+            - Name: DJANGO_SUPERUSER_USERNAME
+              Value: !Ref DjangoSuperuserUsername
+            - Name: DJANGO_SUPERUSER_EMAIL
+              Value: !Ref DjangoSuperuserEmail
+            - Name: CONN_MAX_AGE
+              Value: !Ref ConnMaxAge
             - Name: REDIS_HOST
               Value: !FindInMap [ appConfigs, !Ref EnvStageName, redis ]
             - Name: MY_STATIC_CDN
@@ -318,7 +342,7 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       Port: !Ref AppContainerPort
-      HealthCheckPath: '/health/'
+      HealthCheckPath: '/timesync/'
       HealthCheckProtocol: HTTP
       HealthCheckIntervalSeconds: 90
       HealthCheckTimeoutSeconds: 60

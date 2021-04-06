@@ -35,14 +35,19 @@ sam deploy \
 ```
 ## Deploy EXACT
 
-### Testbuild the container
+### Build container
 
-1. Build exact
+Build exact
+
 ``` bash
-docker  build -t aws_exact -f .\exact\deployment\django\Dockerfile .
+build.sh
 ```
-2. Build & Run Redis
 
+Test the container:
+
+``` bash
+docker run -it --entrypoint="./deployment/django/cmds/start"  --name aws_exact_02  ******.dkr.ecr.eu-central-1.amazonaws.com/django_ecs_app:0.0.1
+```
 
 ### Create the cloud based **Postgres** database. 
 
@@ -65,9 +70,26 @@ docker  build -t aws_exact -f .\exact\deployment\django\Dockerfile .
 
 ![DB](images/Cache.png)
 
+## Create EFS storage
+
+https://docs.amazonaws.cn/en_us/AmazonECS/latest/developerguide/tutorial-efs-volumes.html
+
 ### AWS Secrets for Sensitive Information
 
 We save sensitive information in AWS Secrets. 
 
 ![DB](images/SecrectValues.png)
+
+### Deploy the template
+
+``` bash
+sam deploy -t django-app.yaml --stack-name tree-django-ecs-app --capabilities CAPABILITY_IAM  --parameter-overrides 
+"ParameterKey=EnvStageName,ParameterValue=tree-april ParameterKey=VpcStackName,ParameterValue=tree-vpc 
+ ParameterKey=EcsCommonStackName,ParameterValue=tree-cluster-resources 
+ ParameterKey=DjangoSuperuserUsername,ParameterValue=*** 
+ ParameterKey=DjangoSuperuserPassword,ParameterValue=***
+ ParameterKey=DjangoSuperuserEmail,ParameterValue=*** 
+ ParameterKey=ConnMaxAge,ParameterValue=60 
+ "
+```
 
