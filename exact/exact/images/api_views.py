@@ -151,7 +151,9 @@ class ImageViewSet(viewsets.ModelViewSet):
                         buf = PILBytesIO()
                         tile.save(buf, "jpeg", quality=90)
                         image_buf = buf.getvalue()
-                        tiles_cache.set(cache_key, image_buf, 7*24*24)
+
+                        if hasattr(cache, "delete_pattern"):
+                            tiles_cache.set(cache_key, image_buf, 7*24*24)
 
                         buffer_size = sys.getsizeof(image_buf) / (1024 ** 2) # bytes to MBytes
                         keys[cache_key] = buffer_size
@@ -198,7 +200,9 @@ class ImageViewSet(viewsets.ModelViewSet):
         buf = PILBytesIO()
         tile.save(buf, 'png', quality=90)
         buffer = buf.getvalue()
-        cache.set(f"{pk}_thumbnail", buffer, None)
+
+        if hasattr(cache, "delete_pattern"):
+            cache.set(f"{pk}_thumbnail", buffer, None)
 
         logger.info(f"{timer() - start:.4f};{request.path};")
         return HttpResponse(buffer, content_type='image/png')
@@ -404,8 +408,9 @@ class ImageViewSet(viewsets.ModelViewSet):
         if Path(image.path()).exists(): os.remove(image.path())
         if Path(image.original_path()).exists(): os.remove(image.original_path())
         # remove from tile cache
-        cache_key = f"*{pk}/*/*/*/*/*"
-        tiles_cache.delete_pattern(cache_key)        
+        if hasattr(cache, "delete_pattern"):
+            cache_key = f"*{pk}/*/*/*/*/*"
+            tiles_cache.delete_pattern(cache_key)        
         # remove image from db
         return super().destroy(request, pk)
         
@@ -517,7 +522,9 @@ class ImageSetViewSet(viewsets.ModelViewSet):
         if data is None:
             serializer = self.get_serializer(instance)
             data = serializer.data
-            cache.set(cache_key, data, 24*60*60)
+
+            if hasattr(cache, "delete_pattern"):
+                cache.set(cache_key, data, 24*60*60)
 
         return Response(data)
 
