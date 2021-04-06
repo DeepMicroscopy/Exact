@@ -382,7 +382,8 @@ def view_image(request, image_id, z_dimension:int=1, frame:int=1):
     slide = image_cache.get(file_path)
     value = slide.get_dzi("jpeg")
 
-    cache.set(cache_key, value, None)
+    if hasattr(cache, "delete_pattern"):
+        cache.set(cache_key, value, None)
     return HttpResponse(value, content_type='application/xml')
 
 @login_required
@@ -520,7 +521,8 @@ def view_image_tile(request, image_id, z_dimension, frame, level, tile_path):
 
         logger.info(f"{load_from_drive_time:.4f};{request.path}")
 
-        tiles_cache.set(cache_key, buffer, 7*24*60*60)
+        if hasattr(cache, "delete_pattern"):
+            tiles_cache.set(cache_key, buffer, 7*24*60*60)
         return HttpResponse(buffer, content_type='image/%s' % format)
     except:
         return HttpResponseBadRequest()
