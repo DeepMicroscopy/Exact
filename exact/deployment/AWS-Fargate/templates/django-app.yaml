@@ -17,6 +17,13 @@ Parameters:
     Default: tree-april
     Description: The environment name (e.g. dev, prod, etc.)
     Type: String
+  BaseDataDir:
+    Default: /usr/share/exact_data
+    Description: Mount folder to save the uploaded images and da
+    Type: String
+  EFSVolumeId:
+    Description: EFS cloud save id
+    Type: String
   Region:
     Default: eu-central-1
     Description: The region to deploy the code to
@@ -66,7 +73,7 @@ Parameters:
 Mappings:
   appConfigs:
     tree-april:
-      redis: "tree-redis-cache.cnysys.0001.euc1.cache.amazonaws.com:6379"
+      redis: "tree-redis-cache.cnysys.0001.euc1.cache.amazonaws.com"
       djangoAppSecret: "arn:aws:secretsmanager:eu-central-1:298068947512:secret:Tree_Schema-QktESy"
       loadbalancerCertArn: "arn:aws:acm:eu-central-1:298068947512:certificate/327169bc-2f5b-4021-ac3d-b484f521cff9"
 
@@ -82,16 +89,10 @@ Resources:
     Properties:
       LogGroupName: !Join ['/', ["/aws/ecs", "ecs-example-app", !Ref DjangoAppServiceName]]
 
-  #CeleryAppLogGroup:
-  #  Type: AWS::Logs::LogGroup
-  #  Properties:
-  #    LogGroupName: !Join ['/', ["/aws/ecs", "ecs-example-app", !Ref CeleryAppServiceName]]
-
   DjangoAppTaskDefinition:
     Type: AWS::ECS::TaskDefinition
     DependsOn:
       - DjangoAppLogGroup
-      #- CeleryAppLogGroup
     Properties:
       Family: !Join ['', [!Ref DjangoAppServiceName, DjangoAppTaskDefinition]]
       NetworkMode: awsvpc
@@ -115,6 +116,11 @@ Resources:
               - EcsTaskRole
               - !Ref EnvStageName
               - 'Arn'
+      Volumes:
+        - Name: "efs-exact"
+          EFSVolumeConfiguration:
+            FilesystemId: !Ref EFSVolumeId #"fs-bf984de4"
+            # RootDirectory: !Sub "/${EcsCommonStackName}/exact"
       ContainerDefinitions:
         - Name: !Ref DjangoAppContainerName
           Image: !Sub "${AWS::AccountId}.dkr.ecr.${Region}.amazonaws.com/${DjangoAppContainerName}:0.0.1"
@@ -130,14 +136,17 @@ Resources:
             - "./deployment/django/cmds/entrypoint"
           Command:
             - "./deployment/django/cmds/start"
-          MountPoint:
-            -  ContainerPath: "/usr/share/exact_images"
-            -  ReadOnly: false
-            -  SourceVolume: "efs-exact"
+            - 'ls -la /usr/share/exact_data'
+          MountPoints:
+            - sourceVolume: "efs-exact"
+              ContainerPath: !Ref BaseDataDir
+              ReadOnly: false
           Secrets:
             - Name: DJANGO_ECS_SECRETS
               ValueFrom: !FindInMap [ appConfigs, !Ref EnvStageName, djangoAppSecret ]
           Environment:
+            - Name: BASE_DATA_DIR
+              Value: !Ref BaseDataDir
             - Name: AWS_REGION
               Value: !Ref Region
             - Name: DJANGO_SETTINGS_MODULE
@@ -344,7 +353,8 @@ Resources:
       Port: !Ref AppContainerPort
       HealthCheckPath: '/timesync/'
       HealthCheckProtocol: HTTP
-      HealthCheckIntervalSeconds: 90
+      HealthCheckEnabled: true
+      HealthCheckIntervalSeconds: 300
       HealthCheckTimeoutSeconds: 60
       HealthyThresholdCount: 2
       UnhealthyThresholdCount: 2

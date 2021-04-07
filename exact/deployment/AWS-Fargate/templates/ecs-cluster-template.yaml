@@ -232,6 +232,7 @@ Resources:
           TargetOriginId: myS3Origin
           ViewerProtocolPolicy: allow-all
         IPV6Enabled: true
+        HttpVersion: "http2"
 
 
   StaticFilesBucketPolicy:

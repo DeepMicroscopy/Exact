@@ -38,8 +38,9 @@ END
 }
 until postgres_ready; do
   >&2 echo 'Waiting for PostgreSQL to become available...'
-  sleep 1
+  sleep 5
 done
 >&2 echo 'PostgreSQL is available'
+>&2  df -T
 
 exec "$@"

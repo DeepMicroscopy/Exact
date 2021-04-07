@@ -2,6 +2,7 @@ import logging
 from .settings_base import *
 import os
 import json
+import redis
 
 
 # These will be injected by ECS from our AWS Secrets Manager!
@@ -55,32 +56,6 @@ SECURE_CONTENT_TYPE_NOSNIFF = bool(os.environ.get(
     "DJANGO_SECURE_CONTENT_TYPE_NOSNIFF", default=True
 ))
 
-#Caching settings
-_redis_host = os.environ['REDIS_HOST']
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://{_redis_host}:6379/1", # "redis://127.0.0.1:6379/1", #"redis://redis:6379/0"
-        "OPTIONS": {
-            "MAX_ENTRIES": 1000,
-            "CLIENT_CLASS": "django_redis.client.DefaultClient", 
-            "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",
-        },
-        "KEY_PREFIX": os.environ.get("SQL_DATABASE", default='exact')
-    },
-    "tiles_cache": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://{_redis_host}:6379/1", # "redis://127.0.0.1:6379/1", #"redis://redis:6379/0"
-        "OPTIONS": {
-            "MAX_ENTRIES": 100000,
-            "CLIENT_CLASS": "django_redis.client.DefaultClient", 
-            "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",
-        },
-        "KEY_PREFIX": os.environ.get("SQL_DATABASE", default='exact')
-    },
-}
-
-
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -105,6 +80,40 @@ LOGGING = {
     },
 }
 
+#Caching settings
+DJANGO_REDIS_IGNORE_EXCEPTIONS = True
+
+_redis_host = os.environ['REDIS_HOST']
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": f"redis://{_redis_host}:6379/0", # "redis://127.0.0.1:6379/1", #"redis://redis:6379/0"
+        "OPTIONS": {
+            "MAX_ENTRIES": 1000,
+            "CLIENT_CLASS": "django_redis.client.DefaultClient", 
+            "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",
+        },
+        "KEY_PREFIX": os.environ.get("SQL_DATABASE", default='exact')
+    },
+    "tiles_cache": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": f"redis://{_redis_host}:6379/1", # "redis://127.0.0.1:6379/1", #"redis://redis:6379/0"
+        "OPTIONS": {
+            "MAX_ENTRIES": 100000,
+            "CLIENT_CLASS": "django_redis.client.DefaultClient", 
+            "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",
+        },
+        "KEY_PREFIX": os.environ.get("SQL_DATABASE", default='exact')
+    },
+}
+
+try:
+    logger = logging.getLogger('django')
+    r = redis.Redis(host=_redis_host, port=6379, db=1)
+    pong = r.ping()
+    logger.info(f"Ping; {pong}")
+except Exception:
+    logger.error("Unable to connect to Redis", exc_info=True)
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.10/topics/i18n/
@@ -120,7 +129,7 @@ SHOW_DEMO_DATASETS = False
 # EXPORT_SEPARATOR = '|'
 # DATA_PATH = os.path.join(BASE_DIR, 'data')
 
-# IMAGE_PATH = os.path.join(BASE_DIR, 'images')  # the absolute path to the folder with the imagesets
+#IMAGE_PATH = os.path.join(BASE_DIR, 'images')  # the absolute path to the folder with the imagesets
 
 # filename extension of accepted imagefiles
 # IMAGE_EXTENSION = {
