@@ -44,7 +44,8 @@ class Product(models.Model):
 @receiver([post_save, post_delete], sender=Product)
 def product_changed_handler(sender, instance, **kwargs):
     # delte cached imageset information used in JS
-    for image_set in instance.imagesets.all():
-        cache.delete_pattern(f"*/api/v1/images/image_sets/{image_set.id}/*")
+    if hasattr(cache, "delete_pattern"):
+        for image_set in instance.imagesets.all():
+            cache.delete_pattern(f"*/api/v1/images/image_sets/{image_set.id}/*")
 
 m2m_changed.connect(product_changed_handler, sender=Product.imagesets.through)

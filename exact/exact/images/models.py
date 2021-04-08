@@ -284,7 +284,8 @@ class Image(models.Model):
 def image_changed_handler(sender, instance, **kwargs):
 
     # delte cached imageset information used in JS
-    cache.delete_pattern(f"*/api/v1/images/image_sets/{instance.image_set_id}/*")
+    if hasattr(cache, "delete_pattern"):
+        cache.delete_pattern(f"*/api/v1/images/image_sets/{instance.image_set_id}/*")
 
 class ImageSet(models.Model):
     class Meta:
@@ -532,7 +533,9 @@ class ImageSet(models.Model):
 def imageset_changed_handler(sender, instance, **kwargs):
 
     # delte cached imageset information used in JS
-    cache.delete_pattern(f"*/api/v1/images/image_sets/{instance.id}/*")
+    # Currently just Redis is supported
+    if hasattr(cache, "delete_pattern"):
+        cache.delete_pattern(f"*/api/v1/images/image_sets/{instance.id}/*")
 
 class SetTag(models.Model):
     name = models.CharField(max_length=100, unique=True)

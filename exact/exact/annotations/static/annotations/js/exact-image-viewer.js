@@ -109,7 +109,7 @@ class EXACTViewer {
 
         const default_options = {
             id: "openseadragon1",
-            prefixUrl: '../../static/images/',
+            prefixUrl: $("#image_list").data( "static-file" ) +"images/",
             showNavigator: true,
             animationTime: 0.5,
             blendTime: 0.1,
@@ -275,7 +275,7 @@ class EXACTViewer {
             allowRotation: false,        // Make it possible to rotate the guidelines (by double clicking them)
             horizontalGuideButton: null, // Element for horizontal guideline button
             verticalGuideButton: null,   // Element for vertical guideline button
-            prefixUrl: '../../static/images/',
+            prefixUrl: $("#image_list").data( "static-file" ) +"images/",
             removeOnClose: true,        // Remove guidelines when viewer closes
             useSessionStorage: false,    // Save guidelines in sessionStorage
             navImages: {
