@@ -84,12 +84,14 @@ We save sensitive information in AWS Secrets.
 
 ``` bash
 sam deploy -t django-app.yaml --stack-name tree-django-ecs-app --capabilities CAPABILITY_IAM  --parameter-overrides 
-"ParameterKey=EnvStageName,ParameterValue=tree-april ParameterKey=VpcStackName,ParameterValue=tree-vpc 
- ParameterKey=EcsCommonStackName,ParameterValue=tree-cluster-resources 
- ParameterKey=DjangoSuperuserUsername,ParameterValue=*** 
- ParameterKey=DjangoSuperuserPassword,ParameterValue=***
- ParameterKey=DjangoSuperuserEmail,ParameterValue=*** 
- ParameterKey=ConnMaxAge,ParameterValue=60 
- "
+"ParameterKey=EnvStageName,ParameterValue=tree-april 
+ParameterKey=VpcStackName,ParameterValue=tree-vpc  
+ParameterKey=EcsCommonStackName,ParameterValue=tree-cluster-resources 
+ParameterKey=DjangoSuperuserUsername,ParameterValue=marzahl 
+ParameterKey=EFSVolumeId,ParameterValue=fs-*** 
+ParameterKey=DjangoSuperuserPassword,ParameterValue=*** 
+ParameterKey=DjangoSuperuserEmail,ParameterValue=*** 
+ParameterKey=ConnMaxAge,ParameterValue=60 
+ParameterKey=DesiredTasksCount,ParameterValue=1"
 ```
 
