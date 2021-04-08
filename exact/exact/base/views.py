@@ -5,11 +5,14 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
 import time
 from rest_framework.decorators import api_view
+from rest_framework.decorators import authentication_classes, permission_classes
 
 def index(request):
     return redirect(reverse('images:index'))
 
 @api_view(['GET'])
+@authentication_classes([])
+@permission_classes([])
 def report_time(request) -> Response:
     return Response({'unixtime': time.time()}, HTTP_200_OK)
 
