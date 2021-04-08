@@ -120,7 +120,7 @@ class ImageViewSet(viewsets.ModelViewSet):
         user = self.request.user
         return  models.Image.objects.filter(image_set__team__in=user.team_set.all()).select_related('image_set')
 
-    @action(detail=True, methods=['PATCH'], name='Updates the image cach')
+    @action(detail=True, methods=['PATCH'], name='Updates the image cache')
     def update_image_cache(self, request, pk=None):
 
         image = get_object_or_404(models.Image, id=pk)

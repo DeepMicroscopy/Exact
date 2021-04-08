@@ -4,6 +4,7 @@ from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.settings import api_settings
 from rest_framework import viewsets, permissions
 from rest_framework import status
+from rest_framework.decorators import action
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from django.db.models import Q, F
@@ -82,6 +83,16 @@ class AnnotationViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         return  models.Annotation.objects.filter(image__image_set__team__in=user.team_set.all()).select_related('annotation_type', 'image', 'user', 'last_editor').order_by('id')
+
+    @action(methods=['delete'], detail=False)
+    def multiple_delete(self, request,  *args, **kwargs):
+        delete_id = request.query_params.get('id__in', None)
+        if not delete_id:
+            return Response("The syntax is: id__in=1,2,3,4",status=status.HTTP_404_NOT_FOUND)
+
+        pks = [int(pk) for pk in delete_id.split(',')]
+        num_deleted, deleted_annotations = self.get_queryset().filter(pk__in=pks).delete()
+        return Response(deleted_annotations, status=status.HTTP_200_OK)
 
     def create(self, request, *args, **kwargs):
         user = self.request.user
