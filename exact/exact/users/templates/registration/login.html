@@ -29,6 +29,7 @@
                         {% for error in form.non_field_errors %}
                             <p class="text-danger">{{ error }}</p>
                         {% endfor %}
+                        <input type="hidden" name="next" value="{{ request.GET.next }}" />
                         <input type="submit" class="btn btn-primary" name="login" value="Log in"/>
                     </form>
                     <div class="login-panel-footer">
