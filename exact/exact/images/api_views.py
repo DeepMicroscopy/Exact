@@ -209,6 +209,11 @@ class ImageViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['GET'], name='Get slide information from image PK')
     def slide_information(self, request, pk=None):
+
+        buffer = cache.get(f"{pk}_slide_information")
+        if buffer is not None:
+            return Response(buffer)
+
         image = get_object_or_404(models.Image, id=pk)
 
         file_path = image.path()
@@ -217,11 +222,17 @@ class ImageViewSet(viewsets.ModelViewSet):
         level_dimensions = slide._osr.level_dimensions
         level_downsamples = slide._osr.level_downsamples
         levels = slide._osr.level_count
+        level_tiles = slide.level_tiles
 
-        return Response({"id": id,
+        buffer = {"id": pk,
                             "level_dimensions": level_dimensions, 
-                            "level_downsamples":level_downsamples,
-                            "levels": levels})
+                            "level_downsamples": level_downsamples,
+                            "level_tiles": level_tiles,
+                            "levels": levels}
+
+        cache.set(f"{pk}_slide_information", buffer, None)
+
+        return Response(buffer)
 
     @action(detail=True, methods=['GET'], name='Get patch for image PK')
     def get_patch(self, request, pk=None):
