@@ -10,6 +10,7 @@ class EXACTViewer {
         this.user_id = user_id;
         this.options = options;
         this.showNavigator = true;
+        this.frame = 1;
     
         this.viewer = this.createViewer(options);
         this.exact_registration_sync = new EXACTRegistrationSync(this.imageInformation, this.gHeaders);
@@ -31,6 +32,13 @@ class EXACTViewer {
 
     static factoryCreateViewer(server_url, imageId, options, imageInformation, annotationTypes = undefined,
         headers = undefined, user_id = undefined, collaboration_type = 0, drawAnnotations = true, strokeWidth = 5) {
+
+        // extract requested frame parameter
+        let frame = 1;
+        if (options.url_parameters !== undefined 
+            && "frame" in options.url_parameters) {
+            frame = parseInt(options.url_parameters["frame"]);
+        }
 
         if (imageInformation['depth'] == 1 && imageInformation['frames'] == 1) {
             options.tileSources = [server_url + `/images/image/${imageId}/1/1/tile/`]
@@ -77,7 +85,7 @@ class EXACTViewer {
                 && Object.keys(local_annotation_types).length > 0) {
                 if (imageInformation['frames'] > 1) {
                     return new EXACTViewerGlobalLocalAnnotationsFrames(server_url, options, imageInformation, collaboration_type, local_annotation_types, global_annotation_types,
-                        headers, user_id, drawAnnotations, strokeWidth)
+                        headers, user_id, drawAnnotations, strokeWidth, frame)
                 } else {
                     return new EXACTViewerGlobalLocalAnnotations(server_url, options, imageInformation, collaboration_type, local_annotation_types, global_annotation_types,
                         headers, user_id, drawAnnotations, strokeWidth)
@@ -85,7 +93,7 @@ class EXACTViewer {
             } else if (Object.keys(global_annotation_types).length > 0) {
                 if (imageInformation['frames'] > 1) {
                     return new EXACTViewerGlobalAnnotationsFrame(server_url, options, imageInformation, collaboration_type, annotationTypes,
-                        headers, user_id)
+                        headers, user_id, frame)
                 } else {
                     return new EXACTViewerGlobalAnnotations(server_url, options, imageInformation, collaboration_type, annotationTypes,
                         headers, user_id)
@@ -93,7 +101,7 @@ class EXACTViewer {
             } else {
                 if (imageInformation['frames'] > 1) {
                     return new EXACTViewerLocalAnnotationsFrames(server_url, options, imageInformation, collaboration_type, annotationTypes,
-                        headers, user_id, drawAnnotations, strokeWidth);
+                        headers, user_id, drawAnnotations, strokeWidth, frame);
                 } else {
                     return new EXACTViewerLocalAnnotations(server_url, options, imageInformation, collaboration_type, annotationTypes,
                         headers, user_id, drawAnnotations, strokeWidth);
@@ -179,7 +187,8 @@ class EXACTViewer {
             let ymin = Math.round(imageRect.y);
             let xmax = Math.round(imageRect.x + imageRect.width);
             let ymax = Math.round(imageRect.y + imageRect.height);
-
+            let z_dimension = 1;
+            let frame = this.userData.frame;
 
             let coordinates = {
                 "x_min": xmin, 
@@ -187,11 +196,11 @@ class EXACTViewer {
                 "x_max": xmax,
                 "y_max": ymax,
             }
-            event.userData.browser_sync.sendCurrentViewPortCoordinates(coordinates);
+            this.userData.browser_sync.sendCurrentViewPortCoordinates(coordinates);
 
             window.history.pushState("object or string",
                 `${this.userData.imageInformation.name}`,
-                include_server_subdir(`/annotations/${this.userData.imageInformation.id}/?xmin=${xmin}&ymin=${ymin}&xmax=${xmax}&ymax=${ymax}`));
+                include_server_subdir(`/annotations/${this.userData.imageInformation.id}/?frame=${frame}&xmin=${xmin}&ymin=${ymin}&xmax=${xmax}&ymax=${ymax}`));
 
         }, this);
 
@@ -1094,8 +1103,12 @@ class EXACTViewerLocalAnnotationsFrames extends EXACTViewerLocalAnnotations {
         headers, user_id, drawAnnotations = true, strokeWidth = 5, frame = 1) {
 
         super(server_url, options, imageInformation, collaboration_type, annotationTypes, headers, user_id);
-        this.frames = imageInformation['frames']
-        this.frame = 1;
+        this.frames = imageInformation['frames'];
+        this.frame = frame;
+
+        if (frame > 1) {
+            this.viewer.goToPage(frame - 1);
+        }
     }
 
     handleKeyUp(event) {
@@ -1203,6 +1216,21 @@ class EXACTViewerLocalAnnotationsFrames extends EXACTViewerLocalAnnotations {
 
         this.tool.drawExistingAnnotations(frameAnnotations);
 
+        var parameters = `frame=${this.frame}`;
+        if (window.location.search) {
+            let url_parameters = decodeURIComponent(window.location.search.substring(1)).split('&');
+            url_parameters = Object.assign({}, ...url_parameters.map((x) => ({ [x.split("=")[0]]: x.split("=")[1] })));
+
+            for(const [key, value] of Object.entries(url_parameters)) {
+                if (key !== "frame") { 
+                    parameters = parameters.concat(`&${key}=${value}`);
+                }
+                
+            }
+        }
+        window.history.pushState("object or string",
+                `${this.imageInformation.name}`,
+                include_server_subdir(`/annotations/${this.imageInformation.id}/?${parameters}`));
     }
 
     filterFrameAnnotations(annotations, frame_id) {
@@ -1227,13 +1255,13 @@ class EXACTViewerLocalAnnotationsFrames extends EXACTViewerLocalAnnotations {
 class EXACTViewerGlobalAnnotationsFrame extends EXACTViewer {
 
     constructor(server_url, options, imageInformation, collaboration_type, annotationTypes,
-        headers, user_id) {
+        headers, user_id, frame) {
 
         super(server_url, options, imageInformation, headers, user_id);
 
         this.globalAnnotationTypeKeyToIdLookUp = {}
         this.frames = imageInformation['frames']
-        this.frame = 1;
+        this.frame = frame;
 
         this.exact_sync = this.createSyncModules(annotationTypes, this.imageId, headers, this.viewer, user_id, collaboration_type, frames = imageInformation['frames']);
 
@@ -1248,6 +1276,10 @@ class EXACTViewerGlobalAnnotationsFrame extends EXACTViewer {
         }
 
         $(document).keyup(this.handleKeyUp.bind(this));
+
+        if (frame > 1) {
+            this.viewer.goToPage(frame - 1);
+        }
     }
 
     handleKeyUp(event) {
@@ -1354,6 +1386,22 @@ class EXACTViewerGlobalAnnotationsFrame extends EXACTViewer {
         for (let anno of Object.values(this.exact_sync.annotations[frame_id])) {
             this.setUiGlobalAnnotation(anno.annotation_type, !anno.deleted)
         }
+
+        var parameters = `frame=${this.frame}`;
+        if (window.location.search) {
+            let url_parameters = decodeURIComponent(window.location.search.substring(1)).split('&');
+            url_parameters = Object.assign({}, ...url_parameters.map((x) => ({ [x.split("=")[0]]: x.split("=")[1] })));
+
+            for(const [key, value] of Object.entries(url_parameters)) {
+                if (key !== "frame") { 
+                    parameters = parameters.concat(`&${key}=${value}`);
+                }
+                
+            }
+        }
+        window.history.pushState("object or string",
+                `${this.imageInformation.name}`,
+                include_server_subdir(`/annotations/${this.imageInformation.id}/?${parameters}`));
     }
 
     changeGlobalAnnotationTypeByKey(annotationKeyNumber) {
@@ -1682,7 +1730,7 @@ class EXACTViewerGlobalLocalAnnotationsFrames extends EXACTViewerLocalAnnotation
 
         this.globalAnnotationTypeKeyToIdLookUp = {}
         this.frames = imageInformation['frames']
-        this.frame = 1;
+        this.frame = frame;
 
         this.exact_sync_global = new EXACTGlobalFrameAnnotationSync(annotationTypesGlobal, this.imageId, this.gHeaders, this.viewer, this.user_id, collaboration_type, this.frames)
 
@@ -1694,6 +1742,10 @@ class EXACTViewerGlobalLocalAnnotationsFrames extends EXACTViewerLocalAnnotation
 
             let key_number = parseInt($('#GlobalAnnotation_' + annotation_type.id).attr("data-key_number"))
             this.globalAnnotationTypeKeyToIdLookUp[key_number] = annotation_type.id;
+        }
+
+        if (frame > 1) {
+            this.viewer.goToPage(frame - 1);
         }
     }
 
