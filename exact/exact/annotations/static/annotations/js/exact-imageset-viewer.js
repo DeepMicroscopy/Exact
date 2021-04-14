@@ -65,7 +65,7 @@ class EXACTImageSetViewer {
         let image_ids = Object.keys(this.exact_imageset_sync.imageInformation).map(x => parseInt(x));
         for (let image_id of image_ids) {
             if ($('#imageThumbnail_' + image_id).attr("src") === undefined) {
-                $('#imageThumbnail_' + image_id).attr("src", include_server_subdir(`/api/v1/images/images/${image_id}/thumbnail`));
+                $('#imageThumbnail_' + image_id).attr("src", include_server_subdir(`/api/v1/images/images/${image_id}/thumbnail/`));
             }
         }
     }

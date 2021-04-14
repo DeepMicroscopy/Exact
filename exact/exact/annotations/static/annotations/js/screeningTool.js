@@ -87,7 +87,7 @@ class ScreeningTool {
             $('#screeningResolutionX').val(event.screening_mode.x_resolution);
             $('#screeningResolutionY').val(event.screening_mode.y_resolution);
 
-            $('#screeningImage').attr('src', include_server_subdir(`/api/v1/images/images/${event.userData.imageid}/thumbnail`));
+            $('#screeningImage').attr('src', include_server_subdir(`/api/v1/images/images/${event.userData.imageid}/thumbnail/`));
             $('#screeningImage').on('load', event.userData.updateThumbnail.bind(context));
         }, this);
 
