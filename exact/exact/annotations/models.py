@@ -567,8 +567,9 @@ class AnnotationType(models.Model):
 @receiver([post_save, post_delete], sender=AnnotationType)
 def annotation_type_changed_handler(sender, instance, **kwargs):
     # delte cached imageset information used in JS
-    for image_set in instance.product.imagesets.all():
-        cache.delete_pattern(f"*/api/v1/images/image_sets/{image_set.id}/*")
+    if hasattr(cache, "delete_pattern"):
+        for image_set in instance.product.imagesets.all():
+            cache.delete_pattern(f"*/api/v1/images/image_sets/{image_set.id}/*")
 
 
 class Export(models.Model):

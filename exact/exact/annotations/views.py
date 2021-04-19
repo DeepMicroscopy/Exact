@@ -61,7 +61,8 @@ def annotate(request, image_id):
             asthma = selected_image.image_set.product_set.filter(Q(name__icontains="asthma") 
                         | Q(name__icontains="astma")).first()
             asthma = True if asthma is not None else False
-            cache.set(f"{selected_image.image_set.id}_contains_asthma", asthma, 5*60)
+            if hasattr(cache, "delete_pattern"):
+                cache.set(f"{selected_image.image_set.id}_contains_asthma", asthma, 5*60)
 
 
         response = render(request, 'annotations/annotate.html', {

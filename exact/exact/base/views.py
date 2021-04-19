@@ -7,7 +7,6 @@ import time
 from rest_framework.decorators import api_view
 from rest_framework.decorators import authentication_classes, permission_classes
 
-
 def index(request):
     return redirect(reverse('images:index'))
 
