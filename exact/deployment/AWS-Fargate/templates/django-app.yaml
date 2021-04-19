@@ -72,7 +72,7 @@ Parameters:
   ConnMaxAge:
     Description: The number of seconds how long the db connection should be open
     Type: Number
-    Default: 0
+    Default: 60
 
 Mappings:
   appConfigs:

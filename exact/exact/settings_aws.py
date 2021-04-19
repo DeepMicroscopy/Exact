@@ -89,7 +89,7 @@ CACHES = {
         "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": f"redis://{_redis_host}:6379/0", # "redis://127.0.0.1:6379/1", #"redis://redis:6379/0"
         "OPTIONS": {
-            "MAX_ENTRIES": 1000,
+            "MAX_ENTRIES": 10000,
             "CLIENT_CLASS": "django_redis.client.DefaultClient", 
             "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",
         },
@@ -99,7 +99,7 @@ CACHES = {
         "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": f"redis://{_redis_host}:6379/1", # "redis://127.0.0.1:6379/1", #"redis://redis:6379/0"
         "OPTIONS": {
-            "MAX_ENTRIES": 100000,
+            "MAX_ENTRIES": 1000000,
             "CLIENT_CLASS": "django_redis.client.DefaultClient", 
             "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",
         },
