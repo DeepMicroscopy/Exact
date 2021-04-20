@@ -6,12 +6,31 @@ from django.core.validators import MinLengthValidator, MaxLengthValidator
 from django.db import models
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
+from django.dispatch import receiver
+from django.db.models.signals import post_save
 
 
 class User(AbstractUser):
     # points are updated by database triggers
     points = models.IntegerField(default=0)
 
+
+# Add new users to teams if the ADD_USER_TO_TEAM is set
+@receiver([post_save], sender=User)
+def add_user_to_team_handler(sender, instance, **kwargs):
+    if hasattr(settings, 'ADD_USER_TO_TEAM'):
+        team_ids = settings.ADD_USER_TO_TEAM
+        if isinstance(settings.ADD_USER_TO_TEAM, list) is False:
+            team_ids = [settings.ADD_USER_TO_TEAM]
+
+        for team in Team.objects.filter(pk__in=team_ids):
+            if team is not None and team.members.filter(pk=instance.pk).exists() == False:
+                team.memberships.create(user=instance)
+
+    if hasattr(settings, 'ACTIVATE_USER_BY_DEFAULT'):
+        if settings.ACTIVATE_USER_BY_DEFAULT and instance.is_active == False:
+            instance.is_active = True
+            instance.save()
 
 class Team(models.Model):
     name = models.CharField(
