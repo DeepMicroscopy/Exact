@@ -191,6 +191,11 @@ DATABASES = {
 UPLOAD_FS_GROUP = os.environ.get("UPLOAD_FS_GROUP", 33)
 
 AUTH_USER_MODEL = 'users.User'
+# Add all new users to the team ids
+#ADD_USER_TO_TEAM = [] # 1,2,3, 27
+
+# Activate user by default
+#ACTIVATE_USER_BY_DEFAULT = True
 
 
 # Internationalization
