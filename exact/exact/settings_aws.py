@@ -74,7 +74,7 @@ LOGGING = {
     'loggers': {
         'django': {
             'handlers': ['console'], # include   to start logging to file
-            'level': 'INFO',
+            'level': 'WARNING',
             'propagate': True,
         },
     },
@@ -136,6 +136,9 @@ SHOW_DEMO_DATASETS = False
 #     'png',
 #     'jpg',
 # }
+
+# Add all new users to the team ids
+ADD_USER_TO_TEAM = [1] # 1,2,3, 27
 
 USE_NGINX_IMAGE_PROVISION = False  # defines if images get provided directly via nginx what generally improves imageset download performance
 

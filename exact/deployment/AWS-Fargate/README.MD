@@ -87,7 +87,7 @@ sam deploy -t django-app.yaml --stack-name tree-django-ecs-app --capabilities CA
 "ParameterKey=EnvStageName,ParameterValue=tree-april 
 ParameterKey=VpcStackName,ParameterValue=tree-vpc  
 ParameterKey=EcsCommonStackName,ParameterValue=tree-cluster-resources 
-ParameterKey=DjangoSuperuserUsername,ParameterValue=marzahl 
+ParameterKey=DjangoSuperuserUsername,ParameterValue=*** 
 ParameterKey=EFSVolumeId,ParameterValue=fs-*** 
 ParameterKey=DjangoSuperuserPassword,ParameterValue=*** 
 ParameterKey=DjangoSuperuserEmail,ParameterValue=*** 

@@ -2,4 +2,4 @@
 python3 /home/app/web/manage.py migrate --noinput
 python3 /home/app/web/manage.py createsuperuser --noinput
 # python3 /home/app/web/manage.py diffsettings
-PYTHONWARNINGS="ignore" /usr/local/bin/gunicorn exact.wsgi:application --bind 0.0.0.0:8000 --chdir=/home/app/web/exact --workers=1 --threads=2
+PYTHONWARNINGS="ignore" /usr/local/bin/gunicorn exact.wsgi:application --bind 0.0.0.0:8000 --chdir=/home/app/web/exact --workers=1 --threads=2  --graceful-timeout=3000 -t 3000 
