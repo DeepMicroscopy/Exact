@@ -1026,6 +1026,12 @@ paths:
         description: id
         schema:
           type: string
+      - name: id__in
+        required: false
+        in: query
+        description: id__in
+        schema:
+          type: string
       - name: name
         required: false
         in: query
@@ -1038,6 +1044,12 @@ paths:
         description: name__contains
         schema:
           type: string
+      - name: name__in
+        required: false
+        in: query
+        description: name__in
+        schema:
+          type: string
       - name: filename
         required: false
         in: query
@@ -1048,6 +1060,12 @@ paths:
         required: false
         in: query
         description: filename__contains
+        schema:
+          type: string
+      - name: filename__in
+        required: false
+        in: query
+        description: filename__in
         schema:
           type: string
       - name: time
@@ -1212,6 +1230,12 @@ paths:
         description: id
         schema:
           type: string
+      - name: id__in
+        required: false
+        in: query
+        description: id__in
+        schema:
+          type: string
       - name: name
         required: false
         in: query
@@ -1224,6 +1248,12 @@ paths:
         description: name__contains
         schema:
           type: string
+      - name: name__in
+        required: false
+        in: query
+        description: name__in
+        schema:
+          type: string
       - name: filename
         required: false
         in: query
@@ -1234,6 +1264,12 @@ paths:
         required: false
         in: query
         description: filename__contains
+        schema:
+          type: string
+      - name: filename__in
+        required: false
+        in: query
+        description: filename__in
         schema:
           type: string
       - name: time
@@ -1355,6 +1391,12 @@ paths:
         description: id
         schema:
           type: string
+      - name: id__in
+        required: false
+        in: query
+        description: id__in
+        schema:
+          type: string
       - name: name
         required: false
         in: query
@@ -1367,6 +1409,12 @@ paths:
         description: name__contains
         schema:
           type: string
+      - name: name__in
+        required: false
+        in: query
+        description: name__in
+        schema:
+          type: string
       - name: filename
         required: false
         in: query
@@ -1377,6 +1425,12 @@ paths:
         required: false
         in: query
         description: filename__contains
+        schema:
+          type: string
+      - name: filename__in
+        required: false
+        in: query
+        description: filename__in
         schema:
           type: string
       - name: time
@@ -1509,6 +1563,12 @@ paths:
         description: id
         schema:
           type: string
+      - name: id__in
+        required: false
+        in: query
+        description: id__in
+        schema:
+          type: string
       - name: name
         required: false
         in: query
@@ -1521,6 +1581,12 @@ paths:
         description: name__contains
         schema:
           type: string
+      - name: name__in
+        required: false
+        in: query
+        description: name__in
+        schema:
+          type: string
       - name: filename
         required: false
         in: query
@@ -1531,6 +1597,12 @@ paths:
         required: false
         in: query
         description: filename__contains
+        schema:
+          type: string
+      - name: filename__in
+        required: false
+        in: query
+        description: filename__in
         schema:
           type: string
       - name: time
@@ -1663,6 +1735,12 @@ paths:
         description: id
         schema:
           type: string
+      - name: id__in
+        required: false
+        in: query
+        description: id__in
+        schema:
+          type: string
       - name: name
         required: false
         in: query
@@ -1675,6 +1753,12 @@ paths:
         description: name__contains
         schema:
           type: string
+      - name: name__in
+        required: false
+        in: query
+        description: name__in
+        schema:
+          type: string
       - name: filename
         required: false
         in: query
@@ -1685,6 +1769,12 @@ paths:
         required: false
         in: query
         description: filename__contains
+        schema:
+          type: string
+      - name: filename__in
+        required: false
+        in: query
+        description: filename__in
         schema:
           type: string
       - name: time
@@ -1846,6 +1936,82 @@ paths:
           description: ''
       tags:
       - images
+  /api/v1/images/images/{id}/{z_dimension}/{frame}/tile/:
+    get:
+      operationId: viewImageImage
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: z_dimension
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: frame
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Image'
+          description: ''
+      tags:
+      - images
+  /api/v1/images/images/{id}/{z_dimension}/{frame}/tile_files/{level}/{tile_path}/:
+    get:
+      operationId: viewImageTileImage
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: z_dimension
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: frame
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: level
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: tile_path
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Image'
+          description: ''
+      tags:
+      - images
   /api/v1/images/image_sets/:
     get:
       operationId: listImageSets
@@ -1867,6 +2033,12 @@ paths:
         required: false
         in: query
         description: id
+        schema:
+          type: string
+      - name: id__in
+        required: false
+        in: query
+        description: id__in
         schema:
           type: string
       - name: path
@@ -1891,6 +2063,12 @@ paths:
         required: false
         in: query
         description: name__contains
+        schema:
+          type: string
+      - name: name__in
+        required: false
+        in: query
+        description: name__in
         schema:
           type: string
       - name: location
@@ -2075,6 +2253,12 @@ paths:
         description: id
         schema:
           type: string
+      - name: id__in
+        required: false
+        in: query
+        description: id__in
+        schema:
+          type: string
       - name: path
         required: false
         in: query
@@ -2097,6 +2281,12 @@ paths:
         required: false
         in: query
         description: name__contains
+        schema:
+          type: string
+      - name: name__in
+        required: false
+        in: query
+        description: name__in
         schema:
           type: string
       - name: location
@@ -2238,6 +2428,12 @@ paths:
         description: id
         schema:
           type: string
+      - name: id__in
+        required: false
+        in: query
+        description: id__in
+        schema:
+          type: string
       - name: path
         required: false
         in: query
@@ -2260,6 +2456,12 @@ paths:
         required: false
         in: query
         description: name__contains
+        schema:
+          type: string
+      - name: name__in
+        required: false
+        in: query
+        description: name__in
         schema:
           type: string
       - name: location
@@ -2412,6 +2614,12 @@ paths:
         description: id
         schema:
           type: string
+      - name: id__in
+        required: false
+        in: query
+        description: id__in
+        schema:
+          type: string
       - name: path
         required: false
         in: query
@@ -2434,6 +2642,12 @@ paths:
         required: false
         in: query
         description: name__contains
+        schema:
+          type: string
+      - name: name__in
+        required: false
+        in: query
+        description: name__in
         schema:
           type: string
       - name: location
@@ -2586,6 +2800,12 @@ paths:
         description: id
         schema:
           type: string
+      - name: id__in
+        required: false
+        in: query
+        description: id__in
+        schema:
+          type: string
       - name: path
         required: false
         in: query
@@ -2608,6 +2828,12 @@ paths:
         required: false
         in: query
         description: name__contains
+        schema:
+          type: string
+      - name: name__in
+        required: false
+        in: query
+        description: name__in
         schema:
           type: string
       - name: location
@@ -3571,16 +3797,34 @@ paths:
         description: id
         schema:
           type: string
+      - name: id__in
+        required: false
+        in: query
+        description: id__in
+        schema:
+          type: string
       - name: target_image
         required: false
         in: query
         description: target_image
         schema:
           type: string
+      - name: target_image__in
+        required: false
+        in: query
+        description: target_image__in
+        schema:
+          type: string
       - name: source_image
         required: false
         in: query
         description: source_image
+        schema:
+          type: string
+      - name: source_image__in
+        required: false
+        in: query
+        description: source_image__in
         schema:
           type: string
       - name: registration_error__range
@@ -3663,16 +3907,34 @@ paths:
         description: id
         schema:
           type: string
+      - name: id__in
+        required: false
+        in: query
+        description: id__in
+        schema:
+          type: string
       - name: target_image
         required: false
         in: query
         description: target_image
         schema:
           type: string
+      - name: target_image__in
+        required: false
+        in: query
+        description: target_image__in
+        schema:
+          type: string
       - name: source_image
         required: false
         in: query
         description: source_image
+        schema:
+          type: string
+      - name: source_image__in
+        required: false
+        in: query
+        description: source_image__in
         schema:
           type: string
       - name: registration_error__range
@@ -3712,16 +3974,34 @@ paths:
         description: id
         schema:
           type: string
+      - name: id__in
+        required: false
+        in: query
+        description: id__in
+        schema:
+          type: string
       - name: target_image
         required: false
         in: query
         description: target_image
         schema:
           type: string
+      - name: target_image__in
+        required: false
+        in: query
+        description: target_image__in
+        schema:
+          type: string
       - name: source_image
         required: false
         in: query
         description: source_image
+        schema:
+          type: string
+      - name: source_image__in
+        required: false
+        in: query
+        description: source_image__in
         schema:
           type: string
       - name: registration_error__range
@@ -3772,16 +4052,34 @@ paths:
         description: id
         schema:
           type: string
+      - name: id__in
+        required: false
+        in: query
+        description: id__in
+        schema:
+          type: string
       - name: target_image
         required: false
         in: query
         description: target_image
         schema:
           type: string
+      - name: target_image__in
+        required: false
+        in: query
+        description: target_image__in
+        schema:
+          type: string
       - name: source_image
         required: false
         in: query
         description: source_image
+        schema:
+          type: string
+      - name: source_image__in
+        required: false
+        in: query
+        description: source_image__in
         schema:
           type: string
       - name: registration_error__range
@@ -3832,16 +4130,34 @@ paths:
         description: id
         schema:
           type: string
+      - name: id__in
+        required: false
+        in: query
+        description: id__in
+        schema:
+          type: string
       - name: target_image
         required: false
         in: query
         description: target_image
         schema:
           type: string
+      - name: target_image__in
+        required: false
+        in: query
+        description: target_image__in
+        schema:
+          type: string
       - name: source_image
         required: false
         in: query
         description: source_image
+        schema:
+          type: string
+      - name: source_image__in
+        required: false
+        in: query
+        description: source_image__in
         schema:
           type: string
       - name: registration_error__range
@@ -3858,6 +4174,46 @@ paths:
           type: string
       responses:
         '204':
+          description: ''
+      tags:
+      - images
+  /api/v1/images/registration/{id}/convert_coodinates/:
+    get:
+      operationId: convertCoodinatesImageRegistration
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageRegistration'
+          description: ''
+      tags:
+      - images
+  /api/v1/images/registration/{id}/create_inverse_registration/:
+    get:
+      operationId: createInverseRegistrationImageRegistration
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageRegistration'
           description: ''
       tags:
       - images
@@ -3882,6 +4238,12 @@ paths:
         required: false
         in: query
         description: id
+        schema:
+          type: string
+      - name: id__in
+        required: false
+        in: query
+        description: id__in
         schema:
           type: string
       - name: time
@@ -3944,6 +4306,12 @@ paths:
         description: unique_identifier__contains
         schema:
           type: string
+      - name: unique_identifier__in
+        required: false
+        in: query
+        description: unique_identifier__in
+        schema:
+          type: string
       - name: description
         required: false
         in: query
@@ -3968,6 +4336,12 @@ paths:
         description: image
         schema:
           type: string
+      - name: image__in
+        required: false
+        in: query
+        description: image__in
+        schema:
+          type: string
       - name: user
         required: false
         in: query
@@ -3978,6 +4352,12 @@ paths:
         required: false
         in: query
         description: annotation_type
+        schema:
+          type: string
+      - name: annotation_type__in
+        required: false
+        in: query
+        description: annotation_type__in
         schema:
           type: string
       - name: verified_by
@@ -4096,6 +4476,12 @@ paths:
         description: id
         schema:
           type: string
+      - name: id__in
+        required: false
+        in: query
+        description: id__in
+        schema:
+          type: string
       - name: time
         required: false
         in: query
@@ -4156,6 +4542,12 @@ paths:
         description: unique_identifier__contains
         schema:
           type: string
+      - name: unique_identifier__in
+        required: false
+        in: query
+        description: unique_identifier__in
+        schema:
+          type: string
       - name: description
         required: false
         in: query
@@ -4180,6 +4572,12 @@ paths:
         description: image
         schema:
           type: string
+      - name: image__in
+        required: false
+        in: query
+        description: image__in
+        schema:
+          type: string
       - name: user
         required: false
         in: query
@@ -4190,6 +4588,12 @@ paths:
         required: false
         in: query
         description: annotation_type
+        schema:
+          type: string
+      - name: annotation_type__in
+        required: false
+        in: query
+        description: annotation_type__in
         schema:
           type: string
       - name: verified_by
@@ -4265,6 +4669,12 @@ paths:
         description: id
         schema:
           type: string
+      - name: id__in
+        required: false
+        in: query
+        description: id__in
+        schema:
+          type: string
       - name: time
         required: false
         in: query
@@ -4325,6 +4735,12 @@ paths:
         description: unique_identifier__contains
         schema:
           type: string
+      - name: unique_identifier__in
+        required: false
+        in: query
+        description: unique_identifier__in
+        schema:
+          type: string
       - name: description
         required: false
         in: query
@@ -4349,6 +4765,12 @@ paths:
         description: image
         schema:
           type: string
+      - name: image__in
+        required: false
+        in: query
+        description: image__in
+        schema:
+          type: string
       - name: user
         required: false
         in: query
@@ -4359,6 +4781,12 @@ paths:
         required: false
         in: query
         description: annotation_type
+        schema:
+          type: string
+      - name: annotation_type__in
+        required: false
+        in: query
+        description: annotation_type__in
         schema:
           type: string
       - name: verified_by
@@ -4445,6 +4873,12 @@ paths:
         description: id
         schema:
           type: string
+      - name: id__in
+        required: false
+        in: query
+        description: id__in
+        schema:
+          type: string
       - name: time
         required: false
         in: query
@@ -4505,6 +4939,12 @@ paths:
         description: unique_identifier__contains
         schema:
           type: string
+      - name: unique_identifier__in
+        required: false
+        in: query
+        description: unique_identifier__in
+        schema:
+          type: string
       - name: description
         required: false
         in: query
@@ -4529,6 +4969,12 @@ paths:
         description: image
         schema:
           type: string
+      - name: image__in
+        required: false
+        in: query
+        description: image__in
+        schema:
+          type: string
       - name: user
         required: false
         in: query
@@ -4539,6 +4985,12 @@ paths:
         required: false
         in: query
         description: annotation_type
+        schema:
+          type: string
+      - name: annotation_type__in
+        required: false
+        in: query
+        description: annotation_type__in
         schema:
           type: string
       - name: verified_by
@@ -4625,6 +5077,12 @@ paths:
         description: id
         schema:
           type: string
+      - name: id__in
+        required: false
+        in: query
+        description: id__in
+        schema:
+          type: string
       - name: time
         required: false
         in: query
@@ -4685,6 +5143,12 @@ paths:
         description: unique_identifier__contains
         schema:
           type: string
+      - name: unique_identifier__in
+        required: false
+        in: query
+        description: unique_identifier__in
+        schema:
+          type: string
       - name: description
         required: false
         in: query
@@ -4709,6 +5173,12 @@ paths:
         description: image
         schema:
           type: string
+      - name: image__in
+        required: false
+        in: query
+        description: image__in
+        schema:
+          type: string
       - name: user
         required: false
         in: query
@@ -4719,6 +5189,12 @@ paths:
         required: false
         in: query
         description: annotation_type
+        schema:
+          type: string
+      - name: annotation_type__in
+        required: false
+        in: query
+        description: annotation_type__in
         schema:
           type: string
       - name: verified_by
@@ -5170,6 +5646,12 @@ paths:
         description: id
         schema:
           type: string
+      - name: id__in
+        required: false
+        in: query
+        description: id__in
+        schema:
+          type: string
       - name: name
         required: false
         in: query
@@ -5204,6 +5686,12 @@ paths:
         required: false
         in: query
         description: vector_type__range
+        schema:
+          type: string
+      - name: vector_type__in
+        required: false
+        in: query
+        description: vector_type__in
         schema:
           type: string
       - name: active
@@ -5286,6 +5774,12 @@ paths:
         description: id
         schema:
           type: string
+      - name: id__in
+        required: false
+        in: query
+        description: id__in
+        schema:
+          type: string
       - name: name
         required: false
         in: query
@@ -5320,6 +5814,12 @@ paths:
         required: false
         in: query
         description: vector_type__range
+        schema:
+          type: string
+      - name: vector_type__in
+        required: false
+        in: query
+        description: vector_type__in
         schema:
           type: string
       - name: active
@@ -5359,6 +5859,12 @@ paths:
         description: id
         schema:
           type: string
+      - name: id__in
+        required: false
+        in: query
+        description: id__in
+        schema:
+          type: string
       - name: name
         required: false
         in: query
@@ -5393,6 +5899,12 @@ paths:
         required: false
         in: query
         description: vector_type__range
+        schema:
+          type: string
+      - name: vector_type__in
+        required: false
+        in: query
+        description: vector_type__in
         schema:
           type: string
       - name: active
@@ -5443,6 +5955,12 @@ paths:
         description: id
         schema:
           type: string
+      - name: id__in
+        required: false
+        in: query
+        description: id__in
+        schema:
+          type: string
       - name: name
         required: false
         in: query
@@ -5477,6 +5995,12 @@ paths:
         required: false
         in: query
         description: vector_type__range
+        schema:
+          type: string
+      - name: vector_type__in
+        required: false
+        in: query
+        description: vector_type__in
         schema:
           type: string
       - name: active
@@ -5527,6 +6051,12 @@ paths:
         description: id
         schema:
           type: string
+      - name: id__in
+        required: false
+        in: query
+        description: id__in
+        schema:
+          type: string
       - name: name
         required: false
         in: query
@@ -5561,6 +6091,12 @@ paths:
         required: false
         in: query
         description: vector_type__range
+        schema:
+          type: string
+      - name: vector_type__in
+        required: false
+        in: query
+        description: vector_type__in
         schema:
           type: string
       - name: active
@@ -7294,6 +7830,47 @@ paths:
           description: ''
       tags:
       - images
+  /api/v1/images/images/{id}/update_image_cache/:
+    patch:
+      operationId: updateImageCacheImage
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Image'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Image'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Image'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Image'
+          description: ''
+      tags:
+      - images
+  /api/v1/annotations/annotations/multiple_delete/:
+    delete:
+      operationId: multipleDeleteAnnotation
+      description: ''
+      parameters: []
+      responses:
+        '204':
+          description: ''
+      tags:
+      - annotations
 components:
   schemas:
     User:
