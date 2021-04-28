@@ -3,6 +3,7 @@ import time
 import pytz
 from timeit import default_timer as timer
 
+from django.conf import settings
 import logging
 from django.core.cache import cache
 from django.contrib import messages
@@ -64,7 +65,6 @@ def annotate(request, image_id):
             if hasattr(cache, "delete_pattern"):
                 cache.set(f"{selected_image.image_set.id}_contains_asthma", asthma, 5*60)
 
-
         response = render(request, 'annotations/annotate.html', {
             'team': selected_image.image_set.team,
             'selected_image': selected_image,
@@ -76,7 +76,8 @@ def annotate(request, image_id):
             'HasMediaFiles': hasMediaFiles,
             'global_annotation_types': global_annotation_types,
             'user_id': request.user.id,
-            'asthma': asthma
+            'asthma': asthma,
+            "USE_CDN_WSI": settings.USE_CDN_WSI
         })
         
         logger.info(f"{timer() - start:.4f};Load annotation page")

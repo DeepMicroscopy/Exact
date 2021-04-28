@@ -1,5 +1,7 @@
 import logging
 import os, stat
+import re
+from django.conf import settings
 from timeit import default_timer as timer
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404
@@ -119,6 +121,66 @@ class ImageViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         return  models.Image.objects.filter(image_set__team__in=user.team_set.all()).select_related('image_set')
+
+    @action(detail=True, methods=['GET'], name='get image tiles for open seadragon', 
+                url_path= r'(?P<z_dimension>\d+)/(?P<frame>\d+)/tile_files/(?P<level>\d+)/(?P<tile_path>\d+_\d+.(?:png|jpeg))')
+    def view_image_tile(self, request, pk, z_dimension, frame, level, tile_path):
+
+        image_id, z_dimension, frame, level = int(pk), int(z_dimension), int(frame), int(level)
+        results = re.search(r"(\d+)_(\d+).(png|jpeg)", tile_path)
+        col = int(results.group(1))
+        row = int(results.group(2))
+        format = results.group(3)
+        cache_key = f"{image_id}/{z_dimension}/{frame}/{level}/{col}/{row}"
+
+        start = timer()
+        buffer = tiles_cache.get(cache_key)
+        if buffer is not None:
+            load_from_drive_time = timer() - start
+            logger.info(f"{load_from_drive_time:.4f};{request.path};C")
+            return HttpResponse(buffer, content_type='image/%s' % format)
+
+        image = get_object_or_404(models.Image, id=image_id)            
+        file_path = os.path.join(settings.IMAGE_PATH, image.path(z_dimension, frame))
+
+        try:
+            slide = image_cache.get(file_path)
+
+            tile = slide.get_tile(level, (col, row))
+
+            buf = PILBytesIO()
+            tile.save(buf, format, quality=90)
+            buffer = buf.getvalue()
+                
+            load_from_drive_time = timer() - start
+
+            logger.info(f"{load_from_drive_time:.4f};{request.path}")
+
+            if hasattr(cache, "delete_pattern"):
+                tiles_cache.set(cache_key, buffer, 7*24*60*60)
+            return HttpResponse(buffer, content_type='image/%s' % format)
+        except:
+            return HttpResponseBadRequest()
+
+
+    @action(detail=True, methods=['GET'], name='get image infos for open seadragon',
+                url_path= r'(?P<z_dimension>\d+)/(?P<frame>\d+)/tile')
+    def view_image(self, request, pk, z_dimension, frame):
+        z_dimension, frame = int(z_dimension), int(frame)
+        image = get_object_or_404(models.Image, id=pk)
+
+        cache_key = f"{pk}_{z_dimension}_{frame}_get_dzi"
+        value = cache.get(cache_key)
+        if value is not None:
+            return HttpResponse(value, content_type='application/xml')
+        
+        file_path = os.path.join(settings.IMAGE_PATH, image.path(z_dimension, frame))
+        slide = image_cache.get(file_path)
+        value = slide.get_dzi("jpeg")
+
+        if hasattr(cache, "delete_pattern"):
+            cache.set(cache_key, value, None)
+        return HttpResponse(value, content_type='application/xml')
 
     @action(detail=True, methods=['PATCH'], name='Updates the image cache')
     def update_image_cache(self, request, pk=None):
