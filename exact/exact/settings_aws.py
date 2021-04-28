@@ -17,6 +17,8 @@ DEBUG =  int(os.environ.get("DEBUG", default=0))
 # Allowed Host headers this site can server
 ALLOWED_HOSTS = ['*', 'exact-annotations.de']
 
+USE_CDN_WSI = True
+
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 DATABASES = {
@@ -138,7 +140,7 @@ SHOW_DEMO_DATASETS = False
 # }
 
 # Add all new users to the team ids
-ADD_USER_TO_TEAM = [1] # 1,2,3, 27
+ADD_USER_TO_TEAM = [34] # 1,2,3, 27
 
 USE_NGINX_IMAGE_PROVISION = False  # defines if images get provided directly via nginx what generally improves imageset download performance
 
@@ -160,13 +162,12 @@ UPLOAD_FS_GROUP = os.environ.get("UPLOAD_FS_GROUP", 33)  # www-data on debian
 ENABLE_ZIP_DOWNLOAD = False  # If enabled, run manage.py runzipdaemon to create the zip files and keep them up to date
 
 # Test mail functionality by printing mails to console:
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = '587'
+EMAIL_BACKEND = 'django_smtp_ssl.SSLEmailBackend'
+EMAIL_HOST = 'email-smtp.eu-central-1.amazonses.com'
+EMAIL_PORT = '465'
 EMAIL_HOST_USER = DJANGO_ECS_SECRETS['EMAIL_HOST_USER']
 EMAIL_HOST_PASSWORD = DJANGO_ECS_SECRETS['EMAIL_HOST_PASSWORD']
-EMAIL_USE_TLS = True
-EMAIL_USE_SSL = False
+EMAIL_USE_SSL = True
 
 
 TOOLS_ENABLED = True

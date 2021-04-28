@@ -95,3 +95,6 @@ ParameterKey=ConnMaxAge,ParameterValue=60
 ParameterKey=DesiredTasksCount,ParameterValue=1"
 ```
 
+### E-Mail
+
+https://dev.to/marcbeaujean/sending-email-with-smtp-on-aws-and-django-jmd

@@ -240,7 +240,7 @@ Resources:
     Type: AWS::ApplicationAutoScaling::ScalableTarget
     Properties:
       MinCapacity: 0
-      MaxCapacity: 1
+      MaxCapacity: 5
       ResourceId:
         Fn::Join:
           - "/"
@@ -272,22 +272,9 @@ Resources:
       TargetTrackingScalingPolicyConfiguration:
         PredefinedMetricSpecification:
           PredefinedMetricType: ECSServiceAverageCPUUtilization
-        ScaleInCooldown: 75
-        ScaleOutCooldown: 30
+        ScaleInCooldown: 15
+        ScaleOutCooldown: 15
         TargetValue: 50
-
-  AutoScalingPolicy:
-    Type: AWS::ApplicationAutoScaling::ScalingPolicy
-    Properties:
-      PolicyName: !Join ['', [!Ref DjangoAppServiceName, AutoScalingPolicy]]
-      PolicyType: TargetTrackingScaling
-      ScalingTargetId: !Ref AutoScalingTarget
-      TargetTrackingScalingPolicyConfiguration:
-        PredefinedMetricSpecification:
-          PredefinedMetricType: ECSServiceAverageMemoryUtilization
-        ScaleInCooldown: 60
-        ScaleOutCooldown: 20
-        TargetValue: 40
 
 
   ###########################
@@ -359,9 +346,9 @@ Resources:
       HealthCheckProtocol: HTTP
       HealthCheckEnabled: true
       HealthCheckIntervalSeconds: 300
-      HealthCheckTimeoutSeconds: 60
+      HealthCheckTimeoutSeconds: 4
       HealthyThresholdCount: 2
-      UnhealthyThresholdCount: 2
+      UnhealthyThresholdCount: 10
       Matcher:
         HttpCode: '200-299'
       Protocol: HTTP
