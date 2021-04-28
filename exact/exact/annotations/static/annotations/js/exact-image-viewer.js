@@ -40,8 +40,27 @@ class EXACTViewer {
             frame = parseInt(options.url_parameters["frame"]);
         }
 
+        let set_name = $("#image_list").data( "image_set_name")
+        let image_name = imageInformation.name.split('.')[0]
         if (imageInformation['depth'] == 1 && imageInformation['frames'] == 1) {
-            options.tileSources = [server_url + `/images/image/${imageId}/1/1/tile/`]
+            // check if the CDN should be used
+            if ($("#image_list").data( "static_cdn") === "True") {                
+                let dzi_path = $("#image_list").data( "static-file" ) + `wsi_images/${set_name}/${image_name}/1/1/tile.dzi`;
+                //let dzi_path =  `https://d1cc3vlw0cftus.cloudfront.net/static/wsi_images/${set_name}/${image_name}/1/1/tile.dzi`;
+
+                // check if the CDN contains the image
+                $.ajax({ url:dzi_path, type:'HEAD', async: false,
+                    error: function() { 
+                        // use the clasical image retreval approach
+                        options.tileSources = [server_url + `/images/image/${imageId}/1/1/tile/`];
+                    },
+                    success: function() {
+                        options.tileSources = [ dzi_path ];
+                    }
+                });                
+            } else {
+                options.tileSources = [server_url + `/images/image/${imageId}/1/1/tile/`]
+            }            
         }
         if (imageInformation['depth'] > 1 || imageInformation['frames'] > 1) {
             let tileSources = []

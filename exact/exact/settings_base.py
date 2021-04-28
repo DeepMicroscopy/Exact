@@ -32,6 +32,9 @@ INTERNAL_IPS = ['127.0.0.1']
 DJANGO_REDIS_IGNORE_EXCEPTIONS = True
 SESSIONS_ENGINE='django.contrib.sessions.backends.cache'
 
+# Use CDN caching for WSI by uploading to S3
+USE_CDN_WSI = False
+
 CACHES = {
     'default': {
         'BACKEND': os.environ.get("CACHE_BACKEND", default='django.core.cache.backends.locmem.LocMemCache'),
