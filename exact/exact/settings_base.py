@@ -32,6 +32,10 @@ INTERNAL_IPS = ['127.0.0.1']
 DJANGO_REDIS_IGNORE_EXCEPTIONS = True
 SESSIONS_ENGINE='django.contrib.sessions.backends.cache'
 
+
+DATABASES["default"]["ATOMIC_REQUESTS"] = False  # noqa F405
+DATABASES["default"]["CONN_MAX_AGE"] = int(os.environ.get("CONN_MAX_AGE", default=60))  # noqa F405
+
 # Use CDN caching for WSI by uploading to S3
 USE_CDN_WSI = False
 
