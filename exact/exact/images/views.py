@@ -22,6 +22,7 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_403_FORBIDDEN, HTTP_200_OK, \
     HTTP_201_CREATED, HTTP_202_ACCEPTED, HTTP_204_NO_CONTENT, HTTP_404_NOT_FOUND
 from PIL import Image as PIL_Image
+from django.views.decorators.cache import cache_page
 
 from rest_framework.settings import api_settings
 
@@ -362,6 +363,7 @@ def upload_image(request, imageset_id):
 #         return HttpResponse(f.read(), content_type="image/jpeg")
 
 @login_required
+@cache_page(60 * 60 * 24 * 30)
 def view_image(request, image_id, z_dimension:int=1, frame:int=1):
     """
     This view is to authenticate direct access to the images via nginx auth_request directive
@@ -482,6 +484,7 @@ def view_image_navigator_overlay_tile(request, image_id, z_dimension, frame, lev
     return response
 
 @login_required
+@cache_page(60 * 60 * 24 * 30)
 def view_image_tile(request, image_id, z_dimension, frame, level, tile_path):
     """
     This view is to authenticate direct access to the images via nginx auth_request directive
