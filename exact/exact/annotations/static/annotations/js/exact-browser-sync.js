@@ -1,4 +1,19 @@
 
+class FakeBroadcastChannel {
+
+    constructor(channelName) {
+        this.channelName = channelName;
+    }
+
+    onmessage 
+
+    postMessage(message) { }
+
+    close() { }
+}
+
+
+
 
 class EXACTBrowserSync {
 
@@ -120,6 +135,7 @@ class EXACTBrowserSync {
         } else {
             this.channels[channelName] = this._createNewChannel(channelName);
             channel = this.channels[channelName];
+
         }
 
         return channel;
@@ -127,7 +143,13 @@ class EXACTBrowserSync {
 
     _createNewChannel(channelName) {
 
-        return new BroadcastChannel(channelName);
+        try {
+            return new BroadcastChannel(channelName);
+        } catch (error) {
+            console.error(error);
+
+            return new FakeBroadcastChannel(channelName);
+        }
 
     }
 
