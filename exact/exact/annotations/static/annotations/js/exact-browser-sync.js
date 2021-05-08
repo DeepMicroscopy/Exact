@@ -3,9 +3,8 @@ class FakeBroadcastChannel {
 
     constructor(channelName) {
         this.channelName = channelName;
+        this.onmessage = undefined;
     }
-
-    onmessage 
 
     postMessage(message) { }
 
