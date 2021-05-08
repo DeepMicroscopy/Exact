@@ -62,7 +62,7 @@ class ReadableCellVizioMKTDataset():
        self.fi.nImages=1000
 
        self.fi.width = 576
-       if ((self.fi.size/(2*self.fi.width))%2!=0):
+       if ((self.fi.size / (2 * self.fi.width)) % 2 != 0):
             self.fi.width=512
             self.fi.height=int(self.fi.size/(2*self.fi.width))
        else:
