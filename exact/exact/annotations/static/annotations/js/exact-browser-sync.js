@@ -143,7 +143,6 @@ class EXACTBrowserSync {
     _createNewChannel(channelName) {
 
         try {
-            return new FakeBroadcastChannel(channelName);
             return new BroadcastChannel(channelName);
         } catch (error) {
             console.error(error);
