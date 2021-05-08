@@ -3,9 +3,8 @@ class FakeBroadcastChannel {
 
     constructor(channelName) {
         this.channelName = channelName;
+        this.onmessage = undefined;
     }
-
-    onmessage 
 
     postMessage(message) { }
 
@@ -144,6 +143,7 @@ class EXACTBrowserSync {
     _createNewChannel(channelName) {
 
         try {
+            return new FakeBroadcastChannel(channelName);
             return new BroadcastChannel(channelName);
         } catch (error) {
             console.error(error);
