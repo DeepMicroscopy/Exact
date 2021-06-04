@@ -1,8 +1,12 @@
+import logging
 import os, stat
+import re
+from django.conf import settings
+from timeit import default_timer as timer
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_202_ACCEPTED, HTTP_201_CREATED
-from django.http import HttpResponseBadRequest, HttpResponse
+from django.http import HttpResponseBadRequest, HttpResponse, HttpResponseNotFound
 from django.template.response import TemplateResponse
 from rest_framework.response import Response
 from rest_framework import viewsets, permissions, renderers
@@ -10,12 +14,20 @@ from rest_framework.settings import api_settings
 from rest_framework.decorators import action
 from django.db.models import Q, Count
 from django.db import transaction, connection
+from django.http import JsonResponse
+
+from django.core.cache import caches
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
+
 from exact.annotations.models import Annotation, AnnotationVersion
 from . import models
 from . import serializers
 import django_filters
 import base64
 
+import sys
+import json
 import cv2
 import numpy as np
 import openslide
@@ -32,6 +44,13 @@ from PIL import Image as PIL_Image
 from util.slide_server import SlideCache, SlideFile, PILBytesIO
 image_cache = SlideCache(cache_size=10)
 
+logger = logging.getLogger('django')
+cache = caches['default']
+try:
+    tiles_cache = caches['tiles_cache']
+except:
+    tiles_cache = cache
+
 class ImageFilterSet(django_filters.FilterSet):
     image_type = django_filters.ChoiceFilter(choices=models.Image.SOURCE_TYPES)
     annotation_type = django_filters.NumberFilter(field_name='annotations', method='filter_annotation_type')
@@ -41,9 +60,9 @@ class ImageFilterSet(django_filters.FilterSet):
     class Meta:
         model = models.Image
         fields = {
-            'id': ['exact'],
-            'name': ['exact', 'contains'],
-            'filename': ['exact', 'contains'],
+            'id': ['exact', 'in'],
+            'name': ['exact', 'contains', 'in'],
+            'filename': ['exact', 'contains', 'in'],
             'time': ['exact', 'contains'],
             'mpp': ['exact', 'range'],
             'objectivePower': ['exact', 'range'],
@@ -103,10 +122,134 @@ class ImageViewSet(viewsets.ModelViewSet):
         user = self.request.user
         return  models.Image.objects.filter(image_set__team__in=user.team_set.all()).select_related('image_set')
 
-    @action(detail=True, methods=['GET'], name='Get Thumbnail for image PK')
-    def thumbnail(self, request, pk=None):
+    @action(detail=True, methods=['GET'], name='get image tiles for open seadragon', 
+                url_path= r'(?P<z_dimension>\d+)/(?P<frame>\d+)/tile_files/(?P<level>\d+)/(?P<tile_path>\d+_\d+.(?:png|jpeg))')
+    def view_image_tile(self, request, pk, z_dimension, frame, level, tile_path):
+
+        image_id, z_dimension, frame, level = int(pk), int(z_dimension), int(frame), int(level)
+        results = re.search(r"(\d+)_(\d+).(png|jpeg)", tile_path)
+        col = int(results.group(1))
+        row = int(results.group(2))
+        format = results.group(3)
+        cache_key = f"{image_id}/{z_dimension}/{frame}/{level}/{col}/{row}"
+
+        start = timer()
+        buffer = tiles_cache.get(cache_key)
+        if buffer is not None:
+            load_from_drive_time = timer() - start
+            logger.info(f"{load_from_drive_time:.4f};{request.path};C")
+            return HttpResponse(buffer, content_type='image/%s' % format)
+
+        image = get_object_or_404(models.Image, id=image_id)            
+        file_path = os.path.join(settings.IMAGE_PATH, image.path(z_dimension, frame))
+
+        try:
+            slide = image_cache.get(file_path)
+
+            tile = slide.get_tile(level, (col, row))
+
+            buf = PILBytesIO()
+            tile.save(buf, format, quality=90)
+            buffer = buf.getvalue()
+                
+            load_from_drive_time = timer() - start
+
+            logger.info(f"{load_from_drive_time:.4f};{request.path}")
+
+            if hasattr(cache, "delete_pattern"):
+                tiles_cache.set(cache_key, buffer, 7*24*60*60)
+            return HttpResponse(buffer, content_type='image/%s' % format)
+        except:
+            return HttpResponseBadRequest()
+
+
+    @action(detail=True, methods=['GET'], name='get image infos for open seadragon',
+                url_path= r'(?P<z_dimension>\d+)/(?P<frame>\d+)/tile')
+    def view_image(self, request, pk, z_dimension, frame):
+        z_dimension, frame = int(z_dimension), int(frame)
         image = get_object_or_404(models.Image, id=pk)
 
+        cache_key = f"{pk}_{z_dimension}_{frame}_get_dzi"
+        value = cache.get(cache_key)
+        if value is not None:
+            return HttpResponse(value, content_type='application/xml')
+        
+        file_path = os.path.join(settings.IMAGE_PATH, image.path(z_dimension, frame))
+        slide = image_cache.get(file_path)
+        value = slide.get_dzi("jpeg")
+
+        if hasattr(cache, "delete_pattern"):
+            cache.set(cache_key, value, None)
+        return HttpResponse(value, content_type='application/xml')
+
+    @action(detail=True, methods=['PATCH'], name='Updates the image cache')
+    def update_image_cache(self, request, pk=None):
+
+        image = get_object_or_404(models.Image, id=pk)
+
+        mem_size = int(request.data.get("mem_size_mb", 5))
+        z_dimension = int(request.data.get("z_dimension", 1))
+        frame = int(request.data.get("frame", 1))
+
+        slide = image_cache.get(image.path())
+
+        keys = {}
+        results = {}
+        num_tiles = 0
+        sum_cache = 0
+        for level, tiles in enumerate(slide.level_tiles):
+            #level += 1
+            num_x_tiles, num_y_tiles = tiles
+
+            start = timer()
+            for col in range(num_x_tiles):
+                for row in range(num_y_tiles):
+
+                    cache_key = f"{pk}/{z_dimension}/{frame}/{level}/{col}/{row}"
+                    if tiles_cache.has_key(cache_key) == False:
+
+                        tile = slide.get_tile(level, (col, row))
+
+                        buf = PILBytesIO()
+                        tile.save(buf, "jpeg", quality=90)
+                        image_buf = buf.getvalue()
+
+                        if hasattr(cache, "delete_pattern"):
+                            tiles_cache.set(cache_key, image_buf, 7*24*24)
+
+                        buffer_size = sys.getsizeof(image_buf) / (1024 ** 2) # bytes to MBytes
+                        keys[cache_key] = buffer_size
+
+                        sum_cache += buffer_size
+                        num_tiles += 1
+
+                    if sum_cache > mem_size:
+                        break
+                if sum_cache > mem_size:
+                    break
+
+            results[level] = {
+                "Level": level,
+                "Size_MB": sum(keys.values()),
+                "Tiles": tiles,
+                "Total": num_tiles,
+                "Sec.": timer() - start
+            }
+
+            if sum_cache > mem_size:
+                 break
+        return JsonResponse(results)
+
+    @action(detail=True, methods=['GET'], name='Get Thumbnail for image PK')
+    def thumbnail(self, request, pk=None):
+
+        start = timer()
+        buffer = cache.get(f"{pk}_thumbnail")
+        if buffer is not None:
+            logger.info(f"{timer() - start:.4f};{request.path};C")
+            return HttpResponse(buffer, content_type='image/png')
+
+        image = get_object_or_404(models.Image, id=pk)
         file_path = image.path()
 
         if Path(image.thumbnail_path()).exists():
@@ -118,11 +261,21 @@ class ImageViewSet(viewsets.ModelViewSet):
 
         buf = PILBytesIO()
         tile.save(buf, 'png', quality=90)
+        buffer = buf.getvalue()
 
-        return HttpResponse(buf.getvalue(), content_type='image/png')
+        if hasattr(cache, "delete_pattern"):
+            cache.set(f"{pk}_thumbnail", buffer, None)
+
+        logger.info(f"{timer() - start:.4f};{request.path};")
+        return HttpResponse(buffer, content_type='image/png')
 
     @action(detail=True, methods=['GET'], name='Get slide information from image PK')
     def slide_information(self, request, pk=None):
+
+        buffer = cache.get(f"{pk}_slide_information")
+        if buffer is not None:
+            return Response(buffer)
+
         image = get_object_or_404(models.Image, id=pk)
 
         file_path = image.path()
@@ -131,11 +284,17 @@ class ImageViewSet(viewsets.ModelViewSet):
         level_dimensions = slide._osr.level_dimensions
         level_downsamples = slide._osr.level_downsamples
         levels = slide._osr.level_count
+        level_tiles = slide.level_tiles
 
-        return Response({"id": id,
+        buffer = {"id": pk,
                             "level_dimensions": level_dimensions, 
-                            "level_downsamples":level_downsamples,
-                            "levels": levels})
+                            "level_downsamples": level_downsamples,
+                            "level_tiles": level_tiles,
+                            "levels": levels}
+
+        cache.set(f"{pk}_slide_information", buffer, None)
+
+        return Response(buffer)
 
     @action(detail=True, methods=['GET'], name='Get patch for image PK')
     def get_patch(self, request, pk=None):
@@ -192,8 +351,10 @@ class ImageViewSet(viewsets.ModelViewSet):
         
         image_registration.perform_registration(**request.data)
 
-        return Response(serializers.ImageRegistrationSerializer(image_registration).data, return_status)
+        if request.data.get("create_inverse_registration", False):
+            image_registration.create_inverse_registration()
 
+        return Response(serializers.ImageRegistrationSerializer(image_registration).data, return_status)
 
     def create(self, request):
         image_type = int(request.POST.get('image_type', 0))
@@ -319,6 +480,10 @@ class ImageViewSet(viewsets.ModelViewSet):
         # remove image from file system
         if Path(image.path()).exists(): os.remove(image.path())
         if Path(image.original_path()).exists(): os.remove(image.original_path())
+        # remove from tile cache
+        if hasattr(cache, "delete_pattern"):
+            cache_key = f"*{pk}/*/*/*/*/*"
+            tiles_cache.delete_pattern(cache_key)        
         # remove image from db
         return super().destroy(request, pk)
         
@@ -372,9 +537,9 @@ class ImageSetFilterSet(django_filters.FilterSet):
     class Meta:
         model = models.ImageSet
         fields = {
-            'id': ['exact'],
+            'id': ['exact', 'in'],
             'path': ['exact', 'contains'],
-            'name': ['exact', 'contains'],
+            'name': ['exact', 'contains', 'in'],
             'location': ['exact', 'contains'],
             'description': ['exact', 'contains'],
             'time': ['exact', 'range'],
@@ -420,6 +585,21 @@ class ImageSetViewSet(viewsets.ModelViewSet):
             image_set = models.ImageSet.objects.filter(id=response.data['id']).first()
             image_set.create_folder()
         return response
+
+    def retrieve(self, request, *args, **kwargs):
+
+        cache_key = request.META["PATH_INFO"] + request.META["QUERY_STRING"]
+
+        data = cache.get(cache_key)
+        instance = self.get_object() # check if user has access
+        if data is None:
+            serializer = self.get_serializer(instance)
+            data = serializer.data
+
+            if hasattr(cache, "delete_pattern"):
+                cache.set(cache_key, data, 24*60*60)
+
+        return Response(data)
 
     def list(self, request, *args, **kwargs):
         if "api" in request.META['PATH_INFO']:
@@ -596,9 +776,9 @@ class ImageRegistrationViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
     serializer_class = serializers.ImageRegistrationSerializer
     filterset_fields = {
-       'id': ['exact'],
-       'target_image': ['exact'],
-       'source_image': ['exact'],
+       'id': ['exact', 'in'],
+       'target_image': ['exact', 'in'],
+       'source_image': ['exact', 'in'],
        'registration_error': ['range'],
        'runtime': ['range'],
     }
@@ -608,5 +788,25 @@ class ImageRegistrationViewSet(viewsets.ModelViewSet):
         return  models.ImageRegistration.objects.filter(source_image__image_set__team__in=user.team_set.all()).select_related('source_image', 'target_image').order_by('id')
 
 
+    @action(detail=True, methods=['GET'], name='Convert coordinates form the source to the target domain')
+    def convert_coodinates(self, request, pk=None):
+        image_registration = get_object_or_404(models.ImageRegistration, id=pk)   
+
+        vector = request.query_params.get("vector", None) 
+        if vector is None:
+            return HttpResponseBadRequest('vector parameter not set')
+
+        vector = json.loads(vector.replace("\'", "\""))
+
+        result_vector = image_registration.convert_coodinates(vector)
+
+        return Response(result_vector, HTTP_202_ACCEPTED)
 
 
+    @action(detail=True, methods=['GET'], name='Convert coordinates form the source to the target domain')
+    def create_inverse_registration(self, request, pk=None):
+        image_registration = get_object_or_404(models.ImageRegistration, id=pk)   
+
+        new_registration = image_registration.create_inverse_registration()
+
+        return Response(serializers.ImageRegistrationSerializer(new_registration).data, HTTP_201_CREATED)

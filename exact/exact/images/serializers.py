@@ -97,7 +97,7 @@ class ImageRegistrationSerializer(FlexFieldsModelSerializer):
 
         expandable_fields = {
             "source_image": (ImageSerializer, {'read_only': True}),
-            "target_image": (UserSerializer, {'read_only': True}),
+            "target_image": (ImageSerializer, {'read_only': True}),
         }
 
 class ImageSetSerializer(FlexFieldsModelSerializer):

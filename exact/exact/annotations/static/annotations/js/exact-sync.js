@@ -1,5 +1,66 @@
 // JS file for sync annotations with the EXACT Server
 
+
+class EXACTRegistrationSync {
+    constructor(imageInformation, gHeaders) {
+        this.imageInformation = imageInformation;
+        this.gHeaders = gHeaders;
+
+        this.registeredImagePairs = {};
+
+        this.API_1_REGISTRATION_BASE_URL = include_server_subdir('/api/v1/images/registration/');
+
+        //this.loadRegistrationInformation('?source_image=' + this.imageInformation.id, this);
+        this.loadRegistrationInformation('?target_image=' + this.imageInformation.id, this);
+    }
+
+    createRegistrationPair(source_image) {
+
+        return {
+            "id": -1,
+            "source_image": source_image,
+            "target_image": this.imageInformation,
+            "transformation_matrix": {
+                "t_00": 1,
+                "t_01": 0,
+                "t_02": 0,
+                "t_10": 0,
+                "t_11": 1,
+                "t_12": 0,
+                "t_20": 0,
+                "t_21": 0
+            },
+            "file": undefined
+        }
+
+    }
+
+    loadRegistrationInformation(url,context) {
+
+        $.ajax(this.API_1_REGISTRATION_BASE_URL + url 
+            +'&fields=id,transformation_matrix,file,source_image.name,source_image.id,target_image.name,target_image.id'
+            +'&expand=target_image,source_image', {
+            type: 'GET',
+            headers: this.gHeaders,
+            dataType: 'json',
+            success: function (registrations, textStatus, jqXHR) {
+
+                for (let registration of registrations.results) {
+
+                    context.registeredImagePairs[registration.source_image.name] = registration
+                }
+            },
+            error: function (request, status, error) {
+                if (request.responseText !== undefined) {
+                    $.notify(request.responseText, { position: "bottom center", className: "error" });
+                } else {
+                    $.notify(`Server ERR_CONNECTION_TIMED_OUT`, { position: "bottom center", className: "error" });
+                }
+            }
+        });
+    }
+}
+
 class EXACTTeamSync {
     constructor(viewer, team_id) {
         this.team_id = team_id;

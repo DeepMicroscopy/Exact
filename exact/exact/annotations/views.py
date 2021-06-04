@@ -1,7 +1,11 @@
 import datetime
 import time
 import pytz
+from timeit import default_timer as timer
 
+from django.conf import settings
+import logging
+from django.core.cache import cache
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
@@ -26,6 +30,7 @@ from exact.annotations.serializers import AnnotationSerializer, AnnotationTypeSe
 from exact.images.models import Image, ImageSet
 from exact.users.models import Team
 
+logger = logging.getLogger('django')
 
 def export_auth(request, export_id):
     if request.user.is_authenticated():
@@ -35,6 +40,8 @@ def export_auth(request, export_id):
 
 @login_required
 def annotate(request, image_id):
+    start = timer()
+
     selected_image = get_object_or_404(Image, id=image_id)
     imageset_perms = selected_image.image_set.get_perms(request.user)
     if 'read' in imageset_perms:
@@ -49,10 +56,16 @@ def annotate(request, image_id):
 
         total_annotations = selected_image.annotations.filter(deleted=False).count()
         imageset_lock = selected_image.image_set.image_lock
-        asthma = selected_image.image_set.product_set.filter(Q(name__icontains="asthma") | Q(name__icontains="astma")).first()
 
+        asthma = cache.get(f"{selected_image.image_set.id}_contains_asthma")
+        if asthma is None:
+            asthma = selected_image.image_set.product_set.filter(Q(name__icontains="asthma") 
+                        | Q(name__icontains="astma")).first()
+            asthma = True if asthma is not None else False
+            if hasattr(cache, "delete_pattern"):
+                cache.set(f"{selected_image.image_set.id}_contains_asthma", asthma, 5*60)
 
-        return render(request, 'annotations/annotate.html', {
+        response = render(request, 'annotations/annotate.html', {
             'team': selected_image.image_set.team,
             'selected_image': selected_image,
             'imageset_perms': imageset_perms,
@@ -63,8 +76,12 @@ def annotate(request, image_id):
             'HasMediaFiles': hasMediaFiles,
             'global_annotation_types': global_annotation_types,
             'user_id': request.user.id,
-            'asthma': asthma
+            'asthma': asthma,
+            "USE_CDN_WSI": settings.USE_CDN_WSI
         })
+        
+        logger.info(f"{timer() - start:.4f};Load annotation page")
+        return response
     else:
         return redirect(reverse('images:view_imageset', args=(selected_image.image_set.id,)))
 

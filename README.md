@@ -1,4 +1,8 @@
 # Exact
+[![PyPI version fury.io](https://badge.fury.io/py/EXCAT-Sync.svg)](https://pypi.python.org/pypi/EXCAT-Sync/)
+[![MIT license](https://img.shields.io/badge/License-MIT-blue.svg)](https://lbesson.mit-license.org/)
+
+
 
 This is a collaborative online tool for labeling image data.
 
@@ -46,6 +50,7 @@ url={https://doi.org/10.1038/s41598-021-83827-4}
 * label verification
 * upload of existing labels
 * WSI [viewer](https://openseadragon.github.io/) 
+* [Caching](redis/CACHING.md)
 
 
 ## Documentation
@@ -100,13 +105,15 @@ Copy the files `env.dev` and `env.dev.db`, rename to `env.prod` and `env.prod.db
 
 Copy and rename `settings.py.example` to `settings.py` in the exact folder.
 
+Enable caching in the `settings.py` according to the [documentation](redis/CACHING.md).
+
 Build and run the container:
 ```
 
 docker-compose -f docker-compose.prod.yml up -d --build
-docker-compose -f docker-compose.prod.yml exec web python manage.py migrate --noinput 
-docker-compose -f docker-compose.prod.yml exec web python manage.py createsuperuser
-docker-compose -f docker-compose.prod.yml exec web python manage.py collectstatic --no-input --clear
+docker-compose -f docker-compose.prod.yml exec web python3 manage.py migrate --noinput 
+docker-compose -f docker-compose.prod.yml exec web python3 manage.py createsuperuser
+docker-compose -f docker-compose.prod.yml exec web python3 manage.py collectstatic --no-input --clear
 docker-compose -f docker-compose.prod.yml logs -f
 ```
 
@@ -143,11 +150,10 @@ Copy and rename `settings.py.example` to `settings.py` in the exact folder.
 
 Build and run the container:
 ```
-docker-compose -f docker-compose.prod.aws-db.yml down -v --remove-orphans
 docker-compose -f docker-compose.prod.aws-db.yml up -d --build
-docker-compose -f docker-compose.prod.aws-db.yml exec web python manage.py migrate --noinput
-docker-compose -f docker-compose.prod.aws-db.yml exec web python manage.py createsuperuser
-docker-compose -f docker-compose.prod.aws-db.yml exec web python manage.py collectstatic --no-input --clear
+docker-compose -f docker-compose.prod.aws-db.yml exec web python3 manage.py migrate --noinput
+docker-compose -f docker-compose.prod.aws-db.yml exec web python3 manage.py createsuperuser
+docker-compose -f docker-compose.prod.aws-db.yml exec web python3 manage.py collectstatic --no-input --clear
 docker-compose -f docker-compose.prod.aws-db.yml logs -f
 ```
 

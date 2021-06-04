@@ -19,11 +19,9 @@ class ScreeningTool {
 
     handleKeyUp(event) {
 
-        if (event.target.id === "TEXTAREA"
-            || event.target.nodeName == 'INPUT'
-            || this.screening_sync.screening_mode === undefined)
+        if (["textarea", "text", "number"].includes(event.target.type) || this.screening_sync.screening_mode === undefined)
             return;
-
+            
         switch (event.keyCode) {
             case 65: //a left tile
                 var coordinates = this.moveLeft();
@@ -89,7 +87,7 @@ class ScreeningTool {
             $('#screeningResolutionX').val(event.screening_mode.x_resolution);
             $('#screeningResolutionY').val(event.screening_mode.y_resolution);
 
-            $('#screeningImage').attr('src', include_server_subdir(`/api/v1/images/images/${event.userData.imageid}/thumbnail`));
+            $('#screeningImage').attr('src', include_server_subdir(`/api/v1/images/images/${event.userData.imageid}/thumbnail/`));
             $('#screeningImage').on('load', event.userData.updateThumbnail.bind(context));
         }, this);
 
