@@ -1,7 +1,7 @@
 // JS file for handling the openseadragon viewer
 
 class EXACTViewer {
-    constructor(server_url, options, imageInformation, gHeaders, user_id, browser_sync) {
+    constructor(server_url, options, imageInformation, gHeaders, user_id) {
 
         this.imageId = imageInformation['id'];
         this.imageInformation = imageInformation;
@@ -10,14 +10,17 @@ class EXACTViewer {
         this.user_id = user_id;
         this.options = options;
         this.showNavigator = true;
-        this.browser_sync = browser_sync;
+        this.frame = 1;
     
         this.viewer = this.createViewer(options);
+        this.exact_registration_sync = new EXACTRegistrationSync(this.imageInformation, this.gHeaders);
+
+        this.browser_sync = new EXACTBrowserSync(this.imageInformation, this.viewer, this.exact_registration_sync)
+
         this.exact_image_sync = new EXACTImageSync(this.imageId, this.gHeaders, this.viewer);
 
         this.initViewerEventHandler(this.viewer, imageInformation);
         this.initBrowserSycEvents();
-        this.initRegistrationEvents();
 
         this.registration = null;
         this.filterImage = new OpenseadragonFilteringViewer(this.viewer);
@@ -28,10 +31,36 @@ class EXACTViewer {
     }
 
     static factoryCreateViewer(server_url, imageId, options, imageInformation, annotationTypes = undefined,
-        headers = undefined, user_id = undefined, collaboration_type = 0, browser_sync = undefined, drawAnnotations = true, strokeWidth = 5) {
+        headers = undefined, user_id = undefined, collaboration_type = 0, drawAnnotations = true, strokeWidth = 5) {
 
+        // extract requested frame parameter
+        let frame = 1;
+        if (options.url_parameters !== undefined 
+            && "frame" in options.url_parameters) {
+            frame = parseInt(options.url_parameters["frame"]);
+        }
+
+        let set_name = $("#image_list").data( "image_set_name")
+        let image_name = imageInformation.name.split('.')[0]
         if (imageInformation['depth'] == 1 && imageInformation['frames'] == 1) {
-            options.tileSources = [server_url + `/images/image/${imageId}/1/1/tile/`]
+            // check if the CDN should be used
+            if ($("#image_list").data( "static_cdn") === "True") {                
+                let dzi_path = $("#image_list").data( "static-file" ) + `wsi_images/${set_name}/${image_name}/1/1/tile.dzi`;
+                //let dzi_path =  `https://d1cc3vlw0cftus.cloudfront.net/static/wsi_images/${set_name}/${image_name}/1/1/tile.dzi`;
+
+                // check if the CDN contains the image
+                $.ajax({ url:dzi_path, type:'HEAD', async: false,
+                    error: function() { 
+                        // use the clasical image retreval approach
+                        options.tileSources = [server_url + `/images/image/${imageId}/1/1/tile/`];
+                    },
+                    success: function() {
+                        options.tileSources = [ dzi_path ];
+                    }
+                });                
+            } else {
+                options.tileSources = [server_url + `/images/image/${imageId}/1/1/tile/`]
+            }            
         }
         if (imageInformation['depth'] > 1 || imageInformation['frames'] > 1) {
             let tileSources = []
@@ -76,31 +105,31 @@ class EXACTViewer {
                 && Object.keys(local_annotation_types).length > 0) {
                 if (imageInformation['frames'] > 1) {
                     return new EXACTViewerGlobalLocalAnnotationsFrames(server_url, options, imageInformation, collaboration_type, local_annotation_types, global_annotation_types,
-                        headers, user_id, drawAnnotations, strokeWidth, browser_sync)
+                        headers, user_id, drawAnnotations, strokeWidth, frame)
                 } else {
                     return new EXACTViewerGlobalLocalAnnotations(server_url, options, imageInformation, collaboration_type, local_annotation_types, global_annotation_types,
-                        headers, user_id, drawAnnotations, strokeWidth, browser_sync)
+                        headers, user_id, drawAnnotations, strokeWidth)
                 }
             } else if (Object.keys(global_annotation_types).length > 0) {
                 if (imageInformation['frames'] > 1) {
                     return new EXACTViewerGlobalAnnotationsFrame(server_url, options, imageInformation, collaboration_type, annotationTypes,
-                        headers, user_id, browser_sync)
+                        headers, user_id, frame)
                 } else {
                     return new EXACTViewerGlobalAnnotations(server_url, options, imageInformation, collaboration_type, annotationTypes,
-                        headers, user_id, browser_sync)
+                        headers, user_id)
                 }
             } else {
                 if (imageInformation['frames'] > 1) {
                     return new EXACTViewerLocalAnnotationsFrames(server_url, options, imageInformation, collaboration_type, annotationTypes,
-                        headers, user_id, drawAnnotations, strokeWidth, browser_sync);
+                        headers, user_id, drawAnnotations, strokeWidth, frame);
                 } else {
                     return new EXACTViewerLocalAnnotations(server_url, options, imageInformation, collaboration_type, annotationTypes,
-                        headers, user_id, drawAnnotations, strokeWidth, browser_sync);
+                        headers, user_id, drawAnnotations, strokeWidth);
                 }
             }
         } else {
             // create viewer without the option to handle annotations
-            return new EXACTViewer(server_url, options, imageInformation, headers, user_id, browser_sync);
+            return new EXACTViewer(server_url, options, imageInformation, headers, user_id);
         }
     }
 
@@ -108,7 +137,7 @@ class EXACTViewer {
 
         const default_options = {
             id: "openseadragon1",
-            prefixUrl: '../../static/images/',
+            prefixUrl: $("#image_list").data( "static-file" ) +"images/",
             showNavigator: true,
             animationTime: 0.5,
             blendTime: 0.1,
@@ -140,27 +169,10 @@ class EXACTViewer {
         return OpenSeadragon(viewer_options);
     }
 
-    initRegistrationEvents() {
-
-        $("#sync_browser_image").on("change",this.createRegistration.bind(this));
-    }
-
-    createRegistration(event) {
-
-        this.registration = new QuadTree(this.viewer, this.imageInformation["name"], 
-                                    $( "select#sync_browser_image" ).val(), this.browser_sync);
-    }
-
-
 
     initBrowserSycEvents() {
-
-        this.browser_sync.getChannelObject("GetImageInformation").onmessage = 
-                this.sendImageInformation.bind(this);
-
         this.browser_sync.getChannelObject("ImageViewPort").onmessage = 
                     this.reseiveCurrentViewPortCoordinages.bind(this);
-
     }
 
     reseiveCurrentViewPortCoordinages(event) {
@@ -177,32 +189,15 @@ class EXACTViewer {
                 let y_max = event.data.y_max;
 
 
-                if (this.registration != null) {
-                    [x_min, y_min] = this.registration.transformAffine(x_min, y_min);
-                    [x_max, y_max] = this.registration.transformAffine(x_max, y_max);
+                if (this.browser_sync.registration != null) {
+                    [x_min, y_min] = this.browser_sync.registration.transformAffine(x_min, y_min);
+                    [x_max, y_max] = this.browser_sync.registration.transformAffine(x_max, y_max);
 
                 }
 
                 this.viewCoordinates(x_min, y_min, x_max, y_max);
             }
         }        
-    }
-
-    sendCurrentViewPortCoordinates(coordinates) {
-        this.browser_sync.getChannelObject("ImageViewPort").postMessage({
-            "imageId": this.imageId,
-            "image_name": this.imageInformation["name"],
-            "x_min": coordinates.x_min, 
-            "y_min": coordinates.y_min,
-            "x_max": coordinates.x_max,
-            "y_max": coordinates.y_max,
-        });
-    }
-
-    sendImageInformation(e) {
-        this.browser_sync.getChannelObject("ReceiveImageInformation").postMessage({
-            "imageInformation": this.imageInformation
-        });
     }
 
     imageOpend() {
@@ -225,7 +220,8 @@ class EXACTViewer {
             let ymin = Math.round(imageRect.y);
             let xmax = Math.round(imageRect.x + imageRect.width);
             let ymax = Math.round(imageRect.y + imageRect.height);
-
+            let z_dimension = 1;
+            let frame = this.userData.frame;
 
             let coordinates = {
                 "x_min": xmin, 
@@ -233,11 +229,11 @@ class EXACTViewer {
                 "x_max": xmax,
                 "y_max": ymax,
             }
-            event.userData.sendCurrentViewPortCoordinates(coordinates);
+            this.userData.browser_sync.sendCurrentViewPortCoordinates(coordinates);
 
             window.history.pushState("object or string",
                 `${this.userData.imageInformation.name}`,
-                include_server_subdir(`/annotations/${this.userData.imageInformation.id}/?xmin=${xmin}&ymin=${ymin}&xmax=${xmax}&ymax=${ymax}`));
+                include_server_subdir(`/annotations/${this.userData.imageInformation.id}/?frame=${frame}&xmin=${xmin}&ymin=${ymin}&xmax=${xmax}&ymax=${ymax}`));
 
         }, this);
 
@@ -245,7 +241,7 @@ class EXACTViewer {
 
             var coordinates = event.coordinates;
 
-            event.userData.sendCurrentViewPortCoordinates(coordinates);
+            event.userData.browser_sync.sendCurrentViewPortCoordinates(coordinates);
             event.userData.viewCoordinates(coordinates.x_min, coordinates.y_min, coordinates.x_max, coordinates.y_max);
 
         }, this);
@@ -321,7 +317,7 @@ class EXACTViewer {
             allowRotation: false,        // Make it possible to rotate the guidelines (by double clicking them)
             horizontalGuideButton: null, // Element for horizontal guideline button
             verticalGuideButton: null,   // Element for vertical guideline button
-            prefixUrl: '../../static/images/',
+            prefixUrl: $("#image_list").data( "static-file" ) +"images/",
             removeOnClose: true,        // Remove guidelines when viewer closes
             useSessionStorage: false,    // Save guidelines in sessionStorage
             navImages: {
@@ -456,6 +452,7 @@ class EXACTViewer {
         this.imageClosed();
         this.viewer.destroy();
         this.screeningTool.destroy();
+        this.browser_sync.destroy();
     }
 
     onFrameSliderChanged(event) {
@@ -503,9 +500,9 @@ class EXACTViewer {
 class EXACTViewerLocalAnnotations extends EXACTViewer {
 
     constructor(server_url, options, imageInformation, collaboration_type, annotationTypes,
-        headers, user_id, drawAnnotations = true, strokeWidth = 5, browser_sync) {
+        headers, user_id, drawAnnotations = true, strokeWidth = 5) {
 
-        super(server_url, options, imageInformation, headers, user_id, browser_sync);
+        super(server_url, options, imageInformation, headers, user_id);
 
         this.y_button_start = 150;
         this.annotationsToggle = true;
@@ -720,8 +717,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
     }
 
     handleKeyUp(event) {
-        if (event.target.id === "TEXTAREA"
-            || event.target.nodeName == 'INPUT')
+        if (["textarea", "text", "number"].includes(event.target.type))
             return;
 
         switch (event.keyCode) {
@@ -1152,7 +1148,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
     updateStrokeWidth(value) {
 
         if (value.hasOwnProperty('originalEvent')) {
-            value = event.srcElement.valueAsNumber
+            value = value.valueAsNumber
         }
 
         this.tool.updateStrokeWidth(value);
@@ -1183,19 +1179,22 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 class EXACTViewerLocalAnnotationsFrames extends EXACTViewerLocalAnnotations {
 
     constructor(server_url, options, imageInformation, collaboration_type, annotationTypes,
-        headers, user_id, drawAnnotations = true, strokeWidth = 5, frame = 1, browser_sync) {
+        headers, user_id, drawAnnotations = true, strokeWidth = 5, frame = 1) {
 
-        super(server_url, options, imageInformation, collaboration_type, annotationTypes, headers, user_id, browser_sync);
-        this.frames = imageInformation['frames']
-        this.frame = 1;
+        super(server_url, options, imageInformation, collaboration_type, annotationTypes, headers, user_id);
+        this.frames = imageInformation['frames'];
+        this.frame = frame;
+
+        if (frame > 1) {
+            this.viewer.goToPage(frame - 1);
+        }
     }
 
     handleKeyUp(event) {
 
         super.handleKeyUp(event);
 
-        if (event.target.id === "TEXTAREA"
-            || event.target.nodeName == 'INPUT')
+        if (["textarea", "text", "number"].includes(event.target.type))
             return;
 
         switch (event.keyCode) {
@@ -1306,6 +1305,21 @@ class EXACTViewerLocalAnnotationsFrames extends EXACTViewerLocalAnnotations {
 
         this.tool.drawExistingAnnotations(frameAnnotations);
 
+        var parameters = `frame=${this.frame}`;
+        if (window.location.search) {
+            let url_parameters = decodeURIComponent(window.location.search.substring(1)).split('&');
+            url_parameters = Object.assign({}, ...url_parameters.map((x) => ({ [x.split("=")[0]]: x.split("=")[1] })));
+
+            for(const [key, value] of Object.entries(url_parameters)) {
+                if (key !== "frame") { 
+                    parameters = parameters.concat(`&${key}=${value}`);
+                }
+                
+            }
+        }
+        window.history.pushState("object or string",
+                `${this.imageInformation.name}`,
+                include_server_subdir(`/annotations/${this.imageInformation.id}/?${parameters}`));
     }
 
     filterFrameAnnotations(annotations, frame_id) {
@@ -1330,37 +1344,38 @@ class EXACTViewerLocalAnnotationsFrames extends EXACTViewerLocalAnnotations {
 class EXACTViewerGlobalAnnotationsFrame extends EXACTViewer {
 
     constructor(server_url, options, imageInformation, collaboration_type, annotationTypes,
-        headers, user_id, browser_sync) {
+        headers, user_id, frame) {
 
-        super(server_url, options, imageInformation, headers, user_id, browser_sync);
+        super(server_url, options, imageInformation, headers, user_id);
 
         this.globalAnnotationTypeKeyToIdLookUp = {}
         this.frames = imageInformation['frames']
-        this.frame = 1;
+        this.frame = frame;
 
         this.exact_sync = this.createSyncModules(annotationTypes, this.imageId, headers, this.viewer, user_id, collaboration_type, frames = imageInformation['frames']);
 
         // register for global annotation type interactions
         // set global annotation initialy to false
-        let key_number = 1;
         for (let annotation_type of Object.values(annotationTypes)) {
             this.setUiGlobalAnnotation(annotation_type, false);
             $('#GlobalAnnotation_' + annotation_type.id).change(this.uiGlobalAnnotationChanged.bind(this));
 
+            let key_number = parseInt($('#GlobalAnnotation_' + annotation_type.id).attr("data-key_number"))
             this.globalAnnotationTypeKeyToIdLookUp[key_number] = annotation_type.id;
-
-            key_number += 1
         }
 
         $(document).keyup(this.handleKeyUp.bind(this));
+
+        if (frame > 1) {
+            this.viewer.goToPage(frame - 1);
+        }
     }
 
     handleKeyUp(event) {
 
         super.handleKeyUp(event);
 
-        if (event.target.id === "TEXTAREA"
-            || event.target.nodeName == 'INPUT')
+        if (["textarea", "text", "number"].includes(event.target.type))
             return;
 
         switch (event.keyCode) {
@@ -1460,6 +1475,22 @@ class EXACTViewerGlobalAnnotationsFrame extends EXACTViewer {
         for (let anno of Object.values(this.exact_sync.annotations[frame_id])) {
             this.setUiGlobalAnnotation(anno.annotation_type, !anno.deleted)
         }
+
+        var parameters = `frame=${this.frame}`;
+        if (window.location.search) {
+            let url_parameters = decodeURIComponent(window.location.search.substring(1)).split('&');
+            url_parameters = Object.assign({}, ...url_parameters.map((x) => ({ [x.split("=")[0]]: x.split("=")[1] })));
+
+            for(const [key, value] of Object.entries(url_parameters)) {
+                if (key !== "frame") { 
+                    parameters = parameters.concat(`&${key}=${value}`);
+                }
+                
+            }
+        }
+        window.history.pushState("object or string",
+                `${this.imageInformation.name}`,
+                include_server_subdir(`/annotations/${this.imageInformation.id}/?${parameters}`));
     }
 
     changeGlobalAnnotationTypeByKey(annotationKeyNumber) {
@@ -1506,23 +1537,21 @@ class EXACTViewerGlobalAnnotationsFrame extends EXACTViewer {
 class EXACTViewerGlobalAnnotations extends EXACTViewer {
 
     constructor(server_url, options, imageInformation, collaboration_type, annotationTypes,
-        headers, user_id, browser_sync) {
+        headers, user_id) {
 
-        super(server_url, options, imageInformation, headers, user_id, browser_sync);
+        super(server_url, options, imageInformation, headers, user_id);
         this.exact_sync = this.createSyncModules(annotationTypes, this.imageId, headers, this.viewer, user_id, collaboration_type);
 
         this.globalAnnotationTypeKeyToIdLookUp = {}
 
         // register for global annotation type interactions
         // set global annotation initialy to false
-        let key_number = 1;
         for (let annotation_type of Object.values(annotationTypes)) {
             this.setUiGlobalAnnotation(annotation_type, false);
             $('#GlobalAnnotation_' + annotation_type.id).change(this.uiGlobalAnnotationChanged.bind(this));
 
+            let key_number = parseInt($('#GlobalAnnotation_' + annotation_type.id).attr("data-key_number"))
             this.globalAnnotationTypeKeyToIdLookUp[key_number] = annotation_type.id;
-
-            key_number += 1
         }
 
         $(document).keyup(this.handleKeyUp.bind(this));
@@ -1532,8 +1561,7 @@ class EXACTViewerGlobalAnnotations extends EXACTViewer {
 
         super.handleKeyUp(event);
 
-        if (event.target.id === "TEXTAREA"
-            || event.target.nodeName == 'INPUT')
+        if (["textarea", "text", "number"].includes(event.target.type))
             return;
 
         switch (event.keyCode) {
@@ -1649,25 +1677,23 @@ class EXACTViewerGlobalAnnotations extends EXACTViewer {
 class EXACTViewerGlobalLocalAnnotations extends EXACTViewerLocalAnnotations {
 
     constructor(server_url, options, imageInformation, collaboration_type, annotationTypesLocal, annotationTypesGlobal,
-        headers, user_id, drawAnnotations = true, strokeWidth = 5, browser_sync) {
+        headers, user_id, drawAnnotations = true, strokeWidth = 5) {
 
         super(server_url, options, imageInformation, collaboration_type, annotationTypesLocal, headers,
-            user_id, drawAnnotations, strokeWidth, browser_sync);
+            user_id, drawAnnotations, strokeWidth);
 
         this.exact_sync_global = new EXACTGlobalAnnotationSync(annotationTypesGlobal,
             this.imageId, headers, this.viewer, user_id, collaboration_type)
 
         // register for global annotation type interactions
         // set global annotation initialy to false
-        let key_number = 1;
         this.globalAnnotationTypeKeyToIdLookUp = {};
         for (let annotation_type of Object.values(annotationTypesGlobal)) {
             this.setUiGlobalAnnotation(annotation_type, false);
             $('#GlobalAnnotation_' + annotation_type.id).change(this.uiGlobalAnnotationChanged.bind(this));
 
+            let key_number = parseInt($('#GlobalAnnotation_' + annotation_type.id).attr("data-key_number"))
             this.globalAnnotationTypeKeyToIdLookUp[key_number] = annotation_type.id;
-
-            key_number += 1
         }
 
         this.initGlobalEventHandler(this.viewer);
@@ -1691,8 +1717,7 @@ class EXACTViewerGlobalLocalAnnotations extends EXACTViewerLocalAnnotations {
 
         super.handleKeyUp(event);
 
-        if (event.target.id === "TEXTAREA"
-            || event.target.nodeName == 'INPUT')
+        if (["textarea", "text", "number"].includes(event.target.type))
             return;
 
         switch (event.keyCode) {
@@ -1790,23 +1815,26 @@ class EXACTViewerGlobalLocalAnnotationsFrames extends EXACTViewerLocalAnnotation
         headers, user_id, drawAnnotations = true, strokeWidth = 5, frame = 1) {
 
         super(server_url, options, imageInformation, collaboration_type, annotationTypesLocal, headers,
-            user_id, drawAnnotations, strokeWidth);
+            user_id, drawAnnotations);
 
         this.globalAnnotationTypeKeyToIdLookUp = {}
         this.frames = imageInformation['frames']
-        this.frame = 1;
+        this.frame = frame;
 
         this.exact_sync_global = new EXACTGlobalFrameAnnotationSync(annotationTypesGlobal, this.imageId, this.gHeaders, this.viewer, this.user_id, collaboration_type, this.frames)
 
         // register for global annotation type interactions
         // set global annotation initialy to false
-        let key_number = 1;
         for (let annotation_type of Object.values(annotationTypesGlobal)) {
             this.setUiGlobalAnnotation(annotation_type, false)
             $('#GlobalAnnotation_' + annotation_type.id).change(this.uiGlobalAnnotationChanged.bind(this))
 
+            let key_number = parseInt($('#GlobalAnnotation_' + annotation_type.id).attr("data-key_number"))
             this.globalAnnotationTypeKeyToIdLookUp[key_number] = annotation_type.id;
-            key_number += 1
+        }
+
+        if (frame > 1) {
+            this.viewer.goToPage(frame - 1);
         }
     }
 
@@ -1814,8 +1842,7 @@ class EXACTViewerGlobalLocalAnnotationsFrames extends EXACTViewerLocalAnnotation
 
         super.handleKeyUp(event);
 
-        if (event.target.id === "TEXTAREA"
-            || event.target.nodeName == 'INPUT')
+        if (["textarea", "text", "number"].includes(event.target.type))
             return;
 
         switch (event.keyCode) {

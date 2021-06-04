@@ -8,6 +8,10 @@ from django.db import models
 from django.db.models import Count, Q, Sum
 from django.db.models.expressions import F
 
+from django.core.cache import cache
+from django.db.models.signals import post_delete, post_save, m2m_changed
+from django.dispatch import receiver
+
 import os
 import numpy as np
 import cv2
@@ -26,6 +30,7 @@ from pathlib import Path
 import tifffile
 
 from exact.users.models import Team
+
 
 
 class Image(models.Model):
@@ -82,13 +87,13 @@ class Image(models.Model):
         return os.path.join(self.image_set.root_path(), Path(self.get_file_name(depth, frame)).stem + self.thumbnail_extension )
 
     def delete(self, *args, **kwargs):
-        self.image_set.zip_state = ImageSet.ZipState.INVALID
-        self.image_set.save(update_fields=('zip_state',))
+        #self.image_set.zip_state = ImageSet.ZipState.INVALID
+        #self.image_set.save(update_fields=('zip_state',))
         super(Image, self).delete(*args, **kwargs)
 
     def save(self, *args, **kwargs):
-        self.image_set.zip_state = ImageSet.ZipState.INVALID
-        self.image_set.save(update_fields=('zip_state',))
+        #self.image_set.zip_state = ImageSet.ZipState.INVALID
+        #self.image_set.save(update_fields=('zip_state',))
         super(Image, self).save(*args, **kwargs)
 
 
@@ -229,6 +234,9 @@ class Image(models.Model):
                         if image_saved == False:
                             path = Path(path).with_suffix('.tiff')
 
+                            if old_path == path:
+                                path = Path(path).with_suffix('.tif')
+
                             vi = pyvips.Image.new_from_file(str(old_path))
                             vi.tiffsave(str(path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
                             self.filename = path.name
@@ -271,6 +279,13 @@ class Image(models.Model):
     def __repr__(self):
         return u'Image: {0}'.format(self.name)
 
+# Image signals for del the cache
+@receiver([post_save, post_delete, m2m_changed], sender=Image)
+def image_changed_handler(sender, instance, **kwargs):
+
+    # delte cached imageset information used in JS
+    if hasattr(cache, "delete_pattern"):
+        cache.delete_pattern(f"*/api/v1/images/image_sets/{instance.image_set_id}/*")
 
 class ImageSet(models.Model):
     class Meta:
@@ -464,11 +479,13 @@ class ImageSet(models.Model):
         images = Image.objects.filter(image_set=self).order_by('name')
 
         if self.collaboration_type == ImageSet.CollaborationTypes.COLLABORATIVE:
+
             unverified = images.filter(Q(annotations__annotation_type__active=True, annotations__deleted=False,
                                        annotations__verifications__verified=False) |
                                        Q(annotations__annotation_type__active=True, annotations__deleted=False,
                                        annotations__verifications=None))\
                 .distinct()
+
             unannotated = images.annotate(annotation_count=Count('annotations')).filter(annotation_count__exact=0).distinct()
 
             # TODO_ Convert to single query
@@ -511,6 +528,14 @@ class ImageSet(models.Model):
 
         return images
 
+# ImageSet for del the cache
+@receiver([post_save, post_delete, m2m_changed], sender=ImageSet)
+def imageset_changed_handler(sender, instance, **kwargs):
+
+    # delte cached imageset information used in JS
+    # Currently just Redis is supported
+    if hasattr(cache, "delete_pattern"):
+        cache.delete_pattern(f"*/api/v1/images/image_sets/{instance.id}/*")
 
 class SetTag(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -561,6 +586,8 @@ class ScreeningMode(models.Model):
 def registration_directory_path(instance, filename):
     return f"registration/{instance.source_image.id}_{instance.target_image.id}.pickle"
 
+
+qt_cache = {}
 class ImageRegistration(models.Model):
 
     class Meta:
@@ -619,3 +646,59 @@ class ImageRegistration(models.Model):
         self.file.save(f"{self.id}.pickle", fid)
 
         self.save()
+
+    def create_inverse_registration(self):
+
+        new_transformation_matrix = {
+                                        "t_00": 1 + (1 - self.transformation_matrix["t_00"]), 
+                                        "t_01": self.transformation_matrix["t_01"] * -1,
+                                        "t_02": self.transformation_matrix["t_02"] * -1, 
+
+                                        "t_10": self.transformation_matrix["t_10"] * -1,  
+                                        "t_11": 1 + (1 - self.transformation_matrix["t_11"]),
+                                        "t_12": self.transformation_matrix["t_12"] * -1,  
+
+                                        "t_20": self.transformation_matrix["t_20"],              
+                                        "t_21": self.transformation_matrix["t_21"],     
+                                        "t_22": self.transformation_matrix["t_22"], 
+                                    }
+
+        new_registration = ImageRegistration.objects.create(source_image=self.target_image, target_image=self.source_image, 
+                                            registration_error=self.registration_error, runtime=self.runtime, transformation_matrix=new_transformation_matrix)
+
+        new_registration.save()
+        return new_registration
+    
+    def convert_coodinates(self, vector):
+
+        qt = None
+        if self.file.name !=  "":
+            if self.file.name not in qt_cache:
+                qt = pickle.load(open(str(self.file.path), "rb" ))
+                qt_cache[self.file.name] = qt
+            else:
+                qt = qt_cache[self.file.name]
+
+        annos = []
+        for i in range(1, (len(vector) // 2) + 1):
+            x = vector.get('x' + str(i))
+            y = vector.get('y' + str(i))
+            w = 0
+            h = 0
+            annos.append([x, y, w, h])
+
+        
+        result_vector = {}
+        if qt is not None:
+            trans_annos = qt.transform_boxes(annos)
+
+            for id, box in enumerate(trans_annos):
+                result_vector[f"x{id+1}"] = box[0]
+                result_vector[f"y{id+1}"] = box[1]
+        else:
+            for id, box in enumerate(annos):
+                x,y = box[:2]
+                result_vector[f"x{id+1}"] = self.transformation_matrix["t_00"] * x + self.transformation_matrix["t_01"] * y + self.transformation_matrix["t_02"]
+                result_vector[f"y{id+1}"] = self.transformation_matrix["t_10"] * x + self.transformation_matrix["t_11"] * y + self.transformation_matrix["t_12"]
+
+        return result_vector

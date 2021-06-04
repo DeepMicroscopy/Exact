@@ -1,3 +1,4 @@
+import logging
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -13,7 +14,7 @@ from django.http import HttpResponseForbidden, HttpResponse, HttpResponseBadRequ
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.response import TemplateResponse
 from django.utils.translation import ugettext_lazy as _
-from django.core.cache import cache
+from django.core.cache import caches
 from json import JSONDecodeError
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import ParseError
@@ -21,6 +22,7 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_403_FORBIDDEN, HTTP_200_OK, \
     HTTP_201_CREATED, HTTP_202_ACCEPTED, HTTP_204_NO_CONTENT, HTTP_404_NOT_FOUND
 from PIL import Image as PIL_Image
+from django.views.decorators.cache import cache_page
 
 from rest_framework.settings import api_settings
 
@@ -43,7 +45,6 @@ from exact.tagger_messages.models import Message, TeamMessage, GlobalMessage
 from util.slide_server import SlideCache, SlideFile, PILBytesIO
 from util.cellvizio import ReadableCellVizioMKTDataset # just until data access is pip installable
 
-
 from plugins.pluginFinder import PluginFinder
 from plugins.ExactServerPlugin import UpdatePolicy, ViewPolicy, NavigationViewOverlayStatus
 
@@ -57,6 +58,7 @@ import zipfile
 import hashlib
 import json
 import imghdr
+from timeit import default_timer as timer
 from datetime import date, timedelta, datetime
 from pathlib import Path
 import re
@@ -70,12 +72,18 @@ import openslide
 from openslide import OpenSlide, open_slide
 from PIL import Image as PIL_Image
 from czifile import czi2tif
-
+from django.core.cache import cache
 
 # TODO: Add to cache
+logger = logging.getLogger('django')
 image_cache = SlideCache(cache_size=10)
 plugin_finder = PluginFinder(image_cache)
 
+cache = caches['default']
+try:
+    tiles_cache = caches['tiles_cache']
+except:
+    tiles_cache = cache
 
 @login_required
 def explore_imageset(request, *args, **kwargs):
@@ -166,32 +174,6 @@ def index(request):
     imageset_creation_form = ImageSetCreationFormWT()  # the user provides the team manually
     imageset_creation_form.fields['team'].queryset = userteams
 
-    global_annoucements = Message.in_range(GlobalMessage.get(request.user).filter(~Q(read_by=request.user)))
-
-    # Inits message creation form
-    team_message_creation_form = TeamMessageCreationForm(
-        initial={
-            'start_time': str(date.today()),
-            'expire_time': str(date.today() + timedelta(days=settings.DEFAULT_EXPIRE_TIME)),
-        })
-
-    team_message_creation_form.fields['team'].queryset = user_admin_teams
-
-    # Gets all unread messages
-    usermessages = Message.in_range(TeamMessage.get_messages_for_user(request.user)).filter(~Q(read_by=request.user))
-
-    too_many_massages = False
-
-    front_page_messages = 5
-
-    if usermessages.count() > front_page_messages:
-        usermessages = usermessages[:front_page_messages]
-        too_many_massages = True
-
-    many_annoucements = False
-    if global_annoucements.count() > 5:
-        many_annoucements = True
-
     last_image_action = LogImageAction.objects.filter(user=request.user).order_by('-time').first()
 
 
@@ -200,13 +182,8 @@ def index(request):
         'user': request.user,
         'team_creation_form': team_creation_form,
         'imageset_creation_form': imageset_creation_form,
-        'team_message_creation_form': team_message_creation_form,
         'user_has_admin_teams': user_admin_teams.exists(),
         'userteams': userteams,
-        'usermessages': usermessages,
-        'too_many_messages': too_many_massages,
-        'many_annoucements': many_annoucements,
-        'global_annoucements': global_annoucements,
     })
 
 
@@ -386,6 +363,7 @@ def upload_image(request, imageset_id):
 #         return HttpResponse(f.read(), content_type="image/jpeg")
 
 @login_required
+@cache_page(60 * 60 * 24 * 30)
 def view_image(request, image_id, z_dimension:int=1, frame:int=1):
     """
     This view is to authenticate direct access to the images via nginx auth_request directive
@@ -397,40 +375,18 @@ def view_image(request, image_id, z_dimension:int=1, frame:int=1):
     if not image.image_set.has_perm('read', request.user):
         return HttpResponseForbidden()
 
+    cache_key = f"{image_id}_{z_dimension}_{frame}_get_dzi"
+    value = cache.get(cache_key)
+    if value is not None:
+        return HttpResponse(value, content_type='application/xml')
+    
     file_path = os.path.join(settings.IMAGE_PATH, image.path(z_dimension, frame))
     slide = image_cache.get(file_path)
+    value = slide.get_dzi("jpeg")
 
-    response = HttpResponse(slide.get_dzi("jpeg"), content_type='application/xml')
-    return response
-
-
-@login_required
-def view_thumbnail(request, image_id):
-    """
-    This view is to authenticate direct access to the images via nginx auth_request directive
-
-    it will return forbidden on if the user is not authenticated
-    """
-    
-    image = get_object_or_404(Image, id=image_id)
-    if not image.image_set.has_perm('read', request.user):
-        return HttpResponseForbidden()
-
-    file_path = image.path()
-
-    if Path(image.thumbnail_path()).exists():
-        tile = PIL_Image.open(image.thumbnail_path())
-    else:
-        slide = image_cache.get(file_path)
-        tile = slide._osr.get_thumbnail((128,128))
-        tile.save(image.thumbnail_path())
-
-    buf = PILBytesIO()
-    tile.save(buf, 'jpeg', quality=90)
-    response = HttpResponse(buf.getvalue(), content_type='image/%s' % format)
-
-    return response
-
+    if hasattr(cache, "delete_pattern"):
+        cache.set(cache_key, value, None)
+    return HttpResponse(value, content_type='application/xml')
 
 @login_required
 @api_view(['GET'])
@@ -528,6 +484,7 @@ def view_image_navigator_overlay_tile(request, image_id, z_dimension, frame, lev
     return response
 
 @login_required
+@cache_page(60 * 60 * 24 * 30)
 def view_image_tile(request, image_id, z_dimension, frame, level, tile_path):
     """
     This view is to authenticate direct access to the images via nginx auth_request directive
@@ -539,23 +496,37 @@ def view_image_tile(request, image_id, z_dimension, frame, level, tile_path):
     col = int(results.group(1))
     row = int(results.group(2))
     format = results.group(3)
+    cache_key = f"{image_id}/{z_dimension}/{frame}/{level}/{col}/{row}"
+
+    start = timer()
+    buffer = tiles_cache.get(cache_key)
+    if buffer is not None:
+        load_from_drive_time = timer() - start
+        logger.info(f"{load_from_drive_time:.4f};{request.path};C")
+        return HttpResponse(buffer, content_type='image/%s' % format)
 
     image = get_object_or_404(Image, id=image_id)
     if not image.image_set.has_perm('read', request.user):
         return HttpResponseForbidden()
-
+        
     file_path = os.path.join(settings.IMAGE_PATH, image.path(z_dimension, frame))
-    slide = image_cache.get(file_path)
-
-
-    tile = slide.get_tile(level, (col, row))
 
     try:
+        slide = image_cache.get(file_path)
+
+        tile = slide.get_tile(level, (col, row))
+
         buf = PILBytesIO()
         tile.save(buf, format, quality=90)
-        response = HttpResponse(buf.getvalue(), content_type='image/%s' % format)
+        buffer = buf.getvalue()
+            
+        load_from_drive_time = timer() - start
 
-        return response
+        logger.info(f"{load_from_drive_time:.4f};{request.path}")
+
+        if hasattr(cache, "delete_pattern"):
+            tiles_cache.set(cache_key, buffer, 7*24*60*60)
+        return HttpResponse(buffer, content_type='image/%s' % format)
     except:
         return HttpResponseBadRequest()
 
@@ -663,59 +634,45 @@ def delete_images(request, image_id):
 
 @login_required
 def view_imageset(request, image_set_id):
+    # TODO: Cache
     imageset = get_object_or_404(ImageSet, id=image_set_id)
     if not imageset.has_perm('read', request.user):
         messages.warning(request, 'you do not have the permission to access this imageset')
         return redirect(reverse('images:index'))
-    # images the imageset contains
-    images = imageset.get_unverified_ids(request.user)
 
     # the saved exports of the imageset
     exports = Export.objects.filter(image_set=image_set_id).order_by('-id')[:5]
     filtered = False
     form_filter = request.POST.get('filter')
     if request.method == "POST" and form_filter is not None:
+        # images the imageset contains
+        images = imageset.get_unverified_ids(request.user)
+
         filtered = True
         # filter images for missing annotationtype
         images = images.exclude(
             annotations__annotation_type_id=request.POST.get("selected_annotation_type"))
-    # a list of annotation types used in the imageset
-    all_annotation_types = AnnotationType.objects.filter(active=True, name__in=[tag.name for tag in imageset.set_tags.all()])
 
     if imageset.collaboration_type == ImageSet.CollaborationTypes.COMPETITIVE:
-        annotations = Annotation.objects.filter(
-            image__image_set=imageset,
-            deleted=False,
-            user=request.user,
-            annotation_type__active=True)\
-            .filter(~Q(image__image_type=Image.ImageSourceTypes.SERVER_GENERATED))\
-            .order_by("id")
 
         annotation_types = AnnotationType.objects.filter(annotation__image__image_set=imageset,
                                                          active=True,  annotation__deleted=False,
                                                          annotation__user=request.user)\
-            .distinct().order_by('sort_order')\
-            .annotate(count=Count('annotation'),
-                      in_image_count=Count('annotation', filter=Q(annotation__verifications__verified=True, annotation__user=request.user) & ~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED)),
-                      not_in_image_count=Count('annotation', filter=Q(annotation__verifications__verified=False, annotation__user=request.user) & ~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED)))
+            .order_by('sort_order')\
+            .annotate(count=Count('annotation', distinct=True, filter=~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED)))
+                      #in_image_count=Count('annotation', filter=Q(annotation__verifications__verified=True, annotation__user=request.user) & ~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED)),
+                      #not_in_image_count=Count('annotation', filter=Q(annotation__verifications__verified=False, annotation__user=request.user) & ~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED)))
     else:
-        annotations = Annotation.objects.filter(
-            image__image_set=imageset,
-            deleted=False,
-            annotation_type__active=True)\
-            .filter(~Q(image__image_type=Image.ImageSourceTypes.SERVER_GENERATED))\
-            .order_by("id")
 
         annotation_types = AnnotationType.objects.filter(annotation__image__image_set=imageset, active=True, annotation__deleted=False)\
-            .distinct().order_by('sort_order')\
-            .annotate(count=Count('annotation', filter=~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED)),
-                      in_image_count=Count('annotation', filter=(Q(annotation__verifications__verified=True)
-                                                                 & ~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED))),
-                      not_in_image_count=Count('annotation', filter=(Q(annotation__verifications__verified=False)
-                                                                     & ~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED))))
+            .order_by('sort_order')\
+            .annotate(count=Count('annotation', distinct=True, filter=~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED)))
+                      #in_image_count=Count('annotation', filter=(Q(annotation__verifications__verified=True)
+                      #                                           & ~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED))),
+                      #not_in_image_count=Count('annotation', filter=(Q(annotation__verifications__verified=False)
+                      #                                               & ~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED))))
 
 
-    first_annotation = annotations.first()
     user_teams = Team.objects.filter(members=request.user)
     imageset_edit_form = ImageSetEditForm(instance=imageset)
     imageset_edit_form.fields['main_annotation_type'].queryset = AnnotationType.objects\
@@ -727,16 +684,11 @@ def view_imageset(request, image_set_id):
 
     all_products = Product.objects.filter(team=imageset.team).order_by('name')
     return render(request, 'images/imageset.html', {
-        'images': images,
-        'image_count': images.count(),
-        'annotationcount': annotations.count(),
+        'image_count': imageset.images.count(),
         'imageset': imageset,
         'real_image_number': imageset.images.filter(~Q(image_type=Image.ImageSourceTypes.SERVER_GENERATED)).count(),
         'all_products': all_products,
-        'annotationtypes': annotation_types,
         'annotation_types': annotation_types,
-        'all_annotation_types': all_annotation_types,
-        'first_annotation': first_annotation,
         'exports': exports,
         'filtered': filtered,
         'edit_form': imageset_edit_form,

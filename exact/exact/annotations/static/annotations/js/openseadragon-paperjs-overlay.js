@@ -71,6 +71,11 @@
             self.resizecanvas();
         });
 
+        this._viewer.addHandler('resize', function() {
+            self.resize();
+            self.resizecanvas();
+          }); 
+
         this.resize();
     };
 

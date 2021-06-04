@@ -98,7 +98,9 @@
                             </span>
                         </div>
                         <br>
-                        <div id="image_list">
+                        <div id="image_list" data-static-file="{% static '' %}" 
+                                                data-static_cdn={{USE_CDN_WSI}}
+                                                data-image_set_name="{{ selected_image.image_set.name }}">
                             {% for set_image in set_images %}
                             <a id="annotate_image_link_{{ set_image.id }}"
                                 href="{% url 'annotations:annotate' set_image.id %}{% if filtered is not None %}?selected_annotation_type={{ filtered }}{% endif %}"
@@ -276,7 +278,8 @@
                                         <td> Shift + {{ forloop.counter }}</td>
                                         <td>
                                             <input type="checkbox" id="GlobalAnnotation_{{ annotation_type.id }}"
-                                                data-annotation_type_id={{ annotation_type.id }}>
+                                                data-annotation_type_id={{ annotation_type.id }}
+                                                data-key_number={{ forloop.counter }}>
                                         </td>
                                     </tr>
 
@@ -622,6 +625,9 @@
                                         <button class="btn btn-primary" id="search_browserimages_btn">
                                             <image src="{% static 'images/search.svg' %}">
                                         </button>
+                                    </span>
+                                    <span class="input-group-btn" id="open_registration_image_visibility">
+                                        <a href="" id="open_registration_image"><span class="fa fa-window-maximize  fa-2x"> </span></a>
                                     </span>
                                 </div>
 
