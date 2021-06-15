@@ -44,20 +44,27 @@ class EXACTViewer {
         let image_name = imageInformation.name.split('.')[0]
         if (imageInformation['depth'] == 1 && imageInformation['frames'] == 1) {
             // check if the CDN should be used
-            if ($("#image_list").data( "static_cdn") === "True") {                
-                let dzi_path = $("#image_list").data( "static-file" ) + `wsi_images/${set_name}/${image_name}/1/1/tile.dzi`;
-                //let dzi_path =  `https://d1cc3vlw0cftus.cloudfront.net/static/wsi_images/${set_name}/${image_name}/1/1/tile.dzi`;
-
+            if ($("#image_list").data( "static_cdn") === "True") {     
+                //let dzi_path = $("#image_list").data( "static-file" ) + `wsi_images/${set_name}/${image_name}/1/1/tile.dzi`;
+                let dzi_path = `https://d1bf27ceus4k6n.cloudfront.net/static/wsi_images/${set_name}/${image_name}/1/1/tile.dzi`
                 // check if the CDN contains the image
-                $.ajax({ url:dzi_path, type:'HEAD', async: false,
-                    error: function() { 
-                        // use the clasical image retreval approach
-                        options.tileSources = [server_url + `/images/image/${imageId}/1/1/tile/`];
-                    },
-                    success: function() {
-                        options.tileSources = [ dzi_path ];
-                    }
-                });                
+                let xhr = new XMLHttpRequest();
+                try {      
+                    xhr.onload = () => {
+                        if (xhr.status >= 400) {
+                            options.tileSources = [server_url + `/images/image/${imageId}/1/1/tile/`];
+                        } else {
+                            options.crossOriginPolicy = "Anonymous";
+                            options.tileSources = [ dzi_path ];
+                        }
+                    };
+
+                    xhr.open("GET", dzi_path, false);
+                    xhr.send();   
+                } catch (e) {
+                    // use the clasical image retreval approach
+                    options.tileSources = [server_url + `/images/image/${imageId}/1/1/tile/`];
+                }     
             } else {
                 options.tileSources = [server_url + `/images/image/${imageId}/1/1/tile/`]
             }            
