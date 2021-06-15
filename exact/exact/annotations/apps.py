@@ -2,4 +2,5 @@ from django.apps import AppConfig
 
 
 class AnnotationsConfig(AppConfig):
-    name = 'annotations'
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'exact.annotations'
