@@ -11,7 +11,7 @@ django-filter==2.4.0
 django-widget-tweaks===1.4.8
 drf-flex-fields==0.8.8
 djoser==2.1.0
-django==3.1.4
+django==3.2.4
 django-registration==3.1.1
 djangorestframework==3.12.2
 uritemplate==3.0.1
