@@ -12,13 +12,15 @@ class TeamSerializer(FlexFieldsModelSerializer):
             'name',
             'members',
             'image_sets', 
-            'product_set'
+            'product_set',
+            'memberships'
         ]
 
         expandable_fields = {
             "members": ('exact.users.serializers.UserSerializer', {'read_only': True, 'many': True}),
             "image_sets": ('exact.images.ImageSetSerializer', {'read_only': True, 'many': True}),
             "product_set": ('exact.administration.ProductSerializer', {'read_only': True, 'many': True}),
+            "memberships": ('exact.users.serializers.TeamMembershipSerializer', {'read_only': True, 'many': True}),
         }
 
 class UserSerializer(FlexFieldsModelSerializer):
