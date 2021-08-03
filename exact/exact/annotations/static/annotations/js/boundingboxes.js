@@ -589,12 +589,70 @@ class BoundingBoxes {
 
     hitTest(point) {
 
-        var hit = this.group.hitTest(point, this.hitOptions);
-        if (hit) {
-            if (hit.item.visible === false)
-                return undefined;
+        var hits = this.group.hitTestAll(point, this.hitOptions);
+        if (hits.length > 0) {
+            if (this.selection == undefined)
+            {
+                // Currently there is no element selected
+                // Select first visible element
+                for (var i=0; i < hits.length-1; i++)
+                {
+                    if(hits[i].item.visible == true)
+                    {
+                        return hits[i]
+                    }
+                }
+            }
+            else
+            {
+                // Some element is already selected
+                // Check if the current selection is within the hits
+                var contains = false
+                var idx = 0
+                for (; idx < hits.length-1; idx++)
+                {
+                    if (hits[idx].item.name == this.selection.item.name)
+                    {
+                        idx++
+                        contains = true
+                        break
+                    }
+                }
 
-            return hit.item.name;
+                if (contains == false)
+                {
+                    // If it is not contained, return the first visible item
+                    for (var i=0; i < hits.length-1; i++)
+                    {
+                        if(hits[i].item.visible == true)
+                        {
+                            return hits[i]
+                        }
+                    }
+                }
+                else
+                {
+                    // Else, return the element that is after the selected on in the list
+                    // Run trough the rest of the list to find the first, visible element
+                    for (; idx < hits.length-1; idx++)
+                    {
+                        if (hits[idx].item.visible == true)
+                        {
+                            return hits[idx]
+                        }
+                    }
+                    // If there is no visible element in the later part of the list, re-start from the beginning
+                    for (var i=0; i < hits.length-1; i++)
+                    {
+                        if(hits[i].item.visible == true)
+                        {
+                            return hits[i]
+                        }
+                    }
+                }
+
+
+            }
         }
         return undefined;
     }
@@ -719,7 +777,7 @@ class BoundingBoxes {
                         if (this.selection.type == 'new') {
                             this.selection.item.add(imagePoint);
                         }
-                        else if (this.selection.type == 'fill') {
+                        else if (this.selection.type == 'fill' && $("#allow_annotation_movement").is(':checked')) {
 
                             var tempRect = this.selection.item.bounds.clone();
                             tempRect.center = imagePoint;
@@ -760,14 +818,14 @@ class BoundingBoxes {
                     var tempRect = this.selection.item.bounds.clone();
                     tempRect.center = imagePoint;
 
-                    if (this.isPointInImage(tempRect.getTopLeft()) && this.isPointInImage(tempRect.getBottomRight()))
+                    if (this.isPointInImage(tempRect.getTopLeft()) && this.isPointInImage(tempRect.getBottomRight()) && $("#allow_annotation_movement").is(':checked'))
                         this.selection.item.position = imagePoint;
 
                     break;
 
                 default:
 
-                    if (this.selection.type == 'fill') {
+                    if (this.selection.type == 'fill' && $("#allow_annotation_movement").is(':checked')) {
 
                         var tempRect = this.selection.item.bounds.clone();
                         tempRect.center = imagePoint;
@@ -799,7 +857,7 @@ class BoundingBoxes {
 
     }
 
-    handleMousePress(event) {
+    handleMousePress(event, hitResult) {
         if (this.polyBrush !== undefined)
             this.polyBrush.remove()
 
@@ -809,7 +867,8 @@ class BoundingBoxes {
         // Convert from viewport coordinates to image coordinates.
         var point = this.viewer.viewport.viewportToImageCoordinates(viewportPoint);
 
-        var hitResult = this.group.hitTest(point, this.hitOptions);
+        //var hitResult = this.group.hitTest(point, this.hitOptions);
+        //var hitResult = this.hitTest(point)
 
         if (hitResult) {
             //hitResult.item = this.group.children[hitResult.item.name]
@@ -849,7 +908,7 @@ class BoundingBoxes {
                 }
             }
 
-            return hitResult.item.name;
+            return hitResult;
         }
 
         return undefined;

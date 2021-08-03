@@ -591,24 +591,24 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             if (tool.isPointInImage(imagePoint)) {
                 let exact_sync = event.userData.exact_sync;
 
-                var unique_identifier = tool.hitTest(imagePoint);
+                var new_selected = tool.hitTest(imagePoint);
 
                 // check if annotation was hit
-                if (unique_identifier !== undefined) {
+                if (new_selected !== undefined) {
                     // if the user jumps from one annotation to the next
                     // cancel and save fist annotation
                     if (tool.selection !== undefined &&
-                        unique_identifier !== tool.selection.item.name) {
+                        new_selected.item.name !== tool.selection.item.name) {
 
                         let last_uuid = tool.selection.item.name
                         let anno = exact_sync.annotations[last_uuid];
                         event.userData.finishAnnotation(anno);
                     }
 
-                    let new_selected_uuid = tool.handleMousePress(event);
+                    let new_selection = tool.handleMousePress(event, new_selected);
 
-                    if (new_selected_uuid !== undefined) {
-                        let selected_anno = exact_sync.annotations[new_selected_uuid];
+                    if (new_selection !== undefined) {
+                        let selected_anno = exact_sync.annotations[new_selection.item.name];
                         event.userData.setCurrentAnnotationType(selected_anno.annotation_type);
                     }
                 } else {
@@ -628,7 +628,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                         exact_sync.addAnnotationToCache(newAnno)
 
                     } else if (tool.selection !== undefined &&
-                        unique_identifier === undefined) {
+                        new_selected === undefined) {
 
                         let last_uuid = tool.selection.item.name;
                         let anno = exact_sync.annotations[last_uuid];
