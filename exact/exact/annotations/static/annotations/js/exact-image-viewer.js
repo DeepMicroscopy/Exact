@@ -676,7 +676,10 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             }
 
             for (let newAnno of resultDict.insert) {
-                annotation.vector = event.userData.getAnnotationVector(newAnno.unique_identifier);
+                newAnno.vector = event.userData.getAnnotationVector(newAnno.unique_identifier);
+                if (Number.isInteger(newAnno.annotation_type)) {
+                    newAnno.annotation_type = exact_sync.annotationTypes[newAnno.annotation_type]
+                }
                 exact_sync.saveAnnotation(newAnno)
             }
 
@@ -890,7 +893,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 srcGroup: this.viewer.prefixUrl + `subtract.svg`,
                 srcHover: this.viewer.prefixUrl + `subtract.svg`,
                 srcDown: this.viewer.prefixUrl + `subtract.svg`,
-                onClick: this.tool.clickPolyOperation.bind(this.tool),
+                onClick: this.tool.clickPolyOperation.bind(this),
             }),
             new OpenSeadragon.Button({
                 tooltip: 'Merge all polygon objects from the same class touching the selected object',
@@ -899,7 +902,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 srcGroup: this.viewer.prefixUrl + `union.svg`,
                 srcHover: this.viewer.prefixUrl + `union.svg`,
                 srcDown: this.viewer.prefixUrl + `union.svg`,
-                onClick: this.tool.clickPolyOperation.bind(this.tool),
+                onClick: this.tool.clickPolyOperation.bind(this),
             }),
             new OpenSeadragon.Button({
                 tooltip: 'Changes the class of all included objects to selected class if possible',
@@ -908,7 +911,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 srcGroup: this.viewer.prefixUrl + `basket.svg`,
                 srcHover: this.viewer.prefixUrl + `basket.svg`,
                 srcDown: this.viewer.prefixUrl + `basket.svg`,
-                onClick: this.tool.clickPolyOperation.bind(this.tool),
+                onClick: this.tool.clickPolyOperation.bind(this),
             })
         ]
 
