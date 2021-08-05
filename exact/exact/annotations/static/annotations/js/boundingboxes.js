@@ -23,6 +23,10 @@ class BoundingBoxes {
         this.strokeWidth = 3;
         this.polyStrokeWidth = 1;
 
+        this.singlePolyOperation = undefined
+        this.modified_item = undefined
+        this.dragged = false
+
         this.resetSelection();
     }
 
@@ -65,6 +69,33 @@ class BoundingBoxes {
         if (this.tool.selection) {
             this.viewer.raiseEvent('boundingboxes_PolyOperation', {name: event.eventSource.name});
         }        
+    }
+
+    activateSinglePolyOperation(event)
+    {
+        if (this.current_item !== undefined && this.current_item.type == "poly")
+        {
+            if (this.singlePolyOperation == undefined)
+            {
+                this.singlePolyOperation = event.eventSource.name
+                this.modified_item = this.current_item
+            }
+            else
+            {
+                this.singlePolyOperation = event.eventSource.name
+            }
+        }
+
+    }
+
+    resetSinglePolyOperation(event)
+    {
+        this.modified_item = undefined
+        this.singlePolyOperation = undefined
+
+        // if current_item !== modified_item
+        // delete current item
+        // restore modified_item as current item
     }
 
     findIncludedObjectsOperation() {
@@ -784,11 +815,14 @@ class BoundingBoxes {
         
                             if (this.isPointInImage(tempRect.getTopLeft()) && this.isPointInImage(tempRect.getBottomRight()))
                                 this.selection.item.position = imagePoint;
+                            
+                            this.drag = true
                                 
                         }
                         if (this.selection.type == 'segment') {
     
                             this.selection.segment.point = this.fixPointToImage(imagePoint);
+                            this.drag = true
                         }
                     }
                     break;
@@ -810,6 +844,7 @@ class BoundingBoxes {
                         } else {
                             this.selection.item.position = imagePoint;
                         }
+                        this.drag = true
                     }
                     break;
 
@@ -820,6 +855,7 @@ class BoundingBoxes {
 
                     if (this.isPointInImage(tempRect.getTopLeft()) && this.isPointInImage(tempRect.getBottomRight()) && $("#allow_annotation_movement").is(':checked'))
                         this.selection.item.position = imagePoint;
+                        this.drag = true
 
                     break;
 
@@ -829,6 +865,7 @@ class BoundingBoxes {
 
                         var tempRect = this.selection.item.bounds.clone();
                         tempRect.center = imagePoint;
+                        this.drag = true
 
                         if (this.isPointInImage(tempRect.getTopLeft()) && this.isPointInImage(tempRect.getBottomRight()))
                             this.selection.item.position = imagePoint;
@@ -857,7 +894,7 @@ class BoundingBoxes {
 
     }
 
-    handleMousePress(event, hitResult) {
+    handleSelection(event, hitResult) {
         if (this.polyBrush !== undefined)
             this.polyBrush.remove()
 

@@ -582,36 +582,25 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
             // Convert pixel to viewport coordinates
             var viewportPoint = viewer.viewport.pointFromPixel(event.position);
-
             // Convert from viewport coordinates to image coordinates.
             var imagePoint = viewer.viewport.viewportToImageCoordinates(viewportPoint);
-
             // check if the point is inside the image
             let tool = event.userData.tool;
+
             if (tool.isPointInImage(imagePoint)) {
                 let exact_sync = event.userData.exact_sync;
 
                 var new_selected = tool.hitTest(imagePoint);
 
-                // check if annotation was hit
-                if (new_selected !== undefined) {
-                    // if the user jumps from one annotation to the next
-                    // cancel and save fist annotation
-                    if (tool.selection !== undefined &&
-                        new_selected.item.name !== tool.selection.item.name) {
-
-                        let last_uuid = tool.selection.item.name
+                if (new_selected == undefined)
+                {
+                    // no element selected, reset selection, create new annotation
+                    if(tool.selection !== undefined)
+                    {
+                        let last_uuid = tool.selection.item.name;
                         let anno = exact_sync.annotations[last_uuid];
                         event.userData.finishAnnotation(anno);
                     }
-
-                    let new_selection = tool.handleMousePress(event, new_selected);
-
-                    if (new_selection !== undefined) {
-                        let selected_anno = exact_sync.annotations[new_selection.item.name];
-                        event.userData.setCurrentAnnotationType(selected_anno.annotation_type);
-                    }
-                } else {
 
                     let selected_annotation_type = event.userData.getCurrentAnnotationType();
 
@@ -622,24 +611,68 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                         return;
                     }
 
-                    if (tool.selection === undefined) {
-                        // create new anno
-                        var newAnno = tool.initNewAnnotation(event, selected_annotation_type);
-                        exact_sync.addAnnotationToCache(newAnno)
-
-                    } else if (tool.selection !== undefined &&
-                        new_selected === undefined) {
-
-                        let last_uuid = tool.selection.item.name;
-                        let anno = exact_sync.annotations[last_uuid];
-                        event.userData.finishAnnotation(anno);
-
-                        // create new anno
-                        var newAnno = tool.initNewAnnotation(event, selected_annotation_type);
-                        exact_sync.addAnnotationToCache(newAnno);
-                    }
+                    var newAnno = tool.initNewAnnotation(event, selected_annotation_type);
+                    exact_sync.addAnnotationToCache(newAnno)
                 }
             }
+        }, this);
+
+        viewer.addHandler("selection_onRelease", function (event) {
+            viewer.canvas.focus()
+
+            // Convert pixel to viewport coordinates
+            var viewportPoint = viewer.viewport.pointFromPixel(event.position);
+            // Convert from viewport coordinates to image coordinates.
+            var imagePoint = viewer.viewport.viewportToImageCoordinates(viewportPoint);
+            // check if the point is inside the image
+            var tool = event.userData.tool;
+            var exact_sync = event.userData.exact_sync;
+
+            // if a polygon is currently drawn, finish it
+            if (tool.selection !== undefined && tool.selection.type == "new")
+            {
+                var finished_anno = tool.selection
+                var last_uuid = tool.selection.item.name;
+                var anno = exact_sync.annotations[last_uuid];
+                event.userData.finishAnnotation(anno);
+
+                // select the new item
+                //finished_anno.type = 'fill'
+                //var new_selection = tool.handleSelection(event, finished_anno);
+            }
+            else 
+            {
+                // no polygon is currently drawn
+                if (tool.isPointInImage(imagePoint))
+                {
+                    // current mouse release is within the image
+                    var new_selected = tool.hitTest(imagePoint);
+                    
+                    if ( new_selected !== undefined && tool.drag == false)
+                    {
+                        if (tool.selection !== undefined &&
+                            new_selected.item.name !== tool.selection.item.name)
+                        {
+                            // the new selection differs from the last one
+                            var last_uuid = tool.selection.item.name
+                            var anno = exact_sync.annotations[last_uuid];
+                            event.userData.finishAnnotation(anno);
+                        }
+
+                        // select the new item
+                        var new_selection = tool.handleSelection(event, new_selected);
+
+                        if (new_selection !== undefined) {
+                            var selected_anno = exact_sync.annotations[new_selection.item.name];
+                            event.userData.setCurrentAnnotationType(selected_anno.annotation_type);
+                        }
+                    }
+
+                    tool.drag = false
+
+                }
+            }
+
         }, this);
 
         viewer.addHandler('boundingboxes_PolyOperation', function (event) {
@@ -912,6 +945,14 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 srcHover: this.viewer.prefixUrl + `basket.svg`,
                 srcDown: this.viewer.prefixUrl + `basket.svg`,
                 onClick: this.tool.clickPolyOperation.bind(this),
+            }),
+            new OpenSeadragon.Button({
+                tooltip: 'Draw a polygon to cut from the currently selected one',
+                name: "SCISSORS ",
+                srcRest: this.viewer.prefixUrl + `scissors_base.svg`,
+                srcGroup: this.viewer.prefixUrl + `scissors_base.svg`,
+                srcHover: this.viewer.prefixUrl + `scissors_base.svg`,
+                srcDown: this.viewer.prefixUrl + `scissors_base.svg`
             })
         ]
 
