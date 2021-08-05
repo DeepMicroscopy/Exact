@@ -5,6 +5,7 @@ class EXACTRegistrationHandler {
         this.registration_pair = registration_pair;
         this.browser_sync = browser_sync;
         this.viewer = viewer;
+        this.background_viewer = undefined;
 
         let matrix = registration_pair.transformation_matrix;
         this.homography = cv.matFromArray(3, 3, cv.CV_64FC1, 
@@ -17,7 +18,6 @@ class EXACTRegistrationHandler {
         this.updateHomographyUI();
     }
 
-
     initBrowserSycEvents() {
 
         this.browser_sync.getChannelObject("ReceiveRegistrationImage").onmessage = 
@@ -29,8 +29,68 @@ class EXACTRegistrationHandler {
 
     initUiEvents() {
 
-        $('#update_browser_sync_images_btn').click(this.updateRegistrationJS.bind(this))
+        $('#update_browser_sync_images_btn').click(this.updateRegistrationJS.bind(this));        
+        $('#OverlayRegImageSlider').on("input", this.updateOverlayRegImageSlider.bind(this));
+        $("#OverlayRegImage-enabled").click(this.enableOverlayRegImageSlider.bind(this));
 
+
+    }
+
+
+    enableOverlayRegImageSlider(event) {
+
+        if ($("#OverlayRegImage-enabled").prop("checked")) {
+
+
+            const options = {
+                id: "openseadragon_background",
+                prefixUrl: $("#image_list").data( "static-file" ) +"images/",
+                showNavigator: false,
+                tileSources: [this.viewer.tileSources[this.viewer.world.getItemCount() -1]
+                        .replace(`images/image/${this.registration_pair.target_image.id}`, 
+                        `images/image/${this.registration_pair.source_image.id}`)]
+            };
+    
+            this.background_viewer =  OpenSeadragon(options);
+
+            this.syncViewBackgroundForeground();
+            this.updateOverlayRegImageSlider(50);
+
+        } else {
+
+        }
+
+    }
+
+    syncViewBackgroundForeground () {
+
+        if (this.background_viewer !== undefined) {
+
+            let bounds = this.viewer.viewport.getBounds(true);
+            let imageRect = this.viewer.viewport.viewportToImageRectangle(bounds);
+    
+            let xmin = Math.round(imageRect.x);
+            let ymin = Math.round(imageRect.y);
+            let xmax = Math.round(imageRect.x + imageRect.width);
+            let ymax = Math.round(imageRect.y + imageRect.height);
+    
+            [xmin, ymin] = this.transformAffineInv(xmin, ymin);
+            [xmax, ymax] = this.transformAffineInv(xmax, ymax);
+    
+            const vpRect = this.background_viewer.viewport.imageToViewportRectangle(new OpenSeadragon.Rect(
+                xmin,
+                ymin,
+                xmax - xmin,
+                ymax - ymin
+            ));
+
+            this.background_viewer.viewport.fitBoundsWithConstraints(new OpenSeadragon.Rect(
+                vpRect.x,
+                vpRect.y,
+                vpRect.width,
+                vpRect.height
+            ));
+        }
     }
 
 
@@ -100,6 +160,21 @@ class EXACTRegistrationHandler {
         return [new_x, new_y];
     }
 
+    transformAffineInv(x, y) {
+        let t_00 = 1 + (1 - this.homography.doubleAt(0,0));
+        let t_01 = this.homography.doubleAt(0,1) * -1;
+        let t_02 = this.homography.doubleAt(0,2) * -1;
+
+        let t_10 = this.homography.doubleAt(1,0) * -1;
+        let t_11 = 1 + (1 - this.homography.doubleAt(1,1));
+        let t_12 = this.homography.doubleAt(1,2) * -1;
+
+        var new_x = Math.round(t_00 * x + t_01 * y + t_02);
+        var new_y = Math.round(t_10 * x + t_11 * y + t_12);  
+        
+        return [new_x, new_y];
+    }
+
     calcHomographyFromBoundary(source_boundary, target_boundary) {
         // source points
         let x_min_s = source_boundary.x;
@@ -135,8 +210,19 @@ class EXACTRegistrationHandler {
 
     }    
 
+    updateOverlayRegImageSlider(value) {
+
+        if ($("#OverlayRegImage-enabled").prop("checked")) {
+
+
+            this.viewer.setOpacity(parseInt($("#OverlayRegImageSlider").val()) / 100);
+        }        
+    }
+
 
     destroy() {
+
+        $('#OverlayRegImageSlider').off("input");
 
         $('#registration00').val(0);
         $('#registration01').val(0);

@@ -45,8 +45,8 @@ class EXACTViewer {
         if (imageInformation['depth'] == 1 && imageInformation['frames'] == 1) {
             // check if the CDN should be used
             if ($("#image_list").data( "static_cdn") === "True") {     
-                //let dzi_path = $("#image_list").data( "static-file" ) + `wsi_images/${set_name}/${image_name}/1/1/tile.dzi`;
-                let dzi_path = `https://d1bf27ceus4k6n.cloudfront.net/static/wsi_images/${set_name}/${image_name}/1/1/tile.dzi`
+                let dzi_path = $("#image_list").data( "static-file" ) + `wsi_images/${set_name}/${image_name}/1/1/tile.dzi`;
+                //let dzi_path = `https://d1bf27ceus4k6n.cloudfront.net/static/wsi_images/${set_name}/${image_name}/1/1/tile.dzi`
                 // check if the CDN contains the image
                 let xhr = new XMLHttpRequest();
                 try {      
@@ -155,6 +155,7 @@ class EXACTViewer {
             timeout: 120000,
             sequenceMode: false,
             showReferenceStrip: false,
+            //debugMode: true,
         };
 
         const viewer_options = Object.assign(default_options, options);
@@ -224,10 +225,13 @@ class EXACTViewer {
             }
             this.userData.browser_sync.sendCurrentViewPortCoordinates(coordinates);
 
+            if (this.userData.browser_sync !== undefined && this.userData.browser_sync.registration != null) {
+                this.userData.browser_sync.registration.syncViewBackgroundForeground();
+            }
+
             window.history.pushState("object or string",
                 `${this.userData.imageInformation.name}`,
                 include_server_subdir(`/annotations/${this.userData.imageInformation.id}/?frame=${frame}&xmin=${xmin}&ymin=${ymin}&xmax=${xmax}&ymax=${ymax}`));
-
         }, this);
 
         viewer.addHandler("viewCoordinates", function (event) {
@@ -578,7 +582,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         }, this);
 
         viewer.addHandler('selection_onPress', function (event) {
-            viewer.canvas.focus()
+            viewer.canvas.focus();
 
             // Convert pixel to viewport coordinates
             var viewportPoint = viewer.viewport.pointFromPixel(event.position);
