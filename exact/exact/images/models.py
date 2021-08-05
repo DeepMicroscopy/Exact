@@ -649,14 +649,19 @@ class ImageRegistration(models.Model):
 
     def create_inverse_registration(self):
 
-        new_transformation_matrix = {
-                                        "t_00": 1 + (1 - self.transformation_matrix["t_00"]), 
-                                        "t_01": self.transformation_matrix["t_01"] * -1,
-                                        "t_02": self.transformation_matrix["t_02"] * -1, 
+        A = np.array([[self.transformation_matrix["t_00"], self.transformation_matrix["t_01"], self.transformation_matrix["t_02"]],
+                    [self.transformation_matrix["t_10"], self.transformation_matrix["t_11"], self.transformation_matrix["t_12"]]])
 
-                                        "t_10": self.transformation_matrix["t_10"] * -1,  
-                                        "t_11": 1 + (1 - self.transformation_matrix["t_11"]),
-                                        "t_12": self.transformation_matrix["t_12"] * -1,  
+        A_inv = cv2.invertAffineTransform(A)  
+
+        new_transformation_matrix = {
+                                        "t_00": A_inv[0,0], 
+                                        "t_01": A_inv[0,1],
+                                        "t_02": A_inv[0,2], 
+
+                                        "t_10": A_inv[1,0],  
+                                        "t_11": A_inv[1,1],
+                                        "t_12": A_inv[1,2],  
 
                                         "t_20": self.transformation_matrix["t_20"],              
                                         "t_21": self.transformation_matrix["t_21"],     
