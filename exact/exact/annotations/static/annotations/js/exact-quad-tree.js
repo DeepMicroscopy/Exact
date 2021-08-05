@@ -46,18 +46,24 @@ class EXACTRegistrationHandler {
                 id: "openseadragon_background",
                 prefixUrl: $("#image_list").data( "static-file" ) +"images/",
                 showNavigator: false,
-                tileSources: [this.viewer.tileSources[this.viewer.world.getItemCount() -1]
+                tileSources: [this.viewer.tileSources[0]
                         .replace(`images/image/${this.registration_pair.target_image.id}`, 
                         `images/image/${this.registration_pair.source_image.id}`)]
             };
     
             this.background_viewer =  OpenSeadragon(options);
 
-            this.syncViewBackgroundForeground();
+            this.background_viewer.addHandler("open", function (event) {
+                this.userData.syncViewBackgroundForeground();
+            }, this);
+
+            
             this.updateOverlayRegImageSlider(50);
 
         } else {
-
+            if (this.background_viewer !== undefined) {
+                this.background_viewer.destroy();
+            }       
         }
 
     }
@@ -211,16 +217,16 @@ class EXACTRegistrationHandler {
     }    
 
     updateOverlayRegImageSlider(value) {
-
-        if ($("#OverlayRegImage-enabled").prop("checked")) {
-
-
-            this.viewer.setOpacity(parseInt($("#OverlayRegImageSlider").val()) / 100);
-        }        
+        this.viewer.world.getItemAt(0).setOpacity(parseInt($("#OverlayRegImageSlider").val()) / 100);
     }
 
 
     destroy() {
+
+
+        if (this.background_viewer !== undefined) {
+            this.background_viewer.destroy();
+        }        
 
         $('#OverlayRegImageSlider').off("input");
 
