@@ -99,6 +99,37 @@ class EXACTRegistrationHandler {
         }
     }
 
+    syncViewBackgroundForeground () {
+
+        if (this.background_viewer !== undefined) {
+
+            let bounds = this.viewer.viewport.getBounds(true);
+            let imageRect = this.viewer.viewport.viewportToImageRectangle(bounds);
+    
+            let xmin = Math.round(imageRect.x);
+            let ymin = Math.round(imageRect.y);
+            let xmax = Math.round(imageRect.x + imageRect.width);
+            let ymax = Math.round(imageRect.y + imageRect.height);
+    
+            [xmin, ymin] = this.transformAffineInv(xmin, ymin);
+            [xmax, ymax] = this.transformAffineInv(xmax, ymax);
+    
+            const vpRect = this.background_viewer.viewport.imageToViewportRectangle(new OpenSeadragon.Rect(
+                xmin,
+                ymin,
+                xmax - xmin,
+                ymax - ymin
+            ));
+
+            this.background_viewer.viewport.fitBoundsWithConstraints(new OpenSeadragon.Rect(
+                vpRect.x,
+                vpRect.y,
+                vpRect.width,
+                vpRect.height
+            ));
+        }
+    }
+
 
     updateRegistrationJS(event) {
 
