@@ -99,7 +99,6 @@ class EXACTRegistrationHandler {
         }
     }
 
-
     updateRegistrationJS(event) {
 
         this.browser_sync.getChannelObject("SendRegistrationImage").postMessage({
@@ -167,13 +166,25 @@ class EXACTRegistrationHandler {
     }
 
     transformAffineInv(x, y) {
-        let t_00 = 1 + (1 - this.homography.doubleAt(0,0));
-        let t_01 = this.homography.doubleAt(0,1) * -1;
-        let t_02 = this.homography.doubleAt(0,2) * -1;
 
-        let t_10 = this.homography.doubleAt(1,0) * -1;
-        let t_11 = 1 + (1 - this.homography.doubleAt(1,1));
-        let t_12 = this.homography.doubleAt(1,2) * -1;
+        let a = this.homography.doubleAt(0,0);
+        let b = this.homography.doubleAt(1,0);
+
+        let c = this.homography.doubleAt(0,1);
+        let d = this.homography.doubleAt(1,1);
+
+        let e = this.homography.doubleAt(0,2);
+        let f = this.homography.doubleAt(1,2);
+
+        let dt = a * d - b * c;
+
+        let t_00 = d / dt;
+        let t_01 = -c / dt;
+        let t_02 = (c * f - d * e) / dt;
+
+        let t_10 = -b / dt;
+        let t_11 = a / dt;
+        let t_12 = -(a * f - b * e) / dt;
 
         var new_x = Math.round(t_00 * x + t_01 * y + t_02);
         var new_y = Math.round(t_10 * x + t_11 * y + t_12);  
