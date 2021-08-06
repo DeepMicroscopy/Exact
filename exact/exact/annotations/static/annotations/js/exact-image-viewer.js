@@ -637,14 +637,21 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             // if a polygon is currently drawn, finish it
             if (tool.selection !== undefined && tool.selection.type == "new")
             {
-                var finished_anno = tool.selection
-                var last_uuid = tool.selection.item.name;
-                var anno = exact_sync.annotations[last_uuid];
-                event.userData.finishAnnotation(anno);
+                if (event.userData.singlePolyOperation !== undefined)
+                {
+                    viewer.raiseEvent('boundingboxes_PolyOperation', {name: event.userData.singlePolyOperation});
+                }
+                else
+                {
+                    var finished_anno = tool.selection
+                    var last_uuid = tool.selection.item.name;
+                    var anno = exact_sync.annotations[last_uuid];
+                    event.userData.finishAnnotation(anno);
 
-                // select the new item
-                //finished_anno.type = 'fill'
-                //var new_selection = tool.handleSelection(event, finished_anno);
+                    // select the new item
+                    //finished_anno.type = 'fill'
+                    //var new_selection = tool.handleSelection(event, finished_anno);
+                }
             }
             else 
             {
@@ -693,6 +700,12 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                     break;
                 case "UNION":
                     resultDict = tool.polyUnionOperation();
+                    break;
+                case "SCISSOR":
+                    resultDict = tool.polyScissorOperation();
+                    break;
+                case "GLUE":
+                    resultDict = tool.polyGlueOperation();
                     break;
 
                 case "HARMONIZE":
@@ -954,7 +967,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             }),
             new OpenSeadragon.Button({
                 tooltip: 'Draw a polygon to cut from the currently selected one',
-                name: "SCISSORS ",
+                name: "SCISSOR",
                 srcRest: this.viewer.prefixUrl + `scissors_base.svg`,
                 srcGroup: this.viewer.prefixUrl + `scissors_base.svg`,
                 srcHover: this.viewer.prefixUrl + `scissors_base.svg`,
