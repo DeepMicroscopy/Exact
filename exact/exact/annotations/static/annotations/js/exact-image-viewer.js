@@ -585,10 +585,10 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             // Convert from viewport coordinates to image coordinates.
             var imagePoint = viewer.viewport.viewportToImageCoordinates(viewportPoint);
             // check if the point is inside the image
-            let tool = event.userData.tool;
+            var tool = event.userData.tool;
 
             if (tool.isPointInImage(imagePoint)) {
-                let exact_sync = event.userData.exact_sync;
+                var exact_sync = event.userData.exact_sync;
 
                 var new_selected = tool.hitTest(imagePoint);
 
@@ -597,14 +597,20 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                     // no element selected, reset selection, create new annotation
                     if(tool.selection !== undefined)
                     {
-                        let last_uuid = tool.selection.item.name;
-                        let anno = exact_sync.annotations[last_uuid];
+                        var last_uuid = tool.selection.item.name;
+                        var anno = exact_sync.annotations[last_uuid];
                         event.userData.finishAnnotation(anno);
+
+                        if (event.userData.singlePolyOperation !== undefined)
+                        {
+                            // show last polygon as being selected
+                            event.userData.modified_item.item.selected = true
+                        }
                     }
 
-                    let selected_annotation_type = event.userData.getCurrentAnnotationType();
+                    var selected_annotation_type = event.userData.getCurrentAnnotationType();
 
-                    if (selected_annotation_type === undefined) {
+                    if (selected_annotation_type == undefined) {
                         $("#annotation_type_id").notify("You have to choose a type for the annotation.",
                             { position: "right", className: "error" });
 
@@ -952,7 +958,8 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 srcRest: this.viewer.prefixUrl + `scissors_base.svg`,
                 srcGroup: this.viewer.prefixUrl + `scissors_base.svg`,
                 srcHover: this.viewer.prefixUrl + `scissors_base.svg`,
-                srcDown: this.viewer.prefixUrl + `scissors_base.svg`
+                srcDown: this.viewer.prefixUrl + `scissors_base.svg`,
+                onClick: this.tool.activateSinglePolyOperation.bind(this),
             })
         ]
 

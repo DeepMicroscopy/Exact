@@ -73,12 +73,12 @@ class BoundingBoxes {
 
     activateSinglePolyOperation(event)
     {
-        if (this.current_item !== undefined && this.current_item.type == "poly")
+        if (this.tool.current_item !== undefined && this.tool.current_item.type == "fill")
         {
             if (this.singlePolyOperation == undefined)
             {
                 this.singlePolyOperation = event.eventSource.name
-                this.modified_item = this.current_item
+                this.modified_item = this.tool.current_item
             }
             else
             {
