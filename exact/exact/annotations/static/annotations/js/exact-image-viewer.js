@@ -601,10 +601,10 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                         var anno = exact_sync.annotations[last_uuid];
                         event.userData.finishAnnotation(anno);
 
-                        if (event.userData.singlePolyOperation !== undefined)
+                        if (event.userData.tool.singlePolyOperation !== undefined)
                         {
                             // show last polygon as being selected
-                            event.userData.modified_item.item.selected = true
+                            event.userData.tool.modified_item.item.selected = true
                         }
                     }
 
@@ -637,13 +637,14 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             // if a polygon is currently drawn, finish it
             if (tool.selection !== undefined && tool.selection.type == "new")
             {
-                if (event.userData.singlePolyOperation !== undefined)
+                if (event.userData.tool.singlePolyOperation !== undefined)
                 {
-                    viewer.raiseEvent('boundingboxes_PolyOperation', {name: event.userData.singlePolyOperation});
+                    viewer.raiseEvent('boundingboxes_PolyOperation', {name: event.userData.tool.singlePolyOperation});
+                    tool.resetSinglePolyOperation();
                 }
                 else
                 {
-                    var finished_anno = tool.selection
+                    //var finished_anno = tool.selection
                     var last_uuid = tool.selection.item.name;
                     var anno = exact_sync.annotations[last_uuid];
                     event.userData.finishAnnotation(anno);
@@ -677,7 +678,12 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
                         if (new_selection !== undefined) {
                             var selected_anno = exact_sync.annotations[new_selection.item.name];
-                            event.userData.setCurrentAnnotationType(selected_anno.annotation_type);
+
+                            if (selected_anno !== undefined)
+                            {
+                                // catch an error that occours when the server is to slow
+                                event.userData.setCurrentAnnotationType(selected_anno.annotation_type);
+                            }
                         }
                     }
 

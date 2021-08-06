@@ -75,14 +75,14 @@ class BoundingBoxes {
     {
         if (this.tool.current_item !== undefined && this.tool.current_item.type == "fill")
         {
-            if (this.singlePolyOperation == undefined)
+            if (this.tool.singlePolyOperation == undefined)
             {
-                this.singlePolyOperation = event.eventSource.name
-                this.modified_item = this.tool.current_item
+                this.tool.singlePolyOperation = event.eventSource.name
+                this.tool.modified_item = this.tool.current_item
             }
             else
             {
-                this.singlePolyOperation = event.eventSource.name
+                this.tool.singlePolyOperation = event.eventSource.name
             }
         }
 
@@ -230,6 +230,79 @@ class BoundingBoxes {
     polyScissorOperation()
     {
         var resultDict = {deleted: [], insert: [], update: [], included: []}
+        var subOptions = {insert: false}
+
+        // check if the newly drawn polygon intersects the to-cut one
+        // (modified_item is the original element that is going to be changed)
+        // (current_item is the area that shall be cut from the modified item)
+        if (this.modified_item.item.intersects(this.current_item.item) == true)
+        {
+            // the polygons intersect
+            let result = this.modified_item.item.subtract(this.current_item.item, subOptions)
+
+            if (result.children === undefined) {
+                // the polygon is not cut into multiple pieces
+                if (Math.ceil(result.area) !== Math.ceil(this.modified_item.item.area)) {
+                    // the area of the polygon changed
+                    this.modified_item.item.remove();
+                    this.modified_item.item = result
+                    this.group.addChild(result)
+                    
+                    resultDict.update.push(result.name)
+                }
+
+                this.selection.item.remove()
+                resultDict.deleted.push(this.selection.item.name)
+
+                this.selection = this.modified_item
+                this.modified_item = undefined
+
+            } else {
+                // the polygon is cut into multiple pieces
+                this.modified_item.item.remove();
+
+                for (var child_id = 0; child_id < result.children.length; child_id++) {
+                    // add childs as new elements
+                    var old_path = result.children[child_id]
+                    var new_path = old_path.clone()
+                    new_path.data = old_path.parent.data
+                    new_path.strokeColor = old_path.parent.strokeColor
+                    new_path.strokeWidth = old_path.parent.strokeWidth
+                    new_path.fillColor = old_path.parent.fillColor
+
+                    new_path.name =  this.uuidv4();
+                    this.group.addChild(new_path);
+
+                    resultDict.insert.push({
+                        annotation_type: this.modified_item.item.data.type_id,
+                        id: -1,
+                        vector: this.getAnnotationVector(new_path.name),
+                        user: {id: null, username: "you"},
+                        last_editor: {id: null, username: "you"},
+                        image: this.imageid,
+                        unique_identifier: new_path.name,
+                        deleted: false
+                    });
+
+                }
+                result.remove()                            
+                resultDict.deleted.push(this.modified_item.item.name)
+
+                this.selection.item.remove()
+                resultDict.deleted.push(this.selection.item.name)
+
+                this.selection = undefined
+                this.modified_item = undefined
+            }
+        }
+        else
+        {
+            this.selection.item.remove()
+            resultDict.deleted.push(this.selection.item.name)
+
+            this.selection = this.modified_item
+            this.modified_item = undefined
+        }
 
         return resultDict
     }
@@ -791,8 +864,6 @@ class BoundingBoxes {
             // Convert from viewport coordinates to image coordinates.
             var imagePoint = new paper.Point(this.viewer.viewport.viewportToImageCoordinates(viewportPoint));
 
-             
-
             switch (this.selection.item.data.type) {
                                                 
                                 
@@ -822,7 +893,7 @@ class BoundingBoxes {
                         if (this.selection.type == 'new') {
                             this.selection.item.add(imagePoint);
                         }
-                        else if (this.selection.type == 'fill' && $("#allow_annotation_movement").is(':checked')) {
+                        else if (this.selection.type == 'fill' && $("#allow_annotation_movement").is(':checked') && (this.selection.item.contains(imagePoint) || this.drag)) {
 
                             var tempRect = this.selection.item.bounds.clone();
                             tempRect.center = imagePoint;
@@ -875,8 +946,8 @@ class BoundingBoxes {
 
                 default:
 
-                    if (this.selection.type == 'fill' && $("#allow_annotation_movement").is(':checked')) {
-
+                    if (this.selection.type == 'fill' && $("#allow_annotation_movement").is(':checked') && (this.selection.item.contains(imagePoint) || this.drag)) {
+ 
                         var tempRect = this.selection.item.bounds.clone();
                         tempRect.center = imagePoint;
                         this.drag = true
