@@ -979,6 +979,15 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 srcHover: this.viewer.prefixUrl + `scissors_base.svg`,
                 srcDown: this.viewer.prefixUrl + `scissors_base.svg`,
                 onClick: this.tool.activateSinglePolyOperation.bind(this),
+            }),
+            new OpenSeadragon.Button({
+                tooltip: 'Draw a polygon to gulue it to the currently selected one',
+                name: "GLUE",
+                srcRest: this.viewer.prefixUrl + `glue_base.svg`,
+                srcGroup: this.viewer.prefixUrl + `glue_base.svg`,
+                srcHover: this.viewer.prefixUrl + `glue_base.svg`,
+                srcDown: this.viewer.prefixUrl + `glue_base.svg`,
+                onClick: this.tool.activateSinglePolyOperation.bind(this),
             })
         ]
 
