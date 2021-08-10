@@ -592,7 +592,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
                 var new_selected = tool.hitTest(imagePoint);
 
-                if (new_selected == undefined)
+                if (new_selected == undefined || event.userData.tool.singlePolyOperation !== undefined)
                 {
                     // no element selected, reset selection, create new annotation
                     if(tool.selection !== undefined)
@@ -644,14 +644,15 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 }
                 else
                 {
-                    //var finished_anno = tool.selection
+                    var new_selection = tool.selection
+
                     var last_uuid = tool.selection.item.name;
                     var anno = exact_sync.annotations[last_uuid];
                     event.userData.finishAnnotation(anno);
 
                     // select the new item
-                    //finished_anno.type = 'fill'
-                    //var new_selection = tool.handleSelection(event, finished_anno);
+                    new_selection.type = "fill"
+                    var new_selection = tool.handleSelection(event, new_selection);
                 }
             }
             else 
