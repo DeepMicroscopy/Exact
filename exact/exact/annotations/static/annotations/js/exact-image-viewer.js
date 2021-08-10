@@ -859,7 +859,6 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 break;
             case 82: //r
                 this.finishAnnotation();
-                this.tool.resetSelection();
                 break;
             case 86: //'v'
                 this.finishAnnotation();
@@ -1074,6 +1073,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
             // delete temp annotation
             if (annotation.id === -1) {
+                let uuid = annotation.unique_identifier
                 this.tool.removeAnnotation(uuid);
                 this.exact_sync.deleteAnnotation(uuid);
             } else { // just cancel editing
