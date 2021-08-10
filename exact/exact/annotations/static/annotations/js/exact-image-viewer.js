@@ -858,6 +858,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 this.viewer.selectionInstance.toggleState();
                 break;
             case 82: //r
+                this.finishAnnotation();
                 this.tool.resetSelection();
                 break;
             case 86: //'v'
