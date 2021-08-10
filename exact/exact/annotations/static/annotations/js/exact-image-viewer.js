@@ -1122,7 +1122,17 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         if (typeof annotation !== "undefined") {
 
             annotation.vector = this.getAnnotationVector(annotation.unique_identifier);
-            this.exact_sync.saveAnnotation(annotation)
+
+            if (annotation.annotation_type.vector_type == 5 && annotation.vector.x3 == undefined)
+            {
+                // dont create polygons with less then 3 points
+                this.deleteAnnotation(annotation)
+            }
+            else
+            {
+                this.exact_sync.saveAnnotation(annotation)
+            }
+
             this.tool.resetSelection();
         }
     }
