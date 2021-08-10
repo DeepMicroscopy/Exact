@@ -311,6 +311,38 @@ class BoundingBoxes {
     {
         var resultDict = {deleted: [], insert: [], update: [], included: []}
 
+        if (this.modified_item.item.intersects(this.current_item.item) == true)
+        {
+            var result = this.modified_item.item.unite(this.selection.item)
+            // error occurce if the result can not represented as one poly
+            if (result.children === undefined) {
+
+                this.modified_item.item.remove();
+                this.modified_item.item = result;
+
+                resultDict.deleted.push(this.selection.item.name);
+                resultDict.update.push(this.modified_item.item.name);
+
+                this.selection = this.modified_item
+                this.modified_item = undefined
+            }
+            else
+            {
+                result.remove()
+                resultDict.deleted.push(this.selection.item.name)
+
+                this.selection = this.modified_item
+                this.modified_item = undefined
+            }
+        }
+        else
+        {
+            resultDict.deleted.push(this.selection.item.name)
+
+            this.selection = this.modified_item
+            this.modified_item = undefined
+        }
+
         return resultDict 
     }
 
