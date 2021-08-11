@@ -745,7 +745,7 @@ class BoundingBoxes {
             {
                 // Currently there is no element selected
                 // Select first visible element
-                for (var i=0; i < hits.length-1; i++)
+                for (var i=0; i < hits.length; i++)
                 {
                     if(hits[i].item.visible == true)
                     {
@@ -759,7 +759,7 @@ class BoundingBoxes {
                 // Check if the current selection is within the hits
                 var contains = false
                 var idx = 0
-                for (; idx < hits.length-1; idx++)
+                for (; idx < hits.length; idx++)
                 {
                     if (hits[idx].item.name == this.selection.item.name)
                     {
@@ -772,7 +772,7 @@ class BoundingBoxes {
                 if (contains == false)
                 {
                     // If it is not contained, return the first visible item
-                    for (var i=0; i < hits.length-1; i++)
+                    for (var i=0; i < hits.length; i++)
                     {
                         if(hits[i].item.visible == true)
                         {
@@ -784,7 +784,7 @@ class BoundingBoxes {
                 {
                     // Else, return the element that is after the selected on in the list
                     // Run trough the rest of the list to find the first, visible element
-                    for (; idx < hits.length-1; idx++)
+                    for (; idx < hits.length; idx++)
                     {
                         if (hits[idx].item.visible == true)
                         {
@@ -792,7 +792,7 @@ class BoundingBoxes {
                         }
                     }
                     // If there is no visible element in the later part of the list, re-start from the beginning
-                    for (var i=0; i < hits.length-1; i++)
+                    for (var i=0; i < hits.length; i++)
                     {
                         if(hits[i].item.visible == true)
                         {
