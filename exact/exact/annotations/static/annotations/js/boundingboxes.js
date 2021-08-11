@@ -747,7 +747,7 @@ class BoundingBoxes {
                 // Select first visible element
                 for (var i=0; i < hits.length; i++)
                 {
-                    if(hits[i].item.visible == true)
+                    if(hits[i].item.visible == true && hits[i].item.children == undefined)
                     {
                         return hits[i]
                     }
@@ -774,7 +774,7 @@ class BoundingBoxes {
                     // If it is not contained, return the first visible item
                     for (var i=0; i < hits.length; i++)
                     {
-                        if(hits[i].item.visible == true)
+                        if(hits[i].item.visible == true && hits[i].item.children == undefined)
                         {
                             return hits[i]
                         }
@@ -786,7 +786,7 @@ class BoundingBoxes {
                     // Run trough the rest of the list to find the first, visible element
                     for (; idx < hits.length; idx++)
                     {
-                        if (hits[idx].item.visible == true)
+                        if (hits[idx].item.visible == true && hits[idx].item.children == undefined)
                         {
                             return hits[idx]
                         }
@@ -794,7 +794,7 @@ class BoundingBoxes {
                     // If there is no visible element in the later part of the list, re-start from the beginning
                     for (var i=0; i < hits.length; i++)
                     {
-                        if(hits[i].item.visible == true)
+                        if(hits[i].item.visible == true && hits[i].item.children == undefined)
                         {
                             return hits[i]
                         }
