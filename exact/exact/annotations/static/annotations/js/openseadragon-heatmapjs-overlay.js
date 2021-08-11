@@ -1,5 +1,5 @@
 /*
-* heatmap.js openseadragon overlay
+* heatmap.js openseadragon overlay (added by BDN - 08/11/21)
 *
 * Dual-licensed under the MIT (http://www.opensource.org/licenses/mit-license.php)
 * and the Beerware (http://en.wikipedia.org/wiki/Beerware) license.
