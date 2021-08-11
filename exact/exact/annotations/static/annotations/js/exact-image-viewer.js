@@ -1079,6 +1079,12 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 let uuid = annotation.unique_identifier
                 this.tool.removeAnnotation(uuid);
                 this.exact_sync.deleteAnnotation(uuid);
+                
+                if(this.tool.modified_item !== undefined)
+                {
+                    this.tool.selection = this.tool.modified_item;
+                    this.tool.resetSinglePolyOperation();
+                }
             } else { // just cancel editing
                 this.tool.resetSelection()
             }
