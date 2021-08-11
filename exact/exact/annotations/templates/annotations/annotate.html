@@ -664,6 +664,18 @@
                                         </tr>
 
                                         <tr>
+                                            <td>Overlay <br> Opacity</td>
+                                            <td>
+                                                <input id="OverlayRegImage-enabled" type="checkbox" />
+                                            </td>
+
+                                            <td>
+                                                <input id="OverlayRegImageSlider" type="range" type="text" data-slider-min="0"
+                                                data-slider-max="100" data-slider-step="5" data-slider-value="0" data-slider-enabled="false"/>
+                                            </td>
+                                        </tr>
+
+                                        <tr>
                                             <td>
                                                 <tbody id="registrationTables">
                                                     <tr>
@@ -753,7 +765,12 @@
 
         <div class="col h-100" id="annotationImage">
             <div id="zoomSlider" style="width: 35vw;"></div> <!-- style="width: 25vw;" -->
-            <div class="col" id="openseadragon1" style="height: 85vh;"></div>
+            <div style="height: 85vh;">
+                <div class="seadragon-viewer" id="openseadragon_background"  style="position: absolute; height: 85vh; width: 100%">
+                </div>
+                <div class="seadragon-viewer" id="openseadragon1" style="position: absolute; height: 85vh; width: 100%">        
+                </div>    
+            </div>
             <div id="frameSlider" style="width: 35vw;"></div>
         </div>
 

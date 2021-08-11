@@ -218,9 +218,10 @@ class EXACTScreeningModeSync {
 }
 
 class EXACTImageSetSync {
-    constructor(imageSetId, gHeaders) {
+    constructor(imageSetId, gHeaders, user_id) {
         this.imageSetId = imageSetId;
         this.gHeaders = gHeaders;
+        this.user_id = user_id;
 
         this.annotation_types = {};
         this.imageInformation = {};
@@ -260,14 +261,24 @@ class EXACTImageSetSync {
     loadImageSetInformation(success_notification, context) {
 
         $.ajax(this.API_1_IMAGES_BASE_URL + 'image_sets/' + this.imageSetId +
-            '/?expand=product_set.annotationtype_set,images' +
-            '&omit=product_set.imagesets,description,location,path,images.annotations,images.time', {
+            '/?expand=product_set.annotationtype_set,images,team.memberships' +
+            '&omit=product_set.imagesets,description,location,path,images.annotations,images.time,team.id,team.name,team.members,team.image_sets,team.product_set,team.memberships.id,team.memberships.team', {
             type: 'GET',
             headers: this.gHeaders,
             dataType: 'json',
             success: function (image_set, textStatus, jqXHR) {
 
                 context.collaboration_type = image_set.collaboration_type;
+
+                // Check if the current user is the team admin.
+                //  If so he can see all annotations -> collaboration_type = 0
+                if (context.collaboration_type === 1) {
+                    for (const member of image_set.team.memberships) {
+                        if(member.is_admin === true && member.user === context.user_id) {
+                            context.collaboration_type = 0;
+                        }
+                    } 
+                }
 
                 for (let product of image_set.product_set) {
                     for (let annotation_type of product.annotationtype_set) {

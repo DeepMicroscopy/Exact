@@ -14,7 +14,7 @@ class EXACTImageSetViewer {
 
         this.exact_viewer = undefined;
 
-        this.exact_imageset_sync = new EXACTImageSetSync(image_set_id, gHeaders);
+        this.exact_imageset_sync = new EXACTImageSetSync(image_set_id, gHeaders, this.user_id);
         this.exact_imageset_sync.loadImageSetInformation(this.imageSetInformationLoaded.bind(this), this.exact_imageset_sync)
 
         this.filteredImageInformation = {}

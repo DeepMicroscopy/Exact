@@ -64,7 +64,7 @@ class BoundingBoxes {
     }        
     
     clickPolyOperation(event) {
-        if (this.selection) {
+        if (this.tool.selection) {
             this.viewer.raiseEvent('boundingboxes_PolyOperation', {name: event.eventSource.name});
         }        
     }
@@ -167,17 +167,17 @@ class BoundingBoxes {
                                 new_path.strokeWidth = old_path.parent.strokeWidth
                                 new_path.fillColor = old_path.parent.fillColor
 
-                                new_path.name =  self.uuidv4();
+                                new_path.name =  this.uuidv4();
                                 this.group.addChild(new_path);
 
                                 resultDict.insert.push({
-                                    annotation_type: selected_annotation_type,
+                                    annotation_type: el.data.type_id,
                                     id: -1,
                                     vector: this.getAnnotationVector(new_path.name),
                                     user: {id: null, username: "you"},
                                     last_editor: {id: null, username: "you"},
                                     image: this.imageid,
-                                    unique_identifier: canvasObject.name,
+                                    unique_identifier: new_path.name,
                                     deleted: false
                                 });
 

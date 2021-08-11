@@ -45,8 +45,8 @@ class EXACTViewer {
         if (imageInformation['depth'] == 1 && imageInformation['frames'] == 1) {
             // check if the CDN should be used
             if ($("#image_list").data( "static_cdn") === "True") {     
-                //let dzi_path = $("#image_list").data( "static-file" ) + `wsi_images/${set_name}/${image_name}/1/1/tile.dzi`;
-                let dzi_path = `https://d1bf27ceus4k6n.cloudfront.net/static/wsi_images/${set_name}/${image_name}/1/1/tile.dzi`
+                let dzi_path = $("#image_list").data( "static-file" ) + `wsi_images/${set_name}/${image_name}/1/1/tile.dzi`;
+                //let dzi_path = `https://d1bf27ceus4k6n.cloudfront.net/static/wsi_images/${set_name}/${image_name}/1/1/tile.dzi`
                 // check if the CDN contains the image
                 let xhr = new XMLHttpRequest();
                 try {      
@@ -156,19 +156,7 @@ class EXACTViewer {
             timeout: 120000,
             sequenceMode: false,
             showReferenceStrip: false,
-            // //Added tileSources Default for test
-            // //Comment out tileSources config in Factory method to test gs tileprovider-svs
-            // //Need to enable tileprovider to run on Linux
-            // tileSources:   {
-            //     height: 81548,
-            //     width:  107999,
-            //     tileSize: 256,
-            //     minLevel: 0,
-            //     maxLevel: 9,
-            //     getTileUrl: function( level, x, y ){
-            //         return "http://127.0.0.1:8001/wsisvs/getCvImage/" + "/" + "c91a842257ed2add5134" + "/" + "256" + "/" + level + "/" + y + "/" + x;
-            //     }
-            // }
+            //debugMode: true,
         };
 
         const viewer_options = Object.assign(default_options, options);
@@ -238,10 +226,13 @@ class EXACTViewer {
             }
             this.userData.browser_sync.sendCurrentViewPortCoordinates(coordinates);
 
+            if (this.userData.browser_sync !== undefined && this.userData.browser_sync.registration != null) {
+                this.userData.browser_sync.registration.syncViewBackgroundForeground();
+            }
+
             window.history.pushState("object or string",
                 `${this.userData.imageInformation.name}`,
                 include_server_subdir(`/annotations/${this.userData.imageInformation.id}/?frame=${frame}&xmin=${xmin}&ymin=${ymin}&xmax=${xmax}&ymax=${ymax}`));
-
         }, this);
 
         viewer.addHandler("viewCoordinates", function (event) {
@@ -592,7 +583,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         }, this);
 
         viewer.addHandler('selection_onPress', function (event) {
-            viewer.canvas.focus()
+            viewer.canvas.focus();
 
             // Convert pixel to viewport coordinates
             var viewportPoint = viewer.viewport.pointFromPixel(event.position);
@@ -690,7 +681,10 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             }
 
             for (let newAnno of resultDict.insert) {
-                annotation.vector = event.userData.getAnnotationVector(newAnno.unique_identifier);
+                newAnno.vector = event.userData.getAnnotationVector(newAnno.unique_identifier);
+                if (Number.isInteger(newAnno.annotation_type)) {
+                    newAnno.annotation_type = exact_sync.annotationTypes[newAnno.annotation_type]
+                }
                 exact_sync.saveAnnotation(newAnno)
             }
 
@@ -928,7 +922,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 srcGroup: this.viewer.prefixUrl + `subtract.svg`,
                 srcHover: this.viewer.prefixUrl + `subtract.svg`,
                 srcDown: this.viewer.prefixUrl + `subtract.svg`,
-                onClick: this.tool.clickPolyOperation.bind(this.tool),
+                onClick: this.tool.clickPolyOperation.bind(this),
             }),
             new OpenSeadragon.Button({
                 tooltip: 'Merge all polygon objects from the same class touching the selected object',
@@ -937,7 +931,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 srcGroup: this.viewer.prefixUrl + `union.svg`,
                 srcHover: this.viewer.prefixUrl + `union.svg`,
                 srcDown: this.viewer.prefixUrl + `union.svg`,
-                onClick: this.tool.clickPolyOperation.bind(this.tool),
+                onClick: this.tool.clickPolyOperation.bind(this),
             }),
             new OpenSeadragon.Button({
                 tooltip: 'Changes the class of all included objects to selected class if possible',
@@ -946,7 +940,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 srcGroup: this.viewer.prefixUrl + `basket.svg`,
                 srcHover: this.viewer.prefixUrl + `basket.svg`,
                 srcDown: this.viewer.prefixUrl + `basket.svg`,
-                onClick: this.tool.clickPolyOperation.bind(this.tool),
+                onClick: this.tool.clickPolyOperation.bind(this),
             })
         ]
 
@@ -1970,39 +1964,4 @@ class EXACTViewerGlobalLocalAnnotationsFrames extends EXACTViewerLocalAnnotation
 
         this.exact_sync_global.destroy();
     }
-};
-// function gen_heatmap_data(ds_size, hs_radius, hs_intensity){
-//     // now generate some random data
-//     var points = [];
-//     var max = 0;
-//     var width = 80000;
-//     var height = 60000;
-//     // var len = 300;
-//     var len = ds_size;
-
-//     while (len--) {
-//     //   var val = Math.floor(Math.random()*100);
-//         // var val = 10;
-//         var val = hs_intensity;
-//         // now also with custom radius
-//     //   var radius = Math.floor(Math.random()*70);
-//         // var radius = 5;
-//         var radius = hs_radius;
-
-//         max = Math.max(max, val);
-//         var point = {
-//         x: Math.floor(Math.random()*width),
-//         y: Math.floor(Math.random()*height),
-//         value: val,
-//         // radius configuration on point basis
-//         radius: radius
-//         };
-//         points.push(point);
-//     }
-//     // heatmap data format
-//     var data = {
-//         max: max,
-//         data: points
-//     };
-//     return data;	
-// };
+}
