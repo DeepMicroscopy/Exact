@@ -568,8 +568,13 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
             if (event.enabled === false &&
                 event.userData.tool.selection !== undefined) {
+                
+                if (event.userData.tool.modified_item !== undefined)
+                    event.userData.deleteAnnotation()
 
                 event.userData.finishAnnotation();
+
+
             }
         }, this);
 
