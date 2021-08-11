@@ -7,9 +7,12 @@ services:
         dockerfile: Dockerfile.prod    
     command: gunicorn --workers=6 --threads=6 --graceful-timeout=3000 -t 3000 exact.wsgi:application --bind 0.0.0.0:8000
     volumes:
-      - ./exact/images:/home/app/web/images
-      - static_volume:/home/app/web/static    
-      - ./exact/media:/home/app/web/media #media_volume
+      # - ./exact/images:/home/app/web/images
+      # - static_volume:/home/app/web/static    
+      # - ./exact/media:/home/app/web/media #media_volume
+      - D:\DataSets\Exact_Archive\images:/home/app/web/images
+      - D:\DataSets\Exact_Archive\media:/home/app/web/media #media_volume
+      - static_volume:/home/app/web/static   
     expose:
       - 8000
     env_file:
@@ -28,7 +31,8 @@ services:
     build: ./nginx
     volumes:
       - static_volume:/home/app/web/static   
-      - ./exact/media:/home/app/web/media   #media_volume
+      - D:\DataSets\Exact_Archive\media:/home/app/web/media   #media_volume
+      - D:\DataSets\Exact_Archive\images:/home/app/web/images
     ports:
       - 1337:80
     depends_on:
@@ -44,4 +48,4 @@ services:
 volumes:
   postgres_data:      
   static_volume:
-  media_volume:
+  # media_volume:
