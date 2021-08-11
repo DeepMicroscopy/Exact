@@ -788,7 +788,8 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 break;
 
             case 13: //'enter'
-                this.finishAnnotation();
+                if(this.tool.singlePolyOperation == undefined)
+                    this.finishAnnotation();
                 break;
             case 27: // Escape
                 this.cancelEditAnnotation();
@@ -858,10 +859,12 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 this.viewer.selectionInstance.toggleState();
                 break;
             case 82: //r
-                this.finishAnnotation();
+                if(this.tool.singlePolyOperation == undefined)
+                    this.finishAnnotation();
                 break;
             case 86: //'v'
-                this.finishAnnotation();
+                if(this.tool.singlePolyOperation == undefined)
+                    this.finishAnnotation();
                 break;
             case 89: // 'y'
                 this.uiShowAnnotationsToggle();
@@ -1120,7 +1123,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         }
 
         if (typeof annotation !== "undefined") {
-
+            
             annotation.vector = this.getAnnotationVector(annotation.unique_identifier);
 
             if (annotation.annotation_type.vector_type == 5 && annotation.vector.x3 == undefined)
@@ -1147,6 +1150,12 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         if (typeof annotation !== "undefined") {
             this.tool.removeAnnotation(annotation.unique_identifier);
             this.exact_sync.deleteAnnotation(annotation.unique_identifier);
+        }
+
+        if(this.tool.modified_item !== undefined)
+        {
+            this.tool.selection = this.tool.modified_item;
+            this.tool.resetSinglePolyOperation();
         }
     }
 
