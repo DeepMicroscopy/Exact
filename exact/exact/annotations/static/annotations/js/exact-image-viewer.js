@@ -874,6 +874,12 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             case 89: // 'y'
                 this.uiShowAnnotationsToggle();
                 break;
+            case 83: // 's'
+                this.tool.activateSinglePolyOperationByString("SCISSOR");
+                break;
+            case 71: // 'g'
+                this.tool.activateSinglePolyOperationByString("GLUE");
+                break;
         }
     }
 
@@ -981,7 +987,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 onClick: this.tool.clickPolyOperation.bind(this),
             }),
             new OpenSeadragon.Button({
-                tooltip: 'Draw a polygon to cut from the currently selected one',
+                tooltip: 'Draw a polygon to cut from the currently selected one (s)',
                 name: "SCISSOR",
                 srcRest: this.viewer.prefixUrl + `scissors_base.svg`,
                 srcGroup: this.viewer.prefixUrl + `scissors_base.svg`,
@@ -990,7 +996,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 onClick: this.tool.activateSinglePolyOperation.bind(this),
             }),
             new OpenSeadragon.Button({
-                tooltip: 'Draw a polygon to gulue it to the currently selected one',
+                tooltip: 'Draw a polygon to gulue it to the currently selected one (g)',
                 name: "GLUE",
                 srcRest: this.viewer.prefixUrl + `glue_base.svg`,
                 srcGroup: this.viewer.prefixUrl + `glue_base.svg`,

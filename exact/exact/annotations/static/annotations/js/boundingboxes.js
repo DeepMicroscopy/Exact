@@ -85,7 +85,22 @@ class BoundingBoxes {
                 this.tool.singlePolyOperation = event.eventSource.name
             }
         }
+    }
 
+    activateSinglePolyOperationByString(mode)
+    {
+        if (this.current_item !== undefined && this.current_item.type == "fill")
+        {
+            if (this.singlePolyOperation == undefined)
+            {
+                this.singlePolyOperation = mode
+                this.modified_item = this.current_item
+            }
+            else
+            {
+                this.singlePolyOperation = mode
+            }
+        }
     }
 
     resetSinglePolyOperation(event)
