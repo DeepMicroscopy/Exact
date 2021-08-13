@@ -572,8 +572,15 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
             if (event.enabled === false &&
                 event.userData.tool.selection !== undefined) {
+                
+                if (event.userData.tool.modified_item !== undefined && event.userData.tool.modified_item !== event.userData.tool.current_item)
+                    event.userData.deleteAnnotation()
+                else
+                    event.userData.tool.resetSinglePolyOperation()
 
                 event.userData.finishAnnotation();
+
+
             }
         }, this);
 
@@ -586,64 +593,117 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
             // Convert pixel to viewport coordinates
             var viewportPoint = viewer.viewport.pointFromPixel(event.position);
-
             // Convert from viewport coordinates to image coordinates.
             var imagePoint = viewer.viewport.viewportToImageCoordinates(viewportPoint);
-
             // check if the point is inside the image
-            let tool = event.userData.tool;
+            var tool = event.userData.tool;
+
             if (tool.isPointInImage(imagePoint)) {
-                let exact_sync = event.userData.exact_sync;
+                var exact_sync = event.userData.exact_sync;
 
-                var unique_identifier = tool.hitTest(imagePoint);
+                var new_selected = tool.hitTest(imagePoint);
 
-                // check if annotation was hit
-                if (unique_identifier !== undefined) {
-                    // if the user jumps from one annotation to the next
-                    // cancel and save fist annotation
-                    if (tool.selection !== undefined &&
-                        unique_identifier !== tool.selection.item.name) {
-
-                        let last_uuid = tool.selection.item.name
-                        let anno = exact_sync.annotations[last_uuid];
+                if (new_selected == undefined || event.userData.tool.singlePolyOperation !== undefined)
+                {
+                    // no element selected, reset selection, create new annotation
+                    if(tool.selection !== undefined)
+                    {
+                        var last_uuid = tool.selection.item.name;
+                        var anno = exact_sync.annotations[last_uuid];
                         event.userData.finishAnnotation(anno);
+
+                        if (event.userData.tool.singlePolyOperation !== undefined)
+                        {
+                            // show last polygon as being selected
+                            event.userData.tool.modified_item.item.selected = true
+                        }
                     }
 
-                    let new_selected_uuid = tool.handleMousePress(event);
+                    var selected_annotation_type = event.userData.getCurrentAnnotationType();
 
-                    if (new_selected_uuid !== undefined) {
-                        let selected_anno = exact_sync.annotations[new_selected_uuid];
-                        event.userData.setCurrentAnnotationType(selected_anno.annotation_type);
-                    }
-                } else {
-
-                    let selected_annotation_type = event.userData.getCurrentAnnotationType();
-
-                    if (selected_annotation_type === undefined) {
+                    if (selected_annotation_type == undefined) {
                         $("#annotation_type_id").notify("You have to choose a type for the annotation.",
                             { position: "right", className: "error" });
 
                         return;
                     }
 
-                    if (tool.selection === undefined) {
-                        // create new anno
-                        var newAnno = tool.initNewAnnotation(event, selected_annotation_type);
-                        exact_sync.addAnnotationToCache(newAnno)
-
-                    } else if (tool.selection !== undefined &&
-                        unique_identifier === undefined) {
-
-                        let last_uuid = tool.selection.item.name;
-                        let anno = exact_sync.annotations[last_uuid];
-                        event.userData.finishAnnotation(anno);
-
-                        // create new anno
-                        var newAnno = tool.initNewAnnotation(event, selected_annotation_type);
-                        exact_sync.addAnnotationToCache(newAnno);
-                    }
+                    var newAnno = tool.initNewAnnotation(event, selected_annotation_type);
+                    exact_sync.addAnnotationToCache(newAnno)
                 }
             }
+        }, this);
+
+        viewer.addHandler("selection_onRelease", function (event) {
+            viewer.canvas.focus()
+
+            // Convert pixel to viewport coordinates
+            var viewportPoint = viewer.viewport.pointFromPixel(event.position);
+            // Convert from viewport coordinates to image coordinates.
+            var imagePoint = viewer.viewport.viewportToImageCoordinates(viewportPoint);
+            // check if the point is inside the image
+            var tool = event.userData.tool;
+            var exact_sync = event.userData.exact_sync;
+
+            // if a polygon is currently drawn, finish it
+            if (tool.selection !== undefined && tool.selection.type == "new")
+            {
+                if (event.userData.tool.singlePolyOperation !== undefined)
+                {
+                    viewer.raiseEvent('boundingboxes_PolyOperation', {name: event.userData.tool.singlePolyOperation});
+                    tool.resetSinglePolyOperation();
+                }
+                else
+                {
+                    var new_selection = tool.selection
+
+                    var last_uuid = tool.selection.item.name;
+                    var anno = exact_sync.annotations[last_uuid];
+                    event.userData.finishAnnotation(anno);
+
+                    // select the new item
+                    new_selection.type = "fill"
+                    var new_selection = tool.handleSelection(event, new_selection);
+                }
+            }
+            else 
+            {
+                // no polygon is currently drawn
+                if (tool.isPointInImage(imagePoint))
+                {
+                    // current mouse release is within the image
+                    var new_selected = tool.hitTest(imagePoint);
+                    
+                    if ( new_selected !== undefined && tool.drag == false)
+                    {
+                        if (tool.selection !== undefined &&
+                            new_selected.item.name !== tool.selection.item.name)
+                        {
+                            // the new selection differs from the last one
+                            var last_uuid = tool.selection.item.name
+                            var anno = exact_sync.annotations[last_uuid];
+                            event.userData.finishAnnotation(anno);
+                        }
+
+                        // select the new item
+                        var new_selection = tool.handleSelection(event, new_selected);
+
+                        if (new_selection !== undefined) {
+                            var selected_anno = exact_sync.annotations[new_selection.item.name];
+
+                            if (selected_anno !== undefined)
+                            {
+                                // catch an error that occours when the server is to slow
+                                event.userData.setCurrentAnnotationType(selected_anno.annotation_type);
+                            }
+                        }
+                    }
+
+                    tool.drag = false
+
+                }
+            }
+
         }, this);
 
         viewer.addHandler('boundingboxes_PolyOperation', function (event) {
@@ -658,6 +718,12 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                     break;
                 case "UNION":
                     resultDict = tool.polyUnionOperation();
+                    break;
+                case "SCISSOR":
+                    resultDict = tool.polyScissorOperation();
+                    break;
+                case "GLUE":
+                    resultDict = tool.polyGlueOperation();
                     break;
 
                 case "HARMONIZE":
@@ -733,7 +799,8 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 break;
 
             case 13: //'enter'
-                this.finishAnnotation();
+                if(this.tool.singlePolyOperation == undefined)
+                    this.finishAnnotation();
                 break;
             case 27: // Escape
                 this.cancelEditAnnotation();
@@ -803,13 +870,21 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 this.viewer.selectionInstance.toggleState();
                 break;
             case 82: //r
-                this.tool.resetSelection();
+                if(this.tool.singlePolyOperation == undefined)
+                    this.finishAnnotation();
                 break;
             case 86: //'v'
-                this.finishAnnotation();
+                if(this.tool.singlePolyOperation == undefined)
+                    this.finishAnnotation();
                 break;
             case 89: // 'y'
                 this.uiShowAnnotationsToggle();
+                break;
+            case 83: // 's'
+                this.tool.activateSinglePolyOperationByString("SCISSOR", this);
+                break;
+            case 71: // 'g'
+                this.tool.activateSinglePolyOperationByString("GLUE", this);
                 break;
         }
     }
@@ -919,6 +994,35 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             })
         ]
 
+        this.scissorButton = new OpenSeadragon.Button({tooltip: 'Draw a polygon to cut from the currently selected one (s)',
+                                                        name: "SCISSOR",
+                                                        srcRest: this.viewer.prefixUrl + `scissors_base.svg`,
+                                                        srcGroup: this.viewer.prefixUrl + `scissors_base.svg`,
+                                                        srcHover: this.viewer.prefixUrl + `scissors_base.svg`,
+                                                        srcDown: this.viewer.prefixUrl + `scissors_active.svg`,
+                                                        onClick: this.tool.activateSinglePolyOperation.bind(this),
+                                                        })
+        this.glueButton = new OpenSeadragon.Button({   tooltip: 'Draw a polygon to gulue it to the currently selected one (g)',
+                                                        name: "GLUE",
+                                                        srcRest: this.viewer.prefixUrl + `glue_base.svg`,
+                                                        srcGroup: this.viewer.prefixUrl + `glue_base.svg`,
+                                                        srcHover: this.viewer.prefixUrl + `glue_base.svg`,
+                                                        srcDown: this.viewer.prefixUrl + `glue_active.svg`,
+                                                        onClick: this.tool.activateSinglePolyOperation.bind(this),
+                                                        })
+
+        if (this.scissorButton.imgDown) {
+            this.scissorButtonActiveImg = this.scissorButton.imgDown.cloneNode(true);
+            this.scissorButton.element.appendChild(this.scissorButtonActiveImg);
+        }
+
+        if (this.glueButton.imgDown) {
+            this.glueButtonActiveImg = this.glueButton.imgDown.cloneNode(true);
+            this.glueButton.element.appendChild(this.glueButtonActiveImg);
+        }
+
+        this.annotationButtons.push(this.scissorButton)
+        this.annotationButtons.push(this.glueButton)
 
         this.annotationButtons.forEach(element => {
             this.viewer.addControl(element.element, { anchor: OpenSeadragon.ControlAnchor.ABSOLUTE, top: this.y_button_start, left: 5 });
@@ -1000,14 +1104,23 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
             // delete temp annotation
             if (annotation.id === -1) {
+                let uuid = annotation.unique_identifier
                 this.tool.removeAnnotation(uuid);
                 this.exact_sync.deleteAnnotation(uuid);
+                
+                if(this.tool.modified_item !== undefined)
+                {
+                    this.tool.selection = this.tool.modified_item;
+                    this.tool.resetSinglePolyOperation();
+                }
             } else { // just cancel editing
                 this.tool.resetSelection()
             }
         } else {
             // Todo: Handle annoation editing buttons like save, valid etc.
         }
+
+        this.tool.resetSinglePolyOperation()
     }
 
     annotationVisibility(drawAnnotations = true) {
@@ -1046,9 +1159,19 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         }
 
         if (typeof annotation !== "undefined") {
-
+            
             annotation.vector = this.getAnnotationVector(annotation.unique_identifier);
-            this.exact_sync.saveAnnotation(annotation)
+
+            if (annotation.annotation_type.vector_type == 5 && annotation.vector.x3 == undefined)
+            {
+                // dont create polygons with less then 3 points
+                this.deleteAnnotation(annotation)
+            }
+            else
+            {
+                this.exact_sync.saveAnnotation(annotation)
+            }
+
             this.tool.resetSelection();
         }
     }
@@ -1060,9 +1183,15 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             annotation = this.getCurrentSelectedAnnotation();
         }
 
-        if (typeof annotation !== "undefined") {
+        if (typeof annotation !== "undefined" && this.tool.modified_item !== this.tool.current_item) {
             this.tool.removeAnnotation(annotation.unique_identifier);
             this.exact_sync.deleteAnnotation(annotation.unique_identifier);
+        }
+
+        if(this.tool.modified_item !== undefined)
+        {
+            this.tool.selection = this.tool.modified_item;
+            this.tool.resetSinglePolyOperation();
         }
     }
 
