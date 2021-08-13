@@ -569,8 +569,10 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             if (event.enabled === false &&
                 event.userData.tool.selection !== undefined) {
                 
-                if (event.userData.tool.modified_item !== undefined)
+                if (event.userData.tool.modified_item !== undefined && event.userData.tool.modified_item !== event.userData.tool.current_item)
                     event.userData.deleteAnnotation()
+                else
+                    event.userData.tool.resetSinglePolyOperation()
 
                 event.userData.finishAnnotation();
 
@@ -875,10 +877,10 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 this.uiShowAnnotationsToggle();
                 break;
             case 83: // 's'
-                this.tool.activateSinglePolyOperationByString("SCISSOR");
+                this.tool.activateSinglePolyOperationByString("SCISSOR", this);
                 break;
             case 71: // 'g'
-                this.tool.activateSinglePolyOperationByString("GLUE");
+                this.tool.activateSinglePolyOperationByString("GLUE", this);
                 break;
         }
     }
@@ -985,27 +987,38 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 srcHover: this.viewer.prefixUrl + `basket.svg`,
                 srcDown: this.viewer.prefixUrl + `basket.svg`,
                 onClick: this.tool.clickPolyOperation.bind(this),
-            }),
-            new OpenSeadragon.Button({
-                tooltip: 'Draw a polygon to cut from the currently selected one (s)',
-                name: "SCISSOR",
-                srcRest: this.viewer.prefixUrl + `scissors_base.svg`,
-                srcGroup: this.viewer.prefixUrl + `scissors_base.svg`,
-                srcHover: this.viewer.prefixUrl + `scissors_base.svg`,
-                srcDown: this.viewer.prefixUrl + `scissors_base.svg`,
-                onClick: this.tool.activateSinglePolyOperation.bind(this),
-            }),
-            new OpenSeadragon.Button({
-                tooltip: 'Draw a polygon to gulue it to the currently selected one (g)',
-                name: "GLUE",
-                srcRest: this.viewer.prefixUrl + `glue_base.svg`,
-                srcGroup: this.viewer.prefixUrl + `glue_base.svg`,
-                srcHover: this.viewer.prefixUrl + `glue_base.svg`,
-                srcDown: this.viewer.prefixUrl + `glue_base.svg`,
-                onClick: this.tool.activateSinglePolyOperation.bind(this),
             })
         ]
 
+        this.scissorButton = new OpenSeadragon.Button({tooltip: 'Draw a polygon to cut from the currently selected one (s)',
+                                                        name: "SCISSOR",
+                                                        srcRest: this.viewer.prefixUrl + `scissors_base.svg`,
+                                                        srcGroup: this.viewer.prefixUrl + `scissors_base.svg`,
+                                                        srcHover: this.viewer.prefixUrl + `scissors_base.svg`,
+                                                        srcDown: this.viewer.prefixUrl + `scissors_active.svg`,
+                                                        onClick: this.tool.activateSinglePolyOperation.bind(this),
+                                                        })
+        this.glueButton = new OpenSeadragon.Button({   tooltip: 'Draw a polygon to gulue it to the currently selected one (g)',
+                                                        name: "GLUE",
+                                                        srcRest: this.viewer.prefixUrl + `glue_base.svg`,
+                                                        srcGroup: this.viewer.prefixUrl + `glue_base.svg`,
+                                                        srcHover: this.viewer.prefixUrl + `glue_base.svg`,
+                                                        srcDown: this.viewer.prefixUrl + `glue_active.svg`,
+                                                        onClick: this.tool.activateSinglePolyOperation.bind(this),
+                                                        })
+
+        if (this.scissorButton.imgDown) {
+            this.scissorButtonActiveImg = this.scissorButton.imgDown.cloneNode(true);
+            this.scissorButton.element.appendChild(this.scissorButtonActiveImg);
+        }
+
+        if (this.glueButton.imgDown) {
+            this.glueButtonActiveImg = this.glueButton.imgDown.cloneNode(true);
+            this.glueButton.element.appendChild(this.glueButtonActiveImg);
+        }
+
+        this.annotationButtons.push(this.scissorButton)
+        this.annotationButtons.push(this.glueButton)
 
         this.annotationButtons.forEach(element => {
             this.viewer.addControl(element.element, { anchor: OpenSeadragon.ControlAnchor.ABSOLUTE, top: this.y_button_start, left: 5 });
@@ -1102,6 +1115,8 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         } else {
             // Todo: Handle annoation editing buttons like save, valid etc.
         }
+
+        this.tool.resetSinglePolyOperation()
     }
 
     annotationVisibility(drawAnnotations = true) {
@@ -1164,7 +1179,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             annotation = this.getCurrentSelectedAnnotation();
         }
 
-        if (typeof annotation !== "undefined") {
+        if (typeof annotation !== "undefined" && this.tool.modified_item !== this.tool.current_item) {
             this.tool.removeAnnotation(annotation.unique_identifier);
             this.exact_sync.deleteAnnotation(annotation.unique_identifier);
         }

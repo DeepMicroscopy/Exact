@@ -79,15 +79,35 @@ class BoundingBoxes {
             {
                 this.tool.singlePolyOperation = event.eventSource.name
                 this.tool.modified_item = this.tool.current_item
+
+                if(event.eventSource.name == "SCISSOR"){
+                    this.tool.scissor_img = this.scissorButtonActiveImg
+                    this.tool.scissor_img.style.visibility = 'visible'
+                }
+                if(event.eventSource.name == "GLUE") {
+                    this.tool.glue_img = this.glueButtonActiveImg
+                    this.tool.glue_img.style.visibility = 'visible'
+                }
             }
-            else
+            else if (this.singlePolyOperation != event.eventSource.name)
             {
                 this.tool.singlePolyOperation = event.eventSource.name
+
+                if(event.eventSource.name == "SCISSOR"){
+                    this.tool.scissor_img = this.scissorButtonActiveImg
+                    this.tool.glue_img.style.visibility = 'hidden'
+                    this.tool.scissor_img.style.visibility = 'visible'
+                }
+                if(event.eventSource.name == "GLUE"){
+                    this.tool.glue_img = this.glueButtonActiveImg
+                    this.tool.scissor_img.style.visibility = 'hidden'
+                    this.tool.glue_img.style.visibility = 'visible'
+                }
             }
         }
     }
 
-    activateSinglePolyOperationByString(mode)
+    activateSinglePolyOperationByString(mode, caller)
     {
         if (this.current_item !== undefined && this.current_item.type == "fill")
         {
@@ -95,10 +115,30 @@ class BoundingBoxes {
             {
                 this.singlePolyOperation = mode
                 this.modified_item = this.current_item
+
+                if(mode == "SCISSOR"){
+                    this.scissor_img = caller.scissorButtonActiveImg
+                    this.scissor_img.style.visibility = 'visible'
+                }
+                if(mode == "GLUE") {
+                    this.glue_img = caller.glueButtonActiveImg
+                    this.glue_img.style.visibility = 'visible'
+                }
             }
-            else
+            else if (this.singlePolyOperation != mode)
             {
                 this.singlePolyOperation = mode
+
+                if(mode == "SCISSOR"){
+                    this.scissor_img = caller.scissorButtonActiveImg
+                    this.glue_img.style.visibility = 'hidden'
+                    this.scissor_img.style.visibility = 'visible'
+                }
+                if(mode == "GLUE"){
+                    this.glue_img = caller.glueButtonActiveImg
+                    this.scissor_img.style.visibility = 'hidden'
+                    this.glue_img.style.visibility = 'visible'
+                }
             }
         }
     }
@@ -107,6 +147,11 @@ class BoundingBoxes {
     {
         this.modified_item = undefined
         this.singlePolyOperation = undefined
+
+        if (this.scissor_img !== undefined)
+            this.scissor_img.style.visibility = 'hidden'
+        if (this.glue_img !== undefined)
+            this.glue_img.style.visibility = 'hidden'
 
         // if current_item !== modified_item
         // delete current item
