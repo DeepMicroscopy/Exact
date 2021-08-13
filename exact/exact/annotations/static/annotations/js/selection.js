@@ -96,6 +96,7 @@
             dragHandler:        $.delegate( this, onDrag ),
             dragEndHandler:     $.delegate( this, onDragEnd ),
             pressHandler:       $.delegate( this, onPress ),
+            releaseHandler:     $.delegate( this, onRelease),
             scrollHandler:      $.delegate( this, onScroll ),
             startDisabled:      !this.isSelecting,
         });
@@ -173,6 +174,11 @@
 
     function onPress(e) {
         this.viewer.raiseEvent('selection_onPress', e);
+    }
+
+    function onRelease(e)
+    {
+        this.viewer.raiseEvent('selection_onRelease', e);
     }
 
     function onScroll(e) {

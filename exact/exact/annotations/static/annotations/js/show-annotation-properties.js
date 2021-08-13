@@ -30,7 +30,10 @@ class ShowAnnotationProperties{
     
                 $("#annotationRemark").val(annotation.description);
     
-                $("#annotationVerified").val(annotation.verified_by_user.toString());
+                if (annotation.verified_by_user !== undefined)
+                    $("#annotationVerified").val(annotation.verified_by_user.toString());
+                else
+                    $("#annotationVerified").val("");
     
                 $("#annotationUniqueID").text(annotation.unique_identifier);
                 $("#annotationUniqueID").attr("href", include_server_subdir(`/annotations/annotations_explore/?&page=1&unique_identifier=${annotation.unique_identifier}`));
