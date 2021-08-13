@@ -721,34 +721,40 @@
                         </div>
                     </div>
                     <div class="card-footer">
-                        <div class="row">
-                            <div class="col-md-2">
+                        <tr>
+                            <div class="row">
+                                <div class="col-md-2">
 
-                                <input id="StrokeWidthSlider" type="range" class="custom-range" min="1" max="500"
-                                    step="1" value="5" />
-                                <label for="StrokeWidthSlider">Stroke</label>
+                                    <input id="StrokeWidthSlider" type="range" class="custom-range" min="1" max="500"
+                                        step="1" value="5" />
+                                    <label for="StrokeWidthSlider">Stroke</label>
+                                </div>
+
+                                <div class="col-md-2">
+                                    <label for='statistics_total_annotations' title="Total Annotations">Total:</label>
+                                    <label id="statistics_total_annotations"
+                                        title="Total Annotations">{{ total_annotations }}</label>
+                                </div>
+
+                                <div class="col-md-8">
+                                    <select id="annotation_type_id" name="selected_annotation_type" class="form-control">
+                                        {% for annotation_type in annotation_types %}
+
+                                        <option value="{{ annotation_type.id }}" name="{{ annotation_type.name }}"
+                                            id="annotation_type_{{ annotation_type.id }}"
+                                            data-annotation_type_key={{ forloop.counter }}>
+                                            {{ annotation_type.name }} ({{forloop.counter}})
+                                        </option>
+
+                                        {% endfor %}
+                                    </select>
+                                </div>
                             </div>
-
-                            <div class="col-md-2">
-                                <label for='statistics_total_annotations' title="Total Annotations">Total:</label>
-                                <label id="statistics_total_annotations"
-                                    title="Total Annotations">{{ total_annotations }}</label>
-                            </div>
-
-                            <div class="col-md-8">
-                                <select id="annotation_type_id" name="selected_annotation_type" class="form-control">
-                                    {% for annotation_type in annotation_types %}
-
-                                    <option value="{{ annotation_type.id }}" name="{{ annotation_type.name }}"
-                                        id="annotation_type_{{ annotation_type.id }}"
-                                        data-annotation_type_key={{ forloop.counter }}>
-                                        {{ annotation_type.name }} ({{forloop.counter}})
-                                    </option>
-
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
+                        </tr>
+                        <tr>
+                            <input type="checkbox" id="allow_annotation_movement" checked="true">
+                            Allow Annotation Movement
+                        </tr>
                     </div>
                 </div>
 
