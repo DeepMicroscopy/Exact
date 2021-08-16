@@ -23,8 +23,18 @@ class BoundingBoxes {
         this.strokeWidth = 3;
         this.polyStrokeWidth = 1;
 
-        this.singlePolyOperation = undefined
-        this.modified_item = undefined
+        this.polyModify = {
+            active: false,
+            mode: "",
+            selected: undefined,
+            image: undefined
+        }
+
+        this.segmentDrag = {
+            active: false,
+            item: undefined
+        }
+
         this.dragged = false
 
         this.resetSelection();
@@ -71,87 +81,62 @@ class BoundingBoxes {
         }        
     }
 
-    activateSinglePolyOperation(event)
+    activatePolyModify(event)
     {
-        if (this.tool.current_item !== undefined && this.tool.current_item.type == "fill")
+        if (this.tool.current_item !== undefined && this.tool.current_item.type == "fill") // we have a selection and it is no a new element
         {
-            if (this.tool.singlePolyOperation == undefined)
+            if (!this.tool.polyModify.active) // polyModify not active
             {
-                this.tool.singlePolyOperation = event.eventSource.name
-                this.tool.modified_item = this.tool.current_item
+                this.tool.polyModify.active = true
+                this.tool.polyModify.mode = event.eventSource.name
+                this.tool.polyModify.selected = this.tool.current_item
 
-                if(event.eventSource.name == "SCISSOR"){
-                    this.tool.scissor_img = this.scissorButtonActiveImg
-                    this.tool.scissor_img.style.visibility = 'visible'
-                }
-                if(event.eventSource.name == "GLUE") {
-                    this.tool.glue_img = this.glueButtonActiveImg
-                    this.tool.glue_img.style.visibility = 'visible'
-                }
+                this.tool.polyModify.image = this.polyModifyActiveImgs[event.eventSource.name]
+                this.tool.polyModify.image.style.visibility = 'visible'
             }
-            else if (this.singlePolyOperation != event.eventSource.name)
+            else if (this.tool.polyModify.mode != event.eventSource.name) // polyModify active, but mode changed
             {
-                this.tool.singlePolyOperation = event.eventSource.name
+                this.tool.polyModify.mode = event.eventSource.name
 
-                if(event.eventSource.name == "SCISSOR"){
-                    this.tool.scissor_img = this.scissorButtonActiveImg
-                    this.tool.glue_img.style.visibility = 'hidden'
-                    this.tool.scissor_img.style.visibility = 'visible'
-                }
-                if(event.eventSource.name == "GLUE"){
-                    this.tool.glue_img = this.glueButtonActiveImg
-                    this.tool.scissor_img.style.visibility = 'hidden'
-                    this.tool.glue_img.style.visibility = 'visible'
-                }
+                this.tool.polyModify.image.style.visibility = 'hidden'
+                this.tool.polyModify.image = this.polyModifyActiveImgs[event.eventSource.name]
+                this.tool.polyModify.image.style.visibility = 'visible'
             }
         }
     }
 
-    activateSinglePolyOperationByString(mode, caller)
+    activatePolyModifyByString(mode, caller)
     {
         if (this.current_item !== undefined && this.current_item.type == "fill")
         {
-            if (this.singlePolyOperation == undefined)
+            if (!this.polyModify.active) // polyModify not active
             {
-                this.singlePolyOperation = mode
-                this.modified_item = this.current_item
+                this.polyModify.active = true
+                this.polyModify.mode = mode
+                this.polyModify.selected = this.current_item
 
-                if(mode == "SCISSOR"){
-                    this.scissor_img = caller.scissorButtonActiveImg
-                    this.scissor_img.style.visibility = 'visible'
-                }
-                if(mode == "GLUE") {
-                    this.glue_img = caller.glueButtonActiveImg
-                    this.glue_img.style.visibility = 'visible'
-                }
+                this.polyModify.image = caller.polyModifyActiveImgs[mode]
+                this.polyModify.image.style.visibility = 'visible'
             }
-            else if (this.singlePolyOperation != mode)
+            else if (this.polyModify.mode != mode) // polyModify active, but mode changed
             {
-                this.singlePolyOperation = mode
+                this.polyModify.mode = mode
 
-                if(mode == "SCISSOR"){
-                    this.scissor_img = caller.scissorButtonActiveImg
-                    this.glue_img.style.visibility = 'hidden'
-                    this.scissor_img.style.visibility = 'visible'
-                }
-                if(mode == "GLUE"){
-                    this.glue_img = caller.glueButtonActiveImg
-                    this.scissor_img.style.visibility = 'hidden'
-                    this.glue_img.style.visibility = 'visible'
-                }
+                this.polyModify.image.style.visibility = 'hidden'
+                this.polyModify.image = caller.polyModifyActiveImgs[mode]
+                this.polyModify.image.style.visibility = 'visible'
             }
         }
     }
 
     resetSinglePolyOperation(event)
     {
-        this.modified_item = undefined
-        this.singlePolyOperation = undefined
+        this.polyModify.active = false
+        this.polyModify.mode = ""
+        this.polyModify.selected = undefined
 
-        if (this.scissor_img !== undefined)
-            this.scissor_img.style.visibility = 'hidden'
-        if (this.glue_img !== undefined)
-            this.glue_img.style.visibility = 'hidden'
+        this.polyModify.image.style.visibility = 'hidden'
+        this.polyModify.image = undefined
 
         // if current_item !== modified_item
         // delete current item
@@ -295,17 +280,17 @@ class BoundingBoxes {
         // check if the newly drawn polygon intersects the to-cut one
         // (modified_item is the original element that is going to be changed)
         // (current_item is the area that shall be cut from the modified item)
-        if (this.modified_item.item.intersects(this.current_item.item) == true)
+        if (this.polyModify.selected.item.intersects(this.current_item.item) == true)
         {
             // the polygons intersect
-            let result = this.modified_item.item.subtract(this.current_item.item, subOptions)
+            let result = this.polyModify.selected.item.subtract(this.current_item.item, subOptions)
 
             if (result.children === undefined) {
                 // the polygon is not cut into multiple pieces
-                if (Math.ceil(result.area) !== Math.ceil(this.modified_item.item.area)) {
+                if (Math.ceil(result.area) !== Math.ceil(this.polyModify.selected.item.area)) {
                     // the area of the polygon changed
-                    this.modified_item.item.remove();
-                    this.modified_item.item = result
+                    this.polyModify.selected.item.remove();
+                    this.polyModify.selected.item = result
                     this.group.addChild(result)
                     
                     resultDict.update.push(result.name)
@@ -314,12 +299,12 @@ class BoundingBoxes {
                 this.selection.item.remove()
                 resultDict.deleted.push(this.selection.item.name)
 
-                this.selection = this.modified_item
-                this.modified_item = undefined
+                this.selection = this.polyModify.selected
+                this.polyModify.selected = undefined
 
             } else {
                 // the polygon is cut into multiple pieces
-                this.modified_item.item.remove();
+                this.polyModify.selected.item.remove();
 
                 for (var child_id = 0; child_id < result.children.length; child_id++) {
                     // add childs as new elements
@@ -334,7 +319,7 @@ class BoundingBoxes {
                     this.group.addChild(new_path);
 
                     resultDict.insert.push({
-                        annotation_type: this.modified_item.item.data.type_id,
+                        annotation_type: this.polyModify.selected.item.data.type_id,
                         id: -1,
                         vector: this.getAnnotationVector(new_path.name),
                         user: {id: null, username: "you"},
@@ -346,13 +331,13 @@ class BoundingBoxes {
 
                 }
                 result.remove()                            
-                resultDict.deleted.push(this.modified_item.item.name)
+                resultDict.deleted.push(this.polyModify.selected.item.name)
 
                 this.selection.item.remove()
                 resultDict.deleted.push(this.selection.item.name)
 
                 this.selection = undefined
-                this.modified_item = undefined
+                this.polyModify.selected = undefined
             }
         }
         else
@@ -360,8 +345,8 @@ class BoundingBoxes {
             this.selection.item.remove()
             resultDict.deleted.push(this.selection.item.name)
 
-            this.selection = this.modified_item
-            this.modified_item = undefined
+            this.selection = this.polyModify.selected
+            this.polyModify.selected = undefined
         }
 
         return resultDict
@@ -371,36 +356,36 @@ class BoundingBoxes {
     {
         var resultDict = {deleted: [], insert: [], update: [], included: []}
 
-        if (this.modified_item.item.intersects(this.current_item.item) == true)
+        if (this.polyModify.selected.item.intersects(this.current_item.item) == true)
         {
-            var result = this.modified_item.item.unite(this.selection.item)
+            var result = this.polyModify.selected.item.unite(this.selection.item)
             // error occurce if the result can not represented as one poly
             if (result.children === undefined) {
 
-                this.modified_item.item.remove();
-                this.modified_item.item = result;
+                this.polyModify.selected.item.remove();
+                this.polyModify.selected.item = result;
 
                 resultDict.deleted.push(this.selection.item.name);
-                resultDict.update.push(this.modified_item.item.name);
+                resultDict.update.push(this.polyModify.selected.item.name);
 
-                this.selection = this.modified_item
-                this.modified_item = undefined
+                this.selection = this.polyModify.selected
+                this.polyModify.selected = undefined
             }
             else
             {
                 result.remove()
                 resultDict.deleted.push(this.selection.item.name)
 
-                this.selection = this.modified_item
-                this.modified_item = undefined
+                this.selection = this.polyModify.selected
+                this.polyModify.selected = undefined
             }
         }
         else
         {
             resultDict.deleted.push(this.selection.item.name)
 
-            this.selection = this.modified_item
-            this.modified_item = undefined
+            this.selection = this.polyModify.selected
+            this.polyModify.selected = undefined
         }
 
         return resultDict 
