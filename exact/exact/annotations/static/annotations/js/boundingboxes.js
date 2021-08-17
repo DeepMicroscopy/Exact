@@ -8,10 +8,17 @@ class BoundingBoxes {
         this.overlay = this.viewer.paperjsOverlay();
         this.group = new paper.Group();
 
-        this.hitOptions = {
-            segments: true,
+        this.hitOptionsObject = {
+            segments: false,
             stroke: true,
             fill: true,
+            tolerance: 2
+        };
+
+        this.hitOptionsSegment = {
+            segments: true,
+            stroke: false,
+            fill: false,
             tolerance: 2
         };
 
@@ -32,7 +39,9 @@ class BoundingBoxes {
 
         this.segmentDrag = {
             active: false,
-            item: undefined
+            segment: undefined,
+            lastPos: undefined,
+            fixPoint: undefined
         }
 
         this.dragged = false
@@ -135,12 +144,11 @@ class BoundingBoxes {
         this.polyModify.mode = ""
         this.polyModify.selected = undefined
 
-        this.polyModify.image.style.visibility = 'hidden'
-        this.polyModify.image = undefined
-
-        // if current_item !== modified_item
-        // delete current item
-        // restore modified_item as current item
+        if ( this.polyModify.image != undefined )
+        {
+            this.polyModify.image.style.visibility = 'hidden'
+            this.polyModify.image = undefined
+        }
     }
 
     findIncludedObjectsOperation() {
@@ -745,7 +753,7 @@ class BoundingBoxes {
                 // Convert from viewport coordinates to image coordinates.
                 var point = this.viewer.viewport.viewportToImageCoordinates(viewportPoint);
 
-                var hit = this.selection.item.hitTest(point, this.hitOptions);
+                var hit = this.hitTestObject(point, this.hitOptionsObject);
                 if (hit && this.selection.item.data.type !== "poly") // just resize if mouse is over element
                     this.selection.item.scale(1 + (event.scroll / 10));
                 else if (hit && this.selection.item.data.type === "poly")
@@ -782,9 +790,9 @@ class BoundingBoxes {
         this.clear();
     }
 
-    hitTest(point) {
-
-        var hits = this.group.hitTestAll(point, this.hitOptions);
+    hitTestObject(point) 
+    {
+        var hits = this.group.hitTestAll(point, this.hitOptionsObject);
         if (hits.length > 0) {
             if (this.selection == undefined)
             {
@@ -850,6 +858,24 @@ class BoundingBoxes {
             }
         }
         return undefined;
+    }
+
+    hitTestSegment(point)
+    {
+        if (this.selection !== undefined)
+        {
+            var hits = this.group.hitTestAll(point, this.hitOptionsSegment)
+
+            for (var i=0; i < hits.length; i++)
+            {
+                if(hits[i].item.visible && hits[i].item.name == this.selection.item.name)
+                {
+                    return hits[i]
+                }
+            }
+        }
+
+        return undefined
     }
 
     updateAnnotationType(unique_identifier, annotation_type, set_as_selected = true) {
@@ -941,14 +967,14 @@ class BoundingBoxes {
             // Convert from viewport coordinates to image coordinates.
             var imagePoint = new paper.Point(this.viewer.viewport.viewportToImageCoordinates(viewportPoint));
 
+            var allowMovement = $("#allow_annotation_movement").is(':checked')
+
             switch (this.selection.item.data.type) {
                                                 
-                                
+                
                 case 'poly':
-                    // if shift is pressed add circle diameter to poly
-                    // else move poly
-
                     if(event.shift) {
+                        // brush mode
                         var path = new paper.Path.Circle({
                             center: imagePoint,
                             radius: this.polyStrokeWidth,
@@ -968,23 +994,31 @@ class BoundingBoxes {
 
                     } else {
                         if (this.selection.type == 'new') {
+                            // polygon is still drawn
                             this.selection.item.add(imagePoint);
                         }
-                        else if (this.selection.type == 'fill' && $("#allow_annotation_movement").is(':checked') && (this.selection.item.contains(imagePoint) || this.drag)) {
+                        else if (this.segmentDrag.active)
+                        {
+                            // a segment is moved
+                            this.segmentDrag.segment.segment.point = this.fixPointToImage(imagePoint)
+                            this.drag = true
+                        }
+                        else if (allowMovement && (this.selection.item.contains(imagePoint) || this.drag)) 
+                        {
+                            // move the polygon
+                            var x_diff = imagePoint.x - this.segmentDrag.lastPos.x
+                            var y_diff = imagePoint.y - this.segmentDrag.lastPos.y
 
                             var tempRect = this.selection.item.bounds.clone();
-                            tempRect.center = imagePoint;
+                            tempRect.center.x += x_diff;
+                            tempRect.center.y += y_diff;
         
                             if (this.isPointInImage(tempRect.getTopLeft()) && this.isPointInImage(tempRect.getBottomRight()))
-                                this.selection.item.position = imagePoint;
+                                // ensure we dont move our polygon out of bounds
+                                this.selection.item.position = tempRect.center;
                             
                             this.drag = true
-                                
-                        }
-                        if (this.selection.type == 'segment') {
-    
-                            this.selection.segment.point = this.fixPointToImage(imagePoint);
-                            this.drag = true
+                            this.segmentDrag.lastPos = imagePoint
                         }
                     }
                     break;
@@ -993,18 +1027,26 @@ class BoundingBoxes {
 
                     if (this.selection.item.segments.length == 1) {
                         this.selection.item.add(imagePoint);
+                        this.segmentDrag.active = true
+                        this.segmentDrag.segment = this.hitTestSegment(imagePoint)
+                    } 
+                    else
+                    {
+                        if (this.segmentDrag.active)
+                        {
+                            // a segment is moved
+                            this.segmentDrag.segment.segment.point = this.fixPointToImage(imagePoint)
+                            this.drag = true
+                        }
+                        else
+                        {
+                            // the whole line is moved
+                            var x_diff = imagePoint.x - this.segmentDrag.lastPos.x
+                            var y_diff = imagePoint.y - this.segmentDrag.lastPos.y
+                            this.selection.item.position.x += x_diff
+                            this.selection.item.position.y += y_diff
 
-                    } else {
-                        // check if mouse is near to first, second or center point and move that one
-                        if (this.selection.item.segments[0].point.getDistance(imagePoint)
-                            < this.selection.item.position.getDistance(imagePoint)) {
-                            this.selection.item.segments[0].point = imagePoint;
-
-                        } else if (this.selection.item.segments[1].point.getDistance(imagePoint)
-                            < this.selection.item.position.getDistance(imagePoint)) {
-                            this.selection.item.segments[1].point = imagePoint;
-                        } else {
-                            this.selection.item.position = imagePoint;
+                            this.segmentDrag.lastPos = imagePoint
                         }
                         this.drag = true
                     }
@@ -1012,42 +1054,97 @@ class BoundingBoxes {
 
                 case 'fixed_rect':
 
-                    var tempRect = this.selection.item.bounds.clone();
-                    tempRect.center = imagePoint;
+                    if (allowMovement && (this.selection.item.contains(imagePoint) || this.drag))
+                    {
+                        var x_diff = imagePoint.x - this.segmentDrag.lastPos.x
+                        var y_diff = imagePoint.y - this.segmentDrag.lastPos.y
 
-                    if (this.isPointInImage(tempRect.getTopLeft()) && this.isPointInImage(tempRect.getBottomRight()) && $("#allow_annotation_movement").is(':checked'))
-                        this.selection.item.position = imagePoint;
+                        var tempRect = this.selection.item.bounds.clone();
+                        tempRect.center.x += x_diff;
+                        tempRect.center.y += y_diff;
+    
+                        if (this.isPointInImage(tempRect.getTopLeft()) && this.isPointInImage(tempRect.getBottomRight()))
+                            // ensure we dont move our polygon out of bounds
+                            this.selection.item.position = tempRect.center;
+                        
                         this.drag = true
+                        this.segmentDrag.lastPos = imagePoint
+                    }
 
                     break;
 
                 default:
+                    
+                    if (this.segmentDrag.active)
+                    {
+                        if (this.segmentDrag.fixPoint == undefined)
+                        {
+                            var idx_a = this.segmentDrag.segment.segment.index
+                            var idx_b = (idx_a + 2 > 3) ? (idx_a - 2) : (idx_a + 2)
+                            this.segmentDrag.fixPoint = this.segmentDrag.segment.item.segments[idx_b].point.clone()
+                        }
 
-                    if (this.selection.type == 'fill' && $("#allow_annotation_movement").is(':checked') && (this.selection.item.contains(imagePoint) || this.drag)) {
- 
-                        var tempRect = this.selection.item.bounds.clone();
-                        tempRect.center = imagePoint;
+                        var topLeft = this.fixPointToImage(imagePoint);
+
+                        var min_x
+                        var max_x
+                        var min_y
+                        var max_y
+
+                        if (topLeft.x > this.segmentDrag.fixPoint.x)
+                        {  
+                            min_x = this.segmentDrag.fixPoint.x
+                            max_x = topLeft.x
+
+                            if(max_x - min_x < 10)
+                                max_x = min_x + 10
+                        }
+                        else
+                        {
+                            min_x = topLeft.x
+                            max_x = this.segmentDrag.fixPoint.x
+
+                            if(max_x - min_x < 10)
+                                min_x = max_x - 10
+                        }
+
+                        if (topLeft.y > this.segmentDrag.fixPoint.y)
+                        {  
+                            min_y = this.segmentDrag.fixPoint.y
+                            max_y = topLeft.y
+
+                            if(max_y - min_y < 10)
+                                max_y = min_y + 10
+                        }
+                        else
+                        {
+                            min_y = topLeft.y
+                            max_y = this.segmentDrag.fixPoint.y
+
+                            if(max_y - min_y < 10)
+                                min_y = max_y - 10
+                        }
+
+                        this.selection.item.bounds = new paper.Rectangle(new paper.Point(min_x, min_y), new paper.Point(max_x, max_y));
+
                         this.drag = true
+                        
+                    }
+                    else if (allowMovement && (this.selection.item.contains(imagePoint) || this.drag)){
+                        // the rect is moved
+                        var x_diff = imagePoint.x - this.segmentDrag.lastPos.x
+                        var y_diff = imagePoint.y - this.segmentDrag.lastPos.y
 
+                        var tempRect = this.selection.item.bounds.clone();
+                        tempRect.center.x += x_diff;
+                        tempRect.center.y += y_diff;
+    
                         if (this.isPointInImage(tempRect.getTopLeft()) && this.isPointInImage(tempRect.getBottomRight()))
-                            this.selection.item.position = imagePoint;
-
-                    } else {
-
-                        var offset = imagePoint.add(this.selection.item.data.offset_point);
-                        var min_x = Math.min(this.selection.item.data.from.x, offset.x);
-                        var min_y = Math.min(this.selection.item.data.from.y, offset.y);
-                        var max_x = Math.max(this.selection.item.data.from.x, offset.x);
-                        var max_y = Math.max(this.selection.item.data.from.y, offset.y);
-
-                        if (max_x - min_x < 10) max_x = min_x + 10;
-                        if (max_y - min_y < 10) max_y = min_y + 10;
-
-                        // fix annotation to image
-                        var topLeft = this.fixPointToImage(new paper.Point(min_x, min_y));
-                        var bottomRight = this.fixPointToImage(new paper.Point(max_x, max_y));
-
-                        this.selection.item.bounds = new paper.Rectangle(topLeft, bottomRight);
+                            // ensure we dont move our polygon out of bounds
+                            this.selection.item.position = tempRect.center;
+                        
+                        this.drag = true
+                        this.segmentDrag.lastPos = imagePoint
                     }
 
                     break;
@@ -1088,24 +1185,24 @@ class BoundingBoxes {
             hitResult.item.data.offset_point = new paper.Point(sorted[0].x - point.x, sorted[0].y - point.y);
 
 
-            if (!event.originalEvent.shiftKey) {
-                // if poly add new handling point
-                if (this.selection.type == 'stroke' &&
-                    this.selection.item.data.type == 'poly' &&
-                    this.selection.item.segments.length > 3) {
-                    var location = this.selection.location;
-                    if (this.selection.location !== undefined) {
-                        this.selection.item.insert(location.index + 1, point);
-                    }
-                }
-            } else {
-                // or remove point
-                if (this.selection.item.data.type == "poly") {
-                    if (hitResult.type == 'segment' && this.selection.item.segments.length > 2) {
-                        hitResult.segment.remove();
-                    }
-                }
-            }
+            //if (!event.originalEvent.shiftKey) {
+            //    // if poly add new handling point
+            //    if (this.selection.type == 'stroke' &&
+            //        this.selection.item.data.type == 'poly' &&
+            //        this.selection.item.segments.length > 3) {
+            //        var location = this.selection.location;
+            //        if (this.selection.location !== undefined) {
+            //            this.selection.item.insert(location.index + 1, point);
+            //        }
+            //    }
+            //} else {
+            //    // or remove point
+            //    if (this.selection.item.data.type == "poly") {
+            //        if (hitResult.type == 'segment' && this.selection.item.segments.length > 2) {
+            //            hitResult.segment.remove();
+            //        }
+            //    }
+            //}
 
             return hitResult;
         }

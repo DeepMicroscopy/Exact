@@ -593,14 +593,27 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             // check if the point is inside the image
             var tool = event.userData.tool;
 
+            // reset previous segment selection
+            tool.segmentDrag.active = false
+            tool.segmentDrag.segment = undefined
+            tool.segmentDrag.lastPos = imagePoint
+            tool.segmentDrag.fixPoint = undefined
+
             if (tool.isPointInImage(imagePoint)) {
                 var exact_sync = event.userData.exact_sync;
 
-                var new_selected = tool.hitTest(imagePoint);
+                var new_selected = tool.hitTestObject(imagePoint);
+                var selected_segment = tool.hitTestSegment(imagePoint)
 
-                if (new_selected == undefined || event.userData.tool.polyModify.active)
+                if (selected_segment !== undefined)
                 {
-                    // no element selected, reset selection, create new annotation
+                    // a segment of the currently selected object was clicked
+                    tool.segmentDrag.active = true
+                    tool.segmentDrag.segment = selected_segment
+                }
+                else if (new_selected == undefined || event.userData.tool.polyModify.active)
+                {
+                    // no new object clicked, reset selection, create new annotation
                     if(tool.selection !== undefined)
                     {
                         var last_uuid = tool.selection.item.name;
@@ -667,7 +680,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 if (tool.isPointInImage(imagePoint))
                 {
                     // current mouse release is within the image
-                    var new_selected = tool.hitTest(imagePoint);
+                    var new_selected = tool.hitTestObject(imagePoint);
                     
                     if ( new_selected !== undefined && tool.drag == false)
                     {
