@@ -569,18 +569,17 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             if (event.enabled === false &&
                 event.userData.tool.selection !== undefined) {
                 
-                if (event.userData.tool.modified_item !== undefined && event.userData.tool.modified_item !== event.userData.tool.current_item)
+                if (event.userData.tool.polyModify.active && event.userData.tool.current_item.type == 'new')
                     event.userData.deleteAnnotation()
                 else
                     event.userData.tool.resetSinglePolyOperation()
 
                 event.userData.finishAnnotation();
 
-
             }
         }, this);
 
-        viewer.addHandler("selection_cancel", function (data) {
+        viewer.addHandler("selection_cancel", function (event) {
             event.userData.cancelEditAnnotation();
         }, this);
 
@@ -594,24 +593,37 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             // check if the point is inside the image
             var tool = event.userData.tool;
 
+            // reset previous segment selection
+            tool.segmentDrag.active = false
+            tool.segmentDrag.segment = undefined
+            tool.segmentDrag.lastPos = imagePoint
+            tool.segmentDrag.fixPoint = undefined
+
             if (tool.isPointInImage(imagePoint)) {
                 var exact_sync = event.userData.exact_sync;
 
-                var new_selected = tool.hitTest(imagePoint);
+                var new_selected = tool.hitTestObject(imagePoint);
+                var selected_segment = tool.hitTestSegment(imagePoint)
 
-                if (new_selected == undefined || event.userData.tool.singlePolyOperation !== undefined)
+                if (selected_segment !== undefined)
                 {
-                    // no element selected, reset selection, create new annotation
+                    // a segment of the currently selected object was clicked
+                    tool.segmentDrag.active = true
+                    tool.segmentDrag.segment = selected_segment
+                }
+                else if (new_selected == undefined || event.userData.tool.polyModify.active)
+                {
+                    // no new object clicked, reset selection, create new annotation
                     if(tool.selection !== undefined)
                     {
                         var last_uuid = tool.selection.item.name;
                         var anno = exact_sync.annotations[last_uuid];
                         event.userData.finishAnnotation(anno);
 
-                        if (event.userData.tool.singlePolyOperation !== undefined)
+                        if (event.userData.tool.polyModify.active)
                         {
                             // show last polygon as being selected
-                            event.userData.tool.modified_item.item.selected = true
+                            event.userData.tool.polyModify.selected.item.selected = true
                         }
                     }
 
@@ -644,9 +656,9 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             // if a polygon is currently drawn, finish it
             if (tool.selection !== undefined && tool.selection.type == "new")
             {
-                if (event.userData.tool.singlePolyOperation !== undefined)
+                if (event.userData.tool.polyModify.active)
                 {
-                    viewer.raiseEvent('boundingboxes_PolyOperation', {name: event.userData.tool.singlePolyOperation});
+                    viewer.raiseEvent('boundingboxes_PolyOperation', {name: event.userData.tool.polyModify.mode});
                     tool.resetSinglePolyOperation();
                 }
                 else
@@ -668,7 +680,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 if (tool.isPointInImage(imagePoint))
                 {
                     // current mouse release is within the image
-                    var new_selected = tool.hitTest(imagePoint);
+                    var new_selected = tool.hitTestObject(imagePoint);
                     
                     if ( new_selected !== undefined && tool.drag == false)
                     {
@@ -795,7 +807,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 break;
 
             case 13: //'enter'
-                if(this.tool.singlePolyOperation == undefined)
+                if(!event.userData.tool.polyModify.active)
                     this.finishAnnotation();
                 break;
             case 27: // Escape
@@ -866,21 +878,21 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 this.viewer.selectionInstance.toggleState();
                 break;
             case 82: //r
-                if(this.tool.singlePolyOperation == undefined)
+                if(!event.userData.tool.polyModify.active)
                     this.finishAnnotation();
                 break;
             case 86: //'v'
-                if(this.tool.singlePolyOperation == undefined)
+                if(!event.userData.tool.polyModify.active)
                     this.finishAnnotation();
                 break;
             case 89: // 'y'
                 this.uiShowAnnotationsToggle();
                 break;
             case 83: // 's'
-                this.tool.activateSinglePolyOperationByString("SCISSOR", this);
+                this.tool.activatePolyModifyByString("SCISSOR", this);
                 break;
             case 71: // 'g'
-                this.tool.activateSinglePolyOperationByString("GLUE", this);
+                this.tool.activatePolyModifyByString("GLUE", this);
                 break;
         }
     }
@@ -990,35 +1002,35 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             })
         ]
 
-        this.scissorButton = new OpenSeadragon.Button({tooltip: 'Draw a polygon to cut from the currently selected one (s)',
+        this.polyModifyButtons = {}
+        this.polyModifyButtons["SCISSOR"] = new OpenSeadragon.Button({tooltip: 'Draw a polygon to cut from the currently selected one (s)',
                                                         name: "SCISSOR",
                                                         srcRest: this.viewer.prefixUrl + `scissors_base.svg`,
                                                         srcGroup: this.viewer.prefixUrl + `scissors_base.svg`,
                                                         srcHover: this.viewer.prefixUrl + `scissors_base.svg`,
                                                         srcDown: this.viewer.prefixUrl + `scissors_active.svg`,
-                                                        onClick: this.tool.activateSinglePolyOperation.bind(this),
+                                                        onClick: this.tool.activatePolyModify.bind(this),
                                                         })
-        this.glueButton = new OpenSeadragon.Button({   tooltip: 'Draw a polygon to gulue it to the currently selected one (g)',
+
+        this.polyModifyButtons["GLUE"] = new OpenSeadragon.Button({   tooltip: 'Draw a polygon to gulue it to the currently selected one (g)',
                                                         name: "GLUE",
                                                         srcRest: this.viewer.prefixUrl + `glue_base.svg`,
                                                         srcGroup: this.viewer.prefixUrl + `glue_base.svg`,
                                                         srcHover: this.viewer.prefixUrl + `glue_base.svg`,
                                                         srcDown: this.viewer.prefixUrl + `glue_active.svg`,
-                                                        onClick: this.tool.activateSinglePolyOperation.bind(this),
+                                                        onClick: this.tool.activatePolyModify.bind(this),
                                                         })
 
-        if (this.scissorButton.imgDown) {
-            this.scissorButtonActiveImg = this.scissorButton.imgDown.cloneNode(true);
-            this.scissorButton.element.appendChild(this.scissorButtonActiveImg);
-        }
+        this.polyModifyActiveImgs = {}
 
-        if (this.glueButton.imgDown) {
-            this.glueButtonActiveImg = this.glueButton.imgDown.cloneNode(true);
-            this.glueButton.element.appendChild(this.glueButtonActiveImg);
-        }
+        this.polyModifyActiveImgs["SCISSOR"] = this.polyModifyButtons["SCISSOR"].imgDown.cloneNode(true)
+        this.polyModifyButtons["SCISSOR"].element.appendChild(this.polyModifyActiveImgs["SCISSOR"])
 
-        this.annotationButtons.push(this.scissorButton)
-        this.annotationButtons.push(this.glueButton)
+        this.polyModifyActiveImgs["GLUE"] = this.polyModifyButtons["GLUE"].imgDown.cloneNode(true)
+        this.polyModifyButtons["GLUE"].element.appendChild(this.polyModifyActiveImgs["GLUE"])
+
+        this.annotationButtons.push(this.polyModifyButtons["SCISSOR"])
+        this.annotationButtons.push(this.polyModifyButtons["GLUE"])
 
         this.annotationButtons.forEach(element => {
             this.viewer.addControl(element.element, { anchor: OpenSeadragon.ControlAnchor.ABSOLUTE, top: this.y_button_start, left: 5 });
@@ -1104,13 +1116,20 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 this.tool.removeAnnotation(uuid);
                 this.exact_sync.deleteAnnotation(uuid);
                 
-                if(this.tool.modified_item !== undefined)
+                if(this.tool.polyModify.selected !== undefined)
                 {
-                    this.tool.selection = this.tool.modified_item;
+                    this.tool.selection = this.tool.polyModify.selected;
                     this.tool.resetSinglePolyOperation();
                 }
             } else { // just cancel editing
-                this.tool.resetSelection()
+                if (this.tool.polyModify.active)
+                {
+                    this.tool.resetSinglePolyOperation();
+                }
+                else
+                {
+                    this.tool.resetSelection()
+                }
             }
         } else {
             // Todo: Handle annoation editing buttons like save, valid etc.
@@ -1179,14 +1198,14 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             annotation = this.getCurrentSelectedAnnotation();
         }
 
-        if (typeof annotation !== "undefined" && this.tool.modified_item !== this.tool.current_item) {
+        if (typeof annotation !== "undefined" && this.tool.polyModify.selected !== this.tool.current_item) {
             this.tool.removeAnnotation(annotation.unique_identifier);
             this.exact_sync.deleteAnnotation(annotation.unique_identifier);
         }
 
-        if(this.tool.modified_item !== undefined)
+        if(this.tool.polyModify.selected !== undefined)
         {
-            this.tool.selection = this.tool.modified_item;
+            this.tool.selection = this.tool.polyModify.selected;
             this.tool.resetSinglePolyOperation();
         }
     }
