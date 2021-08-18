@@ -5,6 +5,7 @@ class EXACTRegistrationHandler {
         this.registration_pair = registration_pair;
         this.browser_sync = browser_sync;
         this.viewer = viewer;
+        this.background_viewer = undefined;
 
         let matrix = registration_pair.transformation_matrix;
         this.homography = cv.matFromArray(3, 3, cv.CV_64FC1, 
@@ -17,7 +18,6 @@ class EXACTRegistrationHandler {
         this.updateHomographyUI();
     }
 
-
     initBrowserSycEvents() {
 
         this.browser_sync.getChannelObject("ReceiveRegistrationImage").onmessage = 
@@ -29,10 +29,75 @@ class EXACTRegistrationHandler {
 
     initUiEvents() {
 
-        $('#update_browser_sync_images_btn').click(this.updateRegistrationJS.bind(this))
+        $('#update_browser_sync_images_btn').click(this.updateRegistrationJS.bind(this));        
+        $('#OverlayRegImageSlider').on("input", this.updateOverlayRegImageSlider.bind(this));
+        $("#OverlayRegImage-enabled").click(this.enableOverlayRegImageSlider.bind(this));
+
 
     }
 
+
+    enableOverlayRegImageSlider(event) {
+
+        if ($("#OverlayRegImage-enabled").prop("checked")) {
+
+
+            const options = {
+                id: "openseadragon_background",
+                prefixUrl: $("#image_list").data( "static-file" ) +"images/",
+                showNavigator: false,
+                tileSources: [this.viewer.tileSources[0]
+                        .replace(`images/image/${this.registration_pair.target_image.id}`, 
+                        `images/image/${this.registration_pair.source_image.id}`)]
+            };
+    
+            this.background_viewer =  OpenSeadragon(options);
+
+            this.background_viewer.addHandler("open", function (event) {
+                this.userData.syncViewBackgroundForeground();
+            }, this);
+
+            
+            this.updateOverlayRegImageSlider(50);
+
+        } else {
+            if (this.background_viewer !== undefined) {
+                this.background_viewer.destroy();
+            }       
+        }
+
+    }
+
+    syncViewBackgroundForeground () {
+
+        if (this.background_viewer !== undefined) {
+
+            let bounds = this.viewer.viewport.getBounds(true);
+            let imageRect = this.viewer.viewport.viewportToImageRectangle(bounds);
+    
+            let xmin = Math.round(imageRect.x);
+            let ymin = Math.round(imageRect.y);
+            let xmax = Math.round(imageRect.x + imageRect.width);
+            let ymax = Math.round(imageRect.y + imageRect.height);
+    
+            [xmin, ymin] = this.transformAffineInv(xmin, ymin);
+            [xmax, ymax] = this.transformAffineInv(xmax, ymax);
+    
+            const vpRect = this.background_viewer.viewport.imageToViewportRectangle(new OpenSeadragon.Rect(
+                xmin,
+                ymin,
+                xmax - xmin,
+                ymax - ymin
+            ));
+
+            this.background_viewer.viewport.fitBoundsWithConstraints(new OpenSeadragon.Rect(
+                vpRect.x,
+                vpRect.y,
+                vpRect.width,
+                vpRect.height
+            ));
+        }
+    }
 
     updateRegistrationJS(event) {
 
@@ -100,6 +165,33 @@ class EXACTRegistrationHandler {
         return [new_x, new_y];
     }
 
+    transformAffineInv(x, y) {
+
+        let a = this.homography.doubleAt(0,0);
+        let b = this.homography.doubleAt(1,0);
+
+        let c = this.homography.doubleAt(0,1);
+        let d = this.homography.doubleAt(1,1);
+
+        let e = this.homography.doubleAt(0,2);
+        let f = this.homography.doubleAt(1,2);
+
+        let dt = a * d - b * c;
+
+        let t_00 = d / dt;
+        let t_01 = -c / dt;
+        let t_02 = (c * f - d * e) / dt;
+
+        let t_10 = -b / dt;
+        let t_11 = a / dt;
+        let t_12 = -(a * f - b * e) / dt;
+
+        var new_x = Math.round(t_00 * x + t_01 * y + t_02);
+        var new_y = Math.round(t_10 * x + t_11 * y + t_12);  
+        
+        return [new_x, new_y];
+    }
+
     calcHomographyFromBoundary(source_boundary, target_boundary) {
         // source points
         let x_min_s = source_boundary.x;
@@ -135,8 +227,19 @@ class EXACTRegistrationHandler {
 
     }    
 
+    updateOverlayRegImageSlider(value) {
+        this.viewer.world.getItemAt(0).setOpacity(parseInt($("#OverlayRegImageSlider").val()) / 100);
+    }
+
 
     destroy() {
+
+
+        if (this.background_viewer !== undefined) {
+            this.background_viewer.destroy();
+        }        
+
+        $('#OverlayRegImageSlider').off("input");
 
         $('#registration00').val(0);
         $('#registration01').val(0);

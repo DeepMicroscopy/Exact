@@ -32,6 +32,7 @@ class TeamViewset(viewsets.ModelViewSet):
        'name': ['exact', 'contains'],
        'members': ['exact'],
        'image_sets': ['exact'],
+       'memberships': ['exact'],
     }
 
     def get_queryset(self):
