@@ -364,6 +364,25 @@ in [UPGRADE.md](https://github.com/ChristianMarzahl/exact/blob/master/UPGRADE.md
 | g         |              | Glue         |
 | Mouse wheel|   Shift      | Paint brush         |
 
+##### Screening Viewer 
+
+| Key       | Modifier     | Function      |
+|-----------|:------------:|:------------------:| 
+| a         |              | screen left tile  |
+| w         |              | screen up tile     |
+| s         |              | screen down tile     |
+| d         |              | screen right tile     |
+| j         |              | navigate to left tile   |
+| i         |              | navigate to up   tile   |
+| k         |              | navigate to down tile     |
+| l         |              | navigate to right tile     |
+
+##### Sync Plugin 
+
+| Key       | Modifier     | Function      |
+|-----------|:------------:|:------------------:| 
+| o         |              | toggle visibility |
+
 ## REST-API
 
 ### OpenAPI-Schema
