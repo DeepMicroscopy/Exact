@@ -28,7 +28,7 @@ class EXACTRegistrationHandler {
 
     handleKeyUp(event) {
 
-        if (["textarea", "text", "number"].includes(event.target.type))
+        if (["textarea", "text", "number"].includes(event.target.type) || this.viewer.world.getItemAt(0) === undefined) 
             return;
             
         switch (event.keyCode) {
@@ -258,7 +258,9 @@ class EXACTRegistrationHandler {
     }    
 
     updateOverlayRegImageSlider(value) {
-        this.viewer.world.getItemAt(0).setOpacity(parseInt($("#OverlayRegImageSlider").val()) / 100);
+        if (this.viewer.world.getItemAt(0) !== undefined) {
+            this.viewer.world.getItemAt(0).setOpacity(parseInt($("#OverlayRegImageSlider").val()) / 100);
+        }       
     }
 
 
@@ -267,6 +269,8 @@ class EXACTRegistrationHandler {
 
         if (this.background_viewer !== undefined) {
             this.background_viewer.destroy();
+
+            $("#OverlayRegImage-enabled").prop("checked", false )
         }        
 
         $('#OverlayRegImageSlider').off("input");
@@ -284,6 +288,7 @@ class EXACTRegistrationHandler {
         $('#registration22').val(0);
 
         $("#update_browser_sync_images_btn").off("click");
+        $("#OverlayRegImage-enabled").off("click");
         $(document).off('keyup');
     }
 }
