@@ -360,7 +360,9 @@ in [UPGRADE.md](https://github.com/ChristianMarzahl/exact/blob/master/UPGRADE.md
 | e         |  Shift       | Next frame         |
 | r         |              | Rotate image (Warning: annotations are not affected)        |
 | f         |              | Flip image   (Warning: annotations are not affected)        |
-
+| s         |              | Scissor         |
+| g         |              | Glue         |
+| Mouse wheel|   Shift      | Paint brush         |
 
 ## REST-API
 
