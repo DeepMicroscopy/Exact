@@ -19,7 +19,6 @@ class EXACTRegistrationHandler {
     }
 
     initBrowserSycEvents() {
-
         this.browser_sync.getChannelObject("ReceiveRegistrationImage").onmessage = 
                     this.receiveRegistrationImage.bind(this);
 
@@ -27,7 +26,26 @@ class EXACTRegistrationHandler {
                     this.sendRegistrationImage.bind(this);
     }
 
+    handleKeyUp(event) {
+
+        if (["textarea", "text", "number"].includes(event.target.type))
+            return;
+            
+        switch (event.keyCode) {
+            case 79: //o toggle overlay
+                if(this.viewer.world.getItemAt(0).getOpacity() > 0) {
+                    this.viewer.world.getItemAt(0).setOpacity(0);
+                }else {
+                    this.viewer.world.getItemAt(0).setOpacity(parseInt($("#OverlayRegImageSlider").val()) / 100);
+                }
+                break;
+        }
+    }
+
     initUiEvents() {
+       
+
+        $(document).keyup(this.handleKeyUp.bind(this));
 
         $('#update_browser_sync_images_btn').click(this.updateRegistrationJS.bind(this));        
         $('#OverlayRegImageSlider').on("input", this.updateOverlayRegImageSlider.bind(this));
@@ -48,7 +66,19 @@ class EXACTRegistrationHandler {
                 showNavigator: false,
                 tileSources: [this.viewer.tileSources[0]
                         .replace(`images/image/${this.registration_pair.target_image.id}`, 
-                        `images/image/${this.registration_pair.source_image.id}`)]
+                        `images/image/${this.registration_pair.source_image.id}`)],
+                showNavigator: false,
+                animationTime: 0.5,
+                blendTime: 0.1,
+                constrainDuringPan: true,
+                maxZoomPixelRatio: 8,
+                minZoomLevel: 0.1,
+                //visibilityRatio: 1,
+                zoomPerScroll: 1.1,
+                timeout: 120000,
+                sequenceMode: false,
+                showReferenceStrip: false,
+                //debugMode: true,
             };
     
             this.background_viewer =  OpenSeadragon(options);
@@ -254,5 +284,6 @@ class EXACTRegistrationHandler {
         $('#registration22').val(0);
 
         $("#update_browser_sync_images_btn").off("click");
+        $(document).off('keyup');
     }
 }
