@@ -8,10 +8,17 @@ class BoundingBoxes {
         this.overlay = this.viewer.paperjsOverlay();
         this.group = new paper.Group();
 
-        this.hitOptions = {
-            segments: true,
+        this.hitOptionsObject = {
+            segments: false,
             stroke: true,
             fill: true,
+            tolerance: 2
+        };
+
+        this.hitOptionsSegment = {
+            segments: true,
+            stroke: false,
+            fill: false,
             tolerance: 2
         };
 
@@ -23,8 +30,20 @@ class BoundingBoxes {
         this.strokeWidth = 3;
         this.polyStrokeWidth = 1;
 
-        this.singlePolyOperation = undefined
-        this.modified_item = undefined
+        this.polyModify = {
+            active: false,
+            mode: "",
+            selected: undefined,
+            image: undefined
+        }
+
+        this.segmentDrag = {
+            active: false,
+            segment: undefined,
+            lastPos: undefined,
+            fixPoint: undefined
+        }
+
         this.dragged = false
 
         this.resetSelection();
@@ -71,91 +90,65 @@ class BoundingBoxes {
         }        
     }
 
-    activateSinglePolyOperation(event)
+    activatePolyModify(event)
     {
-        if (this.tool.current_item !== undefined && this.tool.current_item.type == "fill")
+        if (this.tool.current_item !== undefined && this.tool.current_item.type == "fill") // we have a selection and it is no a new element
         {
-            if (this.tool.singlePolyOperation == undefined)
+            if (!this.tool.polyModify.active) // polyModify not active
             {
-                this.tool.singlePolyOperation = event.eventSource.name
-                this.tool.modified_item = this.tool.current_item
+                this.tool.polyModify.active = true
+                this.tool.polyModify.mode = event.eventSource.name
+                this.tool.polyModify.selected = this.tool.current_item
 
-                if(event.eventSource.name == "SCISSOR"){
-                    this.tool.scissor_img = this.scissorButtonActiveImg
-                    this.tool.scissor_img.style.visibility = 'visible'
-                }
-                if(event.eventSource.name == "GLUE") {
-                    this.tool.glue_img = this.glueButtonActiveImg
-                    this.tool.glue_img.style.visibility = 'visible'
-                }
+                this.tool.polyModify.image = this.polyModifyActiveImgs[event.eventSource.name]
+                this.tool.polyModify.image.style.visibility = 'visible'
             }
-            else if (this.singlePolyOperation != event.eventSource.name)
+            else if (this.tool.polyModify.mode != event.eventSource.name) // polyModify active, but mode changed
             {
-                this.tool.singlePolyOperation = event.eventSource.name
+                this.tool.polyModify.mode = event.eventSource.name
 
-                if(event.eventSource.name == "SCISSOR"){
-                    this.tool.scissor_img = this.scissorButtonActiveImg
-                    this.tool.glue_img.style.visibility = 'hidden'
-                    this.tool.scissor_img.style.visibility = 'visible'
-                }
-                if(event.eventSource.name == "GLUE"){
-                    this.tool.glue_img = this.glueButtonActiveImg
-                    this.tool.scissor_img.style.visibility = 'hidden'
-                    this.tool.glue_img.style.visibility = 'visible'
-                }
+                this.tool.polyModify.image.style.visibility = 'hidden'
+                this.tool.polyModify.image = this.polyModifyActiveImgs[event.eventSource.name]
+                this.tool.polyModify.image.style.visibility = 'visible'
             }
         }
     }
 
-    activateSinglePolyOperationByString(mode, caller)
+    activatePolyModifyByString(mode, caller)
     {
         if (this.current_item !== undefined && this.current_item.type == "fill")
         {
-            if (this.singlePolyOperation == undefined)
+            if (!this.polyModify.active) // polyModify not active
             {
-                this.singlePolyOperation = mode
-                this.modified_item = this.current_item
+                this.polyModify.active = true
+                this.polyModify.mode = mode
+                this.polyModify.selected = this.current_item
 
-                if(mode == "SCISSOR"){
-                    this.scissor_img = caller.scissorButtonActiveImg
-                    this.scissor_img.style.visibility = 'visible'
-                }
-                if(mode == "GLUE") {
-                    this.glue_img = caller.glueButtonActiveImg
-                    this.glue_img.style.visibility = 'visible'
-                }
+                this.polyModify.image = caller.polyModifyActiveImgs[mode]
+                this.polyModify.image.style.visibility = 'visible'
             }
-            else if (this.singlePolyOperation != mode)
+            else if (this.polyModify.mode != mode) // polyModify active, but mode changed
             {
-                this.singlePolyOperation = mode
+                this.polyModify.mode = mode
 
-                if(mode == "SCISSOR"){
-                    this.scissor_img = caller.scissorButtonActiveImg
-                    this.glue_img.style.visibility = 'hidden'
-                    this.scissor_img.style.visibility = 'visible'
-                }
-                if(mode == "GLUE"){
-                    this.glue_img = caller.glueButtonActiveImg
-                    this.scissor_img.style.visibility = 'hidden'
-                    this.glue_img.style.visibility = 'visible'
-                }
+                this.polyModify.image.style.visibility = 'hidden'
+                this.polyModify.image = caller.polyModifyActiveImgs[mode]
+                this.polyModify.image.style.visibility = 'visible'
             }
         }
     }
 
     resetSinglePolyOperation(event)
     {
-        this.modified_item = undefined
-        this.singlePolyOperation = undefined
+        this.polyModify.active = false
+        this.polyModify.mode = ""
+        this.polyModify.selected = undefined
 
-        if (this.scissor_img !== undefined)
-            this.scissor_img.style.visibility = 'hidden'
-        if (this.glue_img !== undefined)
-            this.glue_img.style.visibility = 'hidden'
-
-        // if current_item !== modified_item
-        // delete current item
-        // restore modified_item as current item
+        if ( this.polyModify.image != undefined )
+        {
+            this.polyModify.image.style.visibility = 'hidden'
+            this.polyModify.image = undefined
+        }
     }
 
     findIncludedObjectsOperation() {
@@ -295,17 +288,17 @@ class BoundingBoxes {
         // check if the newly drawn polygon intersects the to-cut one
         // (modified_item is the original element that is going to be changed)
         // (current_item is the area that shall be cut from the modified item)
-        if (this.modified_item.item.intersects(this.current_item.item) == true)
+        if (this.polyModify.selected.item.intersects(this.current_item.item) == true)
         {
             // the polygons intersect
-            let result = this.modified_item.item.subtract(this.current_item.item, subOptions)
+            let result = this.polyModify.selected.item.subtract(this.current_item.item, subOptions)
 
             if (result.children === undefined) {
                 // the polygon is not cut into multiple pieces
-                if (Math.ceil(result.area) !== Math.ceil(this.modified_item.item.area)) {
+                if (Math.ceil(result.area) !== Math.ceil(this.polyModify.selected.item.area)) {
                     // the area of the polygon changed
-                    this.modified_item.item.remove();
-                    this.modified_item.item = result
+                    this.polyModify.selected.item.remove();
+                    this.polyModify.selected.item = result
                     this.group.addChild(result)
                     
                     resultDict.update.push(result.name)
@@ -314,12 +307,12 @@ class BoundingBoxes {
                 this.selection.item.remove()
                 resultDict.deleted.push(this.selection.item.name)
 
-                this.selection = this.modified_item
-                this.modified_item = undefined
+                this.selection = this.polyModify.selected
+                this.polyModify.selected = undefined
 
             } else {
                 // the polygon is cut into multiple pieces
-                this.modified_item.item.remove();
+                this.polyModify.selected.item.remove();
 
                 for (var child_id = 0; child_id < result.children.length; child_id++) {
                     // add childs as new elements
@@ -334,7 +327,7 @@ class BoundingBoxes {
                     this.group.addChild(new_path);
 
                     resultDict.insert.push({
-                        annotation_type: this.modified_item.item.data.type_id,
+                        annotation_type: this.polyModify.selected.item.data.type_id,
                         id: -1,
                         vector: this.getAnnotationVector(new_path.name),
                         user: {id: null, username: "you"},
@@ -346,13 +339,13 @@ class BoundingBoxes {
 
                 }
                 result.remove()                            
-                resultDict.deleted.push(this.modified_item.item.name)
+                resultDict.deleted.push(this.polyModify.selected.item.name)
 
                 this.selection.item.remove()
                 resultDict.deleted.push(this.selection.item.name)
 
                 this.selection = undefined
-                this.modified_item = undefined
+                this.polyModify.selected = undefined
             }
         }
         else
@@ -360,8 +353,8 @@ class BoundingBoxes {
             this.selection.item.remove()
             resultDict.deleted.push(this.selection.item.name)
 
-            this.selection = this.modified_item
-            this.modified_item = undefined
+            this.selection = this.polyModify.selected
+            this.polyModify.selected = undefined
         }
 
         return resultDict
@@ -371,36 +364,36 @@ class BoundingBoxes {
     {
         var resultDict = {deleted: [], insert: [], update: [], included: []}
 
-        if (this.modified_item.item.intersects(this.current_item.item) == true)
+        if (this.polyModify.selected.item.intersects(this.current_item.item) == true)
         {
-            var result = this.modified_item.item.unite(this.selection.item)
+            var result = this.polyModify.selected.item.unite(this.selection.item)
             // error occurce if the result can not represented as one poly
             if (result.children === undefined) {
 
-                this.modified_item.item.remove();
-                this.modified_item.item = result;
+                this.polyModify.selected.item.remove();
+                this.polyModify.selected.item = result;
 
                 resultDict.deleted.push(this.selection.item.name);
-                resultDict.update.push(this.modified_item.item.name);
+                resultDict.update.push(this.polyModify.selected.item.name);
 
-                this.selection = this.modified_item
-                this.modified_item = undefined
+                this.selection = this.polyModify.selected
+                this.polyModify.selected = undefined
             }
             else
             {
                 result.remove()
                 resultDict.deleted.push(this.selection.item.name)
 
-                this.selection = this.modified_item
-                this.modified_item = undefined
+                this.selection = this.polyModify.selected
+                this.polyModify.selected = undefined
             }
         }
         else
         {
             resultDict.deleted.push(this.selection.item.name)
 
-            this.selection = this.modified_item
-            this.modified_item = undefined
+            this.selection = this.polyModify.selected
+            this.polyModify.selected = undefined
         }
 
         return resultDict 
@@ -760,7 +753,7 @@ class BoundingBoxes {
                 // Convert from viewport coordinates to image coordinates.
                 var point = this.viewer.viewport.viewportToImageCoordinates(viewportPoint);
 
-                var hit = this.selection.item.hitTest(point, this.hitOptions);
+                var hit = this.hitTestObject(point, this.hitOptionsObject);
                 if (hit && this.selection.item.data.type !== "poly") // just resize if mouse is over element
                     this.selection.item.scale(1 + (event.scroll / 10));
                 else if (hit && this.selection.item.data.type === "poly")
@@ -797,9 +790,9 @@ class BoundingBoxes {
         this.clear();
     }
 
-    hitTest(point) {
-
-        var hits = this.group.hitTestAll(point, this.hitOptions);
+    hitTestObject(point) 
+    {
+        var hits = this.group.hitTestAll(point, this.hitOptionsObject);
         if (hits.length > 0) {
             if (this.selection == undefined)
             {
@@ -865,6 +858,24 @@ class BoundingBoxes {
             }
         }
         return undefined;
+    }
+
+    hitTestSegment(point)
+    {
+        if (this.selection !== undefined)
+        {
+            var hits = this.group.hitTestAll(point, this.hitOptionsSegment)
+
+            for (var i=0; i < hits.length; i++)
+            {
+                if(hits[i].item.visible && hits[i].item.name == this.selection.item.name)
+                {
+                    return hits[i]
+                }
+            }
+        }
+
+        return undefined
     }
 
     updateAnnotationType(unique_identifier, annotation_type, set_as_selected = true) {
@@ -956,14 +967,14 @@ class BoundingBoxes {
             // Convert from viewport coordinates to image coordinates.
             var imagePoint = new paper.Point(this.viewer.viewport.viewportToImageCoordinates(viewportPoint));
 
+            var allowMovement = $("#allow_annotation_movement").is(':checked')
+
             switch (this.selection.item.data.type) {
                                                 
-                                
+                
                 case 'poly':
-                    // if shift is pressed add circle diameter to poly
-                    // else move poly
-
                     if(event.shift) {
+                        // brush mode
                         var path = new paper.Path.Circle({
                             center: imagePoint,
                             radius: this.polyStrokeWidth,
@@ -983,23 +994,31 @@ class BoundingBoxes {
 
                     } else {
                         if (this.selection.type == 'new') {
+                            // polygon is still drawn
                             this.selection.item.add(imagePoint);
                         }
-                        else if (this.selection.type == 'fill' && $("#allow_annotation_movement").is(':checked') && (this.selection.item.contains(imagePoint) || this.drag)) {
+                        else if (this.segmentDrag.active)
+                        {
+                            // a segment is moved
+                            this.segmentDrag.segment.segment.point = this.fixPointToImage(imagePoint)
+                            this.drag = true
+                        }
+                        else if (allowMovement && (this.selection.item.contains(imagePoint) || this.drag)) 
+                        {
+                            // move the polygon
+                            var x_diff = imagePoint.x - this.segmentDrag.lastPos.x
+                            var y_diff = imagePoint.y - this.segmentDrag.lastPos.y
 
                             var tempRect = this.selection.item.bounds.clone();
-                            tempRect.center = imagePoint;
+                            tempRect.center.x += x_diff;
+                            tempRect.center.y += y_diff;
         
                             if (this.isPointInImage(tempRect.getTopLeft()) && this.isPointInImage(tempRect.getBottomRight()))
-                                this.selection.item.position = imagePoint;
+                                // ensure we dont move our polygon out of bounds
+                                this.selection.item.position = tempRect.center;
                             
                             this.drag = true
-                                
-                        }
-                        if (this.selection.type == 'segment') {
-    
-                            this.selection.segment.point = this.fixPointToImage(imagePoint);
-                            this.drag = true
+                            this.segmentDrag.lastPos = imagePoint
                         }
                     }
                     break;
@@ -1008,18 +1027,26 @@ class BoundingBoxes {
 
                     if (this.selection.item.segments.length == 1) {
                         this.selection.item.add(imagePoint);
+                        this.segmentDrag.active = true
+                        this.segmentDrag.segment = this.hitTestSegment(imagePoint)
+                    } 
+                    else
+                    {
+                        if (this.segmentDrag.active)
+                        {
+                            // a segment is moved
+                            this.segmentDrag.segment.segment.point = this.fixPointToImage(imagePoint)
+                            this.drag = true
+                        }
+                        else
+                        {
+                            // the whole line is moved
+                            var x_diff = imagePoint.x - this.segmentDrag.lastPos.x
+                            var y_diff = imagePoint.y - this.segmentDrag.lastPos.y
+                            this.selection.item.position.x += x_diff
+                            this.selection.item.position.y += y_diff
 
-                    } else {
-                        // check if mouse is near to first, second or center point and move that one
-                        if (this.selection.item.segments[0].point.getDistance(imagePoint)
-                            < this.selection.item.position.getDistance(imagePoint)) {
-                            this.selection.item.segments[0].point = imagePoint;
-
-                        } else if (this.selection.item.segments[1].point.getDistance(imagePoint)
-                            < this.selection.item.position.getDistance(imagePoint)) {
-                            this.selection.item.segments[1].point = imagePoint;
-                        } else {
-                            this.selection.item.position = imagePoint;
+                            this.segmentDrag.lastPos = imagePoint
                         }
                         this.drag = true
                     }
@@ -1027,42 +1054,97 @@ class BoundingBoxes {
 
                 case 'fixed_rect':
 
-                    var tempRect = this.selection.item.bounds.clone();
-                    tempRect.center = imagePoint;
+                    if (allowMovement && (this.selection.item.contains(imagePoint) || this.drag))
+                    {
+                        var x_diff = imagePoint.x - this.segmentDrag.lastPos.x
+                        var y_diff = imagePoint.y - this.segmentDrag.lastPos.y
 
-                    if (this.isPointInImage(tempRect.getTopLeft()) && this.isPointInImage(tempRect.getBottomRight()) && $("#allow_annotation_movement").is(':checked'))
-                        this.selection.item.position = imagePoint;
+                        var tempRect = this.selection.item.bounds.clone();
+                        tempRect.center.x += x_diff;
+                        tempRect.center.y += y_diff;
+    
+                        if (this.isPointInImage(tempRect.getTopLeft()) && this.isPointInImage(tempRect.getBottomRight()))
+                            // ensure we dont move our polygon out of bounds
+                            this.selection.item.position = tempRect.center;
+                        
                         this.drag = true
+                        this.segmentDrag.lastPos = imagePoint
+                    }
 
                     break;
 
                 default:
+                    
+                    if (this.segmentDrag.active)
+                    {
+                        if (this.segmentDrag.fixPoint == undefined)
+                        {
+                            var idx_a = this.segmentDrag.segment.segment.index
+                            var idx_b = (idx_a + 2 > 3) ? (idx_a - 2) : (idx_a + 2)
+                            this.segmentDrag.fixPoint = this.segmentDrag.segment.item.segments[idx_b].point.clone()
+                        }
 
-                    if (this.selection.type == 'fill' && $("#allow_annotation_movement").is(':checked') && (this.selection.item.contains(imagePoint) || this.drag)) {
- 
-                        var tempRect = this.selection.item.bounds.clone();
-                        tempRect.center = imagePoint;
+                        var topLeft = this.fixPointToImage(imagePoint);
+
+                        var min_x
+                        var max_x
+                        var min_y
+                        var max_y
+
+                        if (topLeft.x > this.segmentDrag.fixPoint.x)
+                        {  
+                            min_x = this.segmentDrag.fixPoint.x
+                            max_x = topLeft.x
+
+                            if(max_x - min_x < 10)
+                                max_x = min_x + 10
+                        }
+                        else
+                        {
+                            min_x = topLeft.x
+                            max_x = this.segmentDrag.fixPoint.x
+
+                            if(max_x - min_x < 10)
+                                min_x = max_x - 10
+                        }
+
+                        if (topLeft.y > this.segmentDrag.fixPoint.y)
+                        {  
+                            min_y = this.segmentDrag.fixPoint.y
+                            max_y = topLeft.y
+
+                            if(max_y - min_y < 10)
+                                max_y = min_y + 10
+                        }
+                        else
+                        {
+                            min_y = topLeft.y
+                            max_y = this.segmentDrag.fixPoint.y
+
+                            if(max_y - min_y < 10)
+                                min_y = max_y - 10
+                        }
+
+                        this.selection.item.bounds = new paper.Rectangle(new paper.Point(min_x, min_y), new paper.Point(max_x, max_y));
+
                         this.drag = true
+                        
+                    }
+                    else if (allowMovement && (this.selection.item.contains(imagePoint) || this.drag)){
+                        // the rect is moved
+                        var x_diff = imagePoint.x - this.segmentDrag.lastPos.x
+                        var y_diff = imagePoint.y - this.segmentDrag.lastPos.y
 
+                        var tempRect = this.selection.item.bounds.clone();
+                        tempRect.center.x += x_diff;
+                        tempRect.center.y += y_diff;
+    
                         if (this.isPointInImage(tempRect.getTopLeft()) && this.isPointInImage(tempRect.getBottomRight()))
-                            this.selection.item.position = imagePoint;
-
-                    } else {
-
-                        var offset = imagePoint.add(this.selection.item.data.offset_point);
-                        var min_x = Math.min(this.selection.item.data.from.x, offset.x);
-                        var min_y = Math.min(this.selection.item.data.from.y, offset.y);
-                        var max_x = Math.max(this.selection.item.data.from.x, offset.x);
-                        var max_y = Math.max(this.selection.item.data.from.y, offset.y);
-
-                        if (max_x - min_x < 10) max_x = min_x + 10;
-                        if (max_y - min_y < 10) max_y = min_y + 10;
-
-                        // fix annotation to image
-                        var topLeft = this.fixPointToImage(new paper.Point(min_x, min_y));
-                        var bottomRight = this.fixPointToImage(new paper.Point(max_x, max_y));
-
-                        this.selection.item.bounds = new paper.Rectangle(topLeft, bottomRight);
+                            // ensure we dont move our polygon out of bounds
+                            this.selection.item.position = tempRect.center;
+                        
+                        this.drag = true
+                        this.segmentDrag.lastPos = imagePoint
                     }
 
                     break;
@@ -1103,24 +1185,24 @@ class BoundingBoxes {
             hitResult.item.data.offset_point = new paper.Point(sorted[0].x - point.x, sorted[0].y - point.y);
 
 
-            if (!event.originalEvent.shiftKey) {
-                // if poly add new handling point
-                if (this.selection.type == 'stroke' &&
-                    this.selection.item.data.type == 'poly' &&
-                    this.selection.item.segments.length > 3) {
-                    var location = this.selection.location;
-                    if (this.selection.location !== undefined) {
-                        this.selection.item.insert(location.index + 1, point);
-                    }
-                }
-            } else {
-                // or remove point
-                if (this.selection.item.data.type == "poly") {
-                    if (hitResult.type == 'segment' && this.selection.item.segments.length > 2) {
-                        hitResult.segment.remove();
-                    }
-                }
-            }
+            //if (!event.originalEvent.shiftKey) {
+            //    // if poly add new handling point
+            //    if (this.selection.type == 'stroke' &&
+            //        this.selection.item.data.type == 'poly' &&
+            //        this.selection.item.segments.length > 3) {
+            //        var location = this.selection.location;
+            //        if (this.selection.location !== undefined) {
+            //            this.selection.item.insert(location.index + 1, point);
+            //        }
+            //    }
+            //} else {
+            //    // or remove point
+            //    if (this.selection.item.data.type == "poly") {
+            //        if (hitResult.type == 'segment' && this.selection.item.segments.length > 2) {
+            //            hitResult.segment.remove();
+            //        }
+            //    }
+            //}
 
             return hitResult;
         }
