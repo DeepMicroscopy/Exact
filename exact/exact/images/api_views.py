@@ -588,6 +588,11 @@ class ImageSetViewSet(viewsets.ModelViewSet):
 
     def retrieve(self, request, *args, **kwargs):
 
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+        
+        # fust but buggy find a fix! not updated if the image set is changed in any way for example rights changed
         cache_key = request.META["PATH_INFO"] + request.META["QUERY_STRING"]
 
         data = cache.get(cache_key)
