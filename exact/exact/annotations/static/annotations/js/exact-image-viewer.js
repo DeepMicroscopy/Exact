@@ -807,7 +807,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 break;
 
             case 13: //'enter'
-                if(!event.userData.tool.polyModify.active)
+                if(!this.tool.polyModify.active)
                     this.finishAnnotation();
                 break;
             case 27: // Escape
