@@ -223,6 +223,10 @@ class EXACTViewer {
                 "y_max": ymax,
             }
             this.userData.browser_sync.sendCurrentViewPortCoordinates(coordinates);
+            
+            if (this.userData.browser_sync !== undefined && this.userData.browser_sync.registration != null) {
+                this.userData.browser_sync.registration.syncViewBackgroundForeground();
+            }
 
             window.history.pushState("object or string",
                 `${this.userData.imageInformation.name}`,
