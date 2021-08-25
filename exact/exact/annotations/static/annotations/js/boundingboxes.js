@@ -41,10 +41,16 @@ class BoundingBoxes {
         this.strokeWidth = 3;
         this.polyStrokeWidth = 1;
 
-        this.polyModify = {
+        this.singlePolyOperation = {
             active: false,
             mode: "",
             selected: undefined,
+            image: undefined
+        }
+
+        this.multiPolyOperation = {
+            active: false,
+            mode: "",
             image: undefined
         }
 
@@ -105,22 +111,22 @@ class BoundingBoxes {
     {
         if (this.tool.current_item !== undefined && this.tool.current_item.type == "fill") // we have a selection and it is no a new element
         {
-            if (!this.tool.polyModify.active) // polyModify not active
+            if (!this.tool.singlePolyOperation.active) // singlePolyOperation not active
             {
-                this.tool.polyModify.active = true
-                this.tool.polyModify.mode = event.eventSource.name
-                this.tool.polyModify.selected = this.tool.current_item
+                this.tool.singlePolyOperation.active = true
+                this.tool.singlePolyOperation.mode = event.eventSource.name
+                this.tool.singlePolyOperation.selected = this.tool.current_item
 
-                this.tool.polyModify.image = this.operatorActiveImgs[event.eventSource.name]
-                this.tool.polyModify.image.style.visibility = 'visible'
+                this.tool.singlePolyOperation.image = this.operatorActiveImgs[event.eventSource.name]
+                this.tool.singlePolyOperation.image.style.visibility = 'visible'
             }
-            else if (this.tool.polyModify.mode != event.eventSource.name) // polyModify active, but mode changed
+            else if (this.tool.singlePolyOperation.mode != event.eventSource.name) // singlePolyOperation active, but mode changed
             {
-                this.tool.polyModify.mode = event.eventSource.name
+                this.tool.singlePolyOperation.mode = event.eventSource.name
 
-                this.tool.polyModify.image.style.visibility = 'hidden'
-                this.tool.polyModify.image = this.operatorActiveImgs[event.eventSource.name]
-                this.tool.polyModify.image.style.visibility = 'visible'
+                this.tool.singlePolyOperation.image.style.visibility = 'hidden'
+                this.tool.singlePolyOperation.image = this.operatorActiveImgs[event.eventSource.name]
+                this.tool.singlePolyOperation.image.style.visibility = 'visible'
             }
         }
     }
@@ -129,36 +135,36 @@ class BoundingBoxes {
     {
         if (this.current_item !== undefined && this.current_item.type == "fill")
         {
-            if (!this.polyModify.active) // polyModify not active
+            if (!this.singlePolyOperation.active) // singlePolyOperation not active
             {
-                this.polyModify.active = true
-                this.polyModify.mode = mode
-                this.polyModify.selected = this.current_item
+                this.singlePolyOperation.active = true
+                this.singlePolyOperation.mode = mode
+                this.singlePolyOperation.selected = this.current_item
 
-                this.polyModify.image = caller.operatorActiveImgs[mode]
-                this.polyModify.image.style.visibility = 'visible'
+                this.singlePolyOperation.image = caller.operatorActiveImgs[mode]
+                this.singlePolyOperation.image.style.visibility = 'visible'
             }
-            else if (this.polyModify.mode != mode) // polyModify active, but mode changed
+            else if (this.singlePolyOperation.mode != mode) // singlePolyOperation active, but mode changed
             {
-                this.polyModify.mode = mode
+                this.singlePolyOperation.mode = mode
 
-                this.polyModify.image.style.visibility = 'hidden'
-                this.polyModify.image = caller.operatorActiveImgs[mode]
-                this.polyModify.image.style.visibility = 'visible'
+                this.singlePolyOperation.image.style.visibility = 'hidden'
+                this.singlePolyOperation.image = caller.operatorActiveImgs[mode]
+                this.singlePolyOperation.image.style.visibility = 'visible'
             }
         }
     }
 
     resetSinglePolyOperation(event)
     {
-        this.polyModify.active = false
-        this.polyModify.mode = ""
-        this.polyModify.selected = undefined
+        this.singlePolyOperation.active = false
+        this.singlePolyOperation.mode = ""
+        this.singlePolyOperation.selected = undefined
 
-        if ( this.polyModify.image != undefined )
+        if ( this.singlePolyOperation.image != undefined )
         {
-            this.polyModify.image.style.visibility = 'hidden'
-            this.polyModify.image = undefined
+            this.singlePolyOperation.image.style.visibility = 'hidden'
+            this.singlePolyOperation.image = undefined
         }
     }
 
@@ -174,7 +180,7 @@ class BoundingBoxes {
 
     resetMultiPolyOperation(event)
     {
-        
+
     }
 
     findIncludedObjectsOperation() {
@@ -314,17 +320,17 @@ class BoundingBoxes {
         // check if the newly drawn polygon intersects the to-cut one
         // (modified_item is the original element that is going to be changed)
         // (current_item is the area that shall be cut from the modified item)
-        if (this.polyModify.selected.item.intersects(this.current_item.item) == true)
+        if (this.singlePolyOperation.selected.item.intersects(this.current_item.item) == true)
         {
             // the polygons intersect
-            let result = this.polyModify.selected.item.subtract(this.current_item.item, subOptions)
+            let result = this.singlePolyOperation.selected.item.subtract(this.current_item.item, subOptions)
 
             if (result.children === undefined) {
                 // the polygon is not cut into multiple pieces
-                if (Math.ceil(result.area) !== Math.ceil(this.polyModify.selected.item.area)) {
+                if (Math.ceil(result.area) !== Math.ceil(this.singlePolyOperation.selected.item.area)) {
                     // the area of the polygon changed
-                    this.polyModify.selected.item.remove();
-                    this.polyModify.selected.item = result
+                    this.singlePolyOperation.selected.item.remove();
+                    this.singlePolyOperation.selected.item = result
                     this.group.addChild(result)
                     
                     resultDict.update.push(result.name)
@@ -333,12 +339,12 @@ class BoundingBoxes {
                 this.selection.item.remove()
                 resultDict.deleted.push(this.selection.item.name)
 
-                this.selection = this.polyModify.selected
-                this.polyModify.selected = undefined
+                this.selection = this.singlePolyOperation.selected
+                this.singlePolyOperation.selected = undefined
 
             } else {
                 // the polygon is cut into multiple pieces
-                this.polyModify.selected.item.remove();
+                this.singlePolyOperation.selected.item.remove();
 
                 for (var child_id = 0; child_id < result.children.length; child_id++) {
                     // add childs as new elements
@@ -353,7 +359,7 @@ class BoundingBoxes {
                     this.group.addChild(new_path);
 
                     resultDict.insert.push({
-                        annotation_type: this.polyModify.selected.item.data.type_id,
+                        annotation_type: this.singlePolyOperation.selected.item.data.type_id,
                         id: -1,
                         vector: this.getAnnotationVector(new_path.name),
                         user: {id: null, username: "you"},
@@ -365,13 +371,13 @@ class BoundingBoxes {
 
                 }
                 result.remove()                            
-                resultDict.deleted.push(this.polyModify.selected.item.name)
+                resultDict.deleted.push(this.singlePolyOperation.selected.item.name)
 
                 this.selection.item.remove()
                 resultDict.deleted.push(this.selection.item.name)
 
                 this.selection = undefined
-                this.polyModify.selected = undefined
+                this.singlePolyOperation.selected = undefined
             }
         }
         else
@@ -379,8 +385,8 @@ class BoundingBoxes {
             this.selection.item.remove()
             resultDict.deleted.push(this.selection.item.name)
 
-            this.selection = this.polyModify.selected
-            this.polyModify.selected = undefined
+            this.selection = this.singlePolyOperation.selected
+            this.singlePolyOperation.selected = undefined
         }
 
         return resultDict
@@ -390,36 +396,36 @@ class BoundingBoxes {
     {
         var resultDict = {deleted: [], insert: [], update: [], included: []}
 
-        if (this.polyModify.selected.item.intersects(this.current_item.item) == true)
+        if (this.singlePolyOperation.selected.item.intersects(this.current_item.item) == true)
         {
-            var result = this.polyModify.selected.item.unite(this.selection.item)
+            var result = this.singlePolyOperation.selected.item.unite(this.selection.item)
             // error occurce if the result can not represented as one poly
             if (result.children === undefined) {
 
-                this.polyModify.selected.item.remove();
-                this.polyModify.selected.item = result;
+                this.singlePolyOperation.selected.item.remove();
+                this.singlePolyOperation.selected.item = result;
 
                 resultDict.deleted.push(this.selection.item.name);
-                resultDict.update.push(this.polyModify.selected.item.name);
+                resultDict.update.push(this.singlePolyOperation.selected.item.name);
 
-                this.selection = this.polyModify.selected
-                this.polyModify.selected = undefined
+                this.selection = this.singlePolyOperation.selected
+                this.singlePolyOperation.selected = undefined
             }
             else
             {
                 result.remove()
                 resultDict.deleted.push(this.selection.item.name)
 
-                this.selection = this.polyModify.selected
-                this.polyModify.selected = undefined
+                this.selection = this.singlePolyOperation.selected
+                this.singlePolyOperation.selected = undefined
             }
         }
         else
         {
             resultDict.deleted.push(this.selection.item.name)
 
-            this.selection = this.polyModify.selected
-            this.polyModify.selected = undefined
+            this.selection = this.singlePolyOperation.selected
+            this.singlePolyOperation.selected = undefined
         }
 
         return resultDict 
