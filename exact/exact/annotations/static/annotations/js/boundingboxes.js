@@ -111,7 +111,7 @@ class BoundingBoxes {
                 this.tool.polyModify.mode = event.eventSource.name
                 this.tool.polyModify.selected = this.tool.current_item
 
-                this.tool.polyModify.image = this.polyModifyActiveImgs[event.eventSource.name]
+                this.tool.polyModify.image = this.operatorActiveImgs[event.eventSource.name]
                 this.tool.polyModify.image.style.visibility = 'visible'
             }
             else if (this.tool.polyModify.mode != event.eventSource.name) // polyModify active, but mode changed
@@ -119,7 +119,7 @@ class BoundingBoxes {
                 this.tool.polyModify.mode = event.eventSource.name
 
                 this.tool.polyModify.image.style.visibility = 'hidden'
-                this.tool.polyModify.image = this.polyModifyActiveImgs[event.eventSource.name]
+                this.tool.polyModify.image = this.operatorActiveImgs[event.eventSource.name]
                 this.tool.polyModify.image.style.visibility = 'visible'
             }
         }
@@ -135,7 +135,7 @@ class BoundingBoxes {
                 this.polyModify.mode = mode
                 this.polyModify.selected = this.current_item
 
-                this.polyModify.image = caller.polyModifyActiveImgs[mode]
+                this.polyModify.image = caller.operatorActiveImgs[mode]
                 this.polyModify.image.style.visibility = 'visible'
             }
             else if (this.polyModify.mode != mode) // polyModify active, but mode changed
@@ -143,7 +143,7 @@ class BoundingBoxes {
                 this.polyModify.mode = mode
 
                 this.polyModify.image.style.visibility = 'hidden'
-                this.polyModify.image = caller.polyModifyActiveImgs[mode]
+                this.polyModify.image = caller.operatorActiveImgs[mode]
                 this.polyModify.image.style.visibility = 'visible'
             }
         }

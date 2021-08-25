@@ -1006,8 +1006,8 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             })
         ]
 
-        this.polyModifyButtons = {}
-        this.polyModifyButtons["SCISSOR"] = new OpenSeadragon.Button({tooltip: 'Draw a polygon to cut from the currently selected one (s)',
+        this.operatorButtons = {}
+        this.operatorButtons["SCISSOR"] = new OpenSeadragon.Button({tooltip: 'Draw a polygon to cut from the currently selected one (s)',
                                                         name: "SCISSOR",
                                                         srcRest: this.viewer.prefixUrl + `scissors_base.svg`,
                                                         srcGroup: this.viewer.prefixUrl + `scissors_base.svg`,
@@ -1016,7 +1016,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                                                         onClick: this.tool.activatePolyModify.bind(this),
                                                         })
 
-        this.polyModifyButtons["GLUE"] = new OpenSeadragon.Button({   tooltip: 'Draw a polygon to gulue it to the currently selected one (g)',
+        this.operatorButtons["GLUE"] = new OpenSeadragon.Button({   tooltip: 'Draw a polygon to gulue it to the currently selected one (g)',
                                                         name: "GLUE",
                                                         srcRest: this.viewer.prefixUrl + `glue_base.svg`,
                                                         srcGroup: this.viewer.prefixUrl + `glue_base.svg`,
@@ -1025,16 +1025,16 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                                                         onClick: this.tool.activatePolyModify.bind(this),
                                                         })
 
-        this.polyModifyActiveImgs = {}
+        this.operatorActiveImgs = {}
 
-        this.polyModifyActiveImgs["SCISSOR"] = this.polyModifyButtons["SCISSOR"].imgDown.cloneNode(true)
-        this.polyModifyButtons["SCISSOR"].element.appendChild(this.polyModifyActiveImgs["SCISSOR"])
+        this.operatorActiveImgs["SCISSOR"] = this.operatorButtons["SCISSOR"].imgDown.cloneNode(true)
+        this.operatorButtons["SCISSOR"].element.appendChild(this.operatorActiveImgs["SCISSOR"])
 
-        this.polyModifyActiveImgs["GLUE"] = this.polyModifyButtons["GLUE"].imgDown.cloneNode(true)
-        this.polyModifyButtons["GLUE"].element.appendChild(this.polyModifyActiveImgs["GLUE"])
+        this.operatorActiveImgs["GLUE"] = this.operatorButtons["GLUE"].imgDown.cloneNode(true)
+        this.operatorButtons["GLUE"].element.appendChild(this.operatorActiveImgs["GLUE"])
 
-        this.annotationButtons.push(this.polyModifyButtons["SCISSOR"])
-        this.annotationButtons.push(this.polyModifyButtons["GLUE"])
+        this.annotationButtons.push(this.operatorButtons["SCISSOR"])
+        this.annotationButtons.push(this.operatorButtons["GLUE"])
 
         this.annotationButtons.forEach(element => {
             this.viewer.addControl(element.element, { anchor: OpenSeadragon.ControlAnchor.ABSOLUTE, top: this.y_button_start, left: 5 });
