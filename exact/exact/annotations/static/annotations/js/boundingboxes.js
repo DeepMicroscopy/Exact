@@ -101,7 +101,7 @@ class BoundingBoxes {
         }        
     }
 
-    activatePolyModify(event)
+    activateSinglePolyOperation(event)
     {
         if (this.tool.current_item !== undefined && this.tool.current_item.type == "fill") // we have a selection and it is no a new element
         {
@@ -125,7 +125,7 @@ class BoundingBoxes {
         }
     }
 
-    activatePolyModifyByString(mode, caller)
+    activateSinglePolyOperationByString(mode, caller)
     {
         if (this.current_item !== undefined && this.current_item.type == "fill")
         {
@@ -160,6 +160,21 @@ class BoundingBoxes {
             this.polyModify.image.style.visibility = 'hidden'
             this.polyModify.image = undefined
         }
+    }
+
+    activateMultiPolyOperation(event)
+    {
+
+    }
+
+    activateMultiPolyOperationByString(mode, caller)
+    {
+
+    }
+
+    resetMultiPolyOperation(event)
+    {
+        
     }
 
     findIncludedObjectsOperation() {
