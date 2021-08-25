@@ -893,10 +893,10 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 this.uiShowAnnotationsToggle();
                 break;
             case 83: // 's'
-                this.tool.activatePolyModifyByString("SCISSOR", this);
+                this.tool.activateSinglePolyOperationByString("SCISSOR", this);
                 break;
             case 71: // 'g'
-                this.tool.activatePolyModifyByString("GLUE", this);
+                this.tool.activateSinglePolyOperationByString("GLUE", this);
                 break;
         }
     }
@@ -1013,7 +1013,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                                                         srcGroup: this.viewer.prefixUrl + `scissors_base.svg`,
                                                         srcHover: this.viewer.prefixUrl + `scissors_base.svg`,
                                                         srcDown: this.viewer.prefixUrl + `scissors_active.svg`,
-                                                        onClick: this.tool.activatePolyModify.bind(this),
+                                                        onClick: this.tool.activateSinglePolyOperation.bind(this),
                                                         })
 
         this.operatorButtons["GLUE"] = new OpenSeadragon.Button({   tooltip: 'Draw a polygon to gulue it to the currently selected one (g)',
@@ -1022,7 +1022,16 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                                                         srcGroup: this.viewer.prefixUrl + `glue_base.svg`,
                                                         srcHover: this.viewer.prefixUrl + `glue_base.svg`,
                                                         srcDown: this.viewer.prefixUrl + `glue_active.svg`,
-                                                        onClick: this.tool.activatePolyModify.bind(this),
+                                                        onClick: this.tool.activateSinglePolyOperation.bind(this),
+                                                        })
+
+        this.operatorButtons["KNIFE"] = new OpenSeadragon.Button({   tooltip: 'Draw a line to cut through polygons ()',
+                                                        name: "KNIFE",
+                                                        srcRest: this.viewer.prefixUrl + `knife_base.svg`,
+                                                        srcGroup: this.viewer.prefixUrl + `knife_base.svg`,
+                                                        srcHover: this.viewer.prefixUrl + `knife_base.svg`,
+                                                        srcDown: this.viewer.prefixUrl + `knife_active.svg`,
+                                                        onClick: this.tool.activateMultiPolyOperation.bind(this),
                                                         })
 
         this.operatorActiveImgs = {}
@@ -1033,8 +1042,12 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         this.operatorActiveImgs["GLUE"] = this.operatorButtons["GLUE"].imgDown.cloneNode(true)
         this.operatorButtons["GLUE"].element.appendChild(this.operatorActiveImgs["GLUE"])
 
+        this.operatorActiveImgs["KNIFE"] = this.operatorButtons["KNIFE"].imgDown.cloneNode(true)
+        this.operatorButtons["KNIFE"].element.appendChild(this.operatorActiveImgs["KNIFE"])
+
         this.annotationButtons.push(this.operatorButtons["SCISSOR"])
         this.annotationButtons.push(this.operatorButtons["GLUE"])
+        this.annotationButtons.push(this.operatorButtons["KNIFE"])
 
         this.annotationButtons.forEach(element => {
             this.viewer.addControl(element.element, { anchor: OpenSeadragon.ControlAnchor.ABSOLUTE, top: this.y_button_start, left: 5 });
