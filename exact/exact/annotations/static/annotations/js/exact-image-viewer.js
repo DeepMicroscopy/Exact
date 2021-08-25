@@ -609,13 +609,13 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 var new_selected = tool.hitTestObject(imagePoint);
                 var selected_segment = tool.hitTestSegment(imagePoint)
 
-                if (selected_segment !== undefined)
+                if (selected_segment !== undefined && !event.originalEvent.ctrlKey)
                 {
                     // a segment of the currently selected object was clicked
                     tool.segmentDrag.active = true
                     tool.segmentDrag.segment = selected_segment
                 }
-                else if (new_selected == undefined || event.userData.tool.polyModify.active)
+                else if (new_selected == undefined || event.userData.tool.polyModify.active || event.originalEvent.ctrlKey)
                 {
                     // no new object clicked, reset selection, create new annotation
                     if(tool.selection !== undefined)
