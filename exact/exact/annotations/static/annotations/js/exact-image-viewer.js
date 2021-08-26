@@ -45,8 +45,8 @@ class EXACTViewer {
         if (imageInformation['depth'] == 1 && imageInformation['frames'] == 1) {
             // check if the CDN should be used
             if ($("#image_list").data( "static_cdn") === "True") {     
-                //let dzi_path = $("#image_list").data( "static-file" ) + `wsi_images/${set_name}/${image_name}/1/1/tile.dzi`;
-                let dzi_path = `https://d1bf27ceus4k6n.cloudfront.net/static/wsi_images/${set_name}/${image_name}/1/1/tile.dzi`
+                let dzi_path = $("#image_list").data( "static-file" ) + `wsi_images/${set_name}/${image_name}/1/1/tile.dzi`;
+                //let dzi_path = `https://d1bf27ceus4k6n.cloudfront.net/static/wsi_images/${set_name}/${image_name}/1/1/tile.dzi`
                 // check if the CDN contains the image
                 let xhr = new XMLHttpRequest();
                 try {      
@@ -224,7 +224,7 @@ class EXACTViewer {
                 "y_max": ymax,
             }
             this.userData.browser_sync.sendCurrentViewPortCoordinates(coordinates);
-
+            
             if (this.userData.browser_sync !== undefined && this.userData.browser_sync.registration != null) {
                 this.userData.browser_sync.registration.syncViewBackgroundForeground();
             }

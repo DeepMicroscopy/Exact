@@ -15,12 +15,23 @@ class BoundingBoxes {
             tolerance: 2
         };
 
-        this.hitOptionsSegment = {
-            segments: true,
-            stroke: false,
-            fill: false,
-            tolerance: 2
-        };
+        this.hitOptionsSegment = {};
+        this.hitOptionsSegment['line'] =       {segments: true,
+                                                stroke: false,
+                                                fill: false,
+                                                tolerance: 5}
+        this.hitOptionsSegment['poly'] =       {segments: true,
+                                                stroke: false,
+                                                fill: false,
+                                                tolerance: 2}
+        this.hitOptionsSegment['fixed_rect'] = {segments: false,
+                                                stroke: false,
+                                                fill: false,
+                                                tolerance: 2}
+        this.hitOptionsSegment['rect'] =       {segments: true,
+                                                stroke: true,
+                                                fill: false,
+                                                tolerance: 5}
 
         var heatmap_cfg = {backgroundColor: 'rgba(0,0,0,0)',maxOpacity: 0.5,minOpacity: 0.25}
 		this.heatmap = new HeatmapOverlay(this.viewer, heatmap_cfg);
@@ -944,7 +955,7 @@ class BoundingBoxes {
     {
         if (this.selection !== undefined)
         {
-            var hits = this.group.hitTestAll(point, this.hitOptionsSegment)
+            var hits = this.group.hitTestAll(point, this.hitOptionsSegment[this.selection.item.data.type])
 
             for (var i=0; i < hits.length; i++)
             {
@@ -1159,7 +1170,18 @@ class BoundingBoxes {
                     {
                         if (this.segmentDrag.fixPoint == undefined)
                         {
-                            var idx_a = this.segmentDrag.segment.segment.index
+                            var seg = undefined
+
+                            if(this.segmentDrag.segment.type == "stroke")
+                            {
+                                seg = this.segmentDrag.segment.location.segment
+                            }
+                            else
+                            {
+                                seg = this.segmentDrag.segment.segment
+                            }
+
+                            var idx_a = seg.index
                             var idx_b = (idx_a + 2 > 3) ? (idx_a - 2) : (idx_a + 2)
                             this.segmentDrag.fixPoint = this.segmentDrag.segment.item.segments[idx_b].point.clone()
                         }
