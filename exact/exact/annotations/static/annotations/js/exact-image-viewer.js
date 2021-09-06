@@ -573,7 +573,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             if (event.enabled === false &&
                 event.userData.tool.selection !== undefined) {
                 
-                if (event.userData.tool.polyModify.active && event.userData.tool.current_item.type == 'new')
+                if (event.userData.tool.singlePolyOperation.active && event.userData.tool.current_item.type == 'new')
                     event.userData.deleteAnnotation()
                 else
                     event.userData.tool.resetSinglePolyOperation()
@@ -615,7 +615,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                     tool.segmentDrag.active = true
                     tool.segmentDrag.segment = selected_segment
                 }
-                else if (new_selected == undefined || event.userData.tool.polyModify.active || event.originalEvent.ctrlKey)
+                else if (new_selected == undefined || event.userData.tool.singlePolyOperation.active || event.originalEvent.ctrlKey)
                 {
                     // no new object clicked, reset selection, create new annotation
                     if(tool.selection !== undefined)
@@ -624,10 +624,10 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                         var anno = exact_sync.annotations[last_uuid];
                         event.userData.finishAnnotation(anno);
 
-                        if (event.userData.tool.polyModify.active)
+                        if (event.userData.tool.singlePolyOperation.active)
                         {
                             // show last polygon as being selected
-                            event.userData.tool.polyModify.selected.item.selected = true
+                            event.userData.tool.singlePolyOperation.selected.item.selected = true
                         }
                     }
 
@@ -660,9 +660,9 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             // if a polygon is currently drawn, finish it
             if (tool.selection !== undefined && tool.selection.type == "new")
             {
-                if (event.userData.tool.polyModify.active)
+                if (event.userData.tool.singlePolyOperation.active)
                 {
-                    viewer.raiseEvent('boundingboxes_PolyOperation', {name: event.userData.tool.polyModify.mode});
+                    viewer.raiseEvent('boundingboxes_PolyOperation', {name: event.userData.tool.singlePolyOperation.mode});
                     tool.resetSinglePolyOperation();
                 }
                 else
@@ -811,7 +811,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 break;
 
             case 13: //'enter'
-                if(!this.tool.polyModify.active)
+                if(!this.tool.singlePolyOperation.active)
                     this.finishAnnotation();
                 break;
             case 27: // Escape
@@ -882,11 +882,11 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 this.viewer.selectionInstance.toggleState();
                 break;
             case 82: //r
-                if(!event.userData.tool.polyModify.active)
+                if(!event.userData.tool.singlePolyOperation.active)
                     this.finishAnnotation();
                 break;
             case 86: //'v'
-                if(!event.userData.tool.polyModify.active)
+                if(!event.userData.tool.singlePolyOperation.active)
                     this.finishAnnotation();
                 break;
             case 89: // 'y'
@@ -1133,13 +1133,13 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 this.tool.removeAnnotation(uuid);
                 this.exact_sync.deleteAnnotation(uuid);
                 
-                if(this.tool.polyModify.selected !== undefined)
+                if(this.tool.singlePolyOperation.selected !== undefined)
                 {
-                    this.tool.selection = this.tool.polyModify.selected;
+                    this.tool.selection = this.tool.singlePolyOperation.selected;
                     this.tool.resetSinglePolyOperation();
                 }
             } else { // just cancel editing
-                if (this.tool.polyModify.active)
+                if (this.tool.singlePolyOperation.active)
                 {
                     this.tool.resetSinglePolyOperation();
                 }
@@ -1215,14 +1215,14 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             annotation = this.getCurrentSelectedAnnotation();
         }
 
-        if (typeof annotation !== "undefined" && this.tool.polyModify.selected !== this.tool.current_item) {
+        if (typeof annotation !== "undefined" && this.tool.singlePolyOperation.selected !== this.tool.current_item) {
             this.tool.removeAnnotation(annotation.unique_identifier);
             this.exact_sync.deleteAnnotation(annotation.unique_identifier);
         }
 
-        if(this.tool.polyModify.selected !== undefined)
+        if(this.tool.singlePolyOperation.selected !== undefined)
         {
-            this.tool.selection = this.tool.polyModify.selected;
+            this.tool.selection = this.tool.singlePolyOperation.selected;
             this.tool.resetSinglePolyOperation();
         }
     }
