@@ -113,6 +113,11 @@ class BoundingBoxes {
         {
             if (!this.tool.singlePolyOperation.active) // singlePolyOperation not active
             {
+                if (this.tool.multiPolyOperation.active)
+                {
+                    this.tool.resetMultiPolyOperation()
+                }
+
                 this.tool.singlePolyOperation.active = true
                 this.tool.singlePolyOperation.mode = event.eventSource.name
                 this.tool.singlePolyOperation.selected = this.tool.current_item
@@ -137,6 +142,11 @@ class BoundingBoxes {
         {
             if (!this.singlePolyOperation.active) // singlePolyOperation not active
             {
+                if (this.multiPolyOperation.active)
+                {
+                    this.resetMultiPolyOperation()
+                }
+
                 this.singlePolyOperation.active = true
                 this.singlePolyOperation.mode = mode
                 this.singlePolyOperation.selected = this.current_item
@@ -170,17 +180,70 @@ class BoundingBoxes {
 
     activateMultiPolyOperation(event)
     {
+        if (this.tool.current_item !== undefined && this.tool.current_item.type == "fill") // we have a selection and it is no a new element
+        {
+            if (!this.tool.multiPolyOperation.active) // multiPolyOperation not active
+            {
+                if (this.tool.singlePolyOperation.active)
+                {
+                    this.tool.resetSinglePolyOperation()
+                }
 
+                this.tool.multiPolyOperation.active = true
+                this.tool.multiPolyOperation.mode = event.eventSource.name
+
+                this.tool.multiPolyOperation.image = this.operatorActiveImgs[event.eventSource.name]
+                this.tool.multiPolyOperation.image.style.visibility = 'visible'
+            }
+            else if (this.tool.multiPolyOperation.mode != event.eventSource.name) // multiPolyOperation active, but mode changed
+            {
+                this.tool.multiPolyOperation.mode = event.eventSource.name
+
+                this.tool.multiPolyOperation.image.style.visibility = 'hidden'
+                this.tool.multiPolyOperation.image = this.operatorActiveImgs[event.eventSource.name]
+                this.tool.multiPolyOperation.image.style.visibility = 'visible'
+            }
+        }
     }
 
     activateMultiPolyOperationByString(mode, caller)
     {
+        if (this.current_item !== undefined && this.current_item.type == "fill")
+        {
+            if (!this.multiPolyOperation.active) // multiPolyOperation not active
+            {
+                if (this.singlePolyOperation.active)
+                {
+                    this.resetSinglePolyOperation()
+                }
 
+                this.multiPolyOperation.active = true
+                this.multiPolyOperation.mode = mode
+
+                this.multiPolyOperation.image = caller.operatorActiveImgs[mode]
+                this.multiPolyOperation.image.style.visibility = 'visible'
+            }
+            else if (this.multiPolyOperation.mode != mode) // multiPolyOperation active, but mode changed
+            {
+                this.multiPolyOperation.mode = mode
+
+                this.multiPolyOperation.image.style.visibility = 'hidden'
+                this.multiPolyOperation.image = caller.operatorActiveImgs[mode]
+                this.multiPolyOperation.image.style.visibility = 'visible'
+            }
+        }
     }
 
     resetMultiPolyOperation(event)
     {
+        this.multiPolyOperation.active = false
+        this.multiPolyOperation.mode = ""
 
+        if ( this.multiPolyOperation.image != undefined )
+        {
+            this.multiPolyOperation.image.style.visibility = 'hidden'
+            this.multiPolyOperation.image = undefined
+        }
     }
 
     findIncludedObjectsOperation() {
