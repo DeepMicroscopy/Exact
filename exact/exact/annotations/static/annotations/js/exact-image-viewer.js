@@ -573,10 +573,11 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             if (event.enabled === false &&
                 event.userData.tool.selection !== undefined) {
                 
-                if (event.userData.tool.singlePolyOperation.active && event.userData.tool.current_item.type == 'new')
+                if ((event.userData.tool.singlePolyOperation.active || event.userData.tool.multiPolyOperation.active ) && event.userData.tool.current_item.type == 'new')
                     event.userData.deleteAnnotation()
                 else
                     event.userData.tool.resetSinglePolyOperation()
+                    event.userData.tool.resetMultiPolyOperation()
 
                 event.userData.finishAnnotation();
 
@@ -598,10 +599,11 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             var tool = event.userData.tool;
 
             // reset previous segment selection
-            tool.segmentDrag.active = false
-            tool.segmentDrag.segment = undefined
-            tool.segmentDrag.lastPos = imagePoint
-            tool.segmentDrag.fixPoint = undefined
+            tool.drag.active = false
+            tool.drag.performed = false
+            tool.drag.segment = undefined
+            tool.drag.lastPos = imagePoint
+            tool.drag.fixPoint = undefined
 
             if (tool.isPointInImage(imagePoint)) {
                 var exact_sync = event.userData.exact_sync;
@@ -609,13 +611,13 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 var new_selected = tool.hitTestObject(imagePoint);
                 var selected_segment = tool.hitTestSegment(imagePoint)
 
-                if (selected_segment !== undefined && !event.originalEvent.ctrlKey)
+                if (selected_segment !== undefined && !event.originalEvent.ctrlKey && !(event.userData.tool.singlePolyOperation.active || event.userData.tool.multiPolyOperation.active))
                 {
                     // a segment of the currently selected object was clicked
-                    tool.segmentDrag.active = true
-                    tool.segmentDrag.segment = selected_segment
+                    tool.drag.active = true
+                    tool.drag.segment = selected_segment
                 }
-                else if (new_selected == undefined || event.userData.tool.singlePolyOperation.active || event.originalEvent.ctrlKey)
+                else if (new_selected == undefined || event.userData.tool.singlePolyOperation.active || event.userData.tool.multiPolyOperation.active || event.originalEvent.ctrlKey)
                 {
                     // no new object clicked, reset selection, create new annotation
                     if(tool.selection !== undefined)
@@ -638,6 +640,11 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                             { position: "right", className: "error" });
 
                         return;
+                    }
+
+                    if (event.userData.tool.multiPolyOperation.active)
+                    {
+                        selected_annotation_type.vector_type = 4
                     }
 
                     var newAnno = tool.initNewAnnotation(event, selected_annotation_type);
@@ -686,7 +693,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                     // current mouse release is within the image
                     var new_selected = tool.hitTestObject(imagePoint);
                     
-                    if ( new_selected !== undefined && tool.drag == false)
+                    if ( new_selected !== undefined && tool.drag.performed == false)
                     {
                         if (tool.selection !== undefined &&
                             new_selected.item.name !== tool.selection.item.name)
@@ -711,7 +718,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                         }
                     }
 
-                    tool.drag = false
+                    tool.drag.performed = false
 
                 }
             }
@@ -811,7 +818,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 break;
 
             case 13: //'enter'
-                if(!this.tool.singlePolyOperation.active)
+                if(!this.tool.singlePolyOperation.active && !this.tool.multiPolyOperation.active)
                     this.finishAnnotation();
                 break;
             case 27: // Escape
@@ -882,11 +889,11 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 this.viewer.selectionInstance.toggleState();
                 break;
             case 82: //r
-                if(!event.userData.tool.singlePolyOperation.active)
+                if(!this.tool.singlePolyOperation.active && !this.tool.multiPolyOperation.active)
                     this.finishAnnotation();
                 break;
             case 86: //'v'
-                if(!event.userData.tool.singlePolyOperation.active)
+                if(!this.tool.singlePolyOperation.active && !this.tool.multiPolyOperation.active)
                     this.finishAnnotation();
                 break;
             case 89: // 'y'
@@ -1136,14 +1143,10 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 if(this.tool.singlePolyOperation.selected !== undefined)
                 {
                     this.tool.selection = this.tool.singlePolyOperation.selected;
-                    this.tool.resetSinglePolyOperation();
                 }
-            } else { // just cancel editing
-                if (this.tool.singlePolyOperation.active)
-                {
-                    this.tool.resetSinglePolyOperation();
-                }
-                else
+            } 
+            else { // just cancel editing
+                if (!(this.tool.singlePolyOperation.active || this.tool.multiPolyOperation.active))
                 {
                     this.tool.resetSelection()
                 }
@@ -1153,6 +1156,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         }
 
         this.tool.resetSinglePolyOperation()
+        this.tool.resetMultiPolyOperation()
     }
 
     annotationVisibility(drawAnnotations = true) {
@@ -1224,6 +1228,10 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         {
             this.tool.selection = this.tool.singlePolyOperation.selected;
             this.tool.resetSinglePolyOperation();
+        }
+        if(this.tool.multiPolyOperation.active)
+        {
+            this.tool.resetMultiPolyOperation();
         }
     }
 

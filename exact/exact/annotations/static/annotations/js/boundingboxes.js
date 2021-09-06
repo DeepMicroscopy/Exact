@@ -54,14 +54,13 @@ class BoundingBoxes {
             image: undefined
         }
 
-        this.segmentDrag = {
+        this.drag = {
             active: false,
+            performed: false,
             segment: undefined,
             lastPos: undefined,
             fixPoint: undefined
         }
-
-        this.dragged = false
 
         this.resetSelection();
     }
@@ -109,7 +108,7 @@ class BoundingBoxes {
 
     activateSinglePolyOperation(event)
     {
-        if (this.tool.current_item !== undefined && this.tool.current_item.type == "fill") // we have a selection and it is no a new element
+        if (this.tool.current_item !== undefined && this.tool.current_item.type == "fill" && this.tool.current_item.item._data.type == "poly") // we have a selection and it is no a new element
         {
             if (!this.tool.singlePolyOperation.active) // singlePolyOperation not active
             {
@@ -138,7 +137,7 @@ class BoundingBoxes {
 
     activateSinglePolyOperationByString(mode, caller)
     {
-        if (this.current_item !== undefined && this.current_item.type == "fill")
+        if (this.current_item !== undefined && this.current_item.type == "fill" && this.tool.current_item.item._data.type == "poly")
         {
             if (!this.singlePolyOperation.active) // singlePolyOperation not active
             {
@@ -180,7 +179,7 @@ class BoundingBoxes {
 
     activateMultiPolyOperation(event)
     {
-        if (this.tool.current_item !== undefined && this.tool.current_item.type == "fill") // we have a selection and it is no a new element
+        if (this.viewer.selectionInstance.isSelecting && (this.tool.current_item == undefined || this.tool.current_item.type == "fill") ) // we have a selection and it is no a new element
         {
             if (!this.tool.multiPolyOperation.active) // multiPolyOperation not active
             {
@@ -208,7 +207,7 @@ class BoundingBoxes {
 
     activateMultiPolyOperationByString(mode, caller)
     {
-        if (this.current_item !== undefined && this.current_item.type == "fill")
+        if ( this.viewer.viewer.selectionInstance.isSelecting && (this.current_item == undefined || this.current_item.type == "fill") )
         {
             if (!this.multiPolyOperation.active) // multiPolyOperation not active
             {
@@ -561,8 +560,13 @@ class BoundingBoxes {
 
                 break;
 
-            case 4:  // MULTI_LINE / POLYGON
-            case 5:
+            case 4:  // MULTI_LINE
+                canvasObject = new paper.Path(imagePoint);
+                canvasObject.data.type = "multi_line";
+                selection_hit_type = 'new';
+
+                break;
+            case 5:  // POLYGON
                 var canvasObject = new paper.Path({
                     closed: selected_annotation_type.closed,
                 });
@@ -1092,17 +1096,17 @@ class BoundingBoxes {
                             // polygon is still drawn
                             this.selection.item.add(imagePoint);
                         }
-                        else if (this.segmentDrag.active)
+                        else if (this.drag.active)
                         {
                             // a segment is moved
-                            this.segmentDrag.segment.segment.point = this.fixPointToImage(imagePoint)
-                            this.drag = true
+                            this.drag.segment.segment.point = this.fixPointToImage(imagePoint)
+                            this.drag.performed = true
                         }
-                        else if (allowMovement && (this.selection.item.contains(imagePoint) || this.drag)) 
+                        else if (allowMovement && (this.selection.item.contains(imagePoint) || this.drag.performed)) 
                         {
                             // move the polygon
-                            var x_diff = imagePoint.x - this.segmentDrag.lastPos.x
-                            var y_diff = imagePoint.y - this.segmentDrag.lastPos.y
+                            var x_diff = imagePoint.x - this.drag.lastPos.x
+                            var y_diff = imagePoint.y - this.drag.lastPos.y
 
                             var tempRect = this.selection.item.bounds.clone();
                             tempRect.center.x += x_diff;
@@ -1112,8 +1116,8 @@ class BoundingBoxes {
                                 // ensure we dont move our polygon out of bounds
                                 this.selection.item.position = tempRect.center;
                             
-                            this.drag = true
-                            this.segmentDrag.lastPos = imagePoint
+                            this.drag.performed = true
+                            this.drag.lastPos = imagePoint
                         }
                     }
                     break;
@@ -1122,37 +1126,62 @@ class BoundingBoxes {
 
                     if (this.selection.item.segments.length == 1) {
                         this.selection.item.add(imagePoint);
-                        this.segmentDrag.active = true
-                        this.segmentDrag.segment = this.hitTestSegment(imagePoint)
+                        this.drag.active = true
+                        this.drag.segment = this.hitTestSegment(imagePoint)
                     } 
                     else
                     {
-                        if (this.segmentDrag.active)
+                        if (this.drag.active)
                         {
                             // a segment is moved
-                            this.segmentDrag.segment.segment.point = this.fixPointToImage(imagePoint)
-                            this.drag = true
+                            this.drag.segment.segment.point = this.fixPointToImage(imagePoint)
+                            this.drag.performed = true
                         }
                         else
                         {
                             // the whole line is moved
-                            var x_diff = imagePoint.x - this.segmentDrag.lastPos.x
-                            var y_diff = imagePoint.y - this.segmentDrag.lastPos.y
+                            var x_diff = imagePoint.x - this.drag.lastPos.x
+                            var y_diff = imagePoint.y - this.drag.lastPos.y
                             this.selection.item.position.x += x_diff
                             this.selection.item.position.y += y_diff
 
-                            this.segmentDrag.lastPos = imagePoint
+                            this.drag.lastPos = imagePoint
                         }
-                        this.drag = true
+                        this.drag.performed = true
                     }
+                    break;
+
+                case 'multi_line':
+                    if (this.selection.type == 'new') {
+                        // line is still drawn
+                        this.selection.item.add(imagePoint);
+                    }
+                    else if(this.drag.active)
+                    {
+                        // a segment is moved
+                        this.drag.segment.segment.point = this.fixPointToImage(imagePoint)
+                        this.drag.performed = true
+                    }
+                    else
+                    {
+                        // the whole line is moved
+                        var x_diff = imagePoint.x - this.drag.lastPos.x
+                        var y_diff = imagePoint.y - this.drag.lastPos.y
+                        this.selection.item.position.x += x_diff
+                        this.selection.item.position.y += y_diff
+
+                        this.drag.lastPos = imagePoint
+                        this.drag.performed = true
+                    }
+
                     break;
 
                 case 'fixed_rect':
 
                     if (allowMovement && (this.selection.item.contains(imagePoint) || this.drag))
                     {
-                        var x_diff = imagePoint.x - this.segmentDrag.lastPos.x
-                        var y_diff = imagePoint.y - this.segmentDrag.lastPos.y
+                        var x_diff = imagePoint.x - this.drag.lastPos.x
+                        var y_diff = imagePoint.y - this.drag.lastPos.y
 
                         var tempRect = this.selection.item.bounds.clone();
                         tempRect.center.x += x_diff;
@@ -1162,32 +1191,32 @@ class BoundingBoxes {
                             // ensure we dont move our polygon out of bounds
                             this.selection.item.position = tempRect.center;
                         
-                        this.drag = true
-                        this.segmentDrag.lastPos = imagePoint
+                        this.drag.performed = true
+                        this.drag.lastPos = imagePoint
                     }
 
                     break;
 
                 default:
                     
-                    if (this.segmentDrag.active)
+                    if (this.drag.active)
                     {
-                        if (this.segmentDrag.fixPoint == undefined)
+                        if (this.drag.fixPoint == undefined)
                         {
                             var seg = undefined
 
-                            if(this.segmentDrag.segment.type == "stroke")
+                            if(this.drag.segment.type == "stroke")
                             {
-                                seg = this.segmentDrag.segment.location.segment
+                                seg = this.drag.segment.location.segment
                             }
                             else
                             {
-                                seg = this.segmentDrag.segment.segment
+                                seg = this.drag.segment.segment
                             }
 
                             var idx_a = seg.index
                             var idx_b = (idx_a + 2 > 3) ? (idx_a - 2) : (idx_a + 2)
-                            this.segmentDrag.fixPoint = this.segmentDrag.segment.item.segments[idx_b].point.clone()
+                            this.drag.fixPoint = this.drag.segment.item.segments[idx_b].point.clone()
                         }
 
                         var topLeft = this.fixPointToImage(imagePoint);
@@ -1197,9 +1226,9 @@ class BoundingBoxes {
                         var min_y
                         var max_y
 
-                        if (topLeft.x > this.segmentDrag.fixPoint.x)
+                        if (topLeft.x > this.drag.fixPoint.x)
                         {  
-                            min_x = this.segmentDrag.fixPoint.x
+                            min_x = this.drag.fixPoint.x
                             max_x = topLeft.x
 
                             if(max_x - min_x < 10)
@@ -1208,15 +1237,15 @@ class BoundingBoxes {
                         else
                         {
                             min_x = topLeft.x
-                            max_x = this.segmentDrag.fixPoint.x
+                            max_x = this.drag.fixPoint.x
 
                             if(max_x - min_x < 10)
                                 min_x = max_x - 10
                         }
 
-                        if (topLeft.y > this.segmentDrag.fixPoint.y)
+                        if (topLeft.y > this.drag.fixPoint.y)
                         {  
-                            min_y = this.segmentDrag.fixPoint.y
+                            min_y = this.drag.fixPoint.y
                             max_y = topLeft.y
 
                             if(max_y - min_y < 10)
@@ -1225,7 +1254,7 @@ class BoundingBoxes {
                         else
                         {
                             min_y = topLeft.y
-                            max_y = this.segmentDrag.fixPoint.y
+                            max_y = this.drag.fixPoint.y
 
                             if(max_y - min_y < 10)
                                 min_y = max_y - 10
@@ -1233,13 +1262,13 @@ class BoundingBoxes {
 
                         this.selection.item.bounds = new paper.Rectangle(new paper.Point(min_x, min_y), new paper.Point(max_x, max_y));
 
-                        this.drag = true
+                        this.drag.performed = true
                         
                     }
-                    else if (allowMovement && (this.selection.item.contains(imagePoint) || this.drag)){
+                    else if (allowMovement && (this.selection.item.contains(imagePoint) || this.drag.performed)){
                         // the rect is moved
-                        var x_diff = imagePoint.x - this.segmentDrag.lastPos.x
-                        var y_diff = imagePoint.y - this.segmentDrag.lastPos.y
+                        var x_diff = imagePoint.x - this.drag.lastPos.x
+                        var y_diff = imagePoint.y - this.drag.lastPos.y
 
                         var tempRect = this.selection.item.bounds.clone();
                         tempRect.center.x += x_diff;
@@ -1249,8 +1278,8 @@ class BoundingBoxes {
                             // ensure we dont move our polygon out of bounds
                             this.selection.item.position = tempRect.center;
                         
-                        this.drag = true
-                        this.segmentDrag.lastPos = imagePoint
+                            this.drag.performed = true
+                        this.drag.lastPos = imagePoint
                     }
 
                     break;
