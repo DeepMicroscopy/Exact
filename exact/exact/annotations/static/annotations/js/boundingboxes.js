@@ -602,7 +602,7 @@ class BoundingBoxes {
                 var el = this.group.children[i]
 
                 // just work on saved annotations
-                if (el.name !== this.selection.item.name && el.visible === true) {
+                if (el.name !== this.selection.item.name && el.visible === true && el.data.type == 'poly') {
 
                     // if intersects --> divide
                     if (el.intersects(this.selection.item) === true) 

@@ -916,6 +916,9 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             case 71: // 'g'
                 this.tool.activateSinglePolyOperationByString("GLUE", this);
                 break;
+            case 68: //d
+                this.tool.activateMultiPolyOperationByString("KNIFE", this);
+                break;
         }
     }
 
@@ -1043,7 +1046,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                                                         onClick: this.tool.activateSinglePolyOperation.bind(this),
                                                         })
 
-        this.operatorButtons["KNIFE"] = new OpenSeadragon.Button({   tooltip: 'Draw a line to cut through polygons ()',
+        this.operatorButtons["KNIFE"] = new OpenSeadragon.Button({   tooltip: 'Draw a line to cut through polygons (d)',
                                                         name: "KNIFE",
                                                         srcRest: this.viewer.prefixUrl + `knife_base.svg`,
                                                         srcGroup: this.viewer.prefixUrl + `knife_base.svg`,
