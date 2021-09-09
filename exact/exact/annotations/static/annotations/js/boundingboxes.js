@@ -493,6 +493,208 @@ class BoundingBoxes {
         return resultDict 
     }
 
+    polyKnifeOperation()
+    {
+        // https://stackoverflow.com/questions/23258001/slice-path-into-two-separate-paths-using-paper-js
+        // modificated to be more robust 
+        const splitUsingPath = (target, path) => {
+            const paths = [path.clone({ insert: false })];
+            const targets = [target.clone({ insert: false })];
+            
+            const intersections = path.getIntersections(target)
+    
+            var p1
+            var p2
+
+            if(intersections.length < 2)
+            {
+                // Nothing to do here
+                return [targets, paths]
+            }
+            else if(intersections.length == 2)
+            {
+                // check if the line starts and ends within the poly
+                if(intersections[0].point.getDistance(path.segments[0].point)<1.0)
+                {
+                    return [targets, paths]
+                }
+                else if(targets[0].contains(path.segments[0].point) && path.segments[0].point.getDistance(target.getNearestLocation(path.segments[0].point).point) > 0.01)
+                {
+                    return [targets, paths]
+                }
+                else
+                {
+                    p1 = intersections[0]
+                    p2 = intersections[1]
+                }
+            }
+            else
+            {
+                // check if the line starts within the poly
+                if(intersections[0].point.getDistance(path.segments[0].point)<0.01)
+                {
+                    // nessesary due to floating point inaccuraccy in the "contains" calculation 
+                    p1 = intersections[1]
+                    p2 = intersections[2]
+                }
+                else if(targets[0].contains(path.segments[0].point) && path.segments[0].point.getDistance(target.getNearestLocation(path.segments[0].point).point) > 0.01)
+                {
+                    // the line starts in the poly
+                    // ignore the first intersection
+                    p1 = intersections[1]
+                    p2 = intersections[2]
+    
+                }
+                else
+                {
+                    p1 = intersections[0]
+                    p2 = intersections[1]
+                }
+            }
+            
+            var points = [p1, p2]
+
+            points.forEach(location => {
+                const offset = targets[0].getOffsetOf(location.point)
+                const pathLocation = targets[0].getLocationAt(offset)
+                const newTarget = targets[0].splitAt(pathLocation)
+                const isNew = newTarget !== targets[0]
+                
+                if (isNew)
+                {
+                    targets.push(newTarget)
+                } 
+                
+                paths.forEach(path => {
+                    const offset = path.getOffsetOf(location.point)
+                    const pathLocation = path.getLocationAt(offset)
+            
+                    if (pathLocation) {
+                            paths.push(path.splitAt(pathLocation))
+                    }
+                })
+            })
+        
+            // TODO maybe find more robust solution
+            const innerPath = paths[1]
+            //const innerPath = paths.find(p => target.contains(p.bounds.center))
+
+            var result_paths = paths.filter(path => path.id != innerPath.id)
+        
+            targets.forEach((target, i) => {
+                const isFirst = i === 0
+                const innerPathCopy = isFirst ? innerPath : innerPath.clone()
+                
+                target.join(innerPathCopy, innerPathCopy.length)
+                target.closed = true
+            })
+        
+            return [targets, result_paths]
+        }
+
+        var resultDict = {deleted: [], insert: [], update: [], included: []}
+        if (this.selection) {
+            var subOptions = {insert: false}
+
+            var hit_children = []
+            for (var i = 0; i < this.group.children.length; i++) 
+            {
+                var el = this.group.children[i]
+
+                // just work on saved annotations
+                if (el.name !== this.selection.item.name && el.visible === true) {
+
+                    // if intersects --> divide
+                    if (el.intersects(this.selection.item) === true) 
+                    {
+                        hit_children.push(el)
+                    }
+                }
+            }
+
+            hit_children.forEach(el =>{
+                var org_line = this.selection.item.clone({ insert: false })
+
+                org_line.segments.forEach(seg => {
+                    var dist = seg.point.getDistance(el.getNearestLocation(seg.point).point)
+                    if(dist < 1.0)
+                    {
+                        seg.remove()
+                    }
+                })
+
+                var result = splitUsingPath(el, org_line)
+
+                var polys = result[0]
+                var lines = result[1]
+                
+                for(var n = 0; n < polys.length; n++)
+                {
+                    var poly = polys[n]
+                    for(var m = 0; m < lines.length; m++)
+                    {
+                        var line = lines[m]
+
+                        var new_res = splitUsingPath(poly, line)
+
+                        if(new_res[0].length == 2)
+                        {
+                            poly.remove()
+                            polys.splice(n, 1)
+                            polys.push(new_res[0][0])
+                            polys.push(new_res[0][1])
+
+                            line.remove()
+                            lines.splice(m, 1)
+                            lines.push(new_res[1][0])
+                            lines.push(new_res[1][1])
+
+                            n=0
+                            m=0
+                            break
+                        }
+
+                    }
+                }
+
+                for (var id = 0; id < polys.length; id++)
+                {
+                    var old_path = polys[id]
+                    var new_path = old_path.clone()
+                    new_path.data = old_path.data
+                    new_path.strokeColor = old_path.strokeColor
+                    new_path.strokeWidth = old_path.strokeWidth
+                    new_path.fillColor = old_path.fillColor
+
+                    new_path.name =  this.uuidv4();
+                    this.group.addChild(new_path);
+
+                    resultDict.insert.push({
+                        annotation_type: el.data.type_id,
+                        id: -1,
+                        vector: this.getAnnotationVector(new_path.name),
+                        user: {id: null, username: "you"},
+                        last_editor: {id: null, username: "you"},
+                        image: this.imageid,
+                        unique_identifier: new_path.name,
+                        deleted: false
+                    });
+
+                    polys[id].remove()
+                    lines[id].remove()
+                }
+
+                org_line.remove()
+                el.remove()
+                resultDict.deleted.push(el.name)
+            })
+
+            this.selection.item.remove()
+            resultDict.deleted.push(this.selection.item.name)
+        }
+        return resultDict;
+    }
+
     uuidv4() {
         return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
           var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);

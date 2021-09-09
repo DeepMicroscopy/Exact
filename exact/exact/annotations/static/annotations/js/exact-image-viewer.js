@@ -644,6 +644,8 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
                     if (event.userData.tool.multiPolyOperation.active)
                     {
+                        // create a multi line
+                        selected_annotation_type = Object.create(selected_annotation_type)
                         selected_annotation_type.vector_type = 4
                     }
 
@@ -671,6 +673,12 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 {
                     viewer.raiseEvent('boundingboxes_PolyOperation', {name: event.userData.tool.singlePolyOperation.mode});
                     tool.resetSinglePolyOperation();
+                }
+                else if (event.userData.tool.multiPolyOperation.active)
+                {
+                    viewer.raiseEvent('boundingboxes_PolyOperation', {name: event.userData.tool.multiPolyOperation.mode});
+                    tool.resetMultiPolyOperation();
+                    tool.resetSelection()
                 }
                 else
                 {
@@ -743,6 +751,9 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                     break;
                 case "GLUE":
                     resultDict = tool.polyGlueOperation();
+                    break;
+                case "KNIFE":
+                    resultDict = tool.polyKnifeOperation();
                     break;
 
                 case "HARMONIZE":
