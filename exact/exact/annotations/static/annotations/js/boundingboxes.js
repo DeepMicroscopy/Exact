@@ -207,7 +207,7 @@ class BoundingBoxes {
 
     activateMultiPolyOperationByString(mode, caller)
     {
-        if ( this.viewer.viewer.selectionInstance.isSelecting && (this.current_item == undefined || this.current_item.type == "fill") )
+        if ( this.viewer.selectionInstance.isSelecting && (this.current_item == undefined || this.current_item.type == "fill") )
         {
             if (!this.multiPolyOperation.active) // multiPolyOperation not active
             {
