@@ -356,7 +356,7 @@ class BoundingBoxes {
                 {
                     result.children.forEach(old_path =>{
                         // add childs as new elements
-                        var new_path = old_path.clone()
+                        var new_path = old_path.clone(subOptions)
                         new_path.data = old_path.parent.data
                         new_path.strokeColor = old_path.parent.strokeColor
                         new_path.strokeWidth = old_path.parent.strokeWidth
@@ -423,7 +423,7 @@ class BoundingBoxes {
                 for (var child_id = 0; child_id < result.children.length; child_id++) {
                     // add childs as new elements
                     var old_path = result.children[child_id]
-                    var new_path = old_path.clone()
+                    var new_path = old_path.clone(subOptions)
                     new_path.data = old_path.parent.data
                     new_path.strokeColor = old_path.parent.strokeColor
                     new_path.strokeWidth = old_path.parent.strokeWidth
@@ -675,7 +675,7 @@ class BoundingBoxes {
                 for (var id = 0; id < polys.length; id++)
                 {
                     var old_path = polys[id]
-                    var new_path = old_path.clone()
+                    var new_path = old_path.clone(subOptions)
                     new_path.data = old_path.data
                     new_path.strokeColor = old_path.strokeColor
                     new_path.strokeWidth = old_path.strokeWidth

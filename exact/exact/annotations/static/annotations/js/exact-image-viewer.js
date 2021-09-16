@@ -523,7 +523,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         this.teamTool = new TeamTool(this.viewer, team_id);
 
         this.actionStack = [];
-        this.actionMemory = 20;
+        this.actionMemory = 50;
         this.currentAction = undefined
 
         this.initUiEvents(this.annotationTypes);
@@ -726,7 +726,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                     else if(new_selected !== undefined)
                     {
                         // we select a new object
-                        if(tool.selection !== undefined && new_selected.name !== tool.selection.item.name)
+                        if(tool.selection !== undefined && new_selected.item.name !== tool.selection.item.name)
                         {
                             // save the last object
                             var last_uuid = tool.selection.item.name
@@ -825,6 +825,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 if (Number.isInteger(newAnno.annotation_type)) {
                     newAnno.annotation_type = exact_sync.annotationTypes[newAnno.annotation_type]
                 }
+                exact_sync.addAnnotationToCache(newAnno)
                 exact_sync.saveAnnotation(newAnno)
 
                 var action ={
@@ -983,6 +984,10 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             case 68: //d
                 this.tool.activateMultiPolyOperationByString("KNIFE", this);
                 break;
+            case 90:
+                if(event.ctrlKey){
+                    this.undo();
+                }
         }
     }
 
@@ -1454,8 +1459,10 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 }
                 else if(action.type == "Deleted")
                 {
+                    action.del_item.selected = false
                     action.del_item.name = action.uuid
                     this.tool.group.addChild(action.del_item)
+                    action.del_anno.deleted = false
                     this.exact_sync.saveAnnotation(action.del_anno)
                 }
                 else if(action.type == "Updated")
