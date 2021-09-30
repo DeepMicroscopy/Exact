@@ -758,7 +758,7 @@ class BoundingBoxes {
         var imagePoint = new paper.Point(this.viewer.viewport.viewportToImageCoordinates(viewportPoint));
 
         var canvasObject = undefined;
-        var selection_hit_type = 'fill';
+        var selection_hit_type = 'new';
         switch (selected_annotation_type.vector_type) {
             case 2:  // POINT or Elipse
                 var rectangle = new paper.Rectangle(imagePoint,
@@ -778,7 +778,6 @@ class BoundingBoxes {
             case 4:  // MULTI_LINE
                 canvasObject = new paper.Path(imagePoint);
                 canvasObject.data.type = "multi_line";
-                selection_hit_type = 'new';
 
                 break;
             case 5:  // POLYGON
@@ -787,7 +786,6 @@ class BoundingBoxes {
                 });
                 canvasObject.add(imagePoint);
                 canvasObject.data.type = "poly";
-                selection_hit_type = 'new';
                 break;
 
             case 1:  // Rect
