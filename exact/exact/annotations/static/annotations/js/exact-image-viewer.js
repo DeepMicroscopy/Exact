@@ -405,6 +405,10 @@ class EXACTViewer {
         return;
     }
 
+    handleKeyDown(event){
+        return
+    }
+
     initUiEvents() {
         return;
     }
@@ -581,11 +585,12 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                     event.userData.deleteAnnotation()
                 else
                     event.userData.tool.resetSinglePolyOperation()
-                    event.userData.tool.resetMultiPolyOperation()
 
                 event.userData.do_finishAnnotation();
 
             }
+
+            event.userData.tool.resetMultiPolyOperation()
         }, this);
 
         viewer.addHandler("selection_cancel", function (event) {
@@ -990,6 +995,14 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 }
         }
     }
+    
+    handleKeyDown(event)
+    {
+        if(this.viewer.selectionInstance.isSelecting)
+        {
+            this.viewer.innerTracker.keyDownHandler(event)
+        }
+    }
 
     initToolEventHandler(viewer) {
 
@@ -1002,6 +1015,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
 
         $(document).keyup(this.handleKeyUp.bind(this));
+        $(document).keydown(this.handleKeyDown.bind(this));
         $('select#annotation_type_id').change(this.changeAnnotationTypeByComboxbox.bind(this));
 
         // tool events
