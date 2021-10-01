@@ -814,7 +814,10 @@ class BoundingBoxes {
         canvasObject.data.area_hit_test = selected_annotation_type.area_hit_test;
 
         if (selected_annotation_type.area_hit_test)
-            canvasObject.fillColor = new paper.Color(0, 0, 0, 0.000001);
+        {
+            canvasObject.fillColor = selected_annotation_type.color_code
+            canvasObject.fillColor.alpha = $('#OpacitySlider')[0].value
+        }
 
 
         // bounding box coordinates
@@ -855,6 +858,8 @@ class BoundingBoxes {
             return;
         }
 
+        var opacity = $('#OpacitySlider')[0].value
+
         switch (annotation.annotation_type.vector_type) {
             case 1:  // Rect
                 var rect = new paper.Path.Rectangle(annotation.vector.x1, annotation.vector.y1,
@@ -864,7 +869,11 @@ class BoundingBoxes {
                 rect.strokeWidth = this.strokeWidth;
                 rect.name = annotation.unique_identifier;
                 if (annotation.annotation_type.area_hit_test)
-                    rect.fillColor = new paper.Color(0, 0, 0, 0.000001);
+                {
+                    rect.fillColor = annotation.annotation_type.color_code
+                    rect.fillColor.alpha = opacity
+                }
+                    
                 rect.data.type = "rect";
                 rect.data.type_id = annotation.annotation_type.id;
                 rect.data.area_hit_test = annotation.annotation_type.area_hit_test;
@@ -882,7 +891,11 @@ class BoundingBoxes {
                 rect.strokeWidth = this.strokeWidth;
                 rect.name = annotation.unique_identifier;
                 if (annotation.annotation_type.area_hit_test)
-                    rect.fillColor = new paper.Color(0, 0, 0, 0.000001);
+                {
+                    rect.fillColor = annotation.annotation_type.color_code
+                    rect.fillColor.alpha = opacity
+                }
+
                 rect.data.type = "fixed_rect";
                 rect.data.type_id = annotation.annotation_type.id;
                 rect.data.area_hit_test = annotation.annotation_type.area_hit_test;
@@ -899,7 +912,11 @@ class BoundingBoxes {
                 ellipse.strokeWidth = this.strokeWidth;
                 ellipse.name = annotation.unique_identifier;
                 if (annotation.annotation_type.area_hit_test)
-                    ellipse.fillColor = new paper.Color(0, 0, 0, 0.000001);
+                {
+                    ellipse.fillColor = annotation.annotation_type.color_code
+                    ellipse.fillColor.alpha = opacity
+                }
+
                 ellipse.data.type = "circle";
                 ellipse.data.type_id = annotation.annotation_type.id;
                 ellipse.data.area_hit_test = annotation.annotation_type.area_hit_test;
@@ -930,7 +947,10 @@ class BoundingBoxes {
                     closed: annotation.annotation_type.closed,
                 });
                 if (annotation.annotation_type.area_hit_test)
-                    poly.fillColor = new paper.Color(0, 0, 0, 0.000001);
+                {
+                    poly.fillColor = annotation.annotation_type.color_code
+                    poly.fillColor.alpha = opacity
+                }
 
                 poly.data.type = "poly";
                 poly.data.type_id = annotation.annotation_type.id;
@@ -948,13 +968,14 @@ class BoundingBoxes {
 
     updateAnnotationVisibility(unique_identifier, visibility) {
         var item = this.getItemFromUUID(unique_identifier);
+        var opacity = $('#OpacitySlider')[0].value
 
         if (item !== undefined) {
             if (visibility === true && item.data.area_hit_test === true) {
-                item.fillColor = new paper.Color(0, 0, 0, 0.000001);
+                item.fillColor.alpha = opacity
             }
             else if (visibility === false){
-                item.fillColor = new paper.Color(0, 0, 0, 0);
+                item.fillColor.alpha = 0
             }
 
 
@@ -963,14 +984,15 @@ class BoundingBoxes {
     }
 
     updateVisbility(annotation_type_id, visibility ) {
+        var opacity = $('#OpacitySlider')[0].value
 
         this.group.children.filter(function (el) {return el.data.type_id === parseInt(annotation_type_id)})
             .forEach(function (el) {
                 if (visibility === true && el.data.area_hit_test === true) {
-                    el.fillColor = new paper.Color(0, 0, 0, 0.000001);
+                    el.fillColor.alpha = opacity
                 }
                 else if (visibility === false){
-                    el.fillColor = new paper.Color(0, 0, 0, 0);
+                    el.fillColor.alpha = 0
                 }
 
 
@@ -1031,6 +1053,14 @@ class BoundingBoxes {
         }
 
         this.group.children.forEach(x => { x.strokeWidth = this.strokeWidth });
+    }
+
+    updateOpacity(opacity)
+    {
+        if( opacity!= null )
+        {
+            this.group.children.filter(el => el._data.area_hit_test).forEach(el => el.fillColor.alpha = opacity)
+        }
     }
 
     showItem(annotation) {
@@ -1246,7 +1276,10 @@ class BoundingBoxes {
         canvasObject.data.area_hit_test = annotation_type.area_hit_test;
 
         if (annotation_type.area_hit_test)
-            canvasObject.fillColor = new paper.Color(0, 0, 0, 0.000001);
+        {
+            canvasObject.fillColor = annotation_type.color_code
+            canvasObject.fillColor.alpha = $('#OpacitySlider')[0].value
+        }
 
         var tempName = item.name;
 
@@ -1278,8 +1311,6 @@ class BoundingBoxes {
 
             // Convert from viewport coordinates to image coordinates.
             var imagePoint = new paper.Point(this.viewer.viewport.viewportToImageCoordinates(viewportPoint));
-
-            var allowMovement = $("#allow_annotation_movement").is(':checked')
 
             switch (this.selection.item.data.type) {
                                                 
@@ -1317,7 +1348,7 @@ class BoundingBoxes {
                             this.drag.segment.segment.point = this.fixPointToImage(imagePoint)
                             this.drag.performed = true
                         }
-                        else if (allowMovement && (this.selection.item.contains(imagePoint) || this.drag.performed)) 
+                        else if (this.selection.item.contains(imagePoint) || this.drag.performed)
                         {
                             // move the polygon
                             var x_diff = imagePoint.x - this.drag.lastPos.x
@@ -1393,7 +1424,7 @@ class BoundingBoxes {
 
                 case 'fixed_rect':
 
-                    if (allowMovement && (this.selection.item.contains(imagePoint) || this.drag))
+                    if (this.selection.item.contains(imagePoint) || this.drag)
                     {
                         var x_diff = imagePoint.x - this.drag.lastPos.x
                         var y_diff = imagePoint.y - this.drag.lastPos.y
@@ -1480,7 +1511,7 @@ class BoundingBoxes {
                         this.drag.performed = true
                         
                     }
-                    else if (allowMovement && (this.selection.item.contains(imagePoint) || this.drag.performed)){
+                    else if (this.selection.item.contains(imagePoint) || this.drag.performed){
                         // the rect is moved
                         var x_diff = imagePoint.x - this.drag.lastPos.x
                         var y_diff = imagePoint.y - this.drag.lastPos.y

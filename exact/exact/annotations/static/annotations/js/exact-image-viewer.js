@@ -1006,6 +1006,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
         // tool events
         $('#StrokeWidthSlider').on("input", this.updateStrokeWidth.bind(this));
+        $('#OpacitySlider').on("input", this.updateOpacity.bind(this));
 
         for (let annotation_type of Object.values(annotation_types)) {
 
@@ -1424,13 +1425,22 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         }
     }
 
-    updateStrokeWidth(value) {
-
-        if (value.hasOwnProperty('originalEvent')) {
-            value = value.valueAsNumber
+    updateStrokeWidth(event) {
+        var value
+        if (event.hasOwnProperty('originalEvent')) {
+            value = event.target.valueAsNumber
         }
 
         this.tool.updateStrokeWidth(value);
+    }
+
+    updateOpacity(event){
+        var value
+        if (event.hasOwnProperty('originalEvent')) {
+            value = event.target.valueAsNumber
+        }
+
+        this.tool.updateOpacity(value);
     }
 
     appendAction(action)
@@ -1498,6 +1508,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         $(document).off("keyup");
         $('select#annotation_type_id').off("change");
         $('#StrokeWidthSlider').off("input");
+        $('#OpacitySlider').off("input");
         for (let annotation_type of Object.values(this.annotationTypes)) {
 
             $('#DrawCheckBox_' + annotation_type.id).off("change");
