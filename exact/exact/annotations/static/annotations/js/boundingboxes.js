@@ -813,11 +813,8 @@ class BoundingBoxes {
         canvasObject.data.type_id = selected_annotation_type.id;
         canvasObject.data.area_hit_test = selected_annotation_type.area_hit_test;
 
-        if (selected_annotation_type.area_hit_test)
-        {
-            canvasObject.fillColor = selected_annotation_type.color_code
-            canvasObject.fillColor.alpha = $('#OpacitySlider')[0].value
-        }
+        canvasObject.fillColor = selected_annotation_type.color_code
+        canvasObject.fillColor.alpha = $('#OpacitySlider')[0].value
 
 
         // bounding box coordinates
@@ -868,11 +865,8 @@ class BoundingBoxes {
                 rect.strokeColor = annotation.annotation_type.color_code;
                 rect.strokeWidth = this.strokeWidth;
                 rect.name = annotation.unique_identifier;
-                if (annotation.annotation_type.area_hit_test)
-                {
-                    rect.fillColor = annotation.annotation_type.color_code
-                    rect.fillColor.alpha = opacity
-                }
+                rect.fillColor = annotation.annotation_type.color_code
+                rect.fillColor.alpha = opacity
                     
                 rect.data.type = "rect";
                 rect.data.type_id = annotation.annotation_type.id;
@@ -890,11 +884,8 @@ class BoundingBoxes {
                 rect.strokeColor = annotation.annotation_type.color_code;
                 rect.strokeWidth = this.strokeWidth;
                 rect.name = annotation.unique_identifier;
-                if (annotation.annotation_type.area_hit_test)
-                {
-                    rect.fillColor = annotation.annotation_type.color_code
-                    rect.fillColor.alpha = opacity
-                }
+                rect.fillColor = annotation.annotation_type.color_code
+                rect.fillColor.alpha = opacity
 
                 rect.data.type = "fixed_rect";
                 rect.data.type_id = annotation.annotation_type.id;
@@ -911,11 +902,9 @@ class BoundingBoxes {
                 ellipse.strokeColor = annotation.annotation_type.color_code;
                 ellipse.strokeWidth = this.strokeWidth;
                 ellipse.name = annotation.unique_identifier;
-                if (annotation.annotation_type.area_hit_test)
-                {
-                    ellipse.fillColor = annotation.annotation_type.color_code
-                    ellipse.fillColor.alpha = opacity
-                }
+                ellipse.fillColor = annotation.annotation_type.color_code
+                ellipse.fillColor.alpha = opacity
+
 
                 ellipse.data.type = "circle";
                 ellipse.data.type_id = annotation.annotation_type.id;
@@ -931,6 +920,9 @@ class BoundingBoxes {
                 line.strokeColor = annotation.annotation_type.color_code;
                 line.strokeWidth = this.strokeWidth;
                 line.name = annotation.unique_identifier;
+                line.fillColor = annotation.annotation_type.color_code
+                line.fillColor.alpha = opacity
+
                 line.data.type = "line";
                 line.data.type_id = annotation.annotation_type.id;
                 line.data.area_hit_test = annotation.annotation_type.area_hit_test;
@@ -946,11 +938,9 @@ class BoundingBoxes {
                     name: annotation.unique_identifier,//'#' + annotation.id,
                     closed: annotation.annotation_type.closed,
                 });
-                if (annotation.annotation_type.area_hit_test)
-                {
-                    poly.fillColor = annotation.annotation_type.color_code
-                    poly.fillColor.alpha = opacity
-                }
+
+                poly.fillColor = annotation.annotation_type.color_code
+                poly.fillColor.alpha = opacity
 
                 poly.data.type = "poly";
                 poly.data.type_id = annotation.annotation_type.id;
@@ -971,7 +961,7 @@ class BoundingBoxes {
         var opacity = $('#OpacitySlider')[0].value
 
         if (item !== undefined) {
-            if (visibility === true && item.data.area_hit_test === true) {
+            if (visibility === true) {
                 item.fillColor.alpha = opacity
             }
             else if (visibility === false){
@@ -988,7 +978,7 @@ class BoundingBoxes {
 
         this.group.children.filter(function (el) {return el.data.type_id === parseInt(annotation_type_id)})
             .forEach(function (el) {
-                if (visibility === true && el.data.area_hit_test === true) {
+                if (visibility === true) {
                     el.fillColor.alpha = opacity
                 }
                 else if (visibility === false){
@@ -1059,7 +1049,7 @@ class BoundingBoxes {
     {
         if( opacity!= null )
         {
-            this.group.children.filter(el => el._data.area_hit_test).forEach(el => el.fillColor.alpha = opacity)
+            this.group.children.forEach(el => el.fillColor.alpha = opacity)
         }
     }
 
@@ -1135,6 +1125,7 @@ class BoundingBoxes {
     hitTestObject(point) 
     {
         var hits = this.group.hitTestAll(point, this.hitOptionsObject);
+        hits = hits.filter(el => el.type != "fill" || (el.type == "fill" && el.item.data.area_hit_test))
         if (hits.length > 0) {
             if (this.selection == undefined)
             {
@@ -1275,11 +1266,9 @@ class BoundingBoxes {
         canvasObject.data.type_id = annotation_type.id;
         canvasObject.data.area_hit_test = annotation_type.area_hit_test;
 
-        if (annotation_type.area_hit_test)
-        {
-            canvasObject.fillColor = annotation_type.color_code
-            canvasObject.fillColor.alpha = $('#OpacitySlider')[0].value
-        }
+        canvasObject.fillColor = annotation_type.color_code
+        canvasObject.fillColor.alpha = $('#OpacitySlider')[0].value
+
 
         var tempName = item.name;
 
