@@ -141,7 +141,7 @@ class BoundingBoxes {
 
     activateSinglePolyOperationByString(mode, caller)
     {
-        if (this.current_item !== undefined && this.current_item.type == "fill" && this.tool.current_item.item._data.type == "poly")
+        if (this.current_item !== undefined && this.current_item.type == "fill" && this.current_item.item._data.type == "poly")
         {
             if (!this.singlePolyOperation.active) // singlePolyOperation not active
             {
