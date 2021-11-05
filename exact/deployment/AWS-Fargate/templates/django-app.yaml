@@ -78,8 +78,8 @@ Mappings:
   appConfigs:
     tree-april:
       redis: "tree-redis-cache.cnysys.0001.euc1.cache.amazonaws.com"
-      djangoAppSecret: "arn:aws:secretsmanager:eu-central-1:298068947512:secret:Tree_Schema-QktESy"
-      loadbalancerCertArn: "arn:aws:acm:eu-central-1:298068947512:certificate/327169bc-2f5b-4021-ac3d-b484f521cff9"
+      djangoAppSecret: "arn:aws:secretsmanager:eu-central-1:********:secret:Tree_Schema-QktESy"  # 2*******2 TODO: Change values
+      loadbalancerCertArn: "arn:aws:acm:eu-central-1:********:certificate/327169bc-2f5b-4021-ac3d-b484f521cff9"
 
 
 Resources:
