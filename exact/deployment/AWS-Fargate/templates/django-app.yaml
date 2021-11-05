@@ -208,9 +208,9 @@ Resources:
               - !Ref EnvStageName
       TaskDefinition: !Ref DjangoAppTaskDefinition
       DeploymentConfiguration:
-        MinimumHealthyPercent: 100
-        MaximumPercent: 200
-      DesiredCount: !Ref DesiredTasksCount #1
+        MinimumHealthyPercent: 0
+        MaximumPercent: 400
+      DesiredCount: 0 #1 !Ref DesiredTasksCount
       LaunchType: FARGATE
       NetworkConfiguration:
         AwsvpcConfiguration:
@@ -272,9 +272,9 @@ Resources:
       TargetTrackingScalingPolicyConfiguration:
         PredefinedMetricSpecification:
           PredefinedMetricType: ECSServiceAverageCPUUtilization
-        ScaleInCooldown: 15
-        ScaleOutCooldown: 15
-        TargetValue: 50
+        ScaleInCooldown: 60
+        ScaleOutCooldown: 60
+        TargetValue: 75
 
 
   ###########################

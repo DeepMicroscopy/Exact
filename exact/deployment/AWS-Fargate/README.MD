@@ -98,3 +98,21 @@ ParameterKey=DesiredTasksCount,ParameterValue=1"
 ### E-Mail
 
 https://dev.to/marcbeaujean/sending-email-with-smtp-on-aws-and-django-jmd
+
+
+# Hybrid cache
+
+Create tiles:
+``` bash
+vips dzsave .\46.svs tile --suffix .jpg[Q=95]
+```
+
+Create tiles:
+``` bash
+vips dzsave .\46.svs tile --suffix .jpg[Q=95]
+```
+
+Upload tiles to S3:
+``` bash
+aws s3 cp .\Upload\ s3://tree-april-my-ecs-example-static-files/static/wsi_images/ --recursive   --dryrun
+```
