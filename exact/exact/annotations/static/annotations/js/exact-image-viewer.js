@@ -1196,7 +1196,25 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
     uiLocalAnnotationVisibilityChanged(event) {
         var annotation_type_id = parseInt(event.target.dataset.annotation_type_id);
 
-        this.changeAnnotationTypeVisibility(annotation_type_id, event.currentTarget.checked);
+        if(event.currentTarget.value == "on")
+        {
+            event.currentTarget.checked = false
+            event.currentTarget.value="off"
+        }
+        else if(event.currentTarget.value == "off")
+        {
+            event.currentTarget.indeterminate = true
+            event.currentTarget.checked = true
+            event.currentTarget.value="indeterminate"
+        }
+        else if (event.currentTarget.value == "indeterminate")
+        {
+            event.currentTarget.indeterminate = false
+            event.currentTarget.checked = true
+            event.currentTarget.value="on"
+        }
+
+        this.changeAnnotationTypeVisibility(annotation_type_id, event.currentTarget.checked, event.currentTarget.indeterminate);
     }
 
     createDrawingModule(viewer, imageId, imageInformation) {
@@ -1264,8 +1282,8 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         }
     }
 
-    changeAnnotationTypeVisibility(annotation_type_id, visibility) {
-        this.tool.updateVisbility(annotation_type_id, visibility);
+    changeAnnotationTypeVisibility(annotation_type_id, visibility, disabled_hitTest) {
+        this.tool.updateVisbility(annotation_type_id, visibility, disabled_hitTest);
     }
 
     verifyAnnotation(annotation) {
