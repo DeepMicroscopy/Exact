@@ -878,6 +878,10 @@ class BoundingBoxes {
                 rect.data.type_id = annotation.annotation_type.id;
                 rect.data.area_hit_test = annotation.annotation_type.area_hit_test;
 
+                var checkbox = $('#DrawCheckBox_' + annotation.annotation_type.id)[0]
+                rect.visible = checkbox.checked
+                rect.locked = checkbox.indeterminate
+
                 this.group.addChild(rect);
                 break;
 
@@ -900,6 +904,10 @@ class BoundingBoxes {
                 rect.data.type_id = annotation.annotation_type.id;
                 rect.data.area_hit_test = annotation.annotation_type.area_hit_test;
 
+                var checkbox = $('#DrawCheckBox_' + annotation.annotation_type.id)[0]
+                rect.visible = checkbox.checked
+                rect.locked = checkbox.indeterminate
+
                 this.group.addChild(rect);
                 break;
 
@@ -921,6 +929,10 @@ class BoundingBoxes {
                 ellipse.data.type_id = annotation.annotation_type.id;
                 ellipse.data.area_hit_test = annotation.annotation_type.area_hit_test;
 
+                var checkbox = $('#DrawCheckBox_' + annotation.annotation_type.id)[0]
+                ellipse.visible = checkbox.checked
+                ellipse.locked = checkbox.indeterminate
+
                 this.group.addChild(ellipse);
                 break;
 
@@ -934,6 +946,10 @@ class BoundingBoxes {
                 line.data.type = "line";
                 line.data.type_id = annotation.annotation_type.id;
                 line.data.area_hit_test = annotation.annotation_type.area_hit_test;
+
+                var checkbox = $('#DrawCheckBox_' + annotation.annotation_type.id)[0]
+                line.visible = checkbox.checked
+                line.locked = checkbox.indeterminate
 
                 this.group.addChild(line);
                 break;
@@ -961,6 +977,10 @@ class BoundingBoxes {
                     poly.add(new paper.Point(annotation.vector["x" + i], annotation.vector["y" + i]));
                 }
 
+                var checkbox = $('#DrawCheckBox_' + annotation.annotation_type.id)[0]
+                poly.visible = checkbox.checked
+                poly.locked = checkbox.indeterminate
+
                 this.group.addChild(poly);
                 break;
         }
@@ -983,7 +1003,7 @@ class BoundingBoxes {
         }
     }
 
-    updateVisbility(annotation_type_id, visibility ) {
+    updateVisbility(annotation_type_id, visibility, disabled_hitTest = undefined ) {
         var opacity = $('#OpacitySlider')[0].value
 
         this.group.children.filter(function (el) {return el.data.type_id === parseInt(annotation_type_id)})
@@ -995,8 +1015,12 @@ class BoundingBoxes {
                     el.fillColor.alpha = 0
                 }
 
-
                 el.visible = visibility;
+
+                if (disabled_hitTest != undefined)
+                {
+                    el.locked = disabled_hitTest
+                }
             });
     }
 
