@@ -14,7 +14,7 @@ import django_filters
 from rest_framework import filters
 from datetime import datetime
 from exact.annotations.models import Annotation, AnnotationType
-from exact.images.models import Image
+from exact.images.models import Image, ImageSet
 from exact.users.models import User
 
 class AnnotationFilterSet(django_filters.FilterSet):
@@ -34,7 +34,9 @@ class AnnotationFilterSet(django_filters.FilterSet):
         'description': ['exact', 'contains'],
         'deleted': ['exact'],
 
+        'image__image_set': ['exact', 'in'],
         'image': ['exact', 'in'], #, 'range'
+        'image__image_type': ['exact', 'in'], 
         'user': ['exact'],
         'annotation_type': ['exact', 'in'], #, 'range'
         'verified_by': ['exact', 'range'], #, 'range'
@@ -84,13 +86,35 @@ class AnnotationViewSet(viewsets.ModelViewSet):
         user = self.request.user
         return  models.Annotation.objects.filter(image__image_set__team__in=user.team_set.all()).select_related('annotation_type', 'image', 'user', 'last_editor').order_by('id')
 
+
+    @action(methods=['get'], detail=False)
+    def count(self, request, *args, **kwargs):
+
+        count = self.filter_queryset(self.get_queryset()).count()
+        return Response({"count": count}, status=status.HTTP_200_OK)
+
+        annotation_type = request.query_params.get("annotation_type", None)
+        annotation_type = get_object_or_404(AnnotationType, id=annotation_type)
+
+        image_set = request.query_params.get("image_set", None)
+        image_set = get_object_or_404(ImageSet, id=image_set)
+
+        filter_set = self.get_queryset().filter(image__image_set=image_set, deleted=False, annotation_type=annotation_type).filter(~Q(image__image_type=Image.ImageSourceTypes.SERVER_GENERATED)) 
+        if image_set.collaboration_type == ImageSet.CollaborationTypes.COMPETITIVE:
+            filter_set = filter_set.filter(user=request.user)
+        
+        count = filter_set.count()
+
+        return Response({"count": count}, status=status.HTTP_200_OK)
+
+
     @action(methods=['delete'], detail=False)
     def multiple_delete(self, request,  *args, **kwargs):
         delete_id = request.query_params.get('id__in', None)
         if not delete_id:
             return Response("The syntax is: id__in=1,2,3,4",status=status.HTTP_404_NOT_FOUND)
 
-        pks = [int(pk) for pk in delete_id.split(',')]
+        pks = [int(pk) for pk in delete_id.replace("[", "").replace("]", "").split(',')]
         num_deleted, deleted_annotations = self.get_queryset().filter(pk__in=pks).delete()
         return Response(deleted_annotations, status=status.HTTP_200_OK)
 

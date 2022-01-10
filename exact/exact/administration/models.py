@@ -35,7 +35,7 @@ class Product(models.Model):
                                 null=True,
                                 blank=True)
 
-    imagesets = models.ManyToManyField(ImageSet)
+    imagesets = models.ManyToManyField(ImageSet, blank=True)
 
     def __str__(self):
         return u'Product: {0} [{1}]'.format(self.name, "; ".join(self.annotationtype_set.values_list('name', flat=True)))
@@ -44,7 +44,7 @@ class Product(models.Model):
 @receiver([post_save, post_delete], sender=Product)
 def product_changed_handler(sender, instance, **kwargs):
     # delte cached imageset information used in JS
-    if hasattr(cache, "delete_pattern"):
+    if hasattr(cache, "delete_pattern") and isinstance(instance, Product):
         for image_set in instance.imagesets.all():
             cache.delete_pattern(f"*/api/v1/images/image_sets/{image_set.id}/*")
 

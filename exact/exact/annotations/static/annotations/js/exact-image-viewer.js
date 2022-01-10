@@ -13,14 +13,11 @@ class EXACTViewer {
         this.frame = 1;
     
         this.viewer = this.createViewer(options);
-        this.exact_registration_sync = new EXACTRegistrationSync(this.imageInformation, this.gHeaders);
-
-        this.browser_sync = new EXACTBrowserSync(this.imageInformation, this.viewer, this.exact_registration_sync)
+        this.exact_registration_sync = undefined; 
+        this.browser_sync = undefined; 
 
         this.exact_image_sync = new EXACTImageSync(this.imageId, this.gHeaders, this.viewer);
-
         this.initViewerEventHandler(this.viewer, imageInformation);
-        this.initBrowserSycEvents();
 
         this.registration = null;
         this.filterImage = new OpenseadragonFilteringViewer(this.viewer);
@@ -178,17 +175,19 @@ class EXACTViewer {
 
                 let x_min = event.data.x_min;
                 let y_min = event.data.y_min;
-                let x_max = event.data.x_max;
-                let y_max = event.data.y_max;
+                let width = event.data.x_max - event.data.x_min;
+                let height = event.data.y_max - event.data.y_min;
+                let rotation_angle = ("rotation_angle" in event.data) ? event.data.angle : 0
 
 
                 if (this.browser_sync.registration != null) {
                     [x_min, y_min] = this.browser_sync.registration.transformAffine(x_min, y_min);
-                    [x_max, y_max] = this.browser_sync.registration.transformAffine(x_max, y_max);
-
+                    width *= this.browser_sync.registration.mpp_x_scale;
+                    height *= this.browser_sync.registration.mpp_x_scale;
+                    rotation_angle = -this.browser_sync.registration.rotation_angle;
                 }
 
-                this.viewCoordinates(x_min, y_min, x_max, y_max);
+                this.viewCoordinates(x_min, y_min, width, height, rotation_angle);
             }
         }        
     }
@@ -239,7 +238,7 @@ class EXACTViewer {
             var coordinates = event.coordinates;
 
             event.userData.browser_sync.sendCurrentViewPortCoordinates(coordinates);
-            event.userData.viewCoordinates(coordinates.x_min, coordinates.y_min, coordinates.x_max, coordinates.y_max);
+            event.userData.viewCoordinates(coordinates.x_min, coordinates.y_min, coordinates.x_max, coordinates.y_max, rotation_angle.rotation_angle);
 
         }, this);
 
@@ -256,7 +255,7 @@ class EXACTViewer {
 
                 let coodinates = event.userData.options.url_parameters;
 
-                event.userData.viewCoordinates(parseInt(coodinates.xmin), parseInt(coodinates.ymin), parseInt(coodinates.xmax), parseInt(coodinates.ymax));
+                event.userData.viewCoordinates(parseInt(coodinates.xmin), parseInt(coodinates.ymin), parseInt(coodinates.xmax - coodinates.xmin), parseInt(coodinates.ymax - coodinates.ymin));
             }
 
             function addNavigatorImage(status, context) {
@@ -286,6 +285,14 @@ class EXACTViewer {
 
             // Check if navigator overlay exists or is supported and add if returns true
             event.userData.exact_image_sync.navigatorOverlayAvailable(addNavigatorImage, event.userData);
+
+
+            event.userData.exact_registration_sync = new EXACTRegistrationSync(event.userData.viewer, event.userData.imageInformation, event.userData.gHeaders);
+            event.userData.browser_sync = new EXACTBrowserSync(event.userData.imageInformation, event.userData.viewer, event.userData.exact_registration_sync);
+            event.userData.initBrowserSycEvents();
+
+
+            this.searchTool = new SearchTool(event.userData.imageId, event.userData.viewer, event.userData.exact_sync, event.userData.browser_sync);
         }, this);
 
         // disable nav if image is to small
@@ -452,6 +459,11 @@ class EXACTViewer {
 
         this.imageClosed();
         this.viewer.destroy();
+
+        if (this.searchTool !== undefined) {
+            this.searchTool.destroy();
+        }
+
         this.screeningTool.destroy();
         this.browser_sync.destroy();
     }
@@ -480,21 +492,21 @@ class EXACTViewer {
         }
     }
 
-    viewCoordinates(x_min, y_min, x_max, y_max) {
+    viewCoordinates(x_min, y_min, width, height, rotation_angle=0) {
+
+        rotation_angle = (rotation_angle !== undefined) ? rotation_angle : 0;
+
+        this.viewer.viewport.setRotation(rotation_angle);
 
         const vpRect = this.viewer.viewport.imageToViewportRectangle(new OpenSeadragon.Rect(
             x_min,
             y_min,
-            x_max - x_min,
-            y_max - y_min
+            width,
+            height,
+            -rotation_angle
         ));
 
-        this.viewer.viewport.fitBoundsWithConstraints(new OpenSeadragon.Rect(
-            vpRect.x,
-            vpRect.y,
-            vpRect.width,
-            vpRect.height
-        ));
+        this.viewer.viewport.fitBoundsWithConstraints(vpRect);
     }
 }
 
@@ -517,7 +529,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         this.initToolEventHandler(this.viewer);
 
         this.exact_sync = this.createSyncModules(annotationTypes, this.imageId, headers, this.viewer, user_id, collaboration_type);
-        this.searchTool = new SearchTool(this.imageId, this.viewer, this.exact_sync, this.browser_sync);
+        this.searchTool = undefined;
 
         this.asthmaAnalysis = new AsthmaAnalysis(this.imageId, this.viewer, this.exact_sync);
 
@@ -1551,7 +1563,6 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
         this.tool.clear();
         this.teamTool.destroy();
-        this.searchTool.destroy();
         this.exact_sync.destroy();
         this.asthmaAnalysis.destroy();
     }
