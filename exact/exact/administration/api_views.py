@@ -28,6 +28,8 @@ class ProductViewset(viewsets.ModelViewSet):
         user = self.request.user
         if "creator" not in request.data:
             request.data["creator"] = user.id
+        if "imagesets" not in request.data:
+            request.data["imagesets"] = []
         response = super().create(request)
         return response
 

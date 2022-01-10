@@ -28,6 +28,11 @@ class EXACTBrowserSync {
         this.channels = {};
         this.initUiEvents();
         this.initBrowserSycEvents();
+
+        viewer.addHandler("sync_RegistrationLoaded", function (event) {
+
+            event.userData.requestAllOpenImages();
+        }, this);
     }
 
     initBrowserSycEvents() {
@@ -63,6 +68,10 @@ class EXACTBrowserSync {
         $("#open_registration_image_visibility").show();
         $("#open_registration_image").attr("href",include_server_subdir("/annotations/" + registration_pair.source_image.id + "/"));
 
+        if (this.registration !== undefined) {
+            this.registration.destroy();
+        }
+
         this.registration = new EXACTRegistrationHandler(this.viewer, registration_pair, this);
     }
 
@@ -84,7 +93,7 @@ class EXACTBrowserSync {
                                 </option>`);
         }
 
-        if($('#sync_browser_image > option').length == 1) {
+        if($('#sync_browser_image > option').length >= 1) {
             $("#sync_browser_image").trigger("change");
         }
 
