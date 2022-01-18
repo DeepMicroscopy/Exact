@@ -9,7 +9,9 @@ class Migration(migrations.Migration):
         ('annotations', '0046_auto_20210304_1530'),
     ]
 
-    migrations.RunSQL('''
-        DROP FUNCTION IF EXISTS update_points();
-        DROP TRIGGER IF EXISTS points_update ON annotations_verification;
-        ''')
+    operations = [
+        migrations.RunSQL('''
+            DROP TRIGGER IF EXISTS points_update ON annotations_verification;
+            DROP FUNCTION IF EXISTS update_points();
+            ''')
+    ]
