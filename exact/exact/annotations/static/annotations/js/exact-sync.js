@@ -729,13 +729,17 @@ class EXACTAnnotationSync {
             data: JSON.stringify(data), success: function (anno, textStatus, jqXHR) {
                 if (jqXHR.status === 200) {
                     if (anno.deleted === true) {
-                        context.synchronisationNotifications("info", anno, "AnnotationDeleted")
+                        context.synchronisationNotifications("info", anno, "AnnotationDeleted");
+                        context.viewer.raiseEvent('sync_TabAnnotationDeleted', { anno });
                     } else {
-                        context.synchronisationNotifications("info", anno, "AnnotationUpdated")
+                        context.synchronisationNotifications("info", anno, "AnnotationUpdated");
+                        context.viewer.raiseEvent('sync_TabAnnotationUpdated', { anno });
                     }
 
                 } else if (jqXHR.status === 201) {
-                    context.synchronisationNotifications("info", anno, "AnnotationCreated")
+                    context.synchronisationNotifications("info", anno, "AnnotationCreated");
+                    context.viewer.raiseEvent('sync_TabAnnotationCreated', { anno });
+
                 }
                 anno.annotation_type = context.annotationTypes[anno.annotation_type]
                 context.annotations[anno.unique_identifier] = anno

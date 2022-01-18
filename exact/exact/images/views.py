@@ -307,7 +307,7 @@ def upload_image(request, imageset_id):
 
                     image.save_file(path)
                 except Exception as e:
-                    errors.append(e.message)
+                    errors.append(str(e))
 
             errormessage = ''
             if error['zip']:
