@@ -1015,6 +1015,31 @@ class BoundingBoxes {
     }
 
 
+    updateAnnotations(annotations) {
+        if (annotations === undefined ||
+            annotations.length === 0) {
+
+            return;s
+        }
+
+        for (var annotation of annotations) {
+
+            let item  = this.getItemFromUUID(annotation.unique_identifier)
+
+            if (annotation.vector === null || item  === undefined) {
+                continue;
+            } else {
+                this.removeAnnotation(annotation.unique_identifier)
+            }
+
+            this.drawAnnotation(annotation)
+        }
+
+        this.overlay.resize();
+        this.overlay.resizecanvas();        
+    }
+
+
     drawExistingAnnotations(annotations, drawAnnotations=true) {
         if (annotations === undefined ||
             annotations.length === 0 ||

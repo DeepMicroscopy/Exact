@@ -33,6 +33,40 @@ class EXACTBrowserSync {
 
             event.userData.requestAllOpenImages();
         }, this);
+
+
+        viewer.addHandler("sync_TabAnnotationCreated", function (event) {
+
+            event.userData.getChannelObject("SendCreatedOrUpdateAnnotation").postMessage({
+                "annotation": event.anno,
+                "imageId": event.userData.source_image.id,
+                "image_name": event.userData.source_image.name,
+            });     
+
+        }, this);
+
+        
+        viewer.addHandler("sync_TabAnnotationUpdated", function (event) {
+
+            event.userData.getChannelObject("SendCreatedOrUpdateAnnotation").postMessage({
+                "annotation": event.anno,
+                "imageId": event.userData.source_image.id,
+                "image_name": event.userData.source_image.name,
+            });     
+
+        }, this);
+
+
+        viewer.addHandler("sync_TabAnnotationDeleted", function (event) {
+
+            event.userData.getChannelObject("SendDeletedAnnotation").postMessage({
+                "annotation": event.anno,
+                "imageId": event.userData.source_image.id,
+                "image_name": event.userData.source_image.name,
+            });     
+
+        }, this);
+
     }
 
     initBrowserSycEvents() {

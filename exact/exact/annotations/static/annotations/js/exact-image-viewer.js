@@ -162,10 +162,111 @@ class EXACTViewer {
 
     initBrowserSycEvents() {
         this.browser_sync.getChannelObject("ImageViewPort").onmessage = 
-                    this.reseiveCurrentViewPortCoordinages.bind(this);
+                    this.receiveCurrentViewPortCoordinages.bind(this);
+
+
+        this.browser_sync.getChannelObject("SendCreatedOrUpdateAnnotation").onmessage = 
+                    this.receiveCreatedOrUpdatedAnnotationFromOtherTab.bind(this);
+
+        this.browser_sync.getChannelObject("SendDeletedAnnotation").onmessage = 
+                    this.receiveDeletedAnnotationFromOtherTab.bind(this);
     }
 
-    reseiveCurrentViewPortCoordinages(event) {
+    receiveDeletedAnnotationFromOtherTab(event) {
+
+        if ($("#SyncAnnosToView-enabled").prop("checked")) {
+
+            let selectedImageName = $("select#sync_browser_image").val();
+            if(event.data.image_name === selectedImageName 
+                && this.browser_sync.registration != null
+                && event.data.annotation !== undefined
+                && event.data.annotation.annotation_type in this.annotationTypes) {
+
+                this.tool.removeAnnotation(event.data.annotation.unique_identifier);
+                this.exact_sync.deleteAnnotation(event.data.annotation.unique_identifier);
+            }
+        }
+    }
+
+
+    receiveCreatedOrUpdatedAnnotationFromOtherTab(event) {
+
+        if ($("#SyncAnnosToView-enabled").prop("checked")) {
+
+            let selectedImageName = $("select#sync_browser_image").val();
+            if(event.data.image_name === selectedImageName 
+                && this.browser_sync.registration != null
+                && event.data.annotation !== undefined
+                && event.data.annotation.vector !== null
+                && event.data.annotation.vector !== undefined
+                && event.data.annotation.annotation_type in this.annotationTypes) {
+
+                let annotation = event.data.annotation;
+                annotation.annotation_type = this.annotationTypes[annotation.annotation_type];
+
+                // transform coordinates
+                let new_vector = {}
+                switch (annotation.annotation_type.vector_type) {
+                    case 1: // Rect
+                    case 2: // POINT or Elipse
+                    case 6: // Rect
+                    case 7: // Global
+                        // transform center and then with and height
+                        let width = annotation.vector.x2 - annotation.vector.x1;
+                        let height = annotation.vector.y2 - annotation.vector.y1;
+
+                        let center_x = annotation.vector.x1 + (width / 2); 
+                        let center_y = annotation.vector.y1 + (height / 2);
+
+                        [center_x, center_y] = this.browser_sync.registration.transformAffine(center_x, center_y);
+                        width *= this.browser_sync.registration.mpp_x_scale;
+                        height *= this.browser_sync.registration.mpp_x_scale;
+
+                        new_vector["x1"] = center_x - (width / 2);
+                        new_vector["y1"] = center_y - (height / 2);
+
+                        new_vector["x2"] = center_x + (width / 2);
+                        new_vector["y2"] = center_y + (height / 2);
+                        break;
+
+                    default:
+                        // transfer each coordinate paar individually
+                        var count = Object.keys(annotation.vector).length / 2;
+                        for (var i = 1; i <= count; i++) {
+                            [new_vector["x" + i], new_vector["y" + i]] = this.browser_sync.registration.transformAffine(annotation.vector["x" + i], annotation.vector["y" + i]);
+                        }    
+                        break;
+                }
+
+                if (annotation.unique_identifier in this.exact_sync.annotations) { 
+                    // if the annotation is known
+                    let current_annotation = this.exact_sync.annotations[annotation.unique_identifier];
+                    annotation.id = current_annotation.id;
+                } else {
+                    annotation.id = -1;
+                }
+
+                annotation.vector = new_vector;
+                annotation.image = this.imageId;
+
+                this.exact_sync.saveAnnotation(annotation);
+
+                let annotations = [annotation];
+
+                if (annotation.id === -1) { // create a new annotation
+                    this.viewer.raiseEvent('sync_drawAnnotations', { annotations });
+                } else {
+                    // update the drawing of an existing annotation
+                    this.viewer.raiseEvent('sync_updateDrawnAnnotations', { annotations });
+                }
+                
+            }
+        }
+
+    }
+
+
+    receiveCurrentViewPortCoordinages(event) {
 
         if (document.visibilityState == 'visible' && 
                 $("#SyncBrowserViewpoint-enabled").prop("checked")) {
@@ -1021,6 +1122,10 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         viewer.addHandler('sync_drawAnnotations', function (event) {
             event.userData.tool.drawExistingAnnotations(event.annotations, event.userData.drawAnnotations);
         }, this);
+
+        viewer.addHandler('sync_updateDrawnAnnotations', function (event) {
+            event.userData.tool.updateAnnotations(event.annotations);
+        }, this);
     }
 
     initUiEvents(annotation_types) {
@@ -1620,6 +1725,13 @@ class EXACTViewerLocalAnnotationsFrames extends EXACTViewerLocalAnnotations {
             let annotations = event.userData.filterFrameAnnotations(event.annotations);
 
             event.userData.tool.drawExistingAnnotations(annotations);
+        }, this);
+
+        viewer.addHandler('sync_updateDrawnAnnotations', function (event) {
+
+            let annotations = event.userData.filterFrameAnnotations(event.annotations);
+
+            event.userData.tool.updateAnnotations(annotations);
         }, this);
     }
 
