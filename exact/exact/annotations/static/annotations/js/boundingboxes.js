@@ -1019,7 +1019,7 @@ class BoundingBoxes {
         if (annotations === undefined ||
             annotations.length === 0) {
 
-            return;s
+            return;
         }
 
         for (var annotation of annotations) {
