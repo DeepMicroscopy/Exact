@@ -513,6 +513,10 @@ class EXACTViewer {
         return;
     }
 
+    handleKeyPress(event) {
+        return;
+    }
+
     handleKeyDown(event){
         return
     }
@@ -643,6 +647,8 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         this.actionMemory = 50;
         this.currentAction = undefined
 
+        this.insertNewAnno = false
+
         this.initUiEvents(this.annotationTypes);
     }
 
@@ -731,7 +737,10 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 var new_selected = tool.hitTestObject(imagePoint)
                 var selected_segment = tool.hitTestSegment(imagePoint)
 
-                if(selected_segment !== undefined && !event.originalEvent.ctrlKey && !(event.userData.tool.singlePolyOperation.active || event.userData.tool.multiPolyOperation.active))
+                var insertAnno = (this.userData.insertNewAnno || event.originalEvent.ctrlKey)
+                var polyOpActive = (event.userData.tool.singlePolyOperation.active || event.userData.tool.multiPolyOperation.active)
+
+                if(selected_segment !== undefined && !insertAnno && !polyOpActive)
                 {
                     // a segment to drag is selected, we didnt press ctrl to force a new object, no poly operation is active
                     tool.drag.active = true
@@ -743,7 +752,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                         old_item: tool.selection.item.clone({insert: false})
                     }
                 }
-                else if (new_selected == undefined || event.userData.tool.singlePolyOperation.active || event.userData.tool.multiPolyOperation.active || event.originalEvent.ctrlKey)
+                else if (new_selected == undefined || polyOpActive || insertAnno)
                 {
                     // a new object is created
                     if(tool.selection !== undefined) // reset selection, if existing
@@ -1076,6 +1085,9 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                     this.changeAnnotationTypeByKey(9);
                 }
                 break;
+            case 65: //a
+                this.insertNewAnno = false;
+                break;
 
             case 66: //b
                 break;
@@ -1102,10 +1114,19 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             case 68: //d
                 this.tool.activateMultiPolyOperationByString("KNIFE", this);
                 break;
-            case 90:
+            case 90: // z
                 if(event.ctrlKey){
                     this.undo();
                 }
+        }
+    }
+
+    handleKeyPress(event)
+    {
+        switch (event.keyCode) {
+            case 97: //a
+                this.insertNewAnno = true;
+                break;
         }
     }
     
@@ -1132,6 +1153,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
 
         $(document).keyup(this.handleKeyUp.bind(this));
+        $(document).keypress(this.handleKeyPress.bind(this));
         $(document).keydown(this.handleKeyDown.bind(this));
         $('select#annotation_type_id').change(this.changeAnnotationTypeByComboxbox.bind(this));
 
