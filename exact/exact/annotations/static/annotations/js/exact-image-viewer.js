@@ -1334,26 +1334,43 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
     uiLocalAnnotationVisibilityChanged(event) {
         var annotation_type_id = parseInt(event.target.dataset.annotation_type_id);
+        var tristate_option = $("#tristate_option")[0].value
+
+        var visible = true
+        var disabled_hitTest = false
+        var keep_interaction = false
 
         if(event.currentTarget.value == "on")
         {
             event.currentTarget.checked = false
             event.currentTarget.value="off"
+            visible = false
         }
-        else if(event.currentTarget.value == "off")
+        else if(event.currentTarget.value == "off" && (tristate_option == "no_interact"))
         {
             event.currentTarget.indeterminate = true
             event.currentTarget.checked = true
             event.currentTarget.value="indeterminate"
+            visible = true
+            disabled_hitTest = true
         }
-        else if (event.currentTarget.value == "indeterminate")
+        else if(event.currentTarget.value == "off" && (tristate_option == "no_vis"))
+        {
+            event.currentTarget.indeterminate = true
+            event.currentTarget.checked = true
+            event.currentTarget.value="indeterminate"
+            visible = false
+            keep_interaction = true
+        }
+        else
         {
             event.currentTarget.indeterminate = false
             event.currentTarget.checked = true
             event.currentTarget.value="on"
+            visible = true
         }
 
-        this.changeAnnotationTypeVisibility(annotation_type_id, event.currentTarget.checked, event.currentTarget.indeterminate);
+        this.changeAnnotationTypeVisibility(annotation_type_id, visible, disabled_hitTest, keep_interaction);
     }
 
     createDrawingModule(viewer, imageId, imageInformation) {
@@ -1421,8 +1438,8 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         }
     }
 
-    changeAnnotationTypeVisibility(annotation_type_id, visibility, disabled_hitTest) {
-        this.tool.updateVisbility(annotation_type_id, visibility, disabled_hitTest);
+    changeAnnotationTypeVisibility(annotation_type_id, visibility, disabled_hitTest, keep_interaction) {
+        this.tool.updateVisbility(annotation_type_id, visibility, disabled_hitTest, keep_interaction);
     }
 
     verifyAnnotation(annotation) {
