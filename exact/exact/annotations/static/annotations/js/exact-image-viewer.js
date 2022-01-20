@@ -570,7 +570,9 @@ class EXACTViewer {
         }
 
         this.screeningTool.destroy();
-        this.browser_sync.destroy();
+
+        if (this.browser_sync !== undefined)
+            this.browser_sync.destroy();
     }
 
     onFrameSliderChanged(event) {
