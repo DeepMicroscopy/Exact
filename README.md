@@ -358,6 +358,7 @@ in [UPGRADE.md](https://github.com/ChristianMarzahl/exact/blob/master/UPGRADE.md
 | Ctrl + z  |              | Undo |
 | c         |              | Toggle annotation mode |
 | y         |              | Toggle annotation visibility |
+| b         |              | Push currently selected annotation type into the background |
 | Ctrl,a    |              | Draw annotation on top of existing one |
 | 0,1,2,3,4 |              | Change label of local annotations |
 | 0,1,2,3,4 |  Shift       | Change label of global annotations |

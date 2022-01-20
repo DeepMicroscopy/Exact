@@ -1028,6 +1028,16 @@ class BoundingBoxes {
             });
     }
 
+    pushAnnoTypeToBackground(annotation_type_id)
+    {
+        this.group.children.forEach(el =>
+        {
+            if (el.data.type_id == annotation_type_id)
+            {
+                el.sendToBack()
+            }
+        })
+    }
 
     updateAnnotations(annotations) {
         if (annotations === undefined ||

@@ -1090,6 +1090,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 break;
 
             case 66: //b
+                this.pushCurrentAnnoTypeToBackground();
                 break;
             case 67: //c
                 this.viewer.selectionInstance.toggleState();
@@ -1371,6 +1372,12 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         }
 
         this.changeAnnotationTypeVisibility(annotation_type_id, visible, disabled_hitTest, keep_interaction);
+    }
+
+    pushCurrentAnnoTypeToBackground()
+    {
+        var selected_annotation_type = this.getCurrentAnnotationType();
+        this.tool.pushAnnoTypeToBackground(selected_annotation_type.id)
     }
 
     createDrawingModule(viewer, imageId, imageInformation) {
