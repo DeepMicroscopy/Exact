@@ -759,10 +759,15 @@
 
                                         {% endfor %}
                                     </select>
-                                    <tr>
-                                        <input type="checkbox" id="display_messages" checked="true">
-                                        Display Messages
-                                    </tr>
+                                    <div class=""><input type="checkbox" id="display_messages" checked="true" width: auto>Display Messages</div>
+                                    <div class="">
+                                        <label for="tristate_option">3rd Checkbox state:</label>
+                                        <select id="tristate_option">
+                                        <option value="unused">Deactivated</option>
+                                        <option value="no_interact">Visible, no Interaction</option>
+                                        <option value="no_vis">Not Visible, Interaction</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
                         </tr>

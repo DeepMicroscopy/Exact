@@ -513,6 +513,10 @@ class EXACTViewer {
         return;
     }
 
+    handleKeyPress(event) {
+        return;
+    }
+
     handleKeyDown(event){
         return
     }
@@ -643,6 +647,8 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         this.actionMemory = 50;
         this.currentAction = undefined
 
+        this.insertNewAnno = false
+
         this.initUiEvents(this.annotationTypes);
     }
 
@@ -731,7 +737,10 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 var new_selected = tool.hitTestObject(imagePoint)
                 var selected_segment = tool.hitTestSegment(imagePoint)
 
-                if(selected_segment !== undefined && !event.originalEvent.ctrlKey && !(event.userData.tool.singlePolyOperation.active || event.userData.tool.multiPolyOperation.active))
+                var insertAnno = (this.userData.insertNewAnno || event.originalEvent.ctrlKey)
+                var polyOpActive = (event.userData.tool.singlePolyOperation.active || event.userData.tool.multiPolyOperation.active)
+
+                if(selected_segment !== undefined && !insertAnno && !polyOpActive)
                 {
                     // a segment to drag is selected, we didnt press ctrl to force a new object, no poly operation is active
                     tool.drag.active = true
@@ -743,7 +752,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                         old_item: tool.selection.item.clone({insert: false})
                     }
                 }
-                else if (new_selected == undefined || event.userData.tool.singlePolyOperation.active || event.userData.tool.multiPolyOperation.active || event.originalEvent.ctrlKey)
+                else if (new_selected == undefined || polyOpActive || insertAnno)
                 {
                     // a new object is created
                     if(tool.selection !== undefined) // reset selection, if existing
@@ -1076,8 +1085,12 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                     this.changeAnnotationTypeByKey(9);
                 }
                 break;
+            case 65: //a
+                this.insertNewAnno = false;
+                break;
 
             case 66: //b
+                this.pushCurrentAnnoTypeToBackground();
                 break;
             case 67: //c
                 this.viewer.selectionInstance.toggleState();
@@ -1102,10 +1115,19 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             case 68: //d
                 this.tool.activateMultiPolyOperationByString("KNIFE", this);
                 break;
-            case 90:
+            case 90: // z
                 if(event.ctrlKey){
                     this.undo();
                 }
+        }
+    }
+
+    handleKeyPress(event)
+    {
+        switch (event.keyCode) {
+            case 97: //a
+                this.insertNewAnno = true;
+                break;
         }
     }
     
@@ -1132,6 +1154,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
 
         $(document).keyup(this.handleKeyUp.bind(this));
+        $(document).keypress(this.handleKeyPress.bind(this));
         $(document).keydown(this.handleKeyDown.bind(this));
         $('select#annotation_type_id').change(this.changeAnnotationTypeByComboxbox.bind(this));
 
@@ -1312,26 +1335,49 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
     uiLocalAnnotationVisibilityChanged(event) {
         var annotation_type_id = parseInt(event.target.dataset.annotation_type_id);
+        var tristate_option = $("#tristate_option")[0].value
+
+        var visible = true
+        var disabled_hitTest = false
+        var keep_interaction = false
 
         if(event.currentTarget.value == "on")
         {
             event.currentTarget.checked = false
             event.currentTarget.value="off"
+            visible = false
         }
-        else if(event.currentTarget.value == "off")
+        else if(event.currentTarget.value == "off" && (tristate_option == "no_interact"))
         {
             event.currentTarget.indeterminate = true
             event.currentTarget.checked = true
             event.currentTarget.value="indeterminate"
+            visible = true
+            disabled_hitTest = true
         }
-        else if (event.currentTarget.value == "indeterminate")
+        else if(event.currentTarget.value == "off" && (tristate_option == "no_vis"))
+        {
+            event.currentTarget.indeterminate = true
+            event.currentTarget.checked = true
+            event.currentTarget.value="indeterminate"
+            visible = false
+            keep_interaction = true
+        }
+        else
         {
             event.currentTarget.indeterminate = false
             event.currentTarget.checked = true
             event.currentTarget.value="on"
+            visible = true
         }
 
-        this.changeAnnotationTypeVisibility(annotation_type_id, event.currentTarget.checked, event.currentTarget.indeterminate);
+        this.changeAnnotationTypeVisibility(annotation_type_id, visible, disabled_hitTest, keep_interaction);
+    }
+
+    pushCurrentAnnoTypeToBackground()
+    {
+        var selected_annotation_type = this.getCurrentAnnotationType();
+        this.tool.pushAnnoTypeToBackground(selected_annotation_type.id)
     }
 
     createDrawingModule(viewer, imageId, imageInformation) {
@@ -1399,8 +1445,8 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         }
     }
 
-    changeAnnotationTypeVisibility(annotation_type_id, visibility, disabled_hitTest) {
-        this.tool.updateVisbility(annotation_type_id, visibility, disabled_hitTest);
+    changeAnnotationTypeVisibility(annotation_type_id, visibility, disabled_hitTest, keep_interaction) {
+        this.tool.updateVisbility(annotation_type_id, visibility, disabled_hitTest, keep_interaction);
     }
 
     verifyAnnotation(annotation) {
