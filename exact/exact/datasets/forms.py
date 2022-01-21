@@ -66,3 +66,5 @@ class MITOS_WSI_CMCDatasetForm(DatasetForm):
     files = forms.MultipleChoiceField(choices=FILE_CHOICES)
     database = forms.ChoiceField(choices=DATABASES)
 
+class CATCH_DatasetForm(DatasetForm):
+    images = forms.FileField(widget=forms.ClearableFileInput(attrs={'multiple':True, 'input_type':'file'}))
