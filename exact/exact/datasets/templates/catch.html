@@ -1,0 +1,91 @@
+{% load static %}
+
+<head>
+	<meta charset="utf-8">
+	<link rel="stylesheet" type="text/css" href="{% static 'css/bootstrap.min.css' %}">
+	<link rel="stylesheet" type="text/css" href="{% static 'css/styles.css' %}">
+</head>
+
+<body>
+
+{% block content %}
+
+    <div class="card">
+        <div class="card-header">
+
+            <h3> Canine CuTaneous Cancer Histology (CATCH) Dataset </h3>
+
+        </div>
+
+        <div class="card-body" >
+
+            <table  class="table table-striped">
+                <tbody>
+                    <tr>
+                        <th>Description</th>
+                        <td>
+                            Canine cutaneous tumor whole slide images
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Example</th>
+                        <td>
+                            <img src="{% static "images/canine_cutaneous.JPG" %}" width="250" height="250">
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Labels</th>
+                        <td>
+                            Bone; Cartilage; Dermis; Epidermis; Subcutis; Inflammation/Necrosis; Melanoma; Plasmacytoma; Mast Cell Tumor; PNST; SCC; Trichoblastoma; Histiocytoma
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Paper</th>
+                        <td>/</td>
+                    </tr>
+                    <tr>
+                        <th>Images</th>
+                        <td>350 WSI</td>
+                    </tr>
+                    <tr>
+                        <th>Annotations</th>
+                        <td>12,424</td>
+                    </tr>
+                    <tr>
+                        <th>Size</th>
+                        <td>527 GB</td>
+                    </tr>
+                    <tr>
+                        <th>Requirements</th>
+                        <td>Downloaded image files from TCIA</td>
+                    </tr>
+                </tbody>
+            </table>
+
+        </div>
+
+        <div class="card-footer">
+            <h4> Create dataset</h4>
+
+            <form action="catch/create/" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <table   class="table table-striped">
+                    {{ catch_form.as_table }}
+                </table>
+                <input type="submit" value="Create Imageset">
+            </form>
+
+        </div>
+
+    </div>
+
+    {% endblock %}
+
+    {% block additional_js %}
+
+        <script type="text/javascript" src="{% static 'scripts/jquery-3.2.1.min.js' %}"></script>
+        <script type="text/javascript" src="{% static 'scripts/bootstrap.min.js' %}"></script>
+
+    {% endblock additional_js %}
+
+</body>
