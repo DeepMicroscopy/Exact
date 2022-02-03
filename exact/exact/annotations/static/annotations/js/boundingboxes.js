@@ -42,7 +42,6 @@ class BoundingBoxes {
                                                 tolerance: 5}
 
 
-
         this.imageid = imageid;
         this.image_width = imageSize["width"];
         this.image_hight = imageSize["height"];
