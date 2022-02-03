@@ -362,9 +362,14 @@ in [UPGRADE.md](https://github.com/ChristianMarzahl/exact/blob/master/UPGRADE.md
 
 | Key       | Modifier     | Function      |
 |-----------|:------------:|:------------------:| 
-| Del       |              | Delete annotation  |
+| Del,x       |              | Delete annotation  |
 | Escape    |              | Cancel editing     |
 | Enter     |              | Confirm / Save     |
+| Ctrl + z  |              | Undo |
+| c         |              | Toggle annotation mode |
+| y         |              | Toggle annotation visibility |
+| b         |              | Push currently selected annotation type into the background |
+| Ctrl,a    |              | Draw annotation on top of existing one |
 | 0,1,2,3,4 |              | Change label of local annotations |
 | 0,1,2,3,4 |  Shift       | Change label of global annotations |
 | q         |              | Previous image     |
@@ -373,9 +378,11 @@ in [UPGRADE.md](https://github.com/ChristianMarzahl/exact/blob/master/UPGRADE.md
 | e         |  Shift       | Next frame         |
 | r         |              | Rotate image (Warning: annotations are not affected)        |
 | f         |              | Flip image   (Warning: annotations are not affected)        |
-| s         |              | Scissor         |
-| g         |              | Glue         |
+| s         |              | Scissor (Delete from selected object)        |
+| g         |              | Glue (Add to selected object)        |
+| d         |              | Knife (Draw a line to split objects)         |
 | Mouse wheel|   Shift      | Paint brush         |
+| Arrow keys |              | Move viewing window |
 
 ##### Screening Viewer 
 

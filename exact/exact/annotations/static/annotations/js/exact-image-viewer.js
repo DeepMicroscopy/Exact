@@ -13,14 +13,11 @@ class EXACTViewer {
         this.frame = 1;
     
         this.viewer = this.createViewer(options);
-        this.exact_registration_sync = new EXACTRegistrationSync(this.imageInformation, this.gHeaders);
-
-        this.browser_sync = new EXACTBrowserSync(this.imageInformation, this.viewer, this.exact_registration_sync)
+        this.exact_registration_sync = undefined; 
+        this.browser_sync = undefined; 
 
         this.exact_image_sync = new EXACTImageSync(this.imageId, this.gHeaders, this.viewer);
-
         this.initViewerEventHandler(this.viewer, imageInformation);
-        this.initBrowserSycEvents();
 
         this.registration = null;
         this.filterImage = new OpenseadragonFilteringViewer(this.viewer);
@@ -166,10 +163,111 @@ class EXACTViewer {
 
     initBrowserSycEvents() {
         this.browser_sync.getChannelObject("ImageViewPort").onmessage = 
-                    this.reseiveCurrentViewPortCoordinages.bind(this);
+                    this.receiveCurrentViewPortCoordinages.bind(this);
+
+
+        this.browser_sync.getChannelObject("SendCreatedOrUpdateAnnotation").onmessage = 
+                    this.receiveCreatedOrUpdatedAnnotationFromOtherTab.bind(this);
+
+        this.browser_sync.getChannelObject("SendDeletedAnnotation").onmessage = 
+                    this.receiveDeletedAnnotationFromOtherTab.bind(this);
     }
 
-    reseiveCurrentViewPortCoordinages(event) {
+    receiveDeletedAnnotationFromOtherTab(event) {
+
+        if ($("#SyncAnnosToView-enabled").prop("checked")) {
+
+            let selectedImageName = $("select#sync_browser_image").val();
+            if(event.data.image_name === selectedImageName 
+                && this.browser_sync.registration != null
+                && event.data.annotation !== undefined
+                && event.data.annotation.annotation_type in this.annotationTypes) {
+
+                this.tool.removeAnnotation(event.data.annotation.unique_identifier);
+                this.exact_sync.deleteAnnotation(event.data.annotation.unique_identifier);
+            }
+        }
+    }
+
+
+    receiveCreatedOrUpdatedAnnotationFromOtherTab(event) {
+
+        if ($("#SyncAnnosToView-enabled").prop("checked")) {
+
+            let selectedImageName = $("select#sync_browser_image").val();
+            if(event.data.image_name === selectedImageName 
+                && this.browser_sync.registration != null
+                && event.data.annotation !== undefined
+                && event.data.annotation.vector !== null
+                && event.data.annotation.vector !== undefined
+                && event.data.annotation.annotation_type in this.annotationTypes) {
+
+                let annotation = event.data.annotation;
+                annotation.annotation_type = this.annotationTypes[annotation.annotation_type];
+
+                // transform coordinates
+                let new_vector = {}
+                switch (annotation.annotation_type.vector_type) {
+                    case 1: // Rect
+                    case 2: // POINT or Elipse
+                    case 6: // Rect
+                    case 7: // Global
+                        // transform center and then with and height
+                        let width = annotation.vector.x2 - annotation.vector.x1;
+                        let height = annotation.vector.y2 - annotation.vector.y1;
+
+                        let center_x = annotation.vector.x1 + (width / 2); 
+                        let center_y = annotation.vector.y1 + (height / 2);
+
+                        [center_x, center_y] = this.browser_sync.registration.transformAffine(center_x, center_y);
+                        width *= this.browser_sync.registration.mpp_x_scale;
+                        height *= this.browser_sync.registration.mpp_x_scale;
+
+                        new_vector["x1"] = center_x - (width / 2);
+                        new_vector["y1"] = center_y - (height / 2);
+
+                        new_vector["x2"] = center_x + (width / 2);
+                        new_vector["y2"] = center_y + (height / 2);
+                        break;
+
+                    default:
+                        // transfer each coordinate paar individually
+                        var count = Object.keys(annotation.vector).length / 2;
+                        for (var i = 1; i <= count; i++) {
+                            [new_vector["x" + i], new_vector["y" + i]] = this.browser_sync.registration.transformAffine(annotation.vector["x" + i], annotation.vector["y" + i]);
+                        }    
+                        break;
+                }
+
+                if (annotation.unique_identifier in this.exact_sync.annotations) { 
+                    // if the annotation is known
+                    let current_annotation = this.exact_sync.annotations[annotation.unique_identifier];
+                    annotation.id = current_annotation.id;
+                } else {
+                    annotation.id = -1;
+                }
+
+                annotation.vector = new_vector;
+                annotation.image = this.imageId;
+
+                this.exact_sync.saveAnnotation(annotation);
+
+                let annotations = [annotation];
+
+                if (annotation.id === -1) { // create a new annotation
+                    this.viewer.raiseEvent('sync_drawAnnotations', { annotations });
+                } else {
+                    // update the drawing of an existing annotation
+                    this.viewer.raiseEvent('sync_updateDrawnAnnotations', { annotations });
+                }
+                
+            }
+        }
+
+    }
+
+
+    receiveCurrentViewPortCoordinages(event) {
 
         if (document.visibilityState == 'visible' && 
                 $("#SyncBrowserViewpoint-enabled").prop("checked")) {
@@ -179,17 +277,19 @@ class EXACTViewer {
 
                 let x_min = event.data.x_min;
                 let y_min = event.data.y_min;
-                let x_max = event.data.x_max;
-                let y_max = event.data.y_max;
+                let width = event.data.x_max - event.data.x_min;
+                let height = event.data.y_max - event.data.y_min;
+                let rotation_angle = ("rotation_angle" in event.data) ? event.data.angle : 0
 
 
                 if (this.browser_sync.registration != null) {
                     [x_min, y_min] = this.browser_sync.registration.transformAffine(x_min, y_min);
-                    [x_max, y_max] = this.browser_sync.registration.transformAffine(x_max, y_max);
-
+                    width *= this.browser_sync.registration.mpp_x_scale;
+                    height *= this.browser_sync.registration.mpp_x_scale;
+                    rotation_angle = -this.browser_sync.registration.rotation_angle;
                 }
 
-                this.viewCoordinates(x_min, y_min, x_max, y_max);
+                this.viewCoordinates(x_min, y_min, width, height, rotation_angle);
             }
         }        
     }
@@ -240,7 +340,7 @@ class EXACTViewer {
             var coordinates = event.coordinates;
 
             event.userData.browser_sync.sendCurrentViewPortCoordinates(coordinates);
-            event.userData.viewCoordinates(coordinates.x_min, coordinates.y_min, coordinates.x_max, coordinates.y_max);
+            event.userData.viewCoordinates(coordinates.x_min, coordinates.y_min, coordinates.x_max, coordinates.y_max, rotation_angle.rotation_angle);
 
         }, this);
 
@@ -257,7 +357,7 @@ class EXACTViewer {
 
                 let coodinates = event.userData.options.url_parameters;
 
-                event.userData.viewCoordinates(parseInt(coodinates.xmin), parseInt(coodinates.ymin), parseInt(coodinates.xmax), parseInt(coodinates.ymax));
+                event.userData.viewCoordinates(parseInt(coodinates.xmin), parseInt(coodinates.ymin), parseInt(coodinates.xmax - coodinates.xmin), parseInt(coodinates.ymax - coodinates.ymin));
             }
 
             function addNavigatorImage(status, context) {
@@ -287,6 +387,14 @@ class EXACTViewer {
 
             // Check if navigator overlay exists or is supported and add if returns true
             event.userData.exact_image_sync.navigatorOverlayAvailable(addNavigatorImage, event.userData);
+
+
+            event.userData.exact_registration_sync = new EXACTRegistrationSync(event.userData.viewer, event.userData.imageInformation, event.userData.gHeaders);
+            event.userData.browser_sync = new EXACTBrowserSync(event.userData.imageInformation, event.userData.viewer, event.userData.exact_registration_sync);
+            event.userData.initBrowserSycEvents();
+
+
+            this.searchTool = new SearchTool(event.userData.imageId, event.userData.viewer, event.userData.exact_sync, event.userData.browser_sync);
         }, this);
 
         // disable nav if image is to small
@@ -406,6 +514,10 @@ class EXACTViewer {
         return;
     }
 
+    handleKeyPress(event) {
+        return;
+    }
+
     handleKeyDown(event){
         return
     }
@@ -453,8 +565,15 @@ class EXACTViewer {
 
         this.imageClosed();
         this.viewer.destroy();
+
+        if (this.searchTool !== undefined) {
+            this.searchTool.destroy();
+        }
+
         this.screeningTool.destroy();
-        this.browser_sync.destroy();
+
+        if (this.browser_sync !== undefined)
+            this.browser_sync.destroy();
     }
 
     onFrameSliderChanged(event) {
@@ -481,21 +600,21 @@ class EXACTViewer {
         }
     }
 
-    viewCoordinates(x_min, y_min, x_max, y_max) {
+    viewCoordinates(x_min, y_min, width, height, rotation_angle=0) {
+
+        rotation_angle = (rotation_angle !== undefined) ? rotation_angle : 0;
+
+        this.viewer.viewport.setRotation(rotation_angle);
 
         const vpRect = this.viewer.viewport.imageToViewportRectangle(new OpenSeadragon.Rect(
             x_min,
             y_min,
-            x_max - x_min,
-            y_max - y_min
+            width,
+            height,
+            -rotation_angle
         ));
 
-        this.viewer.viewport.fitBoundsWithConstraints(new OpenSeadragon.Rect(
-            vpRect.x,
-            vpRect.y,
-            vpRect.width,
-            vpRect.height
-        ));
+        this.viewer.viewport.fitBoundsWithConstraints(vpRect);
     }
 }
 
@@ -518,7 +637,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         this.initToolEventHandler(this.viewer);
 
         this.exact_sync = this.createSyncModules(annotationTypes, this.imageId, headers, this.viewer, user_id, collaboration_type);
-        this.searchTool = new SearchTool(this.imageId, this.viewer, this.exact_sync, this.browser_sync);
+        this.searchTool = undefined;
 
         this.asthmaAnalysis = new AsthmaAnalysis(this.imageId, this.viewer, this.exact_sync);
 
@@ -530,6 +649,8 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         this.actionStack = [];
         this.actionMemory = 50;
         this.currentAction = undefined
+
+        this.insertNewAnno = false
 
         this.initUiEvents(this.annotationTypes);
     }
@@ -619,7 +740,10 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 var new_selected = tool.hitTestObject(imagePoint)
                 var selected_segment = tool.hitTestSegment(imagePoint)
 
-                if(selected_segment !== undefined && !event.originalEvent.ctrlKey && !(event.userData.tool.singlePolyOperation.active || event.userData.tool.multiPolyOperation.active))
+                var insertAnno = (this.userData.insertNewAnno || event.originalEvent.ctrlKey)
+                var polyOpActive = (event.userData.tool.singlePolyOperation.active || event.userData.tool.multiPolyOperation.active)
+
+                if(selected_segment !== undefined && !insertAnno && !polyOpActive)
                 {
                     // a segment to drag is selected, we didnt press ctrl to force a new object, no poly operation is active
                     tool.drag.active = true
@@ -631,7 +755,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                         old_item: tool.selection.item.clone({insert: false})
                     }
                 }
-                else if (new_selected == undefined || event.userData.tool.singlePolyOperation.active || event.userData.tool.multiPolyOperation.active || event.originalEvent.ctrlKey)
+                else if (new_selected == undefined || polyOpActive || insertAnno)
                 {
                     // a new object is created
                     if(tool.selection !== undefined) // reset selection, if existing
@@ -964,8 +1088,12 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                     this.changeAnnotationTypeByKey(9);
                 }
                 break;
+            case 65: //a
+                this.insertNewAnno = false;
+                break;
 
             case 66: //b
+                this.pushCurrentAnnoTypeToBackground();
                 break;
             case 67: //c
                 this.viewer.selectionInstance.toggleState();
@@ -993,10 +1121,19 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             case 68: //d
                 this.tool.activateMultiPolyOperationByString("KNIFE", this);
                 break;
-            case 90:
+            case 90: // z
                 if(event.ctrlKey){
                     this.undo();
                 }
+        }
+    }
+
+    handleKeyPress(event)
+    {
+        switch (event.keyCode) {
+            case 97: //a
+                this.insertNewAnno = true;
+                break;
         }
     }
     
@@ -1015,19 +1152,24 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             event.userData.tool.drawExistingAnnotations(event.annotations, event.userData.drawAnnotations);
         }, this);
 
+        viewer.addHandler('sync_updateDrawnAnnotations', function (event) {
+            event.userData.tool.updateAnnotations(event.annotations);
+        }, this);
+    
         viewer.addHandler('sync_drawHeatmap', function (event) {
             // console.log('addHandler-annotations.length=', event.annotations.length)
             var mito_check = event.annotations[0].annotation_type.name.match(/look-alike/gi);
             if (typeof mito_check == 'undefined' || mito_check == null) {
                 event.userData.tool.drawHeatmap(event.annotations, event.userData.drawHeatmap);
             };
-
         }, this);
+    
     }
 
     initUiEvents(annotation_types) {
 
         $(document).keyup(this.handleKeyUp.bind(this));
+        $(document).keypress(this.handleKeyPress.bind(this));
         $(document).keydown(this.handleKeyDown.bind(this));
         $('select#annotation_type_id').change(this.changeAnnotationTypeByComboxbox.bind(this));
 
@@ -1230,27 +1372,51 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
     uiLocalAnnotationVisibilityChanged(event) {
         var annotation_type_id = parseInt(event.target.dataset.annotation_type_id);
+        var tristate_option = $("#tristate_option")[0].value
+
+        var visible = true
+        var disabled_hitTest = false
+        var keep_interaction = false
 
         if(event.currentTarget.value == "on")
         {
             event.currentTarget.checked = false
             event.currentTarget.value="off"
+            visible = false
         }
-        else if(event.currentTarget.value == "off")
+        else if(event.currentTarget.value == "off" && (tristate_option == "no_interact"))
         {
             event.currentTarget.indeterminate = true
             event.currentTarget.checked = true
             event.currentTarget.value="indeterminate"
+            visible = true
+            disabled_hitTest = true
         }
-        else if (event.currentTarget.value == "indeterminate")
+        else if(event.currentTarget.value == "off" && (tristate_option == "no_vis"))
+        {
+            event.currentTarget.indeterminate = true
+            event.currentTarget.checked = true
+            event.currentTarget.value="indeterminate"
+            visible = false
+            keep_interaction = true
+        }
+        else
         {
             event.currentTarget.indeterminate = false
             event.currentTarget.checked = true
             event.currentTarget.value="on"
+            visible = true
         }
 
-        this.changeAnnotationTypeVisibility(annotation_type_id, event.currentTarget.checked, event.currentTarget.indeterminate);
         this.changeHeatmapTypeVisibility(annotation_type_id, event.currentTarget.checked);
+
+        this.changeAnnotationTypeVisibility(annotation_type_id, visible, disabled_hitTest, keep_interaction);
+    }
+
+    pushCurrentAnnoTypeToBackground()
+    {
+        var selected_annotation_type = this.getCurrentAnnotationType();
+        this.tool.pushAnnoTypeToBackground(selected_annotation_type.id)
     }
 
     createDrawingModule(viewer, imageId, imageInformation) {
@@ -1325,8 +1491,8 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         }
     }
 
-    changeAnnotationTypeVisibility(annotation_type_id, visibility, disabled_hitTest) {
-        this.tool.updateVisbility(annotation_type_id, visibility, disabled_hitTest);
+    changeAnnotationTypeVisibility(annotation_type_id, visibility, disabled_hitTest, keep_interaction) {
+        this.tool.updateVisbility(annotation_type_id, visibility, disabled_hitTest, keep_interaction);
     }
 
     changeHeatmapTypeVisibility(annotation_type_id, visibility) {
@@ -1598,7 +1764,6 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
         this.tool.clear();
         this.teamTool.destroy();
-        this.searchTool.destroy();
         this.exact_sync.destroy();
         this.asthmaAnalysis.destroy();
     }
@@ -1665,6 +1830,13 @@ class EXACTViewerLocalAnnotationsFrames extends EXACTViewerLocalAnnotations {
             let annotations = event.userData.filterFrameAnnotations(event.annotations);
             event.userData.tool.drawHeatmap(event.annotations, event.userData.drawHeatmap);
 
+        }, this);
+
+        viewer.addHandler('sync_updateDrawnAnnotations', function (event) {
+
+            let annotations = event.userData.filterFrameAnnotations(event.annotations);
+
+            event.userData.tool.updateAnnotations(annotations);
         }, this);
     }
 

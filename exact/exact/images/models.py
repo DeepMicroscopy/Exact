@@ -11,7 +11,9 @@ from django.db.models.expressions import F
 from django.core.cache import cache
 from django.db.models.signals import post_delete, post_save, m2m_changed
 from django.dispatch import receiver
+from django.utils.functional import cached_property
 
+import math
 import os
 import numpy as np
 import cv2
@@ -353,6 +355,8 @@ class ImageSet(models.Model):
     pinned_by = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='pinned_sets')
     zip_state = models.IntegerField(choices=ZIP_STATES, default=ZipState.INVALID)
     collaboration_type = models.IntegerField(choices=COLLABORATION_TYPES, default=CollaborationTypes.COLLABORATIVE)
+    show_registration = models.BooleanField(default=False)
+
 
     def root_path(self):
         return os.path.join(settings.IMAGE_PATH, self.path)
@@ -605,6 +609,67 @@ class ImageRegistration(models.Model):
     runtime = models.IntegerField(default=-1)
     file = models.FileField(upload_to=registration_directory_path, null=True)
 
+    @cached_property
+    def rotation_angle(self):
+
+        return - math.atan2(self.transformation_matrix["t_01"], self.transformation_matrix["t_00"]) * 180 / math.pi
+
+    @cached_property
+    def inv_matrix(self):
+
+        t = self.transformation_matrix
+        H = np.array([[t["t_00"], t["t_01"], t["t_02"]], 
+                        [t["t_10"], t["t_11"], t["t_12"]], 
+                        [t["t_20"], t["t_21"], t["t_22"]]])
+
+        M = cv2.invert(H)[1]
+
+        return {
+            "t_00": M [0,0], 
+            "t_01": M [0,1],
+            "t_02": M [0,2], 
+
+            "t_10": M [1,0],  
+            "t_11": M [1,1],
+            "t_12": M [1,2],  
+
+            "t_20": M [2,0],              
+            "t_21": M [2,1],     
+            "t_22": M [2,2], 
+        }
+
+    @cached_property
+    def get_matrix_without_rotation(self):
+        t = self.transformation_matrix
+        H = np.array([[t["t_00"], t["t_01"], t["t_02"]], 
+                        [t["t_10"], t["t_11"], t["t_12"]], 
+                        [t["t_20"], t["t_21"], t["t_22"]]])
+
+        phi = self.rotation_angle * math.pi / 180
+        rot = np.array([[np.cos(phi), - np.sin(phi), 0],
+                        [np.sin(phi),   np.cos(phi), 0], 
+                        [0.         ,             0, 1]])
+        
+
+        inv_rot = cv2.invert(rot)[1]
+
+        M = H@inv_rot
+        return M
+
+
+    @cached_property
+    def get_scale(self):
+
+        M = self.get_matrix_without_rotation
+        return M[0][0], M[1][1]
+
+    @cached_property
+    def get_inv_scale(self):
+
+        M = self.get_matrix_without_rotation
+        M = cv2.invert(M)[1]
+        return M[0][0], M[1][1]
+
     def __str__(self):
         return f'Registration: Source: {self.source_image.name} Target: {self.target_image.name} Transformation: {self.transformation_matrix}'
 
@@ -637,9 +702,9 @@ class ImageRegistration(models.Model):
         qtree = registration.RegistrationQuadTree(source_slide_path=soure_path, target_slide_path=targert_path, **parameters)
         self.registration_error = qtree.mean_reg_error
         self.runtime = qtree.run_time
-        self.transformation_matrix = {"t_00": qtree.b[0][0], "t_01": qtree.b[0][1],   "t_02": qtree.t[0], 
-                                        "t_10": qtree.b[1][0], "t_11": qtree.b[1][1], "t_12": qtree.t[1], 
-                                        "t_20": 0,              "t_21": 0,            "t_22": 0}
+        self.transformation_matrix = {"t_00": qtree.get_homography[0][0], "t_01": qtree.get_homography[0][1], "t_02": qtree.get_homography[0][2], 
+                                      "t_10": qtree.get_homography[1][0], "t_11": qtree.get_homography[1][1], "t_12": qtree.get_homography[1][2], 
+                                      "t_20": qtree.get_homography[2][0], "t_21": qtree.get_homography[2][1], "t_22": qtree.get_homography[2][2]}
 
         content = pickle.dumps(qtree)
         fid = ContentFile(content)

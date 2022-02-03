@@ -996,25 +996,74 @@ class BoundingBoxes {
         }
     }
 
-    updateVisbility(annotation_type_id, visibility, disabled_hitTest = undefined ) {
+    updateVisbility(annotation_type_id, visibility, disabled_hitTest = false, keep_interaction = false) {
         var opacity = $('#OpacitySlider')[0].value
 
         this.group.children.filter(function (el) {return el.data.type_id === parseInt(annotation_type_id)})
             .forEach(function (el) {
                 if (visibility === true) {
                     el.fillColor.alpha = opacity
+                    el.strokeColor.alpha = 1.0
                 }
                 else if (visibility === false){
-                    el.fillColor.alpha = 0
+                    if (keep_interaction)
+                    {
+                        el.fillColor.alpha = 0.01
+                        el.strokeColor.alpha = 0.01
+                    }
+                    else
+                    {
+                        el.fillColor.alpha = 0
+                    }
                 }
-
-                el.visible = visibility;
-
-                if (disabled_hitTest != undefined)
+                
+                if (keep_interaction)
                 {
-                    el.locked = disabled_hitTest
+                    el.visible = true
                 }
+                else
+                {
+                    el.visible = visibility;
+                }
+
+                el.locked = disabled_hitTest
+
             });
+    }
+
+    pushAnnoTypeToBackground(annotation_type_id)
+    {
+        this.group.children.forEach(el =>
+        {
+            if (el.data.type_id == annotation_type_id)
+            {
+                el.sendToBack()
+            }
+        })
+    }
+
+    updateAnnotations(annotations) {
+        if (annotations === undefined ||
+            annotations.length === 0) {
+
+            return;
+        }
+
+        for (var annotation of annotations) {
+
+            let item  = this.getItemFromUUID(annotation.unique_identifier)
+
+            if (annotation.vector === null || item  === undefined) {
+                continue;
+            } else {
+                this.removeAnnotation(annotation.unique_identifier)
+            }
+
+            this.drawAnnotation(annotation)
+        }
+
+        this.overlay.resize();
+        this.overlay.resizecanvas();        
     }
 
 
