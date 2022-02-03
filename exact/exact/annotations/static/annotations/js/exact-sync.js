@@ -766,23 +766,27 @@ class EXACTAnnotationSync {
 
     synchronisationNotifications(className, anno, mode) {
 
-        switch (mode) {
-            case "AnnotationCreated":
-                $.notify(`Annotation ${anno.id} was created by ${anno.last_editor.username}`,
-                    { position: "bottom center", className: className, autoHideDelay: 2000 });
-                break;
-            case "AnnotationDeleted":
-                $.notify(`Annotation ${anno.id} was deleted by ${anno.last_editor.username}`,
-                    { position: "bottom center", className: className, autoHideDelay: 2000 });
-                break;
-            case "AnnotationUpdated":
-                $.notify(`Annotation ${anno.id} was updated by ${anno.last_editor.username}`,
-                    { position: "bottom center", className: className, autoHideDelay: 2000 });
-                break;
-            case "AnnotationVerified":
-                $.notify(`Annotation ${anno.id} is now verified`,
-                    { position: "bottom center", className: className, autoHideDelay: 2000 });
-                break;
+        var display = $("#display_messages").is(':checked')
+        
+        if (display) {
+            switch (mode) {
+                case "AnnotationCreated":
+                    $.notify(`Annotation ${anno.id} was created by ${anno.last_editor.username}`,
+                        { position: "bottom center", className: className, autoHideDelay: 2000 });
+                    break;
+                case "AnnotationDeleted":
+                    $.notify(`Annotation ${anno.id} was deleted by ${anno.last_editor.username}`,
+                        { position: "bottom center", className: className, autoHideDelay: 2000 });
+                    break;
+                case "AnnotationUpdated":
+                    $.notify(`Annotation ${anno.id} was updated by ${anno.last_editor.username}`,
+                        { position: "bottom center", className: className, autoHideDelay: 2000 });
+                    break;
+                case "AnnotationVerified":
+                    $.notify(`Annotation ${anno.id} is now verified`,
+                        { position: "bottom center", className: className, autoHideDelay: 2000 });
+                    break;
+            }
         }
     }
 

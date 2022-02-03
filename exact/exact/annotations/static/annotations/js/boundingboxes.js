@@ -8,22 +8,69 @@ class BoundingBoxes {
         this.overlay = this.viewer.paperjsOverlay();
         this.group = new paper.Group();
 
-        this.hitOptions = {
-            segments: true,
+        this.hitOptionsObject = {
+            segments: false,
             stroke: true,
             fill: true,
             tolerance: 2
         };
 
+<<<<<<< HEAD
         var heatmap_cfg = {backgroundColor: 'rgba(0,0,0,0)',maxOpacity: 0.5,minOpacity: 0.25}
 		this.heatmap = new HeatmapOverlay(this.viewer, heatmap_cfg);
         this.group_heatmap = new paper.Group();
+=======
+        this.hitOptionsSegment = {};
+        this.hitOptionsSegment['line'] =       {segments: true,
+                                                stroke: false,
+                                                fill: false,
+                                                tolerance: 5}
+        this.hitOptionsSegment['multi_line'] = {segments: true,
+                                                stroke: false,
+                                                fill: false,
+                                                tolerance: 2}
+        this.hitOptionsSegment['poly'] =       {segments: true,
+                                                stroke: false,
+                                                fill: false,
+                                                tolerance: 2}
+        this.hitOptionsSegment['fixed_rect'] = {segments: false,
+                                                stroke: false,
+                                                fill: false,
+                                                tolerance: 2}
+        this.hitOptionsSegment['rect'] =       {segments: true,
+                                                stroke: true,
+                                                fill: false,
+                                                tolerance: 5}
+
+
+>>>>>>> 4fa3566140a7f69fa5acddf34cddbeb4b5f751d7
 
         this.imageid = imageid;
         this.image_width = imageSize["width"];
         this.image_hight = imageSize["height"];
         this.strokeWidth = 3;
         this.polyStrokeWidth = 1;
+
+        this.singlePolyOperation = {
+            active: false,
+            mode: "",
+            selected: undefined,
+            image: undefined
+        }
+
+        this.multiPolyOperation = {
+            active: false,
+            mode: "",
+            image: undefined
+        }
+
+        this.drag = {
+            active: false,
+            performed: false,
+            segment: undefined,
+            lastPos: undefined,
+            fixPoint: undefined
+        }
 
         this.resetSelection();
     }
@@ -69,21 +116,155 @@ class BoundingBoxes {
         }        
     }
 
+    activateSinglePolyOperation(event)
+    {
+        if (this.tool.current_item !== undefined && this.tool.current_item.type == "fill" && this.tool.current_item.item._data.type == "poly") // we have a selection and it is no a new element
+        {
+            if (!this.tool.singlePolyOperation.active) // singlePolyOperation not active
+            {
+                if (this.tool.multiPolyOperation.active)
+                {
+                    this.tool.resetMultiPolyOperation()
+                }
+
+                this.tool.singlePolyOperation.active = true
+                this.tool.singlePolyOperation.mode = event.eventSource.name
+                this.tool.singlePolyOperation.selected = this.tool.current_item
+
+                this.tool.singlePolyOperation.image = this.operatorActiveImgs[event.eventSource.name]
+                this.tool.singlePolyOperation.image.style.visibility = 'visible'
+            }
+            else if (this.tool.singlePolyOperation.mode != event.eventSource.name) // singlePolyOperation active, but mode changed
+            {
+                this.tool.singlePolyOperation.mode = event.eventSource.name
+
+                this.tool.singlePolyOperation.image.style.visibility = 'hidden'
+                this.tool.singlePolyOperation.image = this.operatorActiveImgs[event.eventSource.name]
+                this.tool.singlePolyOperation.image.style.visibility = 'visible'
+            }
+        }
+    }
+
+    activateSinglePolyOperationByString(mode, caller)
+    {
+        if (this.current_item !== undefined && this.current_item.type == "fill" && this.current_item.item._data.type == "poly")
+        {
+            if (!this.singlePolyOperation.active) // singlePolyOperation not active
+            {
+                if (this.multiPolyOperation.active)
+                {
+                    this.resetMultiPolyOperation()
+                }
+
+                this.singlePolyOperation.active = true
+                this.singlePolyOperation.mode = mode
+                this.singlePolyOperation.selected = this.current_item
+
+                this.singlePolyOperation.image = caller.operatorActiveImgs[mode]
+                this.singlePolyOperation.image.style.visibility = 'visible'
+            }
+            else if (this.singlePolyOperation.mode != mode) // singlePolyOperation active, but mode changed
+            {
+                this.singlePolyOperation.mode = mode
+
+                this.singlePolyOperation.image.style.visibility = 'hidden'
+                this.singlePolyOperation.image = caller.operatorActiveImgs[mode]
+                this.singlePolyOperation.image.style.visibility = 'visible'
+            }
+        }
+    }
+
+    resetSinglePolyOperation(event)
+    {
+        this.singlePolyOperation.active = false
+        this.singlePolyOperation.mode = ""
+        this.singlePolyOperation.selected = undefined
+
+        if ( this.singlePolyOperation.image != undefined )
+        {
+            this.singlePolyOperation.image.style.visibility = 'hidden'
+            this.singlePolyOperation.image = undefined
+        }
+    }
+
+    activateMultiPolyOperation(event)
+    {
+        if (this.viewer.selectionInstance.isSelecting && (this.tool.current_item == undefined || this.tool.current_item.type == "fill") ) // we have a selection and it is no a new element
+        {
+            if (!this.tool.multiPolyOperation.active) // multiPolyOperation not active
+            {
+                if (this.tool.singlePolyOperation.active)
+                {
+                    this.tool.resetSinglePolyOperation()
+                }
+
+                this.tool.multiPolyOperation.active = true
+                this.tool.multiPolyOperation.mode = event.eventSource.name
+
+                this.tool.multiPolyOperation.image = this.operatorActiveImgs[event.eventSource.name]
+                this.tool.multiPolyOperation.image.style.visibility = 'visible'
+            }
+            else if (this.tool.multiPolyOperation.mode != event.eventSource.name) // multiPolyOperation active, but mode changed
+            {
+                this.tool.multiPolyOperation.mode = event.eventSource.name
+
+                this.tool.multiPolyOperation.image.style.visibility = 'hidden'
+                this.tool.multiPolyOperation.image = this.operatorActiveImgs[event.eventSource.name]
+                this.tool.multiPolyOperation.image.style.visibility = 'visible'
+            }
+        }
+    }
+
+    activateMultiPolyOperationByString(mode, caller)
+    {
+        if ( this.viewer.selectionInstance.isSelecting && (this.current_item == undefined || this.current_item.type == "fill") )
+        {
+            if (!this.multiPolyOperation.active) // multiPolyOperation not active
+            {
+                if (this.singlePolyOperation.active)
+                {
+                    this.resetSinglePolyOperation()
+                }
+
+                this.multiPolyOperation.active = true
+                this.multiPolyOperation.mode = mode
+
+                this.multiPolyOperation.image = caller.operatorActiveImgs[mode]
+                this.multiPolyOperation.image.style.visibility = 'visible'
+            }
+            else if (this.multiPolyOperation.mode != mode) // multiPolyOperation active, but mode changed
+            {
+                this.multiPolyOperation.mode = mode
+
+                this.multiPolyOperation.image.style.visibility = 'hidden'
+                this.multiPolyOperation.image = caller.operatorActiveImgs[mode]
+                this.multiPolyOperation.image.style.visibility = 'visible'
+            }
+        }
+    }
+
+    resetMultiPolyOperation(event)
+    {
+        this.multiPolyOperation.active = false
+        this.multiPolyOperation.mode = ""
+
+        if ( this.multiPolyOperation.image != undefined )
+        {
+            this.multiPolyOperation.image.style.visibility = 'hidden'
+            this.multiPolyOperation.image = undefined
+        }
+    }
+
     findIncludedObjectsOperation() {
         var resultDict = {deleted: [], insert: [], update: [], included: []}
 
         if (this.selection) {
-            for (var i = 0; i < this.group.children.length; i++) {
-                var el = this.group.children[i]
-
-                // TODO: check for visibility
-                if (el.name !== this.selection.item.name && el.visible === true) {
-                    if (el.intersects(this.selection.item) === true) {
-                        resultDict.included.push(el.name)
-                    }else if(this.selection.item.contains(el.firstSegment.point))
-                        resultDict.included.push(el.name)
+            this.group.children.forEach(el =>{
+                if(el.intersects(this.selection.item) || this.selection.item.contains(el.firstSegment.point))
+                {
+                    resultDict.included.push(el.name)
                 }
-            }
+            })
         }
 
         return resultDict
@@ -92,38 +273,50 @@ class BoundingBoxes {
     polyUnionOperation() {
 
         var resultDict = {deleted: [], insert: [], update: [], included: []}
+        var subOptions = {insert: false}
+        var hit_children = []
 
-        if (this.selection && this.selection.item.data.type === "poly") { 
+        if (this.selection && this.selection.item.data.type === "poly") 
+        {
 
-            var subOptions = {insert: false}
-            for (var i = 0; i < this.group.children.length; i++) {
-                var el = this.group.children[i]
-
-                // just poly from the same class and saved annotations
-                if (el.data.type === "poly" && el.data.type_id === this.selection.item.data.type_id 
-                        && el.name !== this.selection.item.name && el.visible === true) {
-
-                    // if intersects --> merge
-                    if (el.intersects(this.selection.item) === true) {
-
-                        let result = this.selection.item.unite(el)
-                        // error occurce if the result can not represented as one poly
-                        if (result.children === undefined) {
-
-                            this.selection.item.remove();
-
-                            this.selection.item = result;
-    
-                            resultDict.deleted.push(el.name);
-                            resultDict.update.push(this.selection.item.name);
-                        }
-
-                    // no intersection but one point is inside -> delete complete element
-                    } else if (this.selection.item.contains(el.firstSegment.point)) { 
-                        resultDict.deleted.push(el.name)
-                    }
+            var candidates = this.group.children.filter(el =>   el.data.type === "poly" && 
+                                                                el.data.type_id === this.selection.item.data.type_id && 
+                                                                el.name !== this.selection.item.name && 
+                                                                el.visible === true)
+                                
+            candidates.forEach(el => {
+                if (el.intersects(this.selection.item)) 
+                {
+                    hit_children.push(el)
+                } 
+                else if (this.selection.item.contains(el.firstSegment.point)) 
+                { 
+                    resultDict.deleted.push([el.name, true])
                 }
+            })
+
+            var org_selection = this.selection.item.clone(subOptions)
+            var modified = false
+
+            hit_children.forEach(el => {
+                let result = this.selection.item.unite(el, subOptions)
+                // error occurce if the result can not represented as one poly
+                if (result.children === undefined) {
+
+                    this.selection.item.remove();
+                    this.selection.item = result;
+
+                    resultDict.deleted.push([el.name, true]);
+                    modified = true
+                }
+            })
+
+            if(modified)
+            {
+                this.group.addChild(this.selection.item)
+                resultDict.update.push([this.selection.item.name, org_selection]);
             }
+
         }
         return resultDict
     }
@@ -132,68 +325,391 @@ class BoundingBoxes {
 
         // var operations = ['unite', 'intersect', 'subtract', 'exclude', 'divide'];
         var resultDict = {deleted: [], insert: [], update: [], included: []}
+        var subOptions = {insert: false}
+        var hit_children = []
+
+        if (this.selection) {
+
+            var candidates = this.group.children.filter(el => el.name !== this.selection.item.name && el.visible)
+
+            candidates.forEach(el =>{
+                // if intersects --> substract or divide
+                if (el.intersects(this.selection.item)) 
+                {
+                    hit_children.push(el)
+                // no intersection but one point is inside -> delete complete element
+                } else if (this.selection.item.contains(el.firstSegment.point)) 
+                { 
+                    resultDict.deleted.push([el.name, true])
+                }
+            })
+
+            hit_children.forEach(el =>{
+                var org_item = el.clone(subOptions)
+                let result = el.subtract(this.selection.item, subOptions)
+                        
+                if (result.children === undefined) 
+                {
+                    if (Math.ceil(result.area) !== Math.ceil(el.area)) 
+                    {
+                        el.remove();
+                        this.group.addChild(result)
+                        
+                        resultDict.update.push([result.name, org_item])
+                    }
+                } 
+                else 
+                {
+                    result.children.forEach(old_path =>{
+                        // add childs as new elements
+                        var new_path = old_path.clone(subOptions)
+                        new_path.data = old_path.parent.data
+                        new_path.strokeColor = old_path.parent.strokeColor
+                        new_path.strokeWidth = old_path.parent.strokeWidth
+                        new_path.fillColor = old_path.parent.fillColor
+
+                        new_path.name =  this.uuidv4();
+                        this.group.addChild(new_path);
+
+                        resultDict.insert.push({
+                            annotation_type: el.data.type_id,
+                            id: -1,
+                            vector: this.getAnnotationVector(new_path.name),
+                            user: {id: null, username: "you"},
+                            last_editor: {id: null, username: "you"},
+                            image: this.imageid,
+                            unique_identifier: new_path.name,
+                            deleted: false
+                        });
+                    })
+                    
+                    result.remove()                            
+                    resultDict.deleted.push([el.name, true])
+
+                }
+            })
+        }
+        return resultDict;
+    }
+
+    polyScissorOperation()
+    {
+        var resultDict = {deleted: [], insert: [], update: [], included: []}
+        var subOptions = {insert: false}
+
+        var org_selection = this.singlePolyOperation.selected.item.clone(subOptions)
+
+        // check if the newly drawn polygon intersects the to-cut one
+        // (modified_item is the original element that is going to be changed)
+        // (current_item is the area that shall be cut from the modified item)
+        if (this.singlePolyOperation.selected.item.intersects(this.current_item.item) == true)
+        {
+            // the polygons intersect
+            let result = this.singlePolyOperation.selected.item.subtract(this.current_item.item, subOptions)
+
+            if (result.children === undefined) {
+                // the polygon is not cut into multiple pieces
+                if (Math.ceil(result.area) !== Math.ceil(this.singlePolyOperation.selected.item.area)) {
+                    // the area of the polygon changed
+                    this.singlePolyOperation.selected.item.remove();
+                    this.singlePolyOperation.selected.item = result
+                    this.group.addChild(result)
+                    
+                    resultDict.update.push([result.name, org_selection])
+                }
+
+                resultDict.deleted.push([this.selection.item.name, false])
+
+                this.selection = this.singlePolyOperation.selected
+                this.singlePolyOperation.selected = undefined
+
+            } else {
+                // the polygon is cut into multiple pieces
+
+                for (var child_id = 0; child_id < result.children.length; child_id++) {
+                    // add childs as new elements
+                    var old_path = result.children[child_id]
+                    var new_path = old_path.clone(subOptions)
+                    new_path.data = old_path.parent.data
+                    new_path.strokeColor = old_path.parent.strokeColor
+                    new_path.strokeWidth = old_path.parent.strokeWidth
+                    new_path.fillColor = old_path.parent.fillColor
+
+                    new_path.name =  this.uuidv4();
+                    this.group.addChild(new_path);
+
+                    resultDict.insert.push({
+                        annotation_type: this.singlePolyOperation.selected.item.data.type_id,
+                        id: -1,
+                        vector: this.getAnnotationVector(new_path.name),
+                        user: {id: null, username: "you"},
+                        last_editor: {id: null, username: "you"},
+                        image: this.imageid,
+                        unique_identifier: new_path.name,
+                        deleted: false
+                    });
+
+                }
+
+                result.remove()       
+
+                resultDict.deleted.push([this.singlePolyOperation.selected.item.name, true])
+                resultDict.deleted.push([this.selection.item.name, false])
+
+                this.selection = undefined
+                this.singlePolyOperation.selected = undefined
+            }
+        }
+        else
+        {
+            resultDict.deleted.push([this.selection.item.name, false])
+
+            this.selection = this.singlePolyOperation.selected
+            this.singlePolyOperation.selected = undefined
+        }
+
+        return resultDict
+    }
+
+    polyGlueOperation()
+    {
+        var resultDict = {deleted: [], insert: [], update: [], included: []}
+        var subOptions = {insert: false}
+
+        var org_selection = this.singlePolyOperation.selected.item.clone(subOptions)
+
+        if (this.singlePolyOperation.selected.item.intersects(this.current_item.item) == true)
+        {
+            var result = this.singlePolyOperation.selected.item.unite(this.selection.item, subOptions)
+            // error occurce if the result can not represented as one poly
+            if (result.children === undefined) {
+
+                this.singlePolyOperation.selected.item.remove();
+                this.singlePolyOperation.selected.item = result;
+                this.group.addChild(result)
+
+                resultDict.deleted.push([this.selection.item.name, false]);
+                resultDict.update.push([this.singlePolyOperation.selected.item.name, org_selection]);
+
+                this.selection = this.singlePolyOperation.selected
+                this.singlePolyOperation.selected = undefined
+            }
+            else
+            {
+                result.remove()
+                resultDict.deleted.push([this.selection.item.name, false])
+
+                this.selection = this.singlePolyOperation.selected
+                this.singlePolyOperation.selected = undefined
+            }
+        }
+        else
+        {
+            resultDict.deleted.push([this.selection.item.name, false])
+
+            this.selection = this.singlePolyOperation.selected
+            this.singlePolyOperation.selected = undefined
+        }
+
+        return resultDict 
+    }
+
+    polyKnifeOperation()
+    {
+        // https://stackoverflow.com/questions/23258001/slice-path-into-two-separate-paths-using-paper-js
+        // modificated to be more robust 
+        const splitUsingPath = (target, path) => {
+            const paths = [path.clone({ insert: false })];
+            const targets = [target.clone({ insert: false })];
+            
+            const intersections = path.getIntersections(target)
+    
+            var p1
+            var p2
+
+            if(intersections.length < 2)
+            {
+                // Nothing to do here
+                return [targets, paths]
+            }
+            else if(intersections.length == 2)
+            {
+                // check if the line starts and ends within the poly
+                if(intersections[0].point.getDistance(path.segments[0].point)<1.0)
+                {
+                    return [targets, paths]
+                }
+                else if(targets[0].contains(path.segments[0].point) && path.segments[0].point.getDistance(target.getNearestLocation(path.segments[0].point).point) > 0.01)
+                {
+                    return [targets, paths]
+                }
+                else
+                {
+                    p1 = intersections[0]
+                    p2 = intersections[1]
+                }
+            }
+            else
+            {
+                // check if the line starts within the poly
+                if(intersections[0].point.getDistance(path.segments[0].point)<0.01)
+                {
+                    // nessesary due to floating point inaccuraccy in the "contains" calculation 
+                    p1 = intersections[1]
+                    p2 = intersections[2]
+                }
+                else if(targets[0].contains(path.segments[0].point) && path.segments[0].point.getDistance(target.getNearestLocation(path.segments[0].point).point) > 0.01)
+                {
+                    // the line starts in the poly
+                    // ignore the first intersection
+                    p1 = intersections[1]
+                    p2 = intersections[2]
+    
+                }
+                else
+                {
+                    p1 = intersections[0]
+                    p2 = intersections[1]
+                }
+            }
+            
+            var points = [p1, p2]
+
+            points.forEach(location => {
+                const offset = targets[0].getOffsetOf(location.point)
+                const pathLocation = targets[0].getLocationAt(offset)
+                const newTarget = targets[0].splitAt(pathLocation)
+                const isNew = newTarget !== targets[0]
+                
+                if (isNew)
+                {
+                    targets.push(newTarget)
+                } 
+                
+                paths.forEach(path => {
+                    const offset = path.getOffsetOf(location.point)
+                    const pathLocation = path.getLocationAt(offset)
+            
+                    if (pathLocation) {
+                            paths.push(path.splitAt(pathLocation))
+                    }
+                })
+            })
+        
+            // TODO maybe find more robust solution
+            const innerPath = paths[1]
+            //const innerPath = paths.find(p => target.contains(p.bounds.center))
+
+            var result_paths = paths.filter(path => path.id != innerPath.id)
+        
+            targets.forEach((target, i) => {
+                const isFirst = i === 0
+                const innerPathCopy = isFirst ? innerPath : innerPath.clone()
+                
+                target.join(innerPathCopy, innerPathCopy.length)
+                target.closed = true
+            })
+        
+            return [targets, result_paths]
+        }
+
+        var resultDict = {deleted: [], insert: [], update: [], included: []}
         if (this.selection) {
             var subOptions = {insert: false}
 
-            for (var i = 0; i < this.group.children.length; i++) {
+            var hit_children = []
+            for (var i = 0; i < this.group.children.length; i++) 
+            {
                 var el = this.group.children[i]
 
                 // just work on saved annotations
-                if (el.name !== this.selection.item.name && el.visible === true) {
+                if (el.name !== this.selection.item.name && el.visible === true && el.data.type == 'poly') {
 
-                    // if intersects --> substract or divide
-                    if (el.intersects(this.selection.item) === true) {
-
-                        let result = el.subtract(this.selection.item, subOptions)
-                        
-                        if (result.children === undefined) {
-                            if (Math.ceil(result.area) !== Math.ceil(el.area)) {
-                                el.remove();
-                                this.group.addChild(result)
-                                
-                                resultDict.update.push(result.name)
-    
-                                i = 0
-                            }
-                        } else {
-                            el.remove();
-
-                            for (var child_id = 0; child_id < result.children.length; child_id++) {
-                                // add childs as new elements
-                                var old_path = result.children[child_id]
-                                var new_path = old_path.clone()
-                                new_path.data = old_path.parent.data
-                                new_path.strokeColor = old_path.parent.strokeColor
-                                new_path.strokeWidth = old_path.parent.strokeWidth
-                                new_path.fillColor = old_path.parent.fillColor
-
-                                new_path.name =  this.uuidv4();
-                                this.group.addChild(new_path);
-
-                                resultDict.insert.push({
-                                    annotation_type: el.data.type_id,
-                                    id: -1,
-                                    vector: this.getAnnotationVector(new_path.name),
-                                    user: {id: null, username: "you"},
-                                    last_editor: {id: null, username: "you"},
-                                    image: this.imageid,
-                                    unique_identifier: new_path.name,
-                                    deleted: false
-                                });
-
-                            }
-                            result.remove()                            
-                            resultDict.deleted.push(el.name)
-
-                            i = 0
-                        }
-                    // no intersection but one point is inside -> delete complete element
-                    } else if (this.selection.item.contains(el.firstSegment.point)) { 
-                        resultDict.deleted.push(el.name)
+                    // if intersects --> divide
+                    if (el.intersects(this.selection.item) === true) 
+                    {
+                        hit_children.push(el)
                     }
-
-                }     
+                }
             }
+
+            hit_children.forEach(el =>{
+                var org_line = this.selection.item.clone({ insert: false })
+
+                org_line.segments.forEach(seg => {
+                    var dist = seg.point.getDistance(el.getNearestLocation(seg.point).point)
+                    if(dist < 1.0)
+                    {
+                        seg.remove()
+                    }
+                })
+
+                var result = splitUsingPath(el, org_line)
+
+                var polys = result[0]
+                var lines = result[1]
+                
+                for(var n = 0; n < polys.length; n++)
+                {
+                    var poly = polys[n]
+                    for(var m = 0; m < lines.length; m++)
+                    {
+                        var line = lines[m]
+
+                        var new_res = splitUsingPath(poly, line)
+
+                        if(new_res[0].length == 2)
+                        {
+                            poly.remove()
+                            polys.splice(n, 1)
+                            polys.push(new_res[0][0])
+                            polys.push(new_res[0][1])
+
+                            line.remove()
+                            lines.splice(m, 1)
+                            lines.push(new_res[1][0])
+                            lines.push(new_res[1][1])
+
+                            n=0
+                            m=0
+                            break
+                        }
+
+                    }
+                }
+
+                for (var id = 0; id < polys.length; id++)
+                {
+                    var old_path = polys[id]
+                    var new_path = old_path.clone(subOptions)
+                    new_path.data = old_path.data
+                    new_path.strokeColor = old_path.strokeColor
+                    new_path.strokeWidth = old_path.strokeWidth
+                    new_path.fillColor = old_path.fillColor
+
+                    new_path.name =  this.uuidv4();
+                    this.group.addChild(new_path);
+
+                    resultDict.insert.push({
+                        annotation_type: el.data.type_id,
+                        id: -1,
+                        vector: this.getAnnotationVector(new_path.name),
+                        user: {id: null, username: "you"},
+                        last_editor: {id: null, username: "you"},
+                        image: this.imageid,
+                        unique_identifier: new_path.name,
+                        deleted: false
+                    });
+
+                    polys[id].remove()
+                    lines[id].remove()
+                }
+
+                org_line.remove()
+                resultDict.deleted.push([el.name, true])
+            })
+
+            resultDict.deleted.push([this.selection.item.name, false])
         }
         return resultDict;
     }
@@ -248,7 +764,7 @@ class BoundingBoxes {
         var imagePoint = new paper.Point(this.viewer.viewport.viewportToImageCoordinates(viewportPoint));
 
         var canvasObject = undefined;
-        var selection_hit_type = 'fill';
+        var selection_hit_type = 'new';
         switch (selected_annotation_type.vector_type) {
             case 2:  // POINT or Elipse
                 var rectangle = new paper.Rectangle(imagePoint,
@@ -265,14 +781,17 @@ class BoundingBoxes {
 
                 break;
 
-            case 4:  // MULTI_LINE / POLYGON
-            case 5:
+            case 4:  // MULTI_LINE
+                canvasObject = new paper.Path(imagePoint);
+                canvasObject.data.type = "multi_line";
+
+                break;
+            case 5:  // POLYGON
                 var canvasObject = new paper.Path({
                     closed: selected_annotation_type.closed,
                 });
                 canvasObject.add(imagePoint);
                 canvasObject.data.type = "poly";
-                selection_hit_type = 'new';
                 break;
 
             case 1:  // Rect
@@ -300,8 +819,8 @@ class BoundingBoxes {
         canvasObject.data.type_id = selected_annotation_type.id;
         canvasObject.data.area_hit_test = selected_annotation_type.area_hit_test;
 
-        if (selected_annotation_type.area_hit_test)
-            canvasObject.fillColor = new paper.Color(0, 0, 0, 0.000001);
+        canvasObject.fillColor = selected_annotation_type.color_code
+        canvasObject.fillColor.alpha = $('#OpacitySlider')[0].value
 
 
         // bounding box coordinates
@@ -342,6 +861,8 @@ class BoundingBoxes {
             return;
         }
 
+        var opacity = $('#OpacitySlider')[0].value
+
         switch (annotation.annotation_type.vector_type) {
             case 1:  // Rect
                 var rect = new paper.Path.Rectangle(annotation.vector.x1, annotation.vector.y1,
@@ -350,11 +871,20 @@ class BoundingBoxes {
                 rect.strokeColor = annotation.annotation_type.color_code;
                 rect.strokeWidth = this.strokeWidth;
                 rect.name = annotation.unique_identifier;
-                if (annotation.annotation_type.area_hit_test)
-                    rect.fillColor = new paper.Color(0, 0, 0, 0.000001);
+                rect.fillColor = annotation.annotation_type.color_code
+                rect.fillColor.alpha = opacity
+                    
                 rect.data.type = "rect";
                 rect.data.type_id = annotation.annotation_type.id;
                 rect.data.area_hit_test = annotation.annotation_type.area_hit_test;
+<<<<<<< HEAD
+=======
+
+                var checkbox = $('#DrawCheckBox_' + annotation.annotation_type.id)[0]
+                rect.visible = checkbox.checked
+                rect.locked = checkbox.indeterminate
+
+>>>>>>> 4fa3566140a7f69fa5acddf34cddbeb4b5f751d7
                 this.group.addChild(rect);
                 break;
 
@@ -367,11 +897,16 @@ class BoundingBoxes {
                 rect.strokeColor = annotation.annotation_type.color_code;
                 rect.strokeWidth = this.strokeWidth;
                 rect.name = annotation.unique_identifier;
-                if (annotation.annotation_type.area_hit_test)
-                    rect.fillColor = new paper.Color(0, 0, 0, 0.000001);
+                rect.fillColor = annotation.annotation_type.color_code
+                rect.fillColor.alpha = opacity
+
                 rect.data.type = "fixed_rect";
                 rect.data.type_id = annotation.annotation_type.id;
                 rect.data.area_hit_test = annotation.annotation_type.area_hit_test;
+
+                var checkbox = $('#DrawCheckBox_' + annotation.annotation_type.id)[0]
+                rect.visible = checkbox.checked
+                rect.locked = checkbox.indeterminate
 
                 this.group.addChild(rect);
                 break;
@@ -384,11 +919,17 @@ class BoundingBoxes {
                 ellipse.strokeColor = annotation.annotation_type.color_code;
                 ellipse.strokeWidth = this.strokeWidth;
                 ellipse.name = annotation.unique_identifier;
-                if (annotation.annotation_type.area_hit_test)
-                    ellipse.fillColor = new paper.Color(0, 0, 0, 0.000001);
+                ellipse.fillColor = annotation.annotation_type.color_code
+                ellipse.fillColor.alpha = opacity
+
+
                 ellipse.data.type = "circle";
                 ellipse.data.type_id = annotation.annotation_type.id;
                 ellipse.data.area_hit_test = annotation.annotation_type.area_hit_test;
+
+                var checkbox = $('#DrawCheckBox_' + annotation.annotation_type.id)[0]
+                ellipse.visible = checkbox.checked
+                ellipse.locked = checkbox.indeterminate
 
                 this.group.addChild(ellipse);
                 break;
@@ -400,9 +941,16 @@ class BoundingBoxes {
                 line.strokeColor = annotation.annotation_type.color_code;
                 line.strokeWidth = this.strokeWidth;
                 line.name = annotation.unique_identifier;
+                line.fillColor = annotation.annotation_type.color_code
+                line.fillColor.alpha = opacity
+
                 line.data.type = "line";
                 line.data.type_id = annotation.annotation_type.id;
                 line.data.area_hit_test = annotation.annotation_type.area_hit_test;
+
+                var checkbox = $('#DrawCheckBox_' + annotation.annotation_type.id)[0]
+                line.visible = checkbox.checked
+                line.locked = checkbox.indeterminate
 
                 this.group.addChild(line);
                 break;
@@ -415,8 +963,9 @@ class BoundingBoxes {
                     name: annotation.unique_identifier,//'#' + annotation.id,
                     closed: annotation.annotation_type.closed,
                 });
-                if (annotation.annotation_type.area_hit_test)
-                    poly.fillColor = new paper.Color(0, 0, 0, 0.000001);
+
+                poly.fillColor = annotation.annotation_type.color_code
+                poly.fillColor.alpha = opacity
 
                 poly.data.type = "poly";
                 poly.data.type_id = annotation.annotation_type.id;
@@ -427,6 +976,10 @@ class BoundingBoxes {
                     poly.add(new paper.Point(annotation.vector["x" + i], annotation.vector["y" + i]));
                 }
 
+                var checkbox = $('#DrawCheckBox_' + annotation.annotation_type.id)[0]
+                poly.visible = checkbox.checked
+                poly.locked = checkbox.indeterminate
+
                 this.group.addChild(poly);
                 break;
         }
@@ -434,13 +987,14 @@ class BoundingBoxes {
 
     updateAnnotationVisibility(unique_identifier, visibility) {
         var item = this.getItemFromUUID(unique_identifier);
+        var opacity = $('#OpacitySlider')[0].value
 
         if (item !== undefined) {
-            if (visibility === true && item.data.area_hit_test === true) {
-                item.fillColor = new paper.Color(0, 0, 0, 0.000001);
+            if (visibility === true) {
+                item.fillColor.alpha = opacity
             }
             else if (visibility === false){
-                item.fillColor = new paper.Color(0, 0, 0, 0);
+                item.fillColor.alpha = 0
             }
 
 
@@ -448,19 +1002,24 @@ class BoundingBoxes {
         }
     }
 
-    updateVisbility(annotation_type_id, visibility ) {
+    updateVisbility(annotation_type_id, visibility, disabled_hitTest = undefined ) {
+        var opacity = $('#OpacitySlider')[0].value
 
         this.group.children.filter(function (el) {return el.data.type_id === parseInt(annotation_type_id)})
             .forEach(function (el) {
-                if (visibility === true && el.data.area_hit_test === true) {
-                    el.fillColor = new paper.Color(0, 0, 0, 0.000001);
+                if (visibility === true) {
+                    el.fillColor.alpha = opacity
                 }
                 else if (visibility === false){
-                    el.fillColor = new paper.Color(0, 0, 0, 0);
+                    el.fillColor.alpha = 0
                 }
 
-
                 el.visible = visibility;
+
+                if (disabled_hitTest != undefined)
+                {
+                    el.locked = disabled_hitTest
+                }
             });
     }
 
@@ -598,6 +1157,14 @@ class BoundingBoxes {
         this.group.children.forEach(x => { x.strokeWidth = this.strokeWidth });
     }
 
+    updateOpacity(opacity)
+    {
+        if( opacity!= null )
+        {
+            this.group.children.forEach(el => el.fillColor.alpha = opacity)
+        }
+    }
+
     showItem(annotation) {
         if (annotation === undefined)
             return
@@ -630,7 +1197,7 @@ class BoundingBoxes {
                 // Convert from viewport coordinates to image coordinates.
                 var point = this.viewer.viewport.viewportToImageCoordinates(viewportPoint);
 
-                var hit = this.selection.item.hitTest(point, this.hitOptions);
+                var hit = this.hitTestObject(point, this.hitOptionsObject);
                 if (hit && this.selection.item.data.type !== "poly") // just resize if mouse is over element
                     this.selection.item.scale(1 + (event.scroll / 10));
                 else if (hit && this.selection.item.data.type === "poly")
@@ -667,16 +1234,93 @@ class BoundingBoxes {
         this.clear();
     }
 
-    hitTest(point) {
+    hitTestObject(point) 
+    {
+        var hits = this.group.hitTestAll(point, this.hitOptionsObject);
+        hits = hits.filter(el => el.type != "fill" || (el.type == "fill" && el.item.data.area_hit_test))
+        if (hits.length > 0) {
+            if (this.selection == undefined)
+            {
+                // Currently there is no element selected
+                // Select first visible element
+                for (var i=0; i < hits.length; i++)
+                {
+                    if(hits[i].item.visible == true && hits[i].item.children == undefined)
+                    {
+                        return hits[i]
+                    }
+                }
+            }
+            else
+            {
+                // Some element is already selected
+                // Check if the current selection is within the hits
+                var contains = false
+                var idx = 0
+                for (; idx < hits.length; idx++)
+                {
+                    if (hits[idx].item.name == this.selection.item.name)
+                    {
+                        idx++
+                        contains = true
+                        break
+                    }
+                }
 
-        var hit = this.group.hitTest(point, this.hitOptions);
-        if (hit) {
-            if (hit.item.visible === false)
-                return undefined;
+                if (contains == false)
+                {
+                    // If it is not contained, return the first visible item
+                    for (var i=0; i < hits.length; i++)
+                    {
+                        if(hits[i].item.visible == true && hits[i].item.children == undefined)
+                        {
+                            return hits[i]
+                        }
+                    }
+                }
+                else
+                {
+                    // Else, return the element that is after the selected on in the list
+                    // Run trough the rest of the list to find the first, visible element
+                    for (; idx < hits.length; idx++)
+                    {
+                        if (hits[idx].item.visible == true && hits[idx].item.children == undefined)
+                        {
+                            return hits[idx]
+                        }
+                    }
+                    // If there is no visible element in the later part of the list, re-start from the beginning
+                    for (var i=0; i < hits.length; i++)
+                    {
+                        if(hits[i].item.visible == true && hits[i].item.children == undefined)
+                        {
+                            return hits[i]
+                        }
+                    }
+                }
 
-            return hit.item.name;
+
+            }
         }
         return undefined;
+    }
+
+    hitTestSegment(point)
+    {
+        if (this.selection !== undefined)
+        {
+            var hits = this.group.hitTestAll(point, this.hitOptionsSegment[this.selection.item.data.type])
+
+            for (var i=0; i < hits.length; i++)
+            {
+                if(hits[i].item.visible && hits[i].item.name == this.selection.item.name)
+                {
+                    return hits[i]
+                }
+            }
+        }
+
+        return undefined
     }
 
     updateAnnotationType(unique_identifier, annotation_type, set_as_selected = true) {
@@ -734,8 +1378,9 @@ class BoundingBoxes {
         canvasObject.data.type_id = annotation_type.id;
         canvasObject.data.area_hit_test = annotation_type.area_hit_test;
 
-        if (annotation_type.area_hit_test)
-            canvasObject.fillColor = new paper.Color(0, 0, 0, 0.000001);
+        canvasObject.fillColor = annotation_type.color_code
+        canvasObject.fillColor.alpha = $('#OpacitySlider')[0].value
+
 
         var tempName = item.name;
 
@@ -768,16 +1413,12 @@ class BoundingBoxes {
             // Convert from viewport coordinates to image coordinates.
             var imagePoint = new paper.Point(this.viewer.viewport.viewportToImageCoordinates(viewportPoint));
 
-             
-
             switch (this.selection.item.data.type) {
                                                 
-                                
+                
                 case 'poly':
-                    // if shift is pressed add circle diameter to poly
-                    // else move poly
-
                     if(event.shift) {
+                        // brush mode
                         var path = new paper.Path.Circle({
                             center: imagePoint,
                             radius: this.polyStrokeWidth,
@@ -795,22 +1436,35 @@ class BoundingBoxes {
                             result.remove()
                         }
 
-                    } else {
+                        this.drag.performed = true
+                    } 
+                    else {
                         if (this.selection.type == 'new') {
+                            // polygon is still drawn
                             this.selection.item.add(imagePoint);
                         }
-                        else if (this.selection.type == 'fill') {
+                        else if (this.drag.active)
+                        {
+                            // a segment is moved
+                            this.drag.segment.segment.point = this.fixPointToImage(imagePoint)
+                            this.drag.performed = true
+                        }
+                        else if (this.selection.item.contains(imagePoint) || this.drag.performed)
+                        {
+                            // move the polygon
+                            var x_diff = imagePoint.x - this.drag.lastPos.x
+                            var y_diff = imagePoint.y - this.drag.lastPos.y
 
                             var tempRect = this.selection.item.bounds.clone();
-                            tempRect.center = imagePoint;
+                            tempRect.center.x += x_diff;
+                            tempRect.center.y += y_diff;
         
                             if (this.isPointInImage(tempRect.getTopLeft()) && this.isPointInImage(tempRect.getBottomRight()))
-                                this.selection.item.position = imagePoint;
-                                
-                        }
-                        if (this.selection.type == 'segment') {
-    
-                            this.selection.segment.point = this.fixPointToImage(imagePoint);
+                                // ensure we dont move our polygon out of bounds
+                                this.selection.item.position = tempRect.center;
+                            
+                            this.drag.performed = true
+                            this.drag.lastPos = imagePoint
                         }
                     }
                     break;
@@ -819,58 +1473,160 @@ class BoundingBoxes {
 
                     if (this.selection.item.segments.length == 1) {
                         this.selection.item.add(imagePoint);
-
-                    } else {
-                        // check if mouse is near to first, second or center point and move that one
-                        if (this.selection.item.segments[0].point.getDistance(imagePoint)
-                            < this.selection.item.position.getDistance(imagePoint)) {
-                            this.selection.item.segments[0].point = imagePoint;
-
-                        } else if (this.selection.item.segments[1].point.getDistance(imagePoint)
-                            < this.selection.item.position.getDistance(imagePoint)) {
-                            this.selection.item.segments[1].point = imagePoint;
-                        } else {
-                            this.selection.item.position = imagePoint;
+                        this.drag.active = true
+                        this.drag.segment = this.hitTestSegment(imagePoint)
+                    } 
+                    else
+                    {
+                        if (this.drag.active)
+                        {
+                            // a segment is moved
+                            this.drag.segment.segment.point = this.fixPointToImage(imagePoint)
+                            this.drag.performed = true
                         }
+                        else
+                        {
+                            // the whole line is moved
+                            var x_diff = imagePoint.x - this.drag.lastPos.x
+                            var y_diff = imagePoint.y - this.drag.lastPos.y
+                            this.selection.item.position.x += x_diff
+                            this.selection.item.position.y += y_diff
+
+                            this.drag.lastPos = imagePoint
+                        }
+                        this.drag.performed = true
                     }
+                    break;
+
+                case 'multi_line':
+                    if (this.selection.type == 'new') {
+                        // line is still drawn
+                        this.selection.item.add(imagePoint);
+                    }
+                    else if(this.drag.active)
+                    {
+                        // a segment is moved
+                        this.drag.segment.segment.point = this.fixPointToImage(imagePoint)
+                        this.drag.performed = true
+                    }
+                    else
+                    {
+                        // the whole line is moved
+                        var x_diff = imagePoint.x - this.drag.lastPos.x
+                        var y_diff = imagePoint.y - this.drag.lastPos.y
+                        this.selection.item.position.x += x_diff
+                        this.selection.item.position.y += y_diff
+
+                        this.drag.lastPos = imagePoint
+                        this.drag.performed = true
+                    }
+
                     break;
 
                 case 'fixed_rect':
 
-                    var tempRect = this.selection.item.bounds.clone();
-                    tempRect.center = imagePoint;
+                    if (this.selection.item.contains(imagePoint) || this.drag)
+                    {
+                        var x_diff = imagePoint.x - this.drag.lastPos.x
+                        var y_diff = imagePoint.y - this.drag.lastPos.y
 
-                    if (this.isPointInImage(tempRect.getTopLeft()) && this.isPointInImage(tempRect.getBottomRight()))
-                        this.selection.item.position = imagePoint;
+                        var tempRect = this.selection.item.bounds.clone();
+                        tempRect.center.x += x_diff;
+                        tempRect.center.y += y_diff;
+    
+                        if (this.isPointInImage(tempRect.getTopLeft()) && this.isPointInImage(tempRect.getBottomRight()))
+                            // ensure we dont move our polygon out of bounds
+                            this.selection.item.position = tempRect.center;
+                        
+                        this.drag.performed = true
+                        this.drag.lastPos = imagePoint
+                    }
 
                     break;
 
                 default:
+                    
+                    if (this.drag.active)
+                    {
+                        if (this.drag.fixPoint == undefined)
+                        {
+                            var seg = undefined
 
-                    if (this.selection.type == 'fill') {
+                            if(this.drag.segment.type == "stroke")
+                            {
+                                seg = this.drag.segment.location.segment
+                            }
+                            else
+                            {
+                                seg = this.drag.segment.segment
+                            }
+
+                            var idx_a = seg.index
+                            var idx_b = (idx_a + 2 > 3) ? (idx_a - 2) : (idx_a + 2)
+                            this.drag.fixPoint = this.drag.segment.item.segments[idx_b].point.clone()
+                        }
+
+                        var topLeft = this.fixPointToImage(imagePoint);
+
+                        var min_x
+                        var max_x
+                        var min_y
+                        var max_y
+
+                        if (topLeft.x > this.drag.fixPoint.x)
+                        {  
+                            min_x = this.drag.fixPoint.x
+                            max_x = topLeft.x
+
+                            if(max_x - min_x < 10)
+                                max_x = min_x + 10
+                        }
+                        else
+                        {
+                            min_x = topLeft.x
+                            max_x = this.drag.fixPoint.x
+
+                            if(max_x - min_x < 10)
+                                min_x = max_x - 10
+                        }
+
+                        if (topLeft.y > this.drag.fixPoint.y)
+                        {  
+                            min_y = this.drag.fixPoint.y
+                            max_y = topLeft.y
+
+                            if(max_y - min_y < 10)
+                                max_y = min_y + 10
+                        }
+                        else
+                        {
+                            min_y = topLeft.y
+                            max_y = this.drag.fixPoint.y
+
+                            if(max_y - min_y < 10)
+                                min_y = max_y - 10
+                        }
+
+                        this.selection.item.bounds = new paper.Rectangle(new paper.Point(min_x, min_y), new paper.Point(max_x, max_y));
+
+                        this.drag.performed = true
+                        
+                    }
+                    else if (this.selection.item.contains(imagePoint) || this.drag.performed){
+                        // the rect is moved
+                        var x_diff = imagePoint.x - this.drag.lastPos.x
+                        var y_diff = imagePoint.y - this.drag.lastPos.y
 
                         var tempRect = this.selection.item.bounds.clone();
-                        tempRect.center = imagePoint;
-
+                        tempRect.center.x += x_diff;
+                        tempRect.center.y += y_diff;
+    
                         if (this.isPointInImage(tempRect.getTopLeft()) && this.isPointInImage(tempRect.getBottomRight()))
-                            this.selection.item.position = imagePoint;
-
-                    } else {
-
-                        var offset = imagePoint.add(this.selection.item.data.offset_point);
-                        var min_x = Math.min(this.selection.item.data.from.x, offset.x);
-                        var min_y = Math.min(this.selection.item.data.from.y, offset.y);
-                        var max_x = Math.max(this.selection.item.data.from.x, offset.x);
-                        var max_y = Math.max(this.selection.item.data.from.y, offset.y);
-
-                        if (max_x - min_x < 10) max_x = min_x + 10;
-                        if (max_y - min_y < 10) max_y = min_y + 10;
-
-                        // fix annotation to image
-                        var topLeft = this.fixPointToImage(new paper.Point(min_x, min_y));
-                        var bottomRight = this.fixPointToImage(new paper.Point(max_x, max_y));
-
-                        this.selection.item.bounds = new paper.Rectangle(topLeft, bottomRight);
+                            // ensure we dont move our polygon out of bounds
+                            this.selection.item.position = tempRect.center;
+                        
+                            this.drag.performed = true
+                        this.drag.lastPos = imagePoint
                     }
 
                     break;
@@ -879,7 +1635,7 @@ class BoundingBoxes {
 
     }
 
-    handleMousePress(event) {
+    handleSelection(event, hitResult) {
         if (this.polyBrush !== undefined)
             this.polyBrush.remove()
 
@@ -889,7 +1645,8 @@ class BoundingBoxes {
         // Convert from viewport coordinates to image coordinates.
         var point = this.viewer.viewport.viewportToImageCoordinates(viewportPoint);
 
-        var hitResult = this.group.hitTest(point, this.hitOptions);
+        //var hitResult = this.group.hitTest(point, this.hitOptions);
+        //var hitResult = this.hitTest(point)
 
         if (hitResult) {
             //hitResult.item = this.group.children[hitResult.item.name]
@@ -910,26 +1667,26 @@ class BoundingBoxes {
             hitResult.item.data.offset_point = new paper.Point(sorted[0].x - point.x, sorted[0].y - point.y);
 
 
-            if (!event.originalEvent.shiftKey) {
-                // if poly add new handling point
-                if (this.selection.type == 'stroke' &&
-                    this.selection.item.data.type == 'poly' &&
-                    this.selection.item.segments.length > 3) {
-                    var location = this.selection.location;
-                    if (this.selection.location !== undefined) {
-                        this.selection.item.insert(location.index + 1, point);
-                    }
-                }
-            } else {
-                // or remove point
-                if (this.selection.item.data.type == "poly") {
-                    if (hitResult.type == 'segment' && this.selection.item.segments.length > 2) {
-                        hitResult.segment.remove();
-                    }
-                }
-            }
+            //if (!event.originalEvent.shiftKey) {
+            //    // if poly add new handling point
+            //    if (this.selection.type == 'stroke' &&
+            //        this.selection.item.data.type == 'poly' &&
+            //        this.selection.item.segments.length > 3) {
+            //        var location = this.selection.location;
+            //        if (this.selection.location !== undefined) {
+            //            this.selection.item.insert(location.index + 1, point);
+            //        }
+            //    }
+            //} else {
+            //    // or remove point
+            //    if (this.selection.item.data.type == "poly") {
+            //        if (hitResult.type == 'segment' && this.selection.item.segments.length > 2) {
+            //            hitResult.segment.remove();
+            //        }
+            //    }
+            //}
 
-            return hitResult.item.name;
+            return hitResult;
         }
 
         return undefined;
