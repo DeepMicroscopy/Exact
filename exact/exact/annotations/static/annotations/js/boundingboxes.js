@@ -15,11 +15,10 @@ class BoundingBoxes {
             tolerance: 2
         };
 
-<<<<<<< HEAD
         var heatmap_cfg = {backgroundColor: 'rgba(0,0,0,0)',maxOpacity: 0.5,minOpacity: 0.25}
 		this.heatmap = new HeatmapOverlay(this.viewer, heatmap_cfg);
         this.group_heatmap = new paper.Group();
-=======
+
         this.hitOptionsSegment = {};
         this.hitOptionsSegment['line'] =       {segments: true,
                                                 stroke: false,
@@ -43,7 +42,6 @@ class BoundingBoxes {
                                                 tolerance: 5}
 
 
->>>>>>> 4fa3566140a7f69fa5acddf34cddbeb4b5f751d7
 
         this.imageid = imageid;
         this.image_width = imageSize["width"];
@@ -877,14 +875,11 @@ class BoundingBoxes {
                 rect.data.type = "rect";
                 rect.data.type_id = annotation.annotation_type.id;
                 rect.data.area_hit_test = annotation.annotation_type.area_hit_test;
-<<<<<<< HEAD
-=======
 
                 var checkbox = $('#DrawCheckBox_' + annotation.annotation_type.id)[0]
                 rect.visible = checkbox.checked
                 rect.locked = checkbox.indeterminate
 
->>>>>>> 4fa3566140a7f69fa5acddf34cddbeb4b5f751d7
                 this.group.addChild(rect);
                 break;
 
