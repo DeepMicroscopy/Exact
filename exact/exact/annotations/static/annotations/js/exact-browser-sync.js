@@ -211,6 +211,7 @@ class EXACTBrowserSync {
         }
 
         $("#search_browserimages_btn").off("click");
+        $("#sync_browser_image").off("change");
         $('#sync_browser_image').empty();
 
         for(let channel of Object.values(this.channels)) {
