@@ -45,29 +45,9 @@ class EXACTRegistrationHandler {
                     this.sendRegistrationImage.bind(this);
     }
 
-    handleKeyUp(event) {
-
-        if (["textarea", "text", "number"].includes(event.target.type) || this.viewer.world.getItemAt(0) === undefined) 
-            return;
-            
-        switch (event.keyCode) {
-            case 79: //o toggle overlay
-                if(this.viewer.world.getItemAt(0).getOpacity() > 0) {
-                    this.viewer.world.getItemAt(0).setOpacity(0);
-                }else {
-                    this.viewer.world.getItemAt(0).setOpacity(parseInt($("#OverlayRegImageSlider").val()) / 100);
-                }
-                break;
-        }
-    }
-
     initUiEvents() {
        
-
-        $(document).keyup(this.handleKeyUp.bind(this));
-
         $('#update_browser_sync_images_btn').click(this.updateRegistrationJS.bind(this));        
-        $('#OverlayRegImageSlider').on("input", this.updateOverlayRegImageSlider.bind(this));
         $("#OverlayRegImage-enabled").click(this.enableOverlayRegImageSlider.bind(this));
     }
 
@@ -102,11 +82,9 @@ class EXACTRegistrationHandler {
             
 
             this.background_viewer.addHandler("open", function (event) {
+                this.userData.updateOverlayRegImageSlider(50);
                 this.userData.syncViewBackgroundForeground();
-            }, this);
-
-            
-            this.updateOverlayRegImageSlider(50);
+            }, this);          
 
         } else {
             if (this.background_viewer !== undefined) {
@@ -259,7 +237,7 @@ class EXACTRegistrationHandler {
 
     updateOverlayRegImageSlider(value) {
         if (this.viewer.world.getItemAt(0) !== undefined) {
-            this.viewer.world.getItemAt(0).setOpacity(parseInt($("#OverlayRegImageSlider").val()) / 100);
+            this.viewer.world.getItemAt(0).setOpacity(value / 100);
         }       
     }
 
@@ -273,7 +251,7 @@ class EXACTRegistrationHandler {
             $("#OverlayRegImage-enabled").prop("checked", false )
         }        
 
-        $('#OverlayRegImageSlider').off("input");
+        $('#overlaySlider').off("input");
 
         $('#registration00').val(0);
         $('#registration01').val(0);
