@@ -408,6 +408,14 @@ class EXACTViewer {
         });
         this.overlaySlider.on('change', this.updateOverlayRegImageSlider.bind(this));
 
+        viewer.addHandler("updateOverlayImageSlider", function (event) {
+
+            var opacity = event.opacity;
+            this.userData.overlaySlider.setValue(opacity);
+            this.userData.updateOverlayRegImageSlider(opacity);
+        }, this);
+
+
         // disable nav if image is to small
         if (imageInformation['width'] < 2500 || imageInformation['height'] < 2500)
             viewer.navigator.element.style.display = "none";
