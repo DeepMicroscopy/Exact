@@ -25,6 +25,8 @@ class EXACTViewer {
         this.screeningTool = new ScreeningTool(imageInformation, user_id, gHeaders, this.viewer);
 
         console.log(`${this.constructor.name} loaded for id ${this.imageId}`);
+
+        $(document).keyup(this.handleKeyUp.bind(this));
     }
 
     static factoryCreateViewer(server_url, imageId, options, imageInformation, annotationTypes = undefined,
@@ -397,6 +399,24 @@ class EXACTViewer {
             this.searchTool = new SearchTool(event.userData.imageId, event.userData.viewer, event.userData.exact_sync, event.userData.browser_sync);
         }, this);
 
+
+        this.overlaySlider = new Slider("#overlaySlider", {
+            ticks: [0, 25, 50, 75, 100],
+            ticks_labels: ['0', '25%', '50% Opacity', '75%', '100%'],
+            //tooltip: 'always',
+            ticks_snap_bounds: 1,
+            value: 100
+        });
+        this.overlaySlider.on('change', this.updateOverlayRegImageSlider.bind(this));
+
+        viewer.addHandler("updateOverlayImageSlider", function (event) {
+
+            var opacity = event.opacity;
+            this.userData.overlaySlider.setValue(opacity);
+            this.userData.updateOverlayRegImageSlider(opacity);
+        }, this);
+
+
         // disable nav if image is to small
         if (imageInformation['width'] < 2500 || imageInformation['height'] < 2500)
             viewer.navigator.element.style.display = "none";
@@ -511,7 +531,21 @@ class EXACTViewer {
     }
 
     handleKeyUp(event) {
-        return;
+
+        if (["textarea", "text", "number"].includes(event.target.type))
+            return;
+
+        
+        switch (event.keyCode) {
+            case 79: //o toggle overlay
+                if(this.viewer.world.getItemAt(0).getOpacity() > 0) {
+                    this.viewer.world.getItemAt(0).setOpacity(0);
+                }else {
+                    this.viewer.world.getItemAt(0).setOpacity(parseInt($("#overlaySlider").val()) / 100);
+                }
+                break;
+            }
+
     }
 
     handleKeyPress(event) {
@@ -559,6 +593,10 @@ class EXACTViewer {
             this.gZoomSlider.destroy();
         }
 
+        if (this.overlaySlider !== undefined) {
+            this.overlaySlider.destroy();
+        }
+
         if (this.frameSlider !== undefined) {
             this.frameSlider.destroy();
         }
@@ -574,12 +612,20 @@ class EXACTViewer {
 
         if (this.browser_sync !== undefined)
             this.browser_sync.destroy();
+
+        $('#overlaySlider').off("input");
     }
 
     onFrameSliderChanged(event) {
         if (this.frameSlider !== undefined) {
             this.viewer.goToPage(this.frameSlider.getValue() - 1);
         }
+    }
+
+    updateOverlayRegImageSlider(value) {
+        if (this.viewer.world.getItemAt(0) !== undefined) {
+            this.viewer.world.getItemAt(0).setOpacity(parseInt($("#overlaySlider").val()) / 100);
+        }       
     }
 
     onSliderChanged(event) {
@@ -1008,6 +1054,9 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
     }
 
     handleKeyUp(event) {
+
+        super.handleKeyUp(event);
+
         if (["textarea", "text", "number"].includes(event.target.type))
             return;
 
@@ -1168,7 +1217,8 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
     initUiEvents(annotation_types) {
 
-        $(document).keyup(this.handleKeyUp.bind(this));
+
+        //$(document).keyup(this.handleKeyUp.bind(this));
         $(document).keypress(this.handleKeyPress.bind(this));
         $(document).keydown(this.handleKeyDown.bind(this));
         $('select#annotation_type_id').change(this.changeAnnotationTypeByComboxbox.bind(this));
@@ -1964,7 +2014,7 @@ class EXACTViewerGlobalAnnotationsFrame extends EXACTViewer {
             this.globalAnnotationTypeKeyToIdLookUp[key_number] = annotation_type.id;
         }
 
-        $(document).keyup(this.handleKeyUp.bind(this));
+        //$(document).keyup(this.handleKeyUp.bind(this));
 
         if (frame > 1) {
             this.viewer.goToPage(frame - 1);
@@ -2154,7 +2204,7 @@ class EXACTViewerGlobalAnnotations extends EXACTViewer {
             this.globalAnnotationTypeKeyToIdLookUp[key_number] = annotation_type.id;
         }
 
-        $(document).keyup(this.handleKeyUp.bind(this));
+        //$(document).keyup(this.handleKeyUp.bind(this));
     }
 
     handleKeyUp(event) {

@@ -8,34 +8,12 @@ class EXACTRegistrationHandler {
         this.background_viewer = undefined;
         this.show_registration = ("image_set" in registration_pair.source_image) ? registration_pair.source_image.image_set.show_registration : false;
 
-        let matrix = registration_pair.transformation_matrix;
-        let inv_matrix = registration_pair.inv_matrix;
-
-        this.homography = cv.matFromArray(3, 3, cv.CV_64FC1, 
-            [matrix.t_00, matrix.t_01, matrix.t_02, 
-                matrix.t_10, matrix.t_11, matrix.t_12,
-                matrix.t_20, matrix.t_21, matrix.t_22]);
-
-        this.inv_homography = cv.matFromArray(3, 3, cv.CV_64FC1, 
-            [inv_matrix.t_00, inv_matrix.t_01, inv_matrix.t_02, 
-                inv_matrix.t_10, inv_matrix.t_11, inv_matrix.t_12,
-                inv_matrix.t_20, inv_matrix.t_21, inv_matrix.t_22]);
-
-        this.rotation_angle = registration_pair.rotation_angle;
-        [this.mpp_x_scale, this.mpp_y_scale] = registration_pair.get_scale;
-        [this.inv_mpp_x_scale, this.inv_mpp_y_scale] = registration_pair.get_inv_scale;
-
-        this.initUiEvents();
-        this.initBrowserSycEvents();
-        this.updateHomographyUI();
-
-        // Load current registration 
-        if  (this.show_registration && $("#OverlayRegImage-enabled").prop("checked") == false) {
-            $("#OverlayRegImage-enabled").prop("checked", true);
-
-            this.enableOverlayRegImageSlider();
-        }
+        // Check if the OpenCv js is loaded
+        this.check_opencv = undefined;
+        this.check_opencv = setInterval(this.initUiEvents.bind(this), 1000);
     }
+
+
 
     initBrowserSycEvents() {
         this.browser_sync.getChannelObject("ReceiveRegistrationImage").onmessage = 
@@ -45,30 +23,45 @@ class EXACTRegistrationHandler {
                     this.sendRegistrationImage.bind(this);
     }
 
-    handleKeyUp(event) {
-
-        if (["textarea", "text", "number"].includes(event.target.type) || this.viewer.world.getItemAt(0) === undefined) 
-            return;
-            
-        switch (event.keyCode) {
-            case 79: //o toggle overlay
-                if(this.viewer.world.getItemAt(0).getOpacity() > 0) {
-                    this.viewer.world.getItemAt(0).setOpacity(0);
-                }else {
-                    this.viewer.world.getItemAt(0).setOpacity(parseInt($("#OverlayRegImageSlider").val()) / 100);
-                }
-                break;
-        }
-    }
-
     initUiEvents() {
-       
 
-        $(document).keyup(this.handleKeyUp.bind(this));
+        if (this.homography !== undefined) {
+            clearInterval(this.check_opencv);
+        }        
 
-        $('#update_browser_sync_images_btn').click(this.updateRegistrationJS.bind(this));        
-        $('#OverlayRegImageSlider').on("input", this.updateOverlayRegImageSlider.bind(this));
-        $("#OverlayRegImage-enabled").click(this.enableOverlayRegImageSlider.bind(this));
+        // Check if the OpenCv js is loaded
+        if (typeof cv === "object" && typeof cv.Mat === "function") {
+
+            let matrix = this.registration_pair.transformation_matrix;
+            let inv_matrix = this.registration_pair.inv_matrix;
+
+            this.homography = cv.matFromArray(3, 3, cv.CV_64FC1, 
+                [matrix.t_00, matrix.t_01, matrix.t_02, 
+                    matrix.t_10, matrix.t_11, matrix.t_12,
+                    matrix.t_20, matrix.t_21, matrix.t_22]);
+
+            this.inv_homography = cv.matFromArray(3, 3, cv.CV_64FC1, 
+                [inv_matrix.t_00, inv_matrix.t_01, inv_matrix.t_02, 
+                    inv_matrix.t_10, inv_matrix.t_11, inv_matrix.t_12,
+                    inv_matrix.t_20, inv_matrix.t_21, inv_matrix.t_22]);
+
+            this.rotation_angle = this.registration_pair.rotation_angle;
+            [this.mpp_x_scale, this.mpp_y_scale] = this.registration_pair.get_scale;
+            [this.inv_mpp_x_scale, this.inv_mpp_y_scale] = this.registration_pair.get_inv_scale;
+
+            this.initBrowserSycEvents();
+            this.updateHomographyUI();
+
+            // Load current registration 
+            if  (this.show_registration && $("#OverlayRegImage-enabled").prop("checked") == false) {
+                $("#OverlayRegImage-enabled").prop("checked", true);
+
+                this.enableOverlayRegImageSlider();
+            }
+        
+            $('#update_browser_sync_images_btn').click(this.updateRegistrationJS.bind(this));        
+            $("#OverlayRegImage-enabled").click(this.enableOverlayRegImageSlider.bind(this));
+        }
     }
 
 
@@ -102,15 +95,17 @@ class EXACTRegistrationHandler {
             
 
             this.background_viewer.addHandler("open", function (event) {
-                this.userData.syncViewBackgroundForeground();
-            }, this);
 
-            
-            this.updateOverlayRegImageSlider(50);
+                let opacity = 50;
+                this.userData.viewer.raiseEvent('updateOverlayImageSlider', { opacity });
+                this.userData.syncViewBackgroundForeground();
+            }, this);          
 
         } else {
             if (this.background_viewer !== undefined) {
                 this.background_viewer.destroy();
+
+                this.background_viewer = undefined;
             }       
         }
 
@@ -257,12 +252,6 @@ class EXACTRegistrationHandler {
 
     }    
 
-    updateOverlayRegImageSlider(value) {
-        if (this.viewer.world.getItemAt(0) !== undefined) {
-            this.viewer.world.getItemAt(0).setOpacity(parseInt($("#OverlayRegImageSlider").val()) / 100);
-        }       
-    }
-
 
     destroy() {
 
@@ -273,7 +262,7 @@ class EXACTRegistrationHandler {
             $("#OverlayRegImage-enabled").prop("checked", false )
         }        
 
-        $('#OverlayRegImageSlider').off("input");
+        $('#overlaySlider').off("input");
 
         $('#registration00').val(0);
         $('#registration01').val(0);

@@ -614,6 +614,23 @@ class ImageRegistration(models.Model):
 
         return - math.atan2(self.transformation_matrix["t_01"], self.transformation_matrix["t_00"]) * 180 / math.pi
 
+
+    def fixedCvInvert(self, H):
+        """[If the determinate is zero, OpenCV returns a wrong inverted matrix. ]
+
+        Args:
+            H ([type]): [3x3 Matrix]
+
+        Returns:
+            [type]: [Inverted matrix]
+        """   
+        if (cv2.determinant(H) != 0.0):
+            return cv2.invert(H)[1]
+        else:
+            return np.array([[1., 0., -H[0,-1]],
+                          [0., 1., -H[1,-1]],
+                          [0., 0., 0.]])
+
     @cached_property
     def inv_matrix(self):
 
@@ -622,7 +639,8 @@ class ImageRegistration(models.Model):
                         [t["t_10"], t["t_11"], t["t_12"]], 
                         [t["t_20"], t["t_21"], t["t_22"]]])
 
-        M = cv2.invert(H)[1]
+
+        M = self.fixedCvInvert(H)
 
         return {
             "t_00": M [0,0], 
@@ -651,7 +669,7 @@ class ImageRegistration(models.Model):
                         [0.         ,             0, 1]])
         
 
-        inv_rot = cv2.invert(rot)[1]
+        inv_rot = self.fixedCvInvert(H)
 
         M = H@inv_rot
         return M
@@ -667,7 +685,7 @@ class ImageRegistration(models.Model):
     def get_inv_scale(self):
 
         M = self.get_matrix_without_rotation
-        M = cv2.invert(M)[1]
+        M = self.fixedCvInvert(M)
         return M[0][0], M[1][1]
 
     def __str__(self):

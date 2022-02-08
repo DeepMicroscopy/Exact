@@ -5,6 +5,8 @@
 {% block additional_annotation_js %}
 <link rel="stylesheet" type="text/css" href="{% static 'annotations/css/bootstrap-slider.min.css' %}">
 
+<script async type="text/javascript" src="{% static 'annotations/js/opencv.js' %}"></script>
+
 <script type="text/javascript" src="{% static 'scripts/jquery-3.2.1.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'scripts/bootstrap.min.js' %}"></script>
 
@@ -13,7 +15,6 @@
 <script type="text/javascript" src="{% static 'annotations/js/boundingboxes.js' %}"></script>
 
 <script async type="text/javascript" src="{% static 'annotations/js/openseadragon-filtering.js' %}"></script>
-<script async type="text/javascript" src="{% static 'annotations/js/opencv.js' %}"></script>
 
 <script type="text/javascript" src="{% static 'scripts/notify.min.js' %}"></script>
 
@@ -670,8 +671,6 @@
                                             </td>
 
                                             <td>
-                                                <input id="OverlayRegImageSlider" type="range" type="text" data-slider-min="0"
-                                                data-slider-max="100" data-slider-step="5" data-slider-value="0" data-slider-enabled="false"/>
                                             </td>
                                         </tr>
 
@@ -786,7 +785,14 @@
         </div>
 
         <div class="col h-100" id="annotationImage">
-            <div id="zoomSlider" style="width: 35vw;"></div> <!-- style="width: 25vw;" -->
+            <div style="width: 100%; display: table;">
+                <div style="display: table-row">
+                    <div id="zoomSlider" style="width: 30vw; display: table-cell"></div>
+                    <div style="width: 10vw; display: table-cell"></div>
+                    <div id="overlaySlider" style="width: 30vw; display: table-cell"></div>
+                </div>
+            </div>
+             <!-- style="width: 25vw;" -->
             <div style="height: 85vh;">
                 <div class="seadragon-viewer" id="openseadragon_background"  style="position: absolute; height: 85vh; width: 100%">
                 </div>
