@@ -27,7 +27,7 @@ class ImageSerializer(FlexFieldsModelSerializer):
         )
 
         expandable_fields = {
-            "imagesets": ('exact.images.serializers.ImageSetSerializer', {'read_only': True}),
+            "image_set": ('exact.images.serializers.ImageSetSerializer', {'read_only': True}),
             "annotations": ('exact.annotations.serializers.AnnotationSerializer', {'read_only': True}),
         }
 
@@ -92,7 +92,11 @@ class ImageRegistrationSerializer(FlexFieldsModelSerializer):
             'transformation_matrix',
             'registration_error',
             'runtime',
-            'file'
+            'file',
+            'rotation_angle',
+            'inv_matrix',
+            'get_scale',
+            'get_inv_scale'
         )
 
         expandable_fields = {
@@ -115,7 +119,8 @@ class ImageSetSerializer(FlexFieldsModelSerializer):
             'set_tags',
             'team',
             'creator',
-            'collaboration_type'
+            'collaboration_type',
+            'show_registration'
         )
 
         expandable_fields = {

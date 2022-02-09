@@ -85,8 +85,9 @@
         paperCanvas: function() {
             return this._canvas;
         },
+
         clear: function() {
-           // TODO: check what needs to be added here
+            this._canvas.getContext('2d').clearRect(0, 0, this._containerWidth, this._containerHeight);
         },
         // ----------
         resize: function() {
@@ -101,18 +102,31 @@
                 this._canvas.setAttribute('height', this._containerHeight);
             }
         },
+
         resizecanvas: function() {
                 this._canvasdiv.setAttribute('width', this._containerWidth);
                 this._canvas.setAttribute('width', this._containerWidth);
                 this._canvasdiv.setAttribute('height', this._containerHeight);
                 this._canvas.setAttribute('height', this._containerHeight);
                 paper.view.viewSize = new paper.Size(this._containerWidth, this._containerHeight);
+
+
                 var viewportZoom = this._viewer.viewport.getZoom(true);
+
+                // https://github.com/altert/OpenSeadragonCanvasOverlay/pull/9
+                var degrees = this._viewer.viewport.getRotation();
+
                 var image1 = this._viewer.world.getItemAt(0);
                 if (image1 !== undefined) {
                     paper.view.zoom = image1.viewportToImageZoom(viewportZoom);
                     var center = this._viewer.viewport.viewportToImageCoordinates(this._viewer.viewport.getCenter(true));
                     paper.view.center = new paper.Point(center.x, center.y);
+
+                    if (degrees !== paper.view.rotation) {
+                        paper.view.rotate(-paper.view.rotation, paper.view.center);
+                        paper.view.rotate(degrees, paper.view.center);
+                    }
+                    
                 }
        }
     };

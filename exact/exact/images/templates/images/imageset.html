@@ -281,7 +281,25 @@
                                     <td>
                                             {% for at in annotation_types %}
                                                 <li>
-                                                   {{ at.product.name }} -> {{ at.name }}: <b>{{ at.count }}</b> 
+                                                   {{ at.product.name }} -> {{ at.name }}: 
+                                                    <b id='annotation_type_{{ at.id }}_count'> Calculating... </b> <!--{{ at.count }}--> 
+                                                        <script type="text/javascript">
+                                                            var apiUrl = '/api/v1/annotations/annotations/count/?&image__image_set={{ imageset.id }}&annotation_type={{ at.id }}&deleted=False&image__image_type=0';
+                                                            
+                                                            if ('{{ imageset.collaboration_type  }}' > 0) {
+                                                                apiUrl += '&user={{ user.id }}'
+                                                            }
+                                                            
+                                                            fetch(apiUrl).then(response => {
+                                                                return response.json();
+                                                            }).then(data => {
+                                                                document.getElementById("annotation_type_{{ at.id }}_count").innerHTML = data["count"];
+                                                            }).catch(err => {
+                                                                console.log(err);
+                                                            });
+                                                        </script>
+
+                                                    <!-- http://127.0.0.1:8000/api/v1/annotations/annotations/count/?&image__image_set=2&annotation_type=2&deleted=False&image__image_type=0 -->
                                                 </li>
                                             {% endfor %}
                                     </td>
@@ -490,6 +508,16 @@
                                             </td>
                                             <td>
                                                 {% render_field edit_form.main_annotation_type class+='form-control' %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <label for="show-registration">{{ edit_form.show_registration.label }}
+                                                    <span class="fa fa-question-sign" data-toggle="tooltip" data-placement="right" title="If true load the registered image."></span>
+                                                </label>
+                                            </td>
+                                            <td>
+                                                {% render_field edit_form.show_registration class+='form-control' %}
                                             </td>
                                         </tr>
                                         <tr>
