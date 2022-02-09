@@ -27,6 +27,7 @@ class EXACTRegistrationHandler {
 
         if (this.homography !== undefined) {
             clearInterval(this.check_opencv);
+            return;
         }        
 
         // Check if the OpenCv js is loaded
