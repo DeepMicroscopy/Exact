@@ -1170,6 +1170,9 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 if(event.ctrlKey){
                     this.undo();
                 }
+            case 91: // '?'
+                this.uiShowHeatmapToggle();
+                break;
         }
     }
 
@@ -1198,6 +1201,13 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
         viewer.addHandler('sync_updateDrawnAnnotations', function (event) {
             event.userData.tool.updateAnnotations(event.annotations);
+        }, this);
+
+        viewer.addHandler('sync_drawHeatmap', function (event) {
+
+            //console.log('addHandler-annotations.length=', event.annotations.length)
+            //event.userData.tool.drawHeatmap(event.annotations, event.userData.drawHeatmap);
+
         }, this);
     }
 
@@ -1234,6 +1244,18 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         this.viewer.buttons.buttons.push(element);
         this.viewer.buttons.element.appendChild(element.element);
 
+
+        let element_heatmap = new OpenSeadragon.Button({
+            tooltip: 'Draw Heatmap',
+            name: "DrawHeatmap",
+            srcRest: this.viewer.prefixUrl + `flip_rest.png`,
+            srcGroup: this.viewer.prefixUrl + `flip_grouphover.png`,
+            srcHover: this.viewer.prefixUrl + `flip_hover.png`,
+            srcDown: this.viewer.prefixUrl + `flip_pressed.png`,
+            onClick: this.uiShowHeatmapToggle.bind(this),
+        });
+        this.viewer.buttons.buttons.push(element_heatmap);
+        this.viewer.buttons.element.appendChild(element_heatmap.element);
 
         // Register Annotation Buttons
         this.annotationButtons = [
@@ -1365,6 +1387,16 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         this.annotationVisibility(this.annotationsToggle);
     }
 
+    uiShowHeatmapToggle() {
+        if (this.heatmapToggle === true) {
+            this.heatmapToggle = false;
+        } else {
+            this.heatmapToggle = true;
+        }      
+
+        this.heatmapVisibility(this.heatmapToggle);
+    }
+
     changeAnnotationTypeByComboxbox() {
         let annotation_type_id = $('#annotation_type_id').children(':selected').val();
 
@@ -1422,6 +1454,10 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             visible = true
         }
 
+        if (this.heatmapToggle === true)
+            this.heatmapVisibility();
+        
+        
         this.changeAnnotationTypeVisibility(annotation_type_id, visible, disabled_hitTest, keep_interaction);
     }
 
@@ -1493,6 +1529,28 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
         for (const annotation_type_id in this.annotationTypes) {
             this.tool.updateVisbility(annotation_type_id, drawAnnotations);
+        }
+    }
+
+    heatmapVisibility(drawHeatmap= true) {
+
+        if (drawHeatmap) {
+            let annos  = $.map(this.exact_sync.annotations, function(value, key) { return value });
+
+            // filter anno types that are not supported like poly or line.
+            annos = annos.filter(anno => [1, 6, 2].includes(annos[0].annotation_type.vector_type))
+
+            // filter annos according to type visibility
+            Object.keys(this.exact_sync.annotationTypes).forEach(annotation_type_id => {
+                var checkbox = $('#DrawCheckBox_' + annotation_type_id)[0]
+                if (!checkbox.checked) {
+                    annos = annos.filter(anno => anno.annotation_type.id !== parseInt(annotation_type_id));
+                }
+            });
+
+            this.tool.drawHeatmap(annos);
+        } else {            
+            this.tool.drawHeatmap([]);
         }
     }
 
