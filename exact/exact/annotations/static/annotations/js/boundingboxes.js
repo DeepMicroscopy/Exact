@@ -16,10 +16,13 @@ class BoundingBoxes {
         };
 
 
-        var heatmap_cfg = { backgroundColor: 'rgba(0,0,0,0)', maxOpacity: 0.5, minOpacity: 0.25 }
+        var heatmap_cfg = { backgroundColor: 'rgba(0,0,0,0)', maxOpacity: 0.5, minOpacity: 0.25}
+        var heatmap_cfg_inv = { backgroundColor: 'rgba(0,0,0,0)', maxOpacity: 0.5, minOpacity: 0.25, inv: true}
+        
         this.heatmap = new HeatmapOverlay(this.viewer, heatmap_cfg);
+        this.heatmap_inv = new HeatmapOverlay(this.viewer, heatmap_cfg_inv);
         this.group_heatmap = new paper.Group();
-
+        this.group_heatmap_inv = new paper.Group();
 
         this.hitOptionsSegment = {};
         this.hitOptionsSegment['line'] = {
@@ -1024,33 +1027,29 @@ class BoundingBoxes {
     }
 
 
-    drawHeatmap(annotations) {
+    drawHeatmap(annotations, inv = false) {
         if (annotations === undefined) {
             return;
         }
 
         for (var anno_hm of annotations) {
-            // console.log('anno_hm=', anno_hm.vector);
             if (anno_hm.vector === null || this.getItemFromUUID(anno_hm.unique_identifier) !== undefined) {
                 continue;
             }
         }
 
-        //*************Added Heatmap Test Data Generation */
-        var hs_radius = 10;
         var hs_intensity = 1;
-        // now generate some random data
         var points = [];
         var max = 0;
-        // var width = 80000;
-        // var height = 60000;
-        // var len = 300;
-        var len = annotations.length;
-        // console.log('drawHeatmap().annotations_len=', len);
-        // console.log('annotations=', annotations);
+
         for (var anno_hm of annotations) {
-            var x_pos = anno_hm.vector.x1 + ((anno_hm.vector.x2 - anno_hm.vector.x1) / 2);
-            var y_pos = anno_hm.vector.y1 + ((anno_hm.vector.y2 - anno_hm.vector.y1) / 2);
+
+            let anno_width = anno_hm.vector.x2 - anno_hm.vector.x1;
+            let anno_height = anno_hm.vector.y2 - anno_hm.vector.y1
+            let hs_radius =  Math.max(anno_width, anno_height, 10); // Sets the radius to object size or at least 10 pixels. 
+
+            var x_pos = anno_hm.vector.x1 + (anno_width / 2);
+            var y_pos = anno_hm.vector.y1 + (anno_height / 2);
             var point = {
                 x: x_pos,
                 y: y_pos,
@@ -1058,32 +1057,21 @@ class BoundingBoxes {
                 radius: hs_radius
             };
             points.push(point);
-            // console.log('hm_coord=', point);
         }
         var data = {
             max: max,
             data: points
         };
-        //*****End Data Generation */
-        //*****Start Heatmap Gen */
+
         var heatmap_data = data
-        this.group_heatmap.addChild(this.heatmap.setData(heatmap_data));
 
-        // this.viewer.addOverlay(this.heatmap.setData(heatmap_data));
-        // if (this.heatmap.heatmap._store._data.length !== 0) {
-        //     this.viewer.addOverlay(this.heatmap.addData());
-        // } else {
-        //     this.viewer.addOverlay(this.heatmap.loadData());
-        // };
+        if (inv) {
+            this.group_heatmap_inv.addChild(this.heatmap_inv.setData(heatmap_data));
+        }            
+        else {
+            this.group_heatmap.addChild(this.heatmap.setData(heatmap_data));
+        }
 
-        //*****End Heatmap Gen */
-        // if (this.heatmap.heatmap._store._data.length !== 0) {
-        //     this.group_heatmap.addChild(this.heatmap.addData());
-        // } else {
-        //     this.group_heatmap.addChild(this.heatmap.loadData());
-        // };
-
-        // this.group.addChild(heatmap.setData(heatmap_data));
 
         this.overlay.resize();
         this.overlay.resizecanvas();
