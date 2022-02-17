@@ -327,7 +327,7 @@
             var container = config.container;
             var shadowCanvas = this.shadowCanvas = document.createElement('canvas');
             var canvas = this.canvas = config.canvas || document.createElement('canvas');
-            var renderBoundaries = this._renderBoundaries = [10000, 10000, 0, 0];
+            this._renderBoundaries = [10000, 10000, 0, 0];
 
             var computed = getComputedStyle(config.container) || {};
 
@@ -350,6 +350,8 @@
             this._palette = _getColorPalette(config);
             this._templates = {};
 
+            this._use_colorize_inv = config.inv;
+
             this._setStyles(config);
         };
 
@@ -357,7 +359,7 @@
             renderPartial: function (data) {
                 if (data.data.length > 0) {
                     this._drawAlpha(data);
-                    this._colorize();
+                    this._use_colorize_inv ? this._colorize_inv() : this._colorize();
                 }
             },
             renderAll: function (data) {
@@ -365,7 +367,7 @@
                 this._clear();
                 if (data.data.length > 0) {
                     this._drawAlpha(_prepareData(data));
-                    this._colorize();
+                    this._use_colorize_inv ? this._colorize_inv() : this._colorize();
                 }
             },
             _updateGradient: function (config) {
@@ -425,9 +427,6 @@
                     var rectY = y - radius;
                     var shadowCtx = this.shadowCtx;
 
-
-
-
                     var tpl;
                     if (!this._templates[radius]) {
                         this._templates[radius] = tpl = _getPointTemplate(radius, blur);
@@ -441,22 +440,55 @@
                     shadowCtx.globalAlpha = templateAlpha < .01 ? .01 : templateAlpha;
 
                     shadowCtx.drawImage(tpl, rectX, rectY);
-
-                    // update renderBoundaries
-                    if (rectX < this._renderBoundaries[0]) {
-                        this._renderBoundaries[0] = rectX;
-                    }
-                    if (rectY < this._renderBoundaries[1]) {
-                        this._renderBoundaries[1] = rectY;
-                    }
-                    if (rectX + 2 * radius > this._renderBoundaries[2]) {
-                        this._renderBoundaries[2] = rectX + 2 * radius;
-                    }
-                    if (rectY + 2 * radius > this._renderBoundaries[3]) {
-                        this._renderBoundaries[3] = rectY + 2 * radius;
-                    }
-
                 }
+
+                this._renderBoundaries[0] = 0;
+                this._renderBoundaries[1] = 0;
+                this._renderBoundaries[2] = this._width;
+                this._renderBoundaries[3] = this._height
+
+            },
+            _colorize_inv : function () {
+                var x = this._renderBoundaries[0];
+                var y = this._renderBoundaries[1];
+                var width = this._renderBoundaries[2] - x;
+                var height = this._renderBoundaries[3] - y;
+                var maxWidth = this._width;
+                var maxHeight = this._height;
+                var maxOpacity = this._maxOpacity;
+
+                x = (x < 0) ? 0 : x;
+                y = (y < 0) ? 0 : y;
+                width = (x + width > maxWidth) ? maxWidth - x : width;
+                height = (y + height > maxHeight) ? maxHeight - y : height;
+
+                //var img = this.shadowCtx.getImageData(x, y, width, height);
+                var img = this.shadowCtx.getImageData(x, y, maxWidth, maxHeight);
+                var imgData = img.data;
+                var len = imgData.length;
+                var palette = this._palette;
+
+
+                for (var i = 3; i < len; i += 4) {
+                    var alpha = imgData[i];
+                    var offset = alpha * 4;
+
+
+                    if (!offset) {
+                        imgData[i - 3] = 0;
+                        imgData[i - 2] = 0;
+                        imgData[i - 1] = 0;
+                        imgData[i] = maxOpacity;
+                    } else {
+                        imgData[i] = 255 - palette[offset + 3]; 
+                    }
+                }
+
+                img.data = imgData;
+                this.ctx.putImageData(img, x, y);
+
+                this._renderBoundaries = [1000, 1000, 0, 0];
+
             },
             _colorize: function () {
                 var x = this._renderBoundaries[0];

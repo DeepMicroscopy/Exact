@@ -34,7 +34,8 @@ HeatmapOverlay.prototype.initialize = function (cfg) {
     this.cfg = cfg;
 
     //var map = this.map = this.getMap();
-    var hmDIV = document.createElement('div');
+    var hmDIV = document.getElementById("hmDIV")
+    var hmDIV = (hmDIV === null) ? document.createElement('div') : hmDIV;
     hmDIV.id = 'hmDIV';
     var container = this.container = hmDIV;
     var width = this.width = this._viewer.container.clientWidth;
@@ -143,10 +144,12 @@ HeatmapOverlay.prototype.update = function () {
 
         var radius;
 
+        // TODO: Fix the jumping heatmap area
         if (entry.radius) {
-            radius = entry.radius * zoom;
-            radius = entry.radius / zoom;
-            if (radius <= 19.99) {
+            radius = 10 / zoom;
+            if (zoom > 13) {
+                radius = entry.radius;
+            } else {
                 radius = 20;
             }
         } else {
