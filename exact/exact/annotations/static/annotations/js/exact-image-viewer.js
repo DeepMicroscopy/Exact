@@ -341,7 +341,7 @@ class EXACTViewer {
             var coordinates = event.coordinates;
 
             event.userData.browser_sync.sendCurrentViewPortCoordinates(coordinates);
-            event.userData.viewCoordinates(coordinates.x_min, coordinates.y_min, coordinates.x_max, coordinates.y_max, rotation_angle.rotation_angle);
+            event.userData.viewCoordinates(coordinates.x_min, coordinates.y_min, coordinates.x_max-coordinates.x_min, coordinates.y_max-coordinates.y_min);
 
         }, this);
 
