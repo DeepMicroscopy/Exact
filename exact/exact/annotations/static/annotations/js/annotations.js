@@ -51,7 +51,7 @@ function include_server_subdir(url) {
         $(document).on('click', '.notifyjs-bootstrap-info', function (event) {
             if ($(this).text().trim() === "Start Screening") {
                 var result = globals.screeningTool.getCurrentPosition();
-                viewCoordinates(result['x_min'], result['y_min'], result['x_max'], result['y_max']);
+                viewCoordinates(result['x_min'], result['y_min'], result['x_max']-result['x_min'], result['y_max']-result['y_min']);
 
             } else {
                 var id = parseInt($(this).text().split(" ")[1]);
