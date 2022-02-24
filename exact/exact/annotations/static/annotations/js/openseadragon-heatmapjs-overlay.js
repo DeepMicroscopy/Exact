@@ -9,6 +9,19 @@ function HeatmapOverlay(viewer, cfg) {
     var self = this;
     this._viewer = viewer;
     this.initialize(cfg || {});
+
+
+    this._viewer.addHandler('open', function () {
+        self.resize();
+    });
+
+    this._viewer.addHandler('full-screen', function () {
+        self.resize();
+    });
+
+    this._viewer.addHandler('resize', function () {
+        self.resize();
+    });
 };
 
 HeatmapOverlay.CSS_TRANSFORM = (function () {
@@ -75,15 +88,18 @@ HeatmapOverlay.prototype.setData = function (data) {
     this.update();
 };
 
-HeatmapOverlay.prototype.resize = function() {
+HeatmapOverlay.prototype.resize = function () {
 
     // if (!this.map){ return; }
 
-    var div = this.map.getDiv(),
-      width = div.clientWidth,
-      height = div.clientHeight;
+    var container = this.container;
 
-    if (width == this.width && height == this.height){ return; }
+    if (width == this.width && height == this.height) { return; }
+
+    var width = this._viewer.container.clientWidth;
+    var height = this._viewer.container.clientHeight;
+
+    container.style.cssText = 'width:' + width + 'px;height:' + height + 'px;';
 
     this.width = width;
     this.height = height;
@@ -92,7 +108,7 @@ HeatmapOverlay.prototype.resize = function() {
     this.heatmap._renderer.setDimensions(width, height);
     // then redraw all datapoints with update
     this.update();
-  };
+};
 
 HeatmapOverlay.prototype.update = function () {
     var zoom = this._viewer.viewport.getZoom(true);
@@ -100,21 +116,17 @@ HeatmapOverlay.prototype.update = function () {
 
 
     var imagingHelper = this._viewer.activateImagingHelper({
-		worldIndex: 0,
-		// onImageViewChanged: onImageViewChanged
-	});
+        worldIndex: 0,
+        // onImageViewChanged: onImageViewChanged
+    });
     var zoomfact = imagingHelper.getZoomFactor();
     // console.log('zoomfact=', zoomfact)
-
-
-    //if (this.data.length == 0) {
-    //    return;
-    //}
 
     var generatedData = { max: this.max };
     var points = [];
     // iterate through data 
-    var len = this.data.length;
+    // deactivate heatmap at a certain zoom level
+    var len = (zoom > this.cfg.zoom_threshold) ? 0 : this.data.length;
     var localMax = 0;
     var valueField = this.cfg.valueField;
 
@@ -131,16 +143,16 @@ HeatmapOverlay.prototype.update = function () {
 
         // console.log('entry.x=', entry.x)
 
-        var viewportPoint  = this._viewer.viewport.imageToViewportCoordinates(entry.x, entry.y);
+        var viewportPoint = this._viewer.viewport.imageToViewportCoordinates(entry.x, entry.y);
         // console.log('imgeToViewportCoord=', viewportPoint);
-        var imagePoint = this._viewer.viewport.pixelFromPoint(viewportPoint , true);
+        var imagePoint = this._viewer.viewport.pixelFromPoint(viewportPoint, true);
         // console.log('imagePoint=', imagePoint);
 
-		//ignore outter point
+        //ignore outter point
         if (imagePoint.x <= 0 || imagePoint.y <= 0 || imagePoint.x >= this._viewer.viewport.getContainerSize().x || imagePoint.y >= this._viewer.viewport.getContainerSize().y)
             continue;
 
-        var point = { x: Math.round(imagePoint.x), y: Math.round(imagePoint.y), value : value };
+        var point = { x: Math.round(imagePoint.x), y: Math.round(imagePoint.y), value: value };
 
         var radius;
 
@@ -159,35 +171,12 @@ HeatmapOverlay.prototype.update = function () {
 
         var intensity;
         if (entry.value) {
-            intensity =  entry.value * zoom;
+            intensity = entry.value * zoom;
         } else {
             intensity = 10;
         }
         point.value = intensity;
-
-        // switch (true) {
-		// 	// If score is 90 or greater
-		// 	case zoom <= 1:
-		// 		radius = entry.radius;
-        //         intensity = entry.value;
-		// 		break;
-		// 	case zoom > 1 && zoom <= 1.3:
-		// 		// radius = entry.radius * .75;
-        //         radius = entry.radius * zoom;
-        //         // intensity = entry.value * zoom;
-        //         intensity = 1;
-        //         break;
-        //     case zoom > 1.3 && zoom <= 2.3:
-        //         radius = entry.radius * .50;
-        //         intensity = entry.value * zoom;
-        //         break;
-        //     default: 
-        //         radius = 10
-        //         intensity = 50;
-		// };
-
         point.radius = radius;
-        point.value = intensity;
 
         points.push(point);
     }
