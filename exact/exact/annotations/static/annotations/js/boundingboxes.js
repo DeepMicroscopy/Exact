@@ -16,8 +16,8 @@ class BoundingBoxes {
         };
 
 
-        var heatmap_cfg = { backgroundColor: 'rgba(0,0,0,0)', maxOpacity: 0.5, minOpacity: 0.25}
-        var heatmap_cfg_inv = { backgroundColor: 'rgba(0,0,0,0)', maxOpacity: 0.5, minOpacity: 0.25, inv: true}
+        var heatmap_cfg = { backgroundColor: 'rgba(0,0,0,0)', maxOpacity: 0.5, minOpacity: 0.25, zoom_threshold: 8}
+        var heatmap_cfg_inv = { backgroundColor: 'rgba(0,0,0,0)', maxOpacity: 0.5, minOpacity: 0.25, inv: true, zoom_threshold: 8}
         
         this.heatmap = new HeatmapOverlay(this.viewer, heatmap_cfg);
         this.heatmap_inv = new HeatmapOverlay(this.viewer, heatmap_cfg_inv);
