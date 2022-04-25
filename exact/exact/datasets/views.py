@@ -5,6 +5,8 @@ import hashlib
 import json
 import zipfile
 import urllib
+import numpy as np
+from shutil import copy
 from pathlib import Path
 from django.shortcuts import render
 from django.http import HttpResponse
@@ -15,7 +17,7 @@ from django.db import transaction
 from exact.users.models import User, Team
 from exact.administration.models import Product
 from exact.annotations.models import Annotation, AnnotationType
-from exact.datasets.forms import DatasetForm, MITOS_WSI_CMCDatasetForm
+from exact.datasets.forms import DatasetForm, MITOS_WSI_CMCDatasetForm, CATCH_DatasetForm
 from exact.images.models import ImageSet, Image
 from exact.images.views import view_imageset
 
@@ -33,12 +35,14 @@ def index(request):
     eiph_miccai_form = DatasetForm(user=request.user)
     mitotic_miccai_form = DatasetForm(user=request.user)
     mitos_wsi_cmc_form = MITOS_WSI_CMCDatasetForm(user=request.user)
+    catch_form = CATCH_DatasetForm(user=request.user)
 
     context = {
         'asthma_miccai_form': asthma_miccai_form,
         'eiph_miccai_form': eiph_miccai_form,
         'mitotic_miccai_form': mitotic_miccai_form,
-        'mitos_wsi_cmc_form': mitos_wsi_cmc_form
+        'mitos_wsi_cmc_form': mitos_wsi_cmc_form,
+        'catch_form': catch_form
 
         #'asthma_form': asthma_form,
         #'eiph_form': eiph_form,
@@ -769,5 +773,137 @@ def create_eiph_dataset(request):
     return TemplateResponse(request, 'dataset_asthma.html', context)
 
 
+def create_catch_dataset(request):
+    download_path.mkdir(parents=True, exist_ok=True)
 
+    # If this is a POST request then process the Form data
+    if request.method == 'POST':
+
+        # Create a form instance and populate it with data from the request (binding):
+        new_form = CATCH_DatasetForm(request.POST)
+
+        # Check if the form is valid:
+        if new_form.is_valid():
+            errors = []
+            team = get_object_or_404(Team, id=new_form.data['team'])
+            image_set_name = new_form.data["name"]
+            product_name = "Skin Tissue Types"
+
+            # create imageset, product and annotation type etc.
+            with transaction.atomic():
+                labels = {'Bone': None, 'Cartilage': None, 'Dermis': None, 'Epidermis': None, 'Subcutis': None,
+                          'Inflamm/Necrosis': None, 'Melanoma': None, 'Plasmacytoma': None, 'Mast Cell Tumor': None,
+                          'PNST': None, 'SCC': None, 'Trichoblastoma': None, 'Histiocytoma': None}
+
+                # create or load product
+                product = Product.objects.filter(name=product_name, team=team).first()
+                if product is None:
+                    product = Product.objects.create(
+                        name=product_name,
+                        team=team,
+                        creator=request.user
+                    )
+
+                # create or load AnnotationType
+                for label, code in zip(labels.keys(),
+                                       ["#808000", "#008000", "#0000FF", "#00FFFF", "#FF0000", "#FF00FF", "#FF8800",
+                                        "#FFFF00", "#00FF00", "#A52A2A", "#ADD8E6", "#00008B", "#800080"]):
+                    anno_type = AnnotationType.objects.filter(name=label, product=product).first()
+                    if anno_type is None:
+                        anno_type = AnnotationType.objects.create(
+                            name=label,
+                            vector_type=5,
+                            product=product,
+                            color_code=code
+                        )
+
+                    labels[label] = anno_type
+
+                # create imageset
+                image_set = ImageSet.objects.filter(name=image_set_name, team=team).first()
+                if image_set is None:
+                    image_set = ImageSet.objects.create(
+                        team=team,
+                        creator=request.user,
+                        name=image_set_name,
+                    )
+                    image_set.product_set.add(product)
+                    image_set.create_folder()
+                    image_set.save()
+
+                annotations_path = download_path / "annotations.json"
+                url = 'https://wiki.cancerimagingarchive.net/download/attachments/101941773/CATCH.json?version=1&modificationDate=1641393368399&api=v2'
+                gdown.download(url, str(annotations_path), quiet=True, proxy=new_form.data["proxy"])
+
+                rows = []
+                with open(annotations_path) as f:
+                    data = json.load(f)
+                    categories = {cat["id"]: cat["name"] for cat in data["categories"]}
+                    for row in data["images"]:
+                        file_name = row["file_name"]
+                        image_id = row["id"]
+                        width = row["width"]
+                        height = row["height"]
+                        for annotation in [anno for anno in data['annotations'] if anno["image_id"] == image_id]:
+                            polygon = annotation["segmentation"]
+                            cat = categories[annotation["category_id"]]
+                            rows.append([file_name, image_id, width, height, polygon, cat])
+
+                df = pd.DataFrame(rows, columns=["file_name", "image_id", "width", "height", "polygon", "cat"])
+
+
+                for f in request.FILES.getlist('images'):
+                    old_filename = Path(f.file.name)
+                    new_filename = Path(image_set.root_path()) / f._name
+                    copy(old_filename, new_filename)
+                    image = Image.objects.filter(filename=f._name, image_set=image_set).first()
+
+
+                    if image is None:
+                        try:
+                            # creates a checksum for image
+                            fchecksum = hashlib.sha512()
+                            with open(new_filename, 'rb') as fil:
+                                buf = fil.read(10000)
+                                fchecksum.update(buf)
+                            fchecksum = fchecksum.digest()
+
+                            image = Image(
+                                name=f._name,
+                                image_set=image_set,
+                                checksum=fchecksum)
+
+                            image.save_file(new_filename)
+                            imageDf = df[df["file_name"] == f._name]
+                            for label, vector in zip(imageDf['cat'], imageDf['polygon']):
+                                if label in labels:
+                                    result_dict = {}
+                                    index = 1
+                                    vector = np.array(vector).reshape((-1, 2))
+                                    for x, y in vector:
+                                        result_dict['x{}'.format(index)] = int(x)
+                                        result_dict['y{}'.format(index)] = int(y)
+                                        index += 1
+                                    annotation_type = labels[label]
+                                    anno = Annotation.objects.create(
+                                        annotation_type=annotation_type,
+                                        user=request.user,
+                                        image=image,
+                                        vector=result_dict
+                                    )
+                        except Exception as e:
+                            errors.append(e.message)
+
+            if image_set is not None:
+                # view last created image set
+                return view_imageset(request, image_set.id)
+
+    # If this is a GET (or any other method) create the default form.
+    form = CATCH_DatasetForm(user=request.user)
+
+    context = {
+        'catch_form': form,
+    }
+
+    return TemplateResponse(request, 'catch.html', context)
 

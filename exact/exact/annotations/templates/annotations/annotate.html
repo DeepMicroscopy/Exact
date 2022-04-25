@@ -5,6 +5,8 @@
 {% block additional_annotation_js %}
 <link rel="stylesheet" type="text/css" href="{% static 'annotations/css/bootstrap-slider.min.css' %}">
 
+<script async type="text/javascript" src="{% static 'annotations/js/opencv.js' %}"></script>
+
 <script type="text/javascript" src="{% static 'scripts/jquery-3.2.1.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'scripts/bootstrap.min.js' %}"></script>
 
@@ -13,12 +15,13 @@
 <script type="text/javascript" src="{% static 'annotations/js/boundingboxes.js' %}"></script>
 
 <script async type="text/javascript" src="{% static 'annotations/js/openseadragon-filtering.js' %}"></script>
-<script async type="text/javascript" src="{% static 'annotations/js/opencv.js' %}"></script>
 
 <script type="text/javascript" src="{% static 'scripts/notify.min.js' %}"></script>
 
 <script type="text/javascript" src="{% static 'annotations/js/selection.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/openseadragon-scalebar.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/heatmap.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/openseadragon-heatmapjs-overlay.js' %}"></script>
 
 
 <script type="text/javascript" src="{% static 'annotations/js/openseadragon-paperjs-overlay.js' %}"></script>
@@ -666,8 +669,13 @@
                                             </td>
 
                                             <td>
-                                                <input id="OverlayRegImageSlider" type="range" type="text" data-slider-min="0"
-                                                data-slider-max="100" data-slider-step="5" data-slider-value="0" data-slider-enabled="false"/>
+                                            </td>
+                                        </tr>
+
+                                        <tr>
+                                            <td>Sync<br> Annos</td>
+                                            <td>
+                                                <input id="SyncAnnosToView-enabled" type="checkbox" />
                                             </td>
                                         </tr>
 
@@ -752,10 +760,15 @@
 
                                         {% endfor %}
                                     </select>
-                                    <tr>
-                                        <input type="checkbox" id="display_messages" checked="true">
-                                        Display Messages
-                                    </tr>
+                                    <div class=""><input type="checkbox" id="display_messages" checked="true" width: auto>Display Messages</div>
+                                    <div class="">
+                                        <label for="tristate_option">3rd Checkbox state:</label>
+                                        <select id="tristate_option">
+                                        <option value="unused">Deactivated</option>
+                                        <option value="no_interact">Visible, no Interaction</option>
+                                        <option value="no_vis">Not Visible, Interaction</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
                         </tr>
@@ -770,7 +783,14 @@
         </div>
 
         <div class="col h-100" id="annotationImage">
-            <div id="zoomSlider" style="width: 35vw;"></div> <!-- style="width: 25vw;" -->
+            <div style="width: 100%; display: table;">
+                <div style="display: table-row">
+                    <div id="zoomSlider" style="width: 20vw; display: table-cell"></div>
+                    <div style="width: 5vw; display: table-cell"></div>
+                    <div id="overlaySlider" style="width: 20vw; display: table-cell"></div>
+                </div>
+            </div>
+             <!-- style="width: 25vw;" -->
             <div style="height: 85vh;">
                 <div class="seadragon-viewer" id="openseadragon_background"  style="position: absolute; height: 85vh; width: 100%">
                 </div>

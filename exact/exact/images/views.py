@@ -307,7 +307,7 @@ def upload_image(request, imageset_id):
 
                     image.save_file(path)
                 except Exception as e:
-                    errors.append(e.message)
+                    errors.append(str(e))
 
             errormessage = ''
             if error['zip']:
@@ -653,26 +653,9 @@ def view_imageset(request, image_set_id):
         images = images.exclude(
             annotations__annotation_type_id=request.POST.get("selected_annotation_type"))
 
-    if imageset.collaboration_type == ImageSet.CollaborationTypes.COMPETITIVE:
 
-        annotation_types = AnnotationType.objects.filter(annotation__image__image_set=imageset,
-                                                         active=True,  annotation__deleted=False,
-                                                         annotation__user=request.user)\
-            .order_by('sort_order')\
-            .annotate(count=Count('annotation', distinct=True, filter=~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED)))
-                      #in_image_count=Count('annotation', filter=Q(annotation__verifications__verified=True, annotation__user=request.user) & ~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED)),
-                      #not_in_image_count=Count('annotation', filter=Q(annotation__verifications__verified=False, annotation__user=request.user) & ~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED)))
-    else:
-
-        annotation_types = AnnotationType.objects.filter(annotation__image__image_set=imageset, active=True, annotation__deleted=False)\
-            .order_by('sort_order')\
-            .annotate(count=Count('annotation', distinct=True, filter=~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED)))
-                      #in_image_count=Count('annotation', filter=(Q(annotation__verifications__verified=True)
-                      #                                           & ~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED))),
-                      #not_in_image_count=Count('annotation', filter=(Q(annotation__verifications__verified=False)
-                      #                                               & ~Q(annotation__image__image_type=Image.ImageSourceTypes.SERVER_GENERATED))))
-
-
+    annotation_types = AnnotationType.objects.filter(product__in=imageset.product_set.all(), active=True)
+    
     user_teams = Team.objects.filter(members=request.user)
     imageset_edit_form = ImageSetEditForm(instance=imageset)
     imageset_edit_form.fields['main_annotation_type'].queryset = AnnotationType.objects\
@@ -1082,7 +1065,10 @@ def delete_imageset(request, imageset_id):
         return redirect(reverse('images:imageset', args=(imageset.pk,)))
 
     if request.method == 'POST':
-        shutil.rmtree(imageset.root_path())
+        try:
+            shutil.rmtree(imageset.root_path())
+        except:
+            print(f"imageset {imageset.name} allready deleted")
         imageset.delete()
         return redirect(reverse('users:team', args=(imageset.team.id,)))
 

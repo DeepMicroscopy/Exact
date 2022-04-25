@@ -2,9 +2,10 @@
 
 
 class EXACTRegistrationSync {
-    constructor(imageInformation, gHeaders) {
+    constructor(viewer, imageInformation, gHeaders) {
         this.imageInformation = imageInformation;
         this.gHeaders = gHeaders;
+        this.viewer = viewer;
 
         this.registeredImagePairs = {};
 
@@ -28,8 +29,22 @@ class EXACTRegistrationSync {
                 "t_11": 1,
                 "t_12": 0,
                 "t_20": 0,
-                "t_21": 0
+                "t_21": 0,
+                "t_22": 1,
             },
+            "inv_matrix": {
+                "t_00": 1,
+                "t_01": 0,
+                "t_02": 0,
+                "t_10": 0,
+                "t_11": 1,
+                "t_12": 0,
+                "t_20": 0,
+                "t_21": 0,
+                "t_22": 1,
+            },
+            "get_scale": [1, 1],
+            "get_inv_scale": [1, 1],
             "file": undefined
         }
 
@@ -38,8 +53,8 @@ class EXACTRegistrationSync {
     loadRegistrationInformation(url,context) {
 
         $.ajax(this.API_1_REGISTRATION_BASE_URL + url 
-            +'&fields=id,transformation_matrix,file,source_image.name,source_image.id,target_image.name,target_image.id'
-            +'&expand=target_image,source_image', {
+            +'&fields=id,transformation_matrix,file,rotation_angle,inv_matrix,get_scale,get_inv_scale,source_image.name,source_image.id,target_image.name,target_image.id,source_image.image_set.show_registration'
+            +'&expand=target_image,source_image,source_image.image_set', {
             type: 'GET',
             headers: this.gHeaders,
             dataType: 'json',
@@ -47,7 +62,12 @@ class EXACTRegistrationSync {
 
                 for (let registration of registrations.results) {
 
-                    context.registeredImagePairs[registration.source_image.name] = registration
+                    context.registeredImagePairs[registration.source_image.name] = registration;
+                }
+
+                if (registrations.results.length > 0) {
+                    let reg = registrations.results[0]
+                    context.viewer.raiseEvent('sync_RegistrationLoaded', { reg });
                 }
             },
             error: function (request, status, error) {
@@ -562,6 +582,7 @@ class EXACTAnnotationSync {
                 if (data.results.length > 0) {
                     let annotations = data.results;
                     context.viewer.raiseEvent('sync_drawAnnotations', { annotations });
+                    context.viewer.raiseEvent('sync_drawHeatmap', { annotations });
                 }
 
                 if (data.next !== null) {
@@ -709,13 +730,17 @@ class EXACTAnnotationSync {
             data: JSON.stringify(data), success: function (anno, textStatus, jqXHR) {
                 if (jqXHR.status === 200) {
                     if (anno.deleted === true) {
-                        context.synchronisationNotifications("info", anno, "AnnotationDeleted")
+                        context.synchronisationNotifications("info", anno, "AnnotationDeleted");
+                        context.viewer.raiseEvent('sync_TabAnnotationDeleted', { anno });
                     } else {
-                        context.synchronisationNotifications("info", anno, "AnnotationUpdated")
+                        context.synchronisationNotifications("info", anno, "AnnotationUpdated");
+                        context.viewer.raiseEvent('sync_TabAnnotationUpdated', { anno });
                     }
 
                 } else if (jqXHR.status === 201) {
-                    context.synchronisationNotifications("info", anno, "AnnotationCreated")
+                    context.synchronisationNotifications("info", anno, "AnnotationCreated");
+                    context.viewer.raiseEvent('sync_TabAnnotationCreated', { anno });
+
                 }
                 anno.annotation_type = context.annotationTypes[anno.annotation_type]
                 context.annotations[anno.unique_identifier] = anno

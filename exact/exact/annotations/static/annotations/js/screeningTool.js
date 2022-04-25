@@ -151,39 +151,43 @@ class ScreeningTool {
 
     updateThumbnail(event) {
 
-        let tiles_dict = this.screening_sync.screening_mode.screening_tiles;
-        let current_index = this.screening_sync.screening_mode.current_index;
+        // Check if the OpenCv js is loaded
+        if (typeof cv === "object" && typeof cv.Mat === "function") {
+
+            let tiles_dict = this.screening_sync.screening_mode.screening_tiles;
+            let current_index = this.screening_sync.screening_mode.current_index;
 
 
-        let imgElement = document.getElementById('screeningImage');
-        if (imgElement !== undefined) {
-            let mat = cv.imread(imgElement);
+            let imgElement = document.getElementById('screeningImage');
+            if (imgElement !== undefined) {
+                let mat = cv.imread(imgElement);
 
-            let scale_x = this.imageInformation.width / mat.cols;
-            let scale_y = this.imageInformation.height / mat.rows;
+                let scale_x = this.imageInformation.width / mat.cols;
+                let scale_y = this.imageInformation.height / mat.rows;
 
-            for (const tile_index of Object.keys(tiles_dict)) {
+                for (const tile_index of Object.keys(tiles_dict)) {
 
-                let tile = tiles_dict[tile_index];
-                let x_min = Math.round(tile.x_min / scale_x);
-                let y_min = Math.round(tile.y_min / scale_y);
-                let x_max = Math.round(tile.x_max / scale_x);
-                let y_max = Math.round(tile.y_max / scale_y);
+                    let tile = tiles_dict[tile_index];
+                    let x_min = Math.round(tile.x_min / scale_x);
+                    let y_min = Math.round(tile.y_min / scale_y);
+                    let x_max = Math.round(tile.x_max / scale_x);
+                    let y_max = Math.round(tile.y_max / scale_y);
 
-                let topLeft = new cv.Point(x_min, y_min);
-                let bottomRight = new cv.Point(x_max, y_max);
+                    let topLeft = new cv.Point(x_min, y_min);
+                    let bottomRight = new cv.Point(x_max, y_max);
 
-                if (parseInt(tile_index) === current_index) {
-                    let color = new cv.Scalar(255, 0, 255, 255);
-                    cv.rectangle(mat, topLeft, bottomRight, color, 5);
-                } else if (tile.Screened === true) {
-                    let color = new cv.Scalar(0, 255, 0, 255);
-                    cv.rectangle(mat, topLeft, bottomRight, color, 5);
+                    if (parseInt(tile_index) === current_index) {
+                        let color = new cv.Scalar(255, 0, 255, 255);
+                        cv.rectangle(mat, topLeft, bottomRight, color, 5);
+                    } else if (tile.Screened === true) {
+                        let color = new cv.Scalar(0, 255, 0, 255);
+                        cv.rectangle(mat, topLeft, bottomRight, color, 5);
+                    }
                 }
-            }
 
-            cv.imshow('screeningImageOutput', mat);
-            mat.delete();
+                cv.imshow('screeningImageOutput', mat);
+                mat.delete();
+            }
         }
     }
 
