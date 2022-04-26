@@ -27,14 +27,20 @@ class EXACTImageSetViewer {
         if (["textarea", "text", "number"].includes(event.target.type))
             return;
 
+        var is_selecting = false
+        if (this.exact_viewer != undefined)
+        {
+            is_selecting = this.exact_viewer.viewer.selectionInstance.isSelecting
+        }
+
         switch (event.keyCode) {
             case 69: //e load next image
-                if (!event.shiftKey) {
+                if (!event.shiftKey && !is_selecting) {
                     this.loadAdjacentImage(1);
                 }                
                 break;
             case 81: //q load last image
-                if (!event.shiftKey) {
+                if (!event.shiftKey && !is_selecting) {
                     this.loadAdjacentImage(-1);
                 }
                 break;
