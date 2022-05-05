@@ -1260,6 +1260,21 @@ class BoundingBoxes {
         return undefined;
     }
 
+    hitTestObject_s(point)
+    {
+        // return the smallest clicked object
+        var hits = this.group.hitTestAll(point, this.hitOptionsObject);
+        if (hits.length > 0)
+        {
+            hits.sort((a,b) => (Math.abs(a.item.area) > Math.abs(b.item.area)) ? 1 : -1)
+            return hits[0]
+        }
+        else
+        {
+            return undefined
+        }
+    }
+
     hitTestSegment(point) {
         if (this.selection !== undefined) {
             var hits = this.group.hitTestAll(point, this.hitOptionsSegment[this.selection.item.data.type])

@@ -238,10 +238,10 @@
                     !this.drawScalebar ||
                     !this.pixelsPerMeter ||
                     !this.location) {
-                this.divElt.style.display = "none";
+                //this.divElt.style.display = "none";
                 return;
             }
-            this.divElt.style.display = "";
+            //this.divElt.style.display = "";
 
             var viewport = this.viewer.viewport;
             var tiledImage = this.viewer.world.getItemAt(this.referenceItemIdx);
