@@ -1236,7 +1236,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         }
 
         // handle digit key press
-        if ((event.keyCode >=49 && event.keyCode <=57) || (event.keyCode >=97 && event.keyCode <=105))
+        if (event.keyCode >=49 && event.keyCode <=57)
         {
             this.pressedDigits[event.key] = true
         }
