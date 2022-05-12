@@ -962,8 +962,8 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
                         var annotation_type_id = event.userData.annotationTypeKeyToIdLookUp[i];
 
-                        event.userData.changeAnnotationType(annotation_type_id, to_assign_anno)
                         event.userData.tool.resetSelection()
+                        event.userData.changeAnnotationType(annotation_type_id, to_assign_anno)
                     }
                 }
             }
@@ -1760,7 +1760,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         }
     }
 
-    changeAnnotationType(new_annoation_type_id, annotation, set_as_selected=false) {
+    changeAnnotationType(new_annoation_type_id, annotation) {
 
         // if annotation is undefined use current selected one
         if (typeof annotation === "undefined") {
@@ -1785,7 +1785,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                     this.appendAction([action])
 
                     annotation.annotation_type = newType;
-                    this.tool.updateAnnotationType(annotation.unique_identifier, newType, set_as_selected);
+                    this.tool.updateAnnotationType(annotation.unique_identifier, newType);
                     this.exact_sync.saveAnnotation(annotation);
 
                     this.setCurrentAnnotationType(newType);
