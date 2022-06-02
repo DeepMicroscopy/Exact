@@ -175,6 +175,7 @@ class AnnotationViewSet(viewsets.ModelViewSet):
                 existing_anno.vector = request.data['vector']
                 existing_anno.annotation_type_id = request.data['annotation_type']
                 existing_anno.annotation_type = AnnotationType.objects.get(pk=request.data["annotation_type"])
+                existing_anno.deleted = request.data['deleted']
 
                 if "time" in request.data:
                     existing_anno.time = datetime.strptime(request.data["time"], "%Y-%m-%dT%H:%M:%S.%f")
