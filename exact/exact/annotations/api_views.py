@@ -166,6 +166,30 @@ class AnnotationViewSet(viewsets.ModelViewSet):
                 request.data["uploaded_media_files"] = []
             if "annotationversion_set" not in request.data:
                 request.data["annotationversion_set"] = []
+
+            # check if anno with this uuid already exists for this image
+            # required to ensure no 2 annotations with same uuid are created
+            existing_anno = models.Annotation.objects.filter(image=request.data['image'], unique_identifier=request.data['unique_identifier']).first()
+            if existing_anno is not None:
+                # update values
+                existing_anno.vector = request.data['vector']
+                existing_anno.annotation_type_id = request.data['annotation_type']
+                existing_anno.annotation_type = AnnotationType.objects.get(pk=request.data["annotation_type"])
+                existing_anno.deleted = request.data['deleted']
+
+                if "time" in request.data:
+                    existing_anno.time = datetime.strptime(request.data["time"], "%Y-%m-%dT%H:%M:%S.%f")
+
+                if "last_edit_time" in request.data:
+                    existing_anno.last_edit_time = datetime.strptime(request.data["last_edit_time"], "%Y-%m-%dT%H:%M:%S.%f")
+
+                # save updated annotation
+                existing_anno.save()
+
+                # create response
+                response = Response(self.get_serializer(existing_anno).data)
+                return response
+
             response = super().create(request)
             if "time" in request.data or "last_edit_time" in request.data:
                 if "time" in request.data: 
