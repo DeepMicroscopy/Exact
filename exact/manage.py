@@ -21,7 +21,7 @@ if __name__ == "__main__":
         raise
 
     from django.conf import settings
-    if settings.DEBUG: 
+    if False: 
         if os.environ.get('RUN_MAIN') or os.environ.get('WERKZEUG_RUN_MAIN'):
             import ptvsd
             ptvsd.enable_attach(address=('0.0.0.0', 3001))
