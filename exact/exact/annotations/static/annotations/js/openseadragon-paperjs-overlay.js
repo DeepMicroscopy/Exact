@@ -45,6 +45,7 @@
         this.resize();
 
         paper.setup(this._canvas);
+        this._project = paper.project;
 
         this._viewer.addHandler('animation-finish', function() {
             self.resize();
@@ -104,6 +105,7 @@
         },
 
         resizecanvas: function() {
+                this._project.activate();
                 this._canvasdiv.setAttribute('width', this._containerWidth);
                 this._canvas.setAttribute('width', this._containerWidth);
                 this._canvasdiv.setAttribute('height', this._containerHeight);
