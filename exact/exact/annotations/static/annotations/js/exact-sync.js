@@ -494,6 +494,7 @@ class EXACTAnnotationSync {
         this.API_1_ANNOTATIONS_BASE_URL = include_server_subdir('/api/v1/annotations/');
         this.API_1_ANNOTATION_EXPAND = 'expand=user,last_editor,uploaded_media_files&';
         this.API_1_FILTERS = 'image=' + imageId + '&'
+        this.API_1_FILTERS += 'deleted=false&'
         if (this.collaboration_type === 1) {
             this.API_1_FILTERS += "user=" + user_id + "&"
         }
