@@ -105,6 +105,7 @@ class ReadableCellVizioMKTDataset():
        self.fileHandle.seek(self.fi.offset + self.fi.size*position + self.fi.gapBetweenImages*position)
 
        image = np.fromfile(self.fileHandle, dtype=np.int16, count=int(self.fi.size/2))
+       image = np.clip(image, 0, np.max(image))
 
        image=np.reshape(image, newshape=(self.fi.height, self.fi.width))
 
