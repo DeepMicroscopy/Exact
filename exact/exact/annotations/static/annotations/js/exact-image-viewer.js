@@ -1788,7 +1788,8 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                     this.appendAction([action])
 
                     annotation.annotation_type = newType;
-                    this.tool.updateAnnotationType(annotation.unique_identifier, newType);
+                    this.tool.resetSelection();
+                    this.tool.updateAnnotationType(annotation.unique_identifier, newType, false);
                     this.exact_sync.saveAnnotation(annotation);
 
                     this.setCurrentAnnotationType(newType);
