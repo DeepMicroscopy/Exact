@@ -892,11 +892,11 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                     event.userData.do_finishAnnotation(anno);
 
                     // select the new item, if it was not deleted (because it was to small)
-                    if (exact_sync.annotations[last_uuid] !== undefined)
-                    {
-                        new_selection.type = "fill"
-                        var new_selection = tool.handleSelection(event, new_selection);
-                    }
+                    //if (exact_sync.annotations[last_uuid] !== undefined)
+                    //{
+                    //    new_selection.type = "fill"
+                    //    var new_selection = tool.handleSelection(event, new_selection);
+                    //}
                 }
             }
             else 
