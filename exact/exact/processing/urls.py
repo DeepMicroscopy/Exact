@@ -11,4 +11,6 @@ urlpatterns = [
     path('<int:job_id>/', views.detail, name='detail'),
     # ex: /processing/5/
     path('<int:job_id>/stop', views.stop, name='stop'),
+    # ex: /processing/submit/4/3
+    path('submit/<int:plugin_id>/<int:image_id>', views.submit, name='submit')
 ]

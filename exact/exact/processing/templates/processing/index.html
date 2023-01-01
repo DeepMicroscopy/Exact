@@ -12,9 +12,9 @@
                 </div>
                 <div class="card-body">
                     <table>
-                        <tr><th>Job ID</th><th>User</th><th>Plugin</th><th>Created</th><th>ETA</th><th>Complete</th><th>Actions</th></tr>
+                        <tr><th>Job ID</th><th>User</th><th>Image</th><th>Plugin</th><th>Created</th><th>ETA</th><th>Complete</th><th>Actions</th></tr>
                                 {% for job in current_jobs %}
-                                        <tr><td>{{job.id}}</td><td>{{job.creator.username}}</td><td>{{job.plugin.name}}</td><td>{{job.created_time}}</td><td>{{job.eta_time}}</td><td>
+                                        <tr><td>{{job.id}}</td><td>{{job.creator.username}}</td><td><a href="{% url "annotations:annotate" job.image.id %}">{{job.image.name}}</a></td><td>{{job.plugin.name}}</td><td>{{job.created_time}}</td><td>{{job.eta_time}}</td><td>
                                             <div class="progress">
                                                 <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="{{job.processing_complete}}" aria-valuemin="0" aria-valuemax="100" style="width: {{job.processing_complete|floatformat:"0"}}%">{{job.processing_complete}} %</div>
                                               </div>

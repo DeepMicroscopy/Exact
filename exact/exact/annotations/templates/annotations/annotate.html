@@ -162,6 +162,13 @@
 
                             {% endif %}
 
+                            {% if show_processing %}
+                            <li class="nav-item">
+                                <a class="nav-link" id="default_global_annotation_tab" data-toggle="tab"
+                                    href="#nav-item_processing" role="tab" aria-controls="home">Processing</a>
+                            {% endif %}
+
+
                             <li class="nav-item">
                                 <a class="nav-link" id="default_annotation_tab" data-toggle="tab" href="#nav-item_anno"
                                     role="tab" aria-controls="home">Annotation</a>
@@ -363,6 +370,21 @@
                                 </div>
                             </div>
 
+                            {% endif %}
+                            {% if show_processing %}
+                            <div class="tab-pane fade" id="nav-item_processing">
+                                <table>
+                                    {% for plugin in availablePlugins %}
+                                    <tr><td>{{plugin.name}}</td><td>
+                                        <a class="annotate_button btn btn-success" id="run_processing_{{ plugin.id }}" href="{% url "processing:submit" plugin_id=plugin.id image_id=selected_image.id %}">
+                                         process{% for job in jobsQueue %}{% if job.plugin == plugin %}ing
+                                         {% endif %}
+                                         {% endfor %}
+                                         </a>
+                                    </td></tr>
+                                    {% endfor %}
+                                </table>
+                            </div>
                             {% endif %}
 
                             <div class="tab-pane fade" id="nav-item_search">
