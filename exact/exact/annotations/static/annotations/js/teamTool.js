@@ -12,21 +12,21 @@ class TeamTool {
 
     initUiEvents () {
 
-        $('#ShowUserCreadedAnnotationsToggle').change(this.toggleUserCreadedAnnotationsVisibilityAll.bind(this)); 
+        $('#ShowUserCreatedAnnotationsToggle').change(this.toggleUserCreatedAnnotationsVisibilityAll.bind(this)); 
         $('#ShowUserLastEditedAnnotationsToggle').change(this.toggleUserLastEditedAnnotationsVisibilityAll.bind(this)); 
 
         for (let member of Object.values(this.team_sync.users)) {
-            $('#ShowUserCreadedAnnotations_' + member.id).change(this.toogleUserCreadedAnnotationsVisibility.bind(this)); 
+            $('#ShowUserCreatedAnnotations_' + member.id).change(this.toogleUserCreadedAnnotationsVisibility.bind(this)); 
             $('#ShowUserLastEditedAnnotations_' + member.id).change(this.toogleUserLastEditedAnnotationsVisibility.bind(this)); 
         }
 
     }
 
-    toggleUserCreadedAnnotationsVisibilityAll(event) {
+    toggleUserCreatedAnnotationsVisibilityAll(event) {
         let checked = event.currentTarget.checked;
 
         for (let member of Object.values(this.team_sync.users)) {
-            $('#ShowUserCreadedAnnotations_' + member.id).prop('checked', checked);
+            $('#ShowUserCreatedAnnotations_' + member.id).prop('checked', checked);
             this.viewer.raiseEvent('team_ChangeCreatorAnnotationsVisibility', { "User": member.id, "Checked": checked });
         }
     }
@@ -58,11 +58,11 @@ class TeamTool {
 
     destroy() { 
 
-        $('#ShowUserCreadedAnnotationsToggle').off("change");
+        $('#ShowUserCreatedAnnotationsToggle').off("change");
         $('#ShowUserLastEditedAnnotationsToggle').off("change");
 
         for (let member of Object.values(this.team_sync.users)) {
-            $('#ShowUserCreadedAnnotations_' + member.id).off("change");
+            $('#ShowUserCreatedAnnotations_' + member.id).off("change");
             $('#ShowUserLastEditedAnnotations_' + member.id).off("change");  
         }
     }
