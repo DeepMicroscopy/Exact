@@ -26,6 +26,10 @@ def plugins_directory(inst, filename):
     return 'plugins/{0}_{1}/{2}'.format(inst.name, inst.id, filename)
 
 class Plugin(models.Model):
+    class Meta:
+        permissions = [
+                    ("use_server_side_plugins", "User can use server-side plugins"),
+                ]        
     id = models.AutoField(primary_key=True)
     # Class for external plugins (run on server or whereever else)
     name = models.CharField(max_length=200)
@@ -40,7 +44,8 @@ class Plugin(models.Model):
 
 
 def plugin_bitmap_directory(inst:"PluginResultBitmap", filename):
-    return 'plugins/{0}_{1}/{2}/{3}'.format(inst.pluginresultentry.pluginresult.plugin.name, inst.pluginresultentry.pluginresult.plugin.id, inst.pluginresultentry.pluginresult.image.id,  filename)
+    return 'plugins/{0}_{1}/{2}/{3}'.format(inst.pluginresultentry.pluginresult.plugin.name, inst.pluginresultentry.pluginresult.plugin.id, 
+                                            inst.pluginresultentry.pluginresult.image.id,  filename)
 
 
 class PluginJob(models.Model):
@@ -60,11 +65,15 @@ class PluginJob(models.Model):
     image = models.ForeignKey(Image, on_delete=models.CASCADE, related_name="pluginJobs")
 
     def __str__(self):
-        return u'Process {0} with {1} ({2:02} %)'.format(self.image.__str__(),self.plugin.name, self.processing_complete*100)
+        return u'Process {0} with {1} ({2:02} %)'.format(self.image.__str__(),self.plugin.name, self.processing_complete)
 
 
 
 class PluginResult(models.Model):
+    class Meta:
+        permissions = [
+                    ("delete_plugin_results", "User can delete plugin results"),
+                ]        
     id = models.AutoField(primary_key=True)
     plugin = models.ForeignKey(
         Plugin, on_delete=models.CASCADE, related_name="results"
@@ -92,7 +101,6 @@ class PluginResultEntry(models.Model):
 
 class PluginResultBitmap(models.Model):
     id = models.AutoField(primary_key=True)
-    question_text = models.CharField(max_length=200)
     scale_min = models.FloatField(default=0)
     scale_max = models.FloatField(default=1)
     name = models.CharField(max_length=200)
