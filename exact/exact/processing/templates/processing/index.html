@@ -1,0 +1,27 @@
+{% extends 'base/base.html' %} {% load static %} {% load widget_tweaks %} {% block additional_annotation_js %}
+<script type="text/javascript" src="{% static 'annotations/js/openseadragon.min.js' %}"></script>
+{% endblock additional_annotation_js %} {% block bodyblock %}
+<div class="container-fluid h-100">
+    <div class="row justify-content-center h-100">
+        <div class="col-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3>
+                        Processing Queue
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <table>
+                        <tr><th>Job ID</th><th>Plugin</th><th>Created</th><th>ETA</th><th>Complete</th></tr>
+                                {% for job in current_jobs %}
+                                        <tr><td>{{job.id}}</td><td>{{job.plugin.name}}</td><td>{{job.created_time}}</td><td>{{job.eta_time}}</td><td>{{job.processing_complete}}</td></tr>
+                                {% endfor %}
+                            
+                        </div>
+                    </table>
+                </div>
+            </div>
+        </div>
+      </div>
+</div>
+{% endblock %}

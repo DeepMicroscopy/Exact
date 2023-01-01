@@ -1,0 +1,53 @@
+from rest_framework import viewsets, permissions
+from django.db.models import Q, Count
+from django.db import transaction
+from . import models
+from . import serializers
+
+class PluginJobViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows PluginJobs to be viewed or edited.
+    """
+    queryset = models.PluginJob.objects.all().order_by('-created_time')
+    serializer_class = serializers.PluginJobSerializer
+    permission_classes = [permissions.DjangoModelPermissions]
+
+class PluginViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows Plugins to be viewed or edited.
+    """
+    queryset = models.Plugin.objects.all().order_by('-name')
+    serializer_class = serializers.PluginSerializer
+    permission_classes = [permissions.DjangoModelPermissions]
+
+class PluginResultViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows PluginResultss to be viewed or edited.
+    """
+    queryset = models.PluginResult.objects.all().order_by('-created_time')
+    serializer_class = serializers.PluginResultSerializer
+    permission_classes = [permissions.DjangoModelPermissions]
+
+class PluginResultEntryViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows PluginResultsEntrys to be viewed or edited.
+    """
+    queryset = models.PluginResultEntry.objects.all().order_by('-created_time')
+    serializer_class = serializers.PluginResultEntrySerializer
+    permission_classes = [permissions.DjangoModelPermissions]
+
+class PluginResultAnnotationViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows PluginResultAnnotations to be viewed or edited.
+    """
+    queryset = models.PluginResultAnnotation.objects.all().order_by('-id')
+    serializer_class = serializers.PluginResultAnnotationSerializer
+    permission_classes = [permissions.DjangoModelPermissions]
+
+class PluginResultBitmapViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows PluginResultBitmaps to be viewed or edited.
+    """
+    queryset = models.PluginResultBitmap.objects.all().order_by('-id')
+    serializer_class = serializers.PluginResultBitmapSerializer
+    permission_classes = [permissions.DjangoModelPermissions]
