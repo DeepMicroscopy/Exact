@@ -54,6 +54,8 @@ def annotate(request, image_id):
         global_annotation_types = annotation_types.filter(vector_type=AnnotationType.VECTOR_TYPE.GLOBAL)
         annotation_types = annotation_types.exclude(vector_type=AnnotationType.VECTOR_TYPE.GLOBAL)
 
+        show_advanced_options = settings.SHOW_ADVANCED_OPTIONS
+
         total_annotations = selected_image.annotations.filter(deleted=False).count()
         imageset_lock = selected_image.image_set.image_lock
 
@@ -75,6 +77,7 @@ def annotate(request, image_id):
             'annotation_types': annotation_types,
             'HasMediaFiles': hasMediaFiles,
             'global_annotation_types': global_annotation_types,
+            'show_advanced_options':show_advanced_options,
             'user_id': request.user.id,
             'asthma': asthma,
             "USE_CDN_WSI": settings.USE_CDN_WSI

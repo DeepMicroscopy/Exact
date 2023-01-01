@@ -731,6 +731,7 @@
                     <div class="card-footer">
                         <tr>
                             <div class="row">
+                                {% if show_advanced_options %}
                                 <div class="col-md-2">
 
                                     <input id="StrokeWidthSlider" type="range" class="custom-range" min="1" max="500"
@@ -741,8 +742,16 @@
                                         step="0.01" value="0.0" />
                                     <label for="OpacitySlider">Opacity</label>
                                 </div>
+                                {% else %}
+                                <input id="StrokeWidthSlider" type="hidden" value="5.0" />
+                                <input id="OpacitySlider" type="hidden" value="0.0" />
+                                {% endif %}
 
+                                {% if show_advanced_options %}
                                 <div class="col-md-2">
+                                {% else %}
+                                <div class="col-md-4">
+                                {% endif %}
                                     <label for='statistics_total_annotations' title="Total Annotations">Total:</label>
                                     <label id="statistics_total_annotations"
                                         title="Total Annotations">{{ total_annotations }}</label>
@@ -760,6 +769,7 @@
 
                                         {% endfor %}
                                     </select>
+                                    {% if show_advanced_options %}
                                     <div class=""><input type="checkbox" id="display_messages" checked="true" width: auto>Display Messages</div>
                                     <div class="">
                                         <label for="tristate_option">3rd Checkbox state:</label>
@@ -769,6 +779,7 @@
                                         <option value="no_vis">Not Visible, Interaction</option>
                                         </select>
                                     </div>
+                                    {% endif %}
                                 </div>
                             </div>
                         </tr>

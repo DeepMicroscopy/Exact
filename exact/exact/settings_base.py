@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     'exact.users',
     'exact.tools',
     'exact.datasets',
+    'exact.processing',
     'exact.administration',
     'django.contrib.admin',
     'exact.tagger_messages',
@@ -246,7 +247,11 @@ IMAGE_PATH = os.path.join(BASE_DIR, 'images')  # the absolute path to the folder
 MEDIA_ROOT= os.path.join(BASE_DIR, 'media')
 MEDIA_URL= "/media/"
 
-SHOW_DEMO_DATASETS = True
+SHOW_DEMO_DATASETS = False
+
+SHOW_PROCESSING_PANEL = True
+
+SHOW_ADVANCED_OPTIONS = False # advanced options such as stroke width, opacity, and 3rd box state
 
 LOGGING = {
     'version': 1,
