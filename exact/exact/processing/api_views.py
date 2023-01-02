@@ -20,13 +20,24 @@ class PluginViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.PluginSerializer
     permission_classes = [permissions.DjangoModelPermissions]
 
+
 class PluginResultViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows PluginResultss to be viewed or edited.
     """
-    queryset = models.PluginResult.objects.all().order_by('-created_time')
     serializer_class = serializers.PluginResultSerializer
     permission_classes = [permissions.DjangoModelPermissions]
+
+    def get_queryset(self):
+        """
+        This view should return a list of all the purchases for
+        the user as determined by the username portion of the URL.
+        """
+        image_id = self.request.query_params.get('image_id')
+        if image_id is not None:
+            return models.PluginResult.objects.filter(image__id=image_id)
+        else:
+            return models.PluginResult.objects.all().order_by('-created_time')
 
 class PluginResultEntryViewSet(viewsets.ModelViewSet):
     """

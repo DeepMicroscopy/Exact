@@ -4,6 +4,7 @@ from django.db import connection
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import models
+import uuid
 
 from django.db.models import Count, Q, Sum
 from django.db.models.expressions import F
@@ -41,7 +42,8 @@ class Plugin(models.Model):
 
     def __str__(self):
         return u'Plugin: {0}'.format(self.name)
-
+    
+        
 
 def plugin_bitmap_directory(inst:"PluginResultBitmap", filename):
     return 'plugins/{0}_{1}/{2}/{3}'.format(inst.pluginresultentry.pluginresult.plugin.name, inst.pluginresultentry.pluginresult.plugin.id, 
@@ -84,6 +86,9 @@ class PluginResult(models.Model):
     created_time = models.DateTimeField(default=datetime.now)
     completed_time = models.DateTimeField(default=datetime.now)
     image = models.ForeignKey(Image, on_delete=models.CASCADE, related_name="pluginResults")
+    
+    def __str__(self):
+        return u'PluginResult of {0}'.format(self.job.__str__())
 
  
     
@@ -97,6 +102,11 @@ class PluginResultEntry(models.Model):
     visible = models.BooleanField(default=True)
     created_time = models.DateTimeField(default=datetime.now)
 
+    def __str__(self):
+        return u'PluginResultEntry {0} of {1}'.format(self.name, self.pluginresult.__str__())
+
+
+
 
 
 class PluginResultBitmap(models.Model):
@@ -109,15 +119,33 @@ class PluginResultBitmap(models.Model):
     channels = models.IntegerField(default=1) # RGB=3 channels, heatmap = 1 channel
     transformation_matrix = models.JSONField(null=True)
     meta_data = models.JSONField(null=True)
+    image = models.ForeignKey(Image, on_delete=models.CASCADE)
     bitmap=models.FileField(upload_to=plugin_bitmap_directory)
     pluginresultentry = models.ForeignKey(
         PluginResultEntry, on_delete=models.CASCADE, related_name='bitmap_results')
 
 class PluginResultAnnotation(models.Model):
     id = models.AutoField(primary_key=True)
-    annotationtype = models.ForeignKey(AnnotationType, on_delete=models.PROTECT)
+    annotation_type = models.ForeignKey(AnnotationType, on_delete=models.PROTECT)
     vector = models.JSONField(null=True)
     time = models.DateTimeField(auto_now_add=True)
     meta_data = models.JSONField(null=True)
+    description = models.TextField(max_length=1000, blank=True)
+    unique_identifier = models.UUIDField(default=uuid.uuid4)
+    image = models.ForeignKey(Image, on_delete=models.CASCADE)
     pluginresultentry = models.ForeignKey(
         PluginResultEntry, on_delete=models.CASCADE, related_name='annotation_results')
+
+    @property
+    def generated(self):
+        return True
+
+    @property
+    def user(self):
+        return None
+    
+    @property
+    def last_editor(self):
+        return None
+
+

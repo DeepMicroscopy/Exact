@@ -48,16 +48,20 @@ class PluginResultAnnotationSerializer(FlexFieldsModelSerializer):
         model = PluginResultAnnotation
         fields = (
             'id',
-            'annotationtype',
+            'annotation_type',
             'pluginresultentry',
             'meta_data',
             'vector',
+            'unique_identifier',
+            'generated',
+            'image',
             'time'
         )
 
         expandable_fields = {
             "pluginresultentry": ("exact.processing.serializers.PluginResultEntrySerializer",{'read_only': True}),
             "annotationtype": (AnnotationTypeSerializer, {'read_only':True, 'many': False}),
+            "image": (ImageSerializer, {'read_only':True, 'many': False}),
         }
 
 class PluginResultBitmapSerializer(FlexFieldsModelSerializer):
@@ -75,10 +79,12 @@ class PluginResultBitmapSerializer(FlexFieldsModelSerializer):
             'scale_min',
             'transformation_matrix'
             'pluginresultentry',
+            'image'
         )
 
         expandable_fields = {
             "pluginresultentry": ("exact.processing.serializers.PluginResultEntrySerializer",{'read_only': True}),
+            "image": (ImageSerializer, {'read_only':True, 'many': False}),
         }
 
 class PluginResultEntrySerializer(FlexFieldsModelSerializer):
