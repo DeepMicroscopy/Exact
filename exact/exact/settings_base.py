@@ -249,9 +249,9 @@ MEDIA_URL= "/media/"
 
 SHOW_DEMO_DATASETS = False
 
-SHOW_PROCESSING_PANEL = True
+SHOW_PROCESSING_PANEL = False
 
-SHOW_ADVANCED_OPTIONS = False # advanced options such as stroke width, opacity, and 3rd box state
+SHOW_ADVANCED_OPTIONS = True # advanced options such as stroke width, opacity, and 3rd box state
 
 LOGGING = {
     'version': 1,

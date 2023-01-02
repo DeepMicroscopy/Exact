@@ -42,7 +42,7 @@ def export_auth(request, export_id):
 @login_required
 def annotate(request, image_id):
     start = timer()
-    show_processing=request.user.has_perm('processing.use_server_side_plugins')
+    show_processing=request.user.has_perm('processing.use_server_side_plugins') & settings.SHOW_PROCESSING_PANEL
     selected_image = get_object_or_404(Image, id=image_id)
     imageset_perms = selected_image.image_set.get_perms(request.user)
 
