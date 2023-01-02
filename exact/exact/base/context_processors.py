@@ -13,7 +13,7 @@ def base_data(request):
         my_teams = Team.objects.filter(members=request.user)
         unread_message_count = 0
 #        processing_queue = PluginJob.objects.filter(~Q(creator=request.user)).count()
-        processing_queue = PluginJob.objects.filter(Q(creator=request.user)).count()
+        processing_queue = PluginJob.objects.filter(Q(creator=request.user)).filter(~Q(processing_complete=100)).count()
         #unread_message_count = TeamMessage.in_range(TeamMessage.get_messages_for_user(request.user).filter(~Q(read_by=request.user))).count()
     else:
         my_teams = None
