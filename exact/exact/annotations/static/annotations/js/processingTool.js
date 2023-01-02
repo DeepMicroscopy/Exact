@@ -17,6 +17,8 @@ class ProcessingTool {
             if (job.result) // processing is complete
             {
                 $('#compl-'+job.plugin).attr("style","");
+                $('#vis-plugin-' + job.plugin).attr('data-plugin_resultentries',JSON.stringify(job.result.entries))
+                $('#vis-plugin-' + job.plugin).attr('data-plugin_id',job.plugin)
             }
             else
             {

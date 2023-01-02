@@ -388,7 +388,7 @@
                                         </td><td>{{plugin.name}}</td></tr>
                                         <tr style="display:none" id="compl-{{plugin.id}}"><td>
 <label class="btn btn-outline-secondary btn-sm" for="vis-plugin-{{plugin.id}}"><input type="checkbox" class="btn-check btn-sm" id="vis-plugin-{{plugin.id}}" checked autocomplete="off" data-plugin_id={{plugin.id}}
-     data-plugin_resultentries="[{% for resultentry in plugin.result.entries.all %}{{resultentry.id}},{% endfor %}]"><image src="{% static 'images/eye_fill_small.svg' %}"></label><br>
+     data-plugin_resultentries="[]"><image src="{% static 'images/eye_fill_small.svg' %}"></label><br>
 
                                     </td><td><a data-toggle="collapse" href="#collapsePlugin{{plugin.id}}" aria-expanded="false" aria-controls="collapseExample">{{plugin.name}}</a></td></tr>
                                     <tr><td></td><td>
