@@ -700,6 +700,18 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         this.actionMemory = 50;
         this.currentAction = undefined
 
+        this.pressedDigits = {
+            1 : false,
+            2 : false,
+            3 : false,
+            4 : false,
+            5 : false,
+            6 : false,
+            7 : false,
+            8 : false,
+            9 : false
+        }
+
         this.insertNewAnno = false
 
         this.initUiEvents(this.annotationTypes);
@@ -864,6 +876,8 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             var tool = event.userData.tool;
             var exact_sync = event.userData.exact_sync;
 
+            var fastAnnotate = (Object.values(event.userData.pressedDigits).filter(Boolean).length == 1)
+
             if (tool.selection !== undefined && tool.selection.type == "new")
             {
                 // a new polygon is currently drawn
@@ -886,9 +900,12 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                     var anno = exact_sync.annotations[last_uuid];
                     event.userData.do_finishAnnotation(anno);
 
-                    // select the new item
-                    new_selection.type = "fill"
-                    var new_selection = tool.handleSelection(event, new_selection);
+                    // select the new item, if it was not deleted (because it was to small)
+                    //if (exact_sync.annotations[last_uuid] !== undefined)
+                    //{
+                    //    new_selection.type = "fill"
+                    //    var new_selection = tool.handleSelection(event, new_selection);
+                    //}
                 }
             }
             else 
@@ -911,7 +928,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
                         tool.drag.performed = false
                     }
-                    else if(new_selected !== undefined)
+                    else if(new_selected !== undefined && !fastAnnotate)
                     {
                         // we select a new object
                         if(tool.selection !== undefined && new_selected.item.name !== tool.selection.item.name)
@@ -935,6 +952,30 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                                 event.userData.setCurrentAnnotationType(selected_anno.annotation_type);
                             }
                         }
+                    }
+                    else
+                    {
+                        // fast annotate mode is active
+
+                        var i = 0
+                        // get currently pressed key
+                        for(; i<Object.keys(event.userData.pressedDigits).length; i++)
+                        {
+                            if(Object.values(event.userData.pressedDigits)[i])
+                            {
+                                break
+                            }
+                        }
+                        i = i+1
+
+                        // assign currently pressed label to smallest clicked object
+                        var to_assign = tool.hitTestObject_s(imagePoint)
+                        var to_assign_anno = exact_sync.annotations[to_assign.item.name];
+
+                        var annotation_type_id = event.userData.annotationTypeKeyToIdLookUp[i];
+
+                        event.userData.tool.resetSelection()
+                        event.userData.changeAnnotationType(annotation_type_id, to_assign_anno)
                     }
                 }
             }
@@ -1100,54 +1141,63 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 if (!event.shiftKey) {
                     this.changeAnnotationTypeByKey(1);
                 }
+                this.pressedDigits[1] = false
                 break;
             case 50: //2
             case 98: //2
                 if (!event.shiftKey) {
                     this.changeAnnotationTypeByKey(2);
                 }
+                this.pressedDigits[2] = false
                 break;
             case 51: //3
             case 99: //3
                 if (!event.shiftKey) {
                     this.changeAnnotationTypeByKey(3);
                 }
+                this.pressedDigits[3] = false
                 break;
             case 52: //4
             case 100: //4
                 if (!event.shiftKey) {
                     this.changeAnnotationTypeByKey(4);
                 }
+                this.pressedDigits[4] = false
                 break;
             case 53: //5
             case 101: //5
                 if (!event.shiftKey) {
                     this.changeAnnotationTypeByKey(5);
                 }
+                this.pressedDigits[5] = false
                 break;
             case 54: //6
             case 102: //6
                 if (!event.shiftKey) {
                     this.changeAnnotationTypeByKey(6);
                 }
+                this.pressedDigits[6] = false
                 break;
             case 55: //7
             case 103: //7
                 if (!event.shiftKey) {
                     this.changeAnnotationTypeByKey(7);
                 }
+                this.pressedDigits[7] = false
                 break;
             case 56: //8
             case 104: //8
                 if (!event.shiftKey) {
                     this.changeAnnotationTypeByKey(8);
                 }
+                this.pressedDigits[8] = false
                 break;
             case 57: //9
             case 105: //9
                 if (!event.shiftKey) {
                     this.changeAnnotationTypeByKey(9);
                 }
+                this.pressedDigits[9] = false
                 break;
             case 65: //a
                 this.insertNewAnno = false;
@@ -1195,6 +1245,12 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             case 97: //a
                 this.insertNewAnno = true;
                 break;
+        }
+
+        // handle digit key press
+        if (event.keyCode >=49 && event.keyCode <=57)
+        {
+            this.pressedDigits[event.key] = true
         }
     }
     
@@ -1741,7 +1797,8 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                     this.appendAction([action])
 
                     annotation.annotation_type = newType;
-                    this.tool.updateAnnotationType(annotation.unique_identifier, newType);
+                    this.tool.resetSelection();
+                    this.tool.updateAnnotationType(annotation.unique_identifier, newType, false);
                     this.exact_sync.saveAnnotation(annotation);
 
                     this.setCurrentAnnotationType(newType);

@@ -484,6 +484,8 @@ class ImageViewSet(viewsets.ModelViewSet):
         if hasattr(cache, "delete_pattern"):
             cache_key = f"*{pk}/*/*/*/*/*"
             tiles_cache.delete_pattern(cache_key)        
+        # remove thumbnail from file system
+        if Path(image.thumbnail_path()).exists(): os.remove(image.thumbnail_path())
         # remove image from db
         return super().destroy(request, pk)
         

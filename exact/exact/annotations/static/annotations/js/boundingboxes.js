@@ -130,7 +130,7 @@ class BoundingBoxes {
     }
 
     activateSinglePolyOperation(event) {
-        if (this.tool.current_item !== undefined && this.tool.current_item.type == "fill" && this.tool.current_item.item._data.type == "poly") // we have a selection and it is no a new element
+        if (this.tool.current_item !== undefined && this.tool.current_item.type != "new" && this.tool.current_item.item._data.type == "poly") // we have a selection and it is no a new element
         {
             if (!this.tool.singlePolyOperation.active) // singlePolyOperation not active
             {
@@ -157,7 +157,7 @@ class BoundingBoxes {
     }
 
     activateSinglePolyOperationByString(mode, caller) {
-        if (this.current_item !== undefined && this.current_item.type == "fill" && this.current_item.item._data.type == "poly") {
+        if (this.current_item !== undefined && this.current_item.type != "new" && this.current_item.item._data.type == "poly") {
             if (!this.singlePolyOperation.active) // singlePolyOperation not active
             {
                 if (this.multiPolyOperation.active) {
@@ -194,7 +194,7 @@ class BoundingBoxes {
     }
 
     activateMultiPolyOperation(event) {
-        if (this.viewer.selectionInstance.isSelecting && (this.tool.current_item == undefined || this.tool.current_item.type == "fill")) // we have a selection and it is no a new element
+        if (this.viewer.selectionInstance.isSelecting && (this.tool.current_item == undefined || this.tool.current_item.type != "new")) // we have a selection and it is no a new element
         {
             if (!this.tool.multiPolyOperation.active) // multiPolyOperation not active
             {
@@ -220,7 +220,7 @@ class BoundingBoxes {
     }
 
     activateMultiPolyOperationByString(mode, caller) {
-        if (this.viewer.selectionInstance.isSelecting && (this.current_item == undefined || this.current_item.type == "fill")) {
+        if (this.viewer.selectionInstance.isSelecting && (this.current_item == undefined || this.current_item.type != "new")) {
             if (!this.multiPolyOperation.active) // multiPolyOperation not active
             {
                 if (this.singlePolyOperation.active) {
@@ -1320,6 +1320,21 @@ class BoundingBoxes {
             }
         }
         return undefined;
+    }
+
+    hitTestObject_s(point)
+    {
+        // return the smallest clicked object
+        var hits = this.group.hitTestAll(point, this.hitOptionsObject);
+        if (hits.length > 0)
+        {
+            hits.sort((a,b) => (Math.abs(a.item.area) > Math.abs(b.item.area)) ? 1 : -1)
+            return hits[0]
+        }
+        else
+        {
+            return undefined
+        }
     }
 
     hitTestSegment(point) {
