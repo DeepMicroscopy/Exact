@@ -16,7 +16,7 @@ class TeamTool {
         $('#ShowUserLastEditedAnnotationsToggle').change(this.toggleUserLastEditedAnnotationsVisibilityAll.bind(this)); 
 
         for (let member of Object.values(this.team_sync.users)) {
-            $('#ShowUserCreatedAnnotations_' + member.id).change(this.toogleUserCreadedAnnotationsVisibility.bind(this)); 
+            $('#ShowUserCreatedAnnotations_' + member.id).change(this.toogleUserCreatedAnnotationsVisibility.bind(this)); 
             $('#ShowUserLastEditedAnnotations_' + member.id).change(this.toogleUserLastEditedAnnotationsVisibility.bind(this)); 
         }
 
@@ -40,7 +40,7 @@ class TeamTool {
         }
     }
 
-    toogleUserCreadedAnnotationsVisibility(event) {
+    toogleUserCreatedAnnotationsVisibility(event) {
 
         let user_id = parseInt(event.target.dataset.user_id);
         let checked = event.currentTarget.checked;
