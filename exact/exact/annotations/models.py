@@ -96,6 +96,10 @@ class Annotation(models.Model):
         return self.annotation_type.enable_concealed and self._concealed and not self.not_in_image
 
     @property
+    def generated(self):
+        return False
+
+    @property
     def blurred(self):
         return self.annotation_type.enable_blurred and self._blurred and not self.not_in_image
 
