@@ -77,7 +77,7 @@ class PluginResultBitmapSerializer(FlexFieldsModelSerializer):
             'name',
             'scale_max',
             'scale_min',
-            'transformation_matrix'
+            'transformation_matrix',
             'pluginresultentry',
             'image'
         )
