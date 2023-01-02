@@ -529,7 +529,7 @@ class EXACTAnnotationSync {
         this.API_1_PLUGINRESULTS_BASE_URL = include_server_subdir('/api/v1/processing/pluginresultannotations/');
         this.API_1_ANNOTATION_EXPAND = 'expand=user,last_editor,uploaded_media_files&';
         this.API_1_FILTERS = 'image=' + imageId + '&'
-        this.API_1_FILTERS += 'deleted=false&'
+        this.API_1_FILTERS += 'deleted=0&'
         if (this.collaboration_type === 1) {
             this.API_1_FILTERS += "user=" + user_id + "&"
         }
@@ -582,7 +582,7 @@ class EXACTAnnotationSync {
             }
 
             let filter = this.API_1_FILTERS;
-            filter += 'annotation_type=' + annotation_type.id + '&deleted=0&';
+            filter += 'annotation_type=' + annotation_type.id + '&';
 
             let url = `${this.API_1_ANNOTATIONS_BASE_URL}annotations/?limit=${limit}&${filter}${this.API_1_ANNOTATION_EXPAND}${this.API_1_ANNOTATION_FIELDS}`
             this.loadAnnotations(url, imageId, this, annotation_type)
@@ -1081,7 +1081,7 @@ class EXACTGlobalFrameAnnotationSync extends EXACTGlobalAnnotationSync {
             }
 
             let filter = this.API_1_FILTERS;
-            filter += 'annotation_type=' + annotation_type.id + '&deleted=0&';
+            filter += 'annotation_type=' + annotation_type.id + '&';
 
             let url = `${this.API_1_ANNOTATIONS_BASE_URL}annotations/?limit=${limit}&${filter}${this.API_1_ANNOTATION_EXPAND}${this.API_1_ANNOTATION_FIELDS}`
             this.loadAnnotations(url, imageId, this, annotation_type)
