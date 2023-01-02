@@ -694,6 +694,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
         let team_id = parseInt($('#team_id').html());
         this.teamTool = new TeamTool(this.viewer, team_id);
+        this.processingTool = new ProcessingTool(this.viewer, this.imageId);
 
         this.actionStack = [];
         this.actionMemory = 50;
@@ -711,7 +712,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         viewer.addHandler("team_ChangeCreatorAnnotationsVisibility", function (event) {
 
             for (let anno of Object.values(this.userData.exact_sync.annotations)) {
-                if (anno.user.id === event.User) {
+                if ((anno.generated == false) && (anno.user.id === event.User)) {
                     this.userData.tool.updateAnnotationVisibility(anno.unique_identifier, event.Checked);
                 }
             }
@@ -720,7 +721,15 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         viewer.addHandler("team_ChangeLastEditedAnnotationsVisibility", function (event) {
 
             for (let anno of Object.values(this.userData.exact_sync.annotations)) {
-                if (anno.last_editor.id === event.User) {
+                if ((anno.generated == false) && (anno.last_editor.id === event.User)) {
+                    this.userData.tool.updateAnnotationVisibility(anno.unique_identifier, event.Checked);
+                }
+            }
+        }, this);
+
+        viewer.addHandler("processing_togglePluginResultVisibility", function (event) {
+            for (let anno of Object.values(this.userData.exact_sync.annotations)) {
+                if ((anno.generated == true) && (event.ResultEntries.indexOf(anno.pluginresultentry)>=0)) {
                     this.userData.tool.updateAnnotationVisibility(anno.unique_identifier, event.Checked);
                 }
             }
@@ -1845,6 +1854,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
         this.tool.clear();
         this.teamTool.destroy();
+        this.processingTool.destroy();
         this.exact_sync.destroy();
         this.asthmaAnalysis.destroy();
     }

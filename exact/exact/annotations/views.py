@@ -29,7 +29,7 @@ from exact.annotations.serializers import AnnotationSerializer, AnnotationTypeSe
     AnnotationSerializerFast, serialize_annotation, AnnotationMediaFileSerializer
 from exact.images.models import Image, ImageSet
 from exact.users.models import Team
-from exact.processing.models import Plugin, PluginJob
+from exact.processing.models import Plugin, PluginJob, PluginResult
 
 logger = logging.getLogger('django')
 
@@ -51,7 +51,14 @@ def annotate(request, image_id):
 
     if show_processing:
         availablePlugins = Plugin.objects.filter(products__in=selected_image.image_set.product_set.all())
-        jobsQueue = PluginJob.objects.filter(image=image_id)
+        for i,plugin in enumerate(availablePlugins):
+            pgn=PluginJob.objects.filter(image=image_id).filter(plugin=plugin)
+            availablePlugins[i].processing_complete=-1
+            if pgn.count()>0:
+                availablePlugins[i].processing_complete = pgn.first().processing_complete
+                if hasattr(pgn.first(),'result'):
+                    availablePlugins[i].result = pgn.first().result
+                
 
     if 'read' in imageset_perms:
         set_images = selected_image.image_set.images.all().order_by('id')

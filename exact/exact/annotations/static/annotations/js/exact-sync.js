@@ -117,6 +117,40 @@ class EXACTTeamSync {
     }
 }
 
+class EXACTProcessingSync {
+    constructor(viewer, image_id) {
+        this.team_id = image_id;
+        this.results = {};
+        this.viewer = viewer;
+
+        this.API_1_PROCESSING__BASE_URL = include_server_subdir(`/api/v1/processing/pluginresults/?image_id=${image_id}&expand=entries`);
+        this.loadTeamInformation(this.API_1_PROCESSING__BASE_URL, this);
+    }
+
+    loadTeamInformation(url, context) {
+        $.ajax(url, {
+            type: 'GET', headers: context.gHeaders, dataType: 'json',
+            success: function (data) {
+
+
+                for (let result of data.results) {
+
+                    context.results[result.id] = result;
+                }
+
+                context.viewer.raiseEvent('sync_ProcessingLoaded', {  });
+            },
+            error: function (request, status, error) {
+                if (request.responseText !== undefined) {
+                    $.notify(request.responseText, { position: "bottom center", className: "error" });
+                } else {
+                    $.notify(`Server ERR_CONNECTION_TIMED_OUT`, { position: "bottom center", className: "error" });
+                }
+            }
+        });
+    }
+}
+
 class EXACTScreeningModeSync {
     constructor(imageId, user_id, gHeaders, viewer) {
      
@@ -492,13 +526,15 @@ class EXACTAnnotationSync {
 
         this.API_ANNOTATIONS_BASE_URL = include_server_subdir('/annotations/api/');
         this.API_1_ANNOTATIONS_BASE_URL = include_server_subdir('/api/v1/annotations/');
+        this.API_1_PLUGINRESULTS_BASE_URL = include_server_subdir('/api/v1/processing/pluginresultannotations/');
         this.API_1_ANNOTATION_EXPAND = 'expand=user,last_editor,uploaded_media_files&';
         this.API_1_FILTERS = 'image=' + imageId + '&'
         if (this.collaboration_type === 1) {
             this.API_1_FILTERS += "user=" + user_id + "&"
         }
 
-        this.API_1_ANNOTATION_FIELDS = 'fields=image,annotation_type,id,vector,deleted,description,verified_by_user,uploaded_media_files,unique_identifier,remark,user.id,user.username,last_editor.id,last_editor.username&';
+        this.API_1_ANNOTATION_FIELDS = 'fields=image,annotation_type,id,vector,generated,deleted,description,verified_by_user,uploaded_media_files,unique_identifier,remark,user.id,user.username,last_editor.id,last_editor.username&';
+        this.API_1_PLUGINRESULTS_FIELDS = 'fields=image,annotation_type,id,vector,generated,description,unique_identifier,pluginresultentry&';
 
         this.initLoadAnnotations(annotationTypes, imageId)
         this.refreshAnnotationsFromServer = setInterval(this.refreshAnnotations(this), this.upDateFromServerInterval, this);
@@ -545,10 +581,13 @@ class EXACTAnnotationSync {
             }
 
             let filter = this.API_1_FILTERS;
-            filter += 'annotation_type=' + annotation_type.id + '&';
+            filter += 'annotation_type=' + annotation_type.id + '&deleted=0&';
 
             let url = `${this.API_1_ANNOTATIONS_BASE_URL}annotations/?limit=${limit}&${filter}${this.API_1_ANNOTATION_EXPAND}${this.API_1_ANNOTATION_FIELDS}`
             this.loadAnnotations(url, imageId, this, annotation_type)
+            let url_pluginresults = `${this.API_1_PLUGINRESULTS_BASE_URL}?limit=${limit}&${filter}${this.API_1_ANNOTATION_EXPAND}${this.API_1_PLUGINRESULTS_FIELDS}`
+            this.loadAnnotations(url_pluginresults, imageId, this, annotation_type)
+
         }
     }
 
@@ -838,10 +877,12 @@ class EXACTGlobalAnnotationSync extends EXACTAnnotationSync {
                 annotation_type: annotation_type
             }
         }
-
+        
         let url = `${this.API_1_ANNOTATIONS_BASE_URL}annotations/?limit=${limit}&${filter}${this.API_1_ANNOTATION_EXPAND}${this.API_1_ANNOTATION_FIELDS}`
         this.loadAnnotations(url, imageId, this)
-    }
+        let url_pluginresults = `${this.API_1_PLUGINRESULTS_BASE_URL}?limit=${limit}&${filter}${this.API_1_ANNOTATION_EXPAND}${this.API_1_PLUGINRESULTS_FIELDS}`
+        this.loadAnnotations(url_pluginresults, imageId, this)
+}
 
     loadAnnotations(url, imageId, context, annotation_type = undefined) {
         $.ajax(url, {
@@ -1039,11 +1080,13 @@ class EXACTGlobalFrameAnnotationSync extends EXACTGlobalAnnotationSync {
             }
 
             let filter = this.API_1_FILTERS;
-            filter += 'annotation_type=' + annotation_type.id + '&';
+            filter += 'annotation_type=' + annotation_type.id + '&deleted=0&';
 
             let url = `${this.API_1_ANNOTATIONS_BASE_URL}annotations/?limit=${limit}&${filter}${this.API_1_ANNOTATION_EXPAND}${this.API_1_ANNOTATION_FIELDS}`
             this.loadAnnotations(url, imageId, this, annotation_type)
-        }
+            let url_pluginresults = `${this.API_1_PLUGINRESULTS_BASE_URL}?limit=${limit}&${filter}${this.API_1_ANNOTATION_EXPAND}${this.API_1_PLUGINRESULTS_FIELDS}`
+            this.loadAnnotations(url2, imageId, this, )
+            }
     }
 
     loadAnnotations(url, imageId, context, annotation_type = undefined) {
