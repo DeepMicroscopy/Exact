@@ -451,17 +451,17 @@ class EXACTViewer {
             useSessionStorage: false,    // Save guidelines in sessionStorage
             navImages: {
                 guideHorizontal: {
-                    REST: 'guidehorizontal_rest.png',
-                    GROUP: 'guidehorizontal_grouphover.png',
-                    HOVER: 'guidehorizontal_hover.png',
-                    DOWN: 'guidehorizontal_pressed.png'
+                    REST: 'nothing.png',
+                    GROUP: 'nothing.png',
+                    HOVER: 'nothing.png',
+                    DOWN: 'nothing.png'
                 },
                 guideVertical: {
-                    REST: 'guidevertical_rest.png',
-                    GROUP: 'guidevertical_grouphover.png',
-                    HOVER: 'guidevertical_hover.png',
-                    DOWN: 'guidevertical_pressed.png'
-                }
+                    REST: 'nothing.png',
+                    GROUP: 'nothing.png',
+                    HOVER: 'nothing.png',
+                    DOWN: 'nothing.png'
+                }            
             }
         });
 
