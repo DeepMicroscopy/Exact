@@ -834,17 +834,29 @@ class BoundingBoxes {
 
                 rect.strokeColor = annotation.annotation_type.color_code;
                 rect.strokeWidth = this.strokeWidth;
+                if (annotation.generated)
+                {
+                rect.dashArray = [4, 1];
+                }
                 rect.name = annotation.unique_identifier;
                 rect.fillColor = annotation.annotation_type.color_code
                 rect.fillColor.alpha = opacity
 
                 rect.data.type = "rect";
                 rect.data.type_id = annotation.annotation_type.id;
-                rect.data.area_hit_test = annotation.annotation_type.area_hit_test;
-
                 var checkbox = $('#DrawCheckBox_' + annotation.annotation_type.id)[0]
+                if (annotation.generated)
+                {
+                    rect.data.area_hit_test = false;
+                    rect.locked = true;
+                }
+                else
+                {
+                    rect.data.area_hit_test = annotation.annotation_type.area_hit_test;
+                    rect.locked = checkbox.indeterminate
+                }
+
                 rect.visible = checkbox.checked
-                rect.locked = checkbox.indeterminate
 
                 this.group.addChild(rect);
                 break;
@@ -857,17 +869,29 @@ class BoundingBoxes {
 
                 rect.strokeColor = annotation.annotation_type.color_code;
                 rect.strokeWidth = this.strokeWidth;
+                if (annotation.generated)
+                {
+                rect.dashArray = [4, 1];
+                }
                 rect.name = annotation.unique_identifier;
                 rect.fillColor = annotation.annotation_type.color_code
                 rect.fillColor.alpha = opacity
 
                 rect.data.type = "fixed_rect";
                 rect.data.type_id = annotation.annotation_type.id;
-                rect.data.area_hit_test = annotation.annotation_type.area_hit_test;
 
                 var checkbox = $('#DrawCheckBox_' + annotation.annotation_type.id)[0]
+                if (annotation.generated)
+                {
+                    rect.data.area_hit_test = false;
+                    rect.locked = true;
+                }
+                else
+                {
+                    rect.data.area_hit_test = annotation.annotation_type.area_hit_test;
+                    rect.locked = checkbox.indeterminate
+                }
                 rect.visible = checkbox.checked
-                rect.locked = checkbox.indeterminate
 
                 this.group.addChild(rect);
                 break;
@@ -879,6 +903,10 @@ class BoundingBoxes {
 
                 ellipse.strokeColor = annotation.annotation_type.color_code;
                 ellipse.strokeWidth = this.strokeWidth;
+                if (annotation.generated)
+                {
+                rect.dashArray = [4, 1];
+                }
                 ellipse.name = annotation.unique_identifier;
                 ellipse.fillColor = annotation.annotation_type.color_code
                 ellipse.fillColor.alpha = opacity
@@ -886,11 +914,19 @@ class BoundingBoxes {
 
                 ellipse.data.type = "circle";
                 ellipse.data.type_id = annotation.annotation_type.id;
-                ellipse.data.area_hit_test = annotation.annotation_type.area_hit_test;
 
                 var checkbox = $('#DrawCheckBox_' + annotation.annotation_type.id)[0]
                 ellipse.visible = checkbox.checked
-                ellipse.locked = checkbox.indeterminate
+                if (annotation.generated)
+                {
+                    ellipse.data.area_hit_test = false;
+                    ellipse.locked = true;
+                }
+                else
+                {
+                    ellipse.data.area_hit_test = annotation.annotation_type.area_hit_test;
+                    ellipse.locked = checkbox.indeterminate
+                }
 
                 this.group.addChild(ellipse);
                 break;
@@ -904,14 +940,27 @@ class BoundingBoxes {
                 line.name = annotation.unique_identifier;
                 line.fillColor = annotation.annotation_type.color_code
                 line.fillColor.alpha = opacity
+                if (annotation.generated)
+                {
+                line.dashArray = [4, 1];
+                }
 
                 line.data.type = "line";
                 line.data.type_id = annotation.annotation_type.id;
-                line.data.area_hit_test = annotation.annotation_type.area_hit_test;
 
                 var checkbox = $('#DrawCheckBox_' + annotation.annotation_type.id)[0]
                 line.visible = checkbox.checked
-                line.locked = checkbox.indeterminate
+                if (annotation.generated)
+                {
+                    line.data.area_hit_test = false;
+                    line.locked = true;
+                }
+                else
+                {
+                    line.data.area_hit_test = annotation.annotation_type.area_hit_test;
+                    line.locked = checkbox.indeterminate
+                }
+
 
                 this.group.addChild(line);
                 break;
@@ -928,9 +977,13 @@ class BoundingBoxes {
                 poly.fillColor = annotation.annotation_type.color_code
                 poly.fillColor.alpha = opacity
 
+                if (annotation.generated)
+                {
+                poly.dashArray = [4, 1];
+                }
+
                 poly.data.type = "poly";
                 poly.data.type_id = annotation.annotation_type.id;
-                poly.data.area_hit_test = annotation.annotation_type.area_hit_test;
 
                 var count = Object.keys(annotation.vector).length / 2;
                 for (var i = 1; i <= count; i++) {
@@ -939,7 +992,16 @@ class BoundingBoxes {
 
                 var checkbox = $('#DrawCheckBox_' + annotation.annotation_type.id)[0]
                 poly.visible = checkbox.checked
-                poly.locked = checkbox.indeterminate
+                if (annotation.generated)
+                {
+                    poly.data.area_hit_test = false;
+                    poly.locked = true;
+                }
+                else
+                {
+                    poly.data.area_hit_test = annotation.annotation_type.area_hit_test;
+                    poly.locked = checkbox.indeterminate
+                }
 
                 this.group.addChild(poly);
                 break;
