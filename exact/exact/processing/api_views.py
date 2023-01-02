@@ -8,9 +8,19 @@ class PluginJobViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows PluginJobs to be viewed or edited.
     """
-    queryset = models.PluginJob.objects.all().order_by('-created_time')
+#    queryset = models.PluginJob.objects.all().order_by('-created_time')
     serializer_class = serializers.PluginJobSerializer
     permission_classes = [permissions.DjangoModelPermissions]
+    def get_queryset(self):
+        """
+        This view should return a list of all the purchases for
+        the user as determined by the username portion of the URL.
+        """
+        image_id = self.request.query_params.get('image_id')
+        if image_id is not None:
+            return models.PluginJob.objects.filter(image__id=image_id)
+        else:
+            return models.PluginJob.objects.all().order_by('-created_time')
 
 class PluginViewSet(viewsets.ModelViewSet):
     """
@@ -51,9 +61,19 @@ class PluginResultAnnotationViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows PluginResultAnnotations to be viewed or edited.
     """
-    queryset = models.PluginResultAnnotation.objects.all().order_by('-id')
     serializer_class = serializers.PluginResultAnnotationSerializer
     permission_classes = [permissions.DjangoModelPermissions]
+    def get_queryset(self):
+        """
+        This view should return a list of all the purchases for
+        the user as determined by the username portion of the URL.
+        """
+        image_id = self.request.query_params.get('image')
+        if image_id is not None:
+            return models.PluginResultAnnotation.objects.filter(image__id=image_id)
+        else:
+            return models.PluginResultAnnotation.objects.all().order_by('-id')
+
 
 class PluginResultBitmapViewSet(viewsets.ModelViewSet):
     """

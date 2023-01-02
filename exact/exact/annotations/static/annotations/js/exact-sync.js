@@ -123,7 +123,7 @@ class EXACTProcessingSync {
         this.results = {};
         this.viewer = viewer;
 
-        this.API_1_PROCESSING__BASE_URL = include_server_subdir(`/api/v1/processing/pluginresults/?image_id=${image_id}&expand=entries`);
+        this.API_1_PROCESSING__BASE_URL = include_server_subdir(`/api/v1/processing/pluginjobs/?image_id=${image_id}&expand=result`);
         this.loadTeamInformation(this.API_1_PROCESSING__BASE_URL, this);
     }
 

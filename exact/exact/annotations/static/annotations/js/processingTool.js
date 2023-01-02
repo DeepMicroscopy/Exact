@@ -12,9 +12,20 @@ class ProcessingTool {
 
     initUiEvents () {
 
-
-        for (let result of Object.values(this.processing_sync.results)) {
-            $('#vis-plugin-' + result.plugin).change(this.togglePluginResultVisibility.bind(this)); 
+        for (let job of Object.values(this.processing_sync.results)) {
+            $('#vis-plugin-' + job.plugin).change(this.togglePluginResultVisibility.bind(this)); 
+            if (job.result) // processing is complete
+            {
+                $('#compl-'+job.plugin).attr("style","");
+            }
+            else
+            {
+                $('#processing-'+job.plugin).attr("style","");
+                $('#completed-'+job.plugin).text(job.processing_complete + ' %')
+                $('#completed-'+job.plugin).attr("aria-valuenow",job.processing_complete)
+                $('#completed-'+job.plugin).attr("style",' style="width: {{' + Math.round(job.processing_complete) + '%"')
+            }
+            $('#process-'+job.plugin).attr("style","display:none");
         }
 
     }
@@ -34,8 +45,11 @@ class ProcessingTool {
 
     destroy() { 
 
-        for (let result of Object.values(this.processing_sync.results)) {
-                $('#vis-plugin-' + member.id).off("change");
-        }
+        for (let job of Object.values(this.processing_sync.results)) {
+                $('#vis-plugin-' + job.plugin).off("change");
+                $('#compl-'+job.plugin).attr("style","display:none");
+                $('#processing-'+job.plugin).attr("style","display:none");
+                $('#process-'+job.plugin).attr("style","");
+            }
     }
 }

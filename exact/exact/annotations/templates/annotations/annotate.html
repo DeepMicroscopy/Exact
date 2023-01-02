@@ -376,32 +376,24 @@
                             <div class="tab-pane fade" id="nav-item_processing">
                                 <table>
                                     {% for plugin in availablePlugins %}
-                                    <tr><td>
-                                        {% if plugin.processing_complete == -1 %}
+                                    <tr style="" id="process-{{plugin.id}}"><td>
                                         <a class="annotate_button btn btn-success" id="run_processing_{{ plugin.id }}" href="{% url "processing:submit" plugin_id=plugin.id image_id=selected_image.id %}">
-                                         process
+                                         process</a>
                                         </td><td>{{plugin.name}}</td></tr>
-                                    </a>
-                                         {% elif plugin.processing_complete < 100 %}
+                                    
+                                        <tr style="display:none" id="processing-{{plugin.id}}"><td>
                                          <div class="progress" style="width:100px">
-                                            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="{{plugin.processing_complete}}" aria-valuemin="0" aria-valuemax="100" style="width: {{plugin.processing_complete|floatformat:"0"}}%">{{plugin.processing_complete}} %</div>
+                                            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="{{plugin.processing_complete}}" aria-valuemin="0" aria-valuemax="100" style="width: {{plugin.processing_complete|floatformat:"0"}}%" id="completed-{{ plugin.id }}">-inf %</div>
                                           </div>
                                         </td><td>{{plugin.name}}</td></tr>
-                                        {% else %}
-                                         <!-- processing has completed for plugin -->
-                                         
+                                        <tr style="display:none" id="compl-{{plugin.id}}"><td>
 <label class="btn btn-outline-secondary btn-sm" for="vis-plugin-{{plugin.id}}"><input type="checkbox" class="btn-check btn-sm" id="vis-plugin-{{plugin.id}}" checked autocomplete="off" data-plugin_id={{plugin.id}}
      data-plugin_resultentries="[{% for resultentry in plugin.result.entries.all %}{{resultentry.id}},{% endfor %}]"><image src="{% static 'images/eye_fill_small.svg' %}"></label><br>
 
                                     </td><td><a data-toggle="collapse" href="#collapsePlugin{{plugin.id}}" aria-expanded="false" aria-controls="collapseExample">{{plugin.name}}</a></td></tr>
                                     <tr><td></td><td>
                                     <div class="collapse" id="collapsePlugin{{plugin.id}}">
-                                     {% for resultentry in plugin.result.entries.all %}
-                                            {{ resultentry.name }} <br>
-
-                                     {% endfor %}
                                     </div></td></tr>
-                                    {% endif %}
                                     {% endfor %}
                                 </table>
                             </div>
