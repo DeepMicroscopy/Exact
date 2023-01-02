@@ -1625,7 +1625,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             let annos  = $.map(this.exact_sync.annotations, function(value, key) { return value });
 
             // filter anno types that are not supported like poly or line.
-            annos = annos.filter(anno => [1, 6, 2].includes(annos[0].annotation_type.vector_type))
+            annos = annos.filter(anno => [1, 6, 2].includes(anno.annotation_type.vector_type))
 
             // filter annos according to type visibility
             Object.keys(this.exact_sync.annotationTypes).forEach(annotation_type_id => {
