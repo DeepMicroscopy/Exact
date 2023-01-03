@@ -617,9 +617,9 @@ class EXACTAnnotationSync {
             filter += 'annotation_type=' + annotation_type.id + '&';
 
             let url = `${this.API_1_ANNOTATIONS_BASE_URL}annotations/?limit=${limit}&${filter}${this.API_1_ANNOTATION_EXPAND}${this.API_1_ANNOTATION_FIELDS}`
-            this.loadAnnotations(url, imageId, this, annotation_type)
+            this.loadAnnotations(url, this.API_1_ANNOTATIONS_BASE_URL, imageId, this, annotation_type)
             let url_pluginresults = `${this.API_1_PLUGINRESULTS_BASE_URL}?limit=${limit}&${filter}${this.API_1_ANNOTATION_EXPAND}${this.API_1_PLUGINRESULTS_FIELDS}`
-            this.loadAnnotations(url_pluginresults, imageId, this, annotation_type)
+            this.loadAnnotations(url_pluginresults, this.API_1_PLUGINRESULTS_BASE_URL, imageId, this, annotation_type)
 
         }
     }
@@ -633,12 +633,13 @@ class EXACTAnnotationSync {
 
         for (var annotation_type in this.resumeLoadAnnotationsCache) {
             let url = this.resumeLoadAnnotationsCache[annotation_type].url;
+            let baseurl = this.resumeLoadAnnotationsCache[annotation_type].baseurl;
 
-            loadAnnotations(url, this.imageId, this, annotation_type)
+            loadAnnotations(url, baseurl, this.imageId, this, annotation_type)
         }
     }
 
-    loadAnnotations(url, imageId, context, annotation_type = undefined) {
+    loadAnnotations(url, baseurl, imageId, context, annotation_type = undefined) {
         $.ajax(url, {
             type: 'GET', headers: context.gHeaders, dataType: 'json',
             success: function (data) {
@@ -660,12 +661,15 @@ class EXACTAnnotationSync {
                 if (data.next !== null) {
                     context.viewer.raiseEvent('sync_UpdateStatistics', {});
                     // if the image instance should load more annotation but has a stop command save the next commands
-                    let url = data.next
+//                    let url = context.API_1_ANNOTATIONS_BASE_URL + data.next.split(context.API_1_ANNOTATIONS_BASE_URL)[1]
+                    let url = baseurl + data.next.split(baseurl)[1]
+                    // let url = data.next
                     if (context.interruptLoading === false) {
-                        context.loadAnnotations(url, imageId, context, annotation_type)
+                        context.loadAnnotations(url, baseurl, imageId, context, annotation_type)
                     } else {
                         context.resumeLoadAnnotationsCache[annotation_type] = {
-                            url: url
+                            url: url,
+                            baseurl: baseurl
                         }
                     }
                 } else {
@@ -912,12 +916,12 @@ class EXACTGlobalAnnotationSync extends EXACTAnnotationSync {
         }
         
         let url = `${this.API_1_ANNOTATIONS_BASE_URL}annotations/?limit=${limit}&${filter}${this.API_1_ANNOTATION_EXPAND}${this.API_1_ANNOTATION_FIELDS}`
-        this.loadAnnotations(url, imageId, this)
+        this.loadAnnotations(url, this.API_1_ANNOTATIONS_BASE_URL, imageId, this)
         let url_pluginresults = `${this.API_1_PLUGINRESULTS_BASE_URL}?limit=${limit}&${filter}${this.API_1_ANNOTATION_EXPAND}${this.API_1_PLUGINRESULTS_FIELDS}`
-        this.loadAnnotations(url_pluginresults, imageId, this)
+        this.loadAnnotations(url_pluginresults, this.API_1_PLUGINRESULTS_BASE_URL, imageId, this)
 }
 
-    loadAnnotations(url, imageId, context, annotation_type = undefined) {
+    loadAnnotations(url, baseurl, imageId, context, annotation_type = undefined) {
         $.ajax(url, {
             type: 'GET', headers: context.gHeaders, dataType: 'json',
             success: function (data) {
@@ -1116,13 +1120,13 @@ class EXACTGlobalFrameAnnotationSync extends EXACTGlobalAnnotationSync {
             filter += 'annotation_type=' + annotation_type.id + '&';
 
             let url = `${this.API_1_ANNOTATIONS_BASE_URL}annotations/?limit=${limit}&${filter}${this.API_1_ANNOTATION_EXPAND}${this.API_1_ANNOTATION_FIELDS}`
-            this.loadAnnotations(url, imageId, this, annotation_type)
+            this.loadAnnotations(url, this.API_1_ANNOTATIONS_BASE_URL, imageId, this, annotation_type)
             let url_pluginresults = `${this.API_1_PLUGINRESULTS_BASE_URL}?limit=${limit}&${filter}${this.API_1_ANNOTATION_EXPAND}${this.API_1_PLUGINRESULTS_FIELDS}`
-            this.loadAnnotations(url2, imageId, this, )
+            this.loadAnnotations(url2, this.API_1_PLUGINRESULTS_BASE_URL, imageId, this, )
             }
     }
 
-    loadAnnotations(url, imageId, context, annotation_type = undefined) {
+    loadAnnotations(url, baseurl, imageId, context, annotation_type = undefined) {
         $.ajax(url, {
             type: 'GET', headers: context.gHeaders, dataType: 'json',
             success: function (data) {
@@ -1143,10 +1147,11 @@ class EXACTGlobalFrameAnnotationSync extends EXACTGlobalAnnotationSync {
                     
                     let url = data.next
                     if (context.interruptLoading === false) {
-                        context.loadAnnotations(url, imageId, context, annotation_type)
+                        context.loadAnnotations(url, baseurl, imageId, context, annotation_type)
                     } else {
                         context.resumeLoadAnnotationsCache[annotation_type] = {
-                            url: url
+                            url: url,
+                            baseurl: baseurl
                         }
                     }
                 } else {
