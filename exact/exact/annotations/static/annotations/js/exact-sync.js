@@ -1140,7 +1140,8 @@ class EXACTGlobalFrameAnnotationSync extends EXACTGlobalAnnotationSync {
 
                 if (data.next !== null) {
                     // if the image instance should load more annotation but has a stop command save the next commands
-                    let url = context.API_1_ANNOTATIONS_BASE_URL + data.next.split(context.API_1_ANNOTATIONS_BASE_URL)[1]
+                    
+                    let url = data.next
                     if (context.interruptLoading === false) {
                         context.loadAnnotations(url, imageId, context, annotation_type)
                     } else {
