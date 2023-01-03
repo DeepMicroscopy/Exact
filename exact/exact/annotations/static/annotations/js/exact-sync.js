@@ -121,13 +121,16 @@ class EXACTProcessingSync {
     constructor(viewer, image_id) {
         this.team_id = image_id;
         this.results = {};
+        this.plugins = {};
         this.viewer = viewer;
 
+        this.API_1_PLUGINS_URL = include_server_subdir(`/api/v1/processing/plugins/?imageset_from_image_id=${image_id}&expand=result,result.entries`);
+        this.loadPluginInformation(this.API_1_PLUGINS_URL, this);
         this.API_1_PROCESSING__BASE_URL = include_server_subdir(`/api/v1/processing/pluginjobs/?image_id=${image_id}&expand=result,result.entries`);
-        this.loadTeamInformation(this.API_1_PROCESSING__BASE_URL, this);
+        this.loadPluginJobInformation(this.API_1_PROCESSING__BASE_URL, this);
     }
 
-    loadTeamInformation(url, context) {
+    loadPluginJobInformation(url, context) {
         $.ajax(url, {
             type: 'GET', headers: context.gHeaders, dataType: 'json',
             success: function (data) {
@@ -138,7 +141,7 @@ class EXACTProcessingSync {
                     context.results[result.id] = result;
                 }
 
-                context.viewer.raiseEvent('sync_ProcessingLoaded', {  });
+                context.viewer.raiseEvent('sync_ProcessingPluginJobsLoaded', {  });
             },
             error: function (request, status, error) {
                 if (request.responseText !== undefined) {
@@ -148,6 +151,31 @@ class EXACTProcessingSync {
                 }
             }
         });
+
+    }
+
+    loadPluginInformation(url, context) {
+        $.ajax(url, {
+            type: 'GET', headers: context.gHeaders, dataType: 'json',
+            success: function (data) {
+
+
+                for (let result of data.results) {
+
+                    context.plugins[result.id] = result;
+                }
+
+                context.viewer.raiseEvent('sync_ProcessingPluginsLoaded', {  });
+            },
+            error: function (request, status, error) {
+                if (request.responseText !== undefined) {
+                    $.notify(request.responseText, { position: "bottom center", className: "error" });
+                } else {
+                    $.notify(`Server ERR_CONNECTION_TIMED_OUT`, { position: "bottom center", className: "error" });
+                }
+            }
+        });
+
     }
 }
 

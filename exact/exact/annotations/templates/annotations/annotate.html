@@ -377,7 +377,7 @@
                                 <table>
                                     {% for plugin in availablePlugins %}
                                     <tr style="" id="process-{{plugin.id}}"><td>
-                                        <a class="annotate_button btn btn-success" id="run_processing_{{ plugin.id }}" href="{% url "processing:submit" plugin_id=plugin.id image_id=selected_image.id %}">
+                                        <a class="annotate_button btn btn-success" id="run_processing_{{ plugin.id }}" href="">
                                          process</a>
                                         </td><td>{{plugin.name}}</td></tr>
                                     
@@ -390,9 +390,9 @@
 <label class="btn btn-outline-secondary btn-sm" for="vis-plugin-{{plugin.id}}"><input type="checkbox" class="btn-check btn-sm" id="vis-plugin-{{plugin.id}}" checked autocomplete="off" data-plugin_id={{plugin.id}}
      data-plugin_resultentries="[]"><image src="{% static 'images/eye_fill_small.svg' %}"></label><br>
 
-                                    </td><td><a data-toggle="collapse" href="#collapsePlugin{{plugin.id}}" aria-expanded="false" aria-controls="collapseExample">{{plugin.name}}</a></td></tr>
+                                    </td><td class="text-left"><a data-toggle="collapse" href="#collapsePlugin-{{plugin.id}}" aria-expanded="false" aria-controls="collapseExample">{{plugin.name}}</a></td></tr>
                                     <tr><td></td><td>
-                                    <div class="collapse" id="collapsePlugin{{plugin.id}}">
+                                    <div class="collapse text-left" id="collapsePlugin-{{plugin.id}}">
                                     </div></td></tr>
                                     {% endfor %}
                                 </table>

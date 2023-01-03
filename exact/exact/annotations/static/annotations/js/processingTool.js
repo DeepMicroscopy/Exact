@@ -2,14 +2,29 @@ class ProcessingTool {
     constructor (viewer, image_id) {
 
         this.viewer = viewer;
+        this.image_id = image_id
         this.processing_sync = new EXACTProcessingSync(viewer, image_id);
+        
 
-        viewer.addHandler("sync_ProcessingLoaded", function (event) {
+        viewer.addHandler("sync_ProcessingPluginJobsLoaded", function (event) {
 
             event.userData.initUiEvents();
         }, this);
+
+        viewer.addHandler("sync_ProcessingPluginsLoaded", function (event) {
+            event.userData.initPluginrelatedUI();
+        }, this);
     }
 
+    initPluginrelatedUI()
+        {
+            for (let plugin of Object.values(this.processing_sync.plugins))
+            {
+                let SUBMIT_URL = include_server_subdir(`/processing/submit/`);
+                $('#run_processing_' + plugin.id).attr('href', SUBMIT_URL + plugin.id + '/' + this.image_id); 
+            }
+        }
+    
     initUiEvents () {
 
         for (let job of Object.values(this.processing_sync.results)) {

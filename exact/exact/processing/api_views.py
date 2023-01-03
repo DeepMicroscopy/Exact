@@ -3,6 +3,7 @@ from django.db.models import Q, Count
 from django.db import transaction
 from . import models
 from . import serializers
+from django.shortcuts import  get_object_or_404
 
 class PluginJobViewSet(viewsets.ModelViewSet):
     """
@@ -29,6 +30,25 @@ class PluginViewSet(viewsets.ModelViewSet):
     queryset = models.Plugin.objects.all().order_by('-name')
     serializer_class = serializers.PluginSerializer
     permission_classes = [permissions.DjangoModelPermissions]
+
+    def get_queryset(self):
+        """
+        This view should return a list of all the purchases for
+        the user as determined by the username portion of the URL.
+        """
+        imageset_from_image_id = self.request.query_params.get('imageset_from_image_id')
+
+        if imageset_from_image_id is None:
+            return models.Plugin.objects.all().order_by('-name')
+        
+        image = models.Image.objects.filter(id=imageset_from_image_id)
+
+        #imageset = get_object_or_404(ImageSet, id=imageset_id)
+        if (image.count()>0):
+            return models.Plugin.objects.filter(products__in=image.first().image_set.product_set.all())
+        else:
+            return models.Plugin.objects.none()
+
 
 
 class PluginResultViewSet(viewsets.ModelViewSet):
