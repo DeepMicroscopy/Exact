@@ -17,8 +17,33 @@ class ProcessingTool {
             if (job.result) // processing is complete
             {
                 $('#compl-'+job.plugin).attr("style","");
-                $('#vis-plugin-' + job.plugin).attr('data-plugin_resultentries',JSON.stringify(job.result.entries))
+                let entries = []
+                for (const entry of job.result.entries)
+                {
+                    entries.push(entry.id)
+                }
+                $('#vis-plugin-' + job.plugin).attr('data-plugin_resultentries',JSON.stringify(entries))
                 $('#vis-plugin-' + job.plugin).attr('data-plugin_id',job.plugin)
+                let txt = '';
+                for (let resultentry of job.result.entries)
+                {
+                    txt += resultentry.name;
+                    if ((resultentry.annotation_results.length>0) && (resultentry.bitmap_results.length>0))
+                    {
+                        txt += ' ('+resultentry.annotation_results.length+' annotations, ';
+                        txt += resultentry.bitmap_results.length+' bitmaps)';
+                    }
+                    else if (resultentry.annotation_results.length>0)
+                    {
+                        txt += ' ('+resultentry.annotation_results.length+' annotations)';
+                    }
+                    else if (resultentry.bitmap_results.length>0)
+                    {
+                        txt += ' ('+resultentry.bitmap_results.length+' bitmaps)';
+                    }
+                    txt += '<br/>';
+                }
+                $('#collapsePlugin-' + job.plugin).html(txt)
             }
             else
             {
