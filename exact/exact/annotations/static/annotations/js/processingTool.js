@@ -32,7 +32,7 @@ class ProcessingTool {
             if (job.result) // processing is complete
             {
                 $('#compl-'+job.plugin).attr("style","");
-                if ($('#processing-'+job.plugin).attr("style").length==0)
+                if (($('#processing-'+job.plugin).attr("style").length==0) && (job.processing_complete==100))
                 {
                     // if the processing is shown at the moment but the job has finished, reload to get all the annotations
                     location.reload(); 
