@@ -25,6 +25,8 @@ class PluginSerializer(FlexFieldsModelSerializer):
             "products": (ProductSerializer, {'read_only': True, 'many': True}),
         }
 
+
+
 class PluginJobSerializer(FlexFieldsModelSerializer):
     class Meta:
         model = PluginJob
@@ -34,6 +36,7 @@ class PluginJobSerializer(FlexFieldsModelSerializer):
             'plugin',
             'created_time',
             'eta_time',
+            'image',
             'processing_complete',
             'updated_time',
             'result'
