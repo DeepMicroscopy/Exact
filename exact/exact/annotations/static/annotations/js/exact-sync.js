@@ -128,6 +128,10 @@ class EXACTProcessingSync {
         this.loadPluginInformation(this.API_1_PLUGINS_URL, this);
         this.API_1_PROCESSING__BASE_URL = include_server_subdir(`/api/v1/processing/pluginjobs/?image_id=${image_id}&expand=result,result.entries`);
         this.loadPluginJobInformation(this.API_1_PROCESSING__BASE_URL, this);
+
+        setInterval(function(my){
+            my.loadPluginJobInformation(my.API_1_PROCESSING__BASE_URL, my); // refresh every 5 seconds
+        }, 5000, this);
     }
 
     loadPluginJobInformation(url, context) {

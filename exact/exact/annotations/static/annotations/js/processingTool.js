@@ -63,9 +63,9 @@ class ProcessingTool {
             else
             {
                 $('#processing-'+job.plugin).attr("style","");
-                $('#completed-'+job.plugin).text(job.processing_complete + ' %')
+                $('#completed-'+job.plugin).text(job.processing_complete.toFixed(2) + ' %')
                 $('#completed-'+job.plugin).attr("aria-valuenow",job.processing_complete)
-                $('#completed-'+job.plugin).attr("style",' style="width: {{' + Math.round(job.processing_complete) + '%"')
+                $('#completed-'+job.plugin).attr("style",'width:' + Math.round(job.processing_complete) + '%')
             }
             $('#process-'+job.plugin).attr("style","display:none");
         }
