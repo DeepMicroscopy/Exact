@@ -41,8 +41,8 @@ class EXACTProcessingListSync {
         this.loadPluginJobList(this.API_1_PROCESSING__BASE_URL, this);
 
         setInterval(function(my){
-            my.loadPluginJobList(my.API_1_PROCESSING__BASE_URL, my); // refresh every 1 second
-        }, 1000, this);
+            my.loadPluginJobList(my.API_1_PROCESSING__BASE_URL, my); // refresh every 2 seconds
+        }, 2000, this);
     }
 
 
