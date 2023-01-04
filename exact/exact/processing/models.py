@@ -35,6 +35,7 @@ class Plugin(models.Model):
     # Class for external plugins (run on server or whereever else)
     name = models.CharField(max_length=200)
     author = models.CharField(max_length=200)
+    package = models.CharField(max_length=200, default='') 
     contact = models.EmailField(max_length=80)
     abouturl = models.URLField(max_length=80)
     icon = models.ImageField(upload_to=plugins_directory)
@@ -86,7 +87,7 @@ class PluginResult(models.Model):
     created_time = models.DateTimeField(default=datetime.now)
     completed_time = models.DateTimeField(default=datetime.now)
     image = models.ForeignKey(Image, on_delete=models.CASCADE, related_name="pluginResults")
-    
+
     def __str__(self):
         return u'PluginResult of {0}'.format(self.job.__str__())
 

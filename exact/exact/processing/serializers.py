@@ -14,6 +14,7 @@ class PluginSerializer(FlexFieldsModelSerializer):
             'name',
             'author',
             'contact', 
+            'package',
             'abouturl',
             'icon',
             'products',
