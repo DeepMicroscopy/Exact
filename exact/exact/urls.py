@@ -51,12 +51,12 @@ urlpatterns = [
     url(r'^tagger_messages/', include('exact.tagger_messages.urls')),
     url(r'^tools/', include('exact.tools.urls')),
     url(r'^datasets/', include('exact.datasets.urls')),
+    url(r'^processing/', include('exact.processing.urls')),
 
     url('', include(router.urls)),
 
     path('api/v1/', include(router_api.urls)),
     path('api/v1/openapi', schema_view, name='openapi-schema'),
-
     #path('auth/', include('djoser.urls.authtoken')),
 ] + static(settings.MEDIA_URL, document_root= settings.MEDIA_ROOT)
 

@@ -29,6 +29,7 @@ from exact.annotations.serializers import AnnotationSerializer, AnnotationTypeSe
     AnnotationSerializerFast, serialize_annotation, AnnotationMediaFileSerializer
 from exact.images.models import Image, ImageSet
 from exact.users.models import Team
+from exact.processing.models import Plugin, PluginJob, PluginResult
 
 logger = logging.getLogger('django')
 
@@ -41,9 +42,24 @@ def export_auth(request, export_id):
 @login_required
 def annotate(request, image_id):
     start = timer()
-
+    show_processing=request.user.has_perm('processing.use_server_side_plugins') & settings.SHOW_PROCESSING_PANEL
     selected_image = get_object_or_404(Image, id=image_id)
     imageset_perms = selected_image.image_set.get_perms(request.user)
+
+    availablePlugins=[]
+    jobsQueue=[]
+
+    if show_processing:
+        availablePlugins = Plugin.objects.filter(products__in=selected_image.image_set.product_set.all())
+        for i,plugin in enumerate(availablePlugins):
+            pgn=PluginJob.objects.filter(image=image_id).filter(plugin=plugin)
+            availablePlugins[i].processing_complete=-1
+            if pgn.count()>0:
+                availablePlugins[i].processing_complete = pgn.first().processing_complete
+                if hasattr(pgn.first(),'result'):
+                    availablePlugins[i].result = pgn.first().result
+                
+
     if 'read' in imageset_perms:
         set_images = selected_image.image_set.images.all().order_by('id')
         hasMediaFiles = AnnotationMediaFile.objects.filter(annotation__image__in=set_images).count() > 0
@@ -53,6 +69,8 @@ def annotate(request, image_id):
 
         global_annotation_types = annotation_types.filter(vector_type=AnnotationType.VECTOR_TYPE.GLOBAL)
         annotation_types = annotation_types.exclude(vector_type=AnnotationType.VECTOR_TYPE.GLOBAL)
+
+        show_advanced_options = settings.SHOW_ADVANCED_OPTIONS
 
         total_annotations = selected_image.annotations.filter(deleted=False).count()
         imageset_lock = selected_image.image_set.image_lock
@@ -74,7 +92,11 @@ def annotate(request, image_id):
             'total_annotations': total_annotations,
             'annotation_types': annotation_types,
             'HasMediaFiles': hasMediaFiles,
+            'jobsQueue' : jobsQueue,
+            'availablePlugins':availablePlugins,
             'global_annotation_types': global_annotation_types,
+            'show_advanced_options':show_advanced_options,
+            'show_processing':show_processing,
             'user_id': request.user.id,
             'asthma': asthma,
             "USE_CDN_WSI": settings.USE_CDN_WSI
