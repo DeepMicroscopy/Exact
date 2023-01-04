@@ -37,7 +37,7 @@ class EXACTProcessingListSync {
         let API_BASE_URL = include_server_subdir('/api/v1/annotations/') 
         
         this.results = {};
-        this.API_1_PROCESSING__BASE_URL = include_server_subdir(`/api/v1/processing/pluginjobs/?expand=result,result.entries`);
+        this.API_1_PROCESSING__BASE_URL = include_server_subdir(`/api/v1/processing/pluginjobs/?limit=20`);
         this.loadPluginJobList(this.API_1_PROCESSING__BASE_URL, this);
 
         setInterval(function(my){
