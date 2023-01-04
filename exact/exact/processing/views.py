@@ -39,7 +39,7 @@ def stop(request, job_id):
     return index(request)
 
 def index(request):
-    current_jobs_user = PluginJob.objects.filter(Q(creator=request.user)).order_by('-created_time')[0:20]
+    current_jobs_user = PluginJob.objects.filter(Q(creator=request.user)).order_by('-created_time')[0:50]
     current_jobs = PluginJob.objects.order_by('-updated_time')
     return TemplateResponse(request, 'processing/index.html', {
             'current_jobs' : current_jobs,
