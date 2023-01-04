@@ -24,7 +24,7 @@ def submit_imageset(request, plugin_id, imageset_id):
     imageset = get_object_or_404(ImageSet, id=imageset_id)
     plugin = get_object_or_404(Plugin, id=plugin_id)
 
-    for image in imageset.images:
+    for image in imageset.images.all():
         if (PluginJob.objects.filter(image=image).filter(plugin=plugin).count()==0):
             pluginJob = PluginJob.objects.create(
                     image=image,
