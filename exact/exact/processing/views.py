@@ -5,7 +5,8 @@ from django.template.response import TemplateResponse
 from .models import PluginJob, Plugin
 from exact.images.models import Image
 from django.db.models import Q
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404,redirect
+from django.urls import reverse
 
 def indexf(request):
     current_jobs = PluginJob.objects.order_by('-updated_time')[:5]
@@ -22,7 +23,7 @@ def submit(request, plugin_id, image_id):
                 plugin=plugin,
                 creator=request.user)
 
-    return index(request)
+    return redirect(reverse('annotations:annotate', args=(image.id,)))
 
 def stop(request, job_id):
     job = get_object_or_404(PluginJob, id=job_id)
