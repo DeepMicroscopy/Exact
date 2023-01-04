@@ -59,14 +59,15 @@
 					<a href="{% url 'datasets:index' %}" class="nav-link">Demo</a>
 				</li>
 				{% endif %}
-				<!--
+
+				{% if show_processing_panel %}
 				<li class="nav-item">
-					<a class="upper-bandage-parent" href="{% url 'tagger_messages:overview' %}">
-						Messages
-						{% if unread_message_count %}
+					<a class="upper-bandage-parent" href="{% url 'processing:index' %}">
+						Process
+						{% if processing_queue %}
 						<span class="badge upper-bandage">
-							{% if unread_message_count < 10 %}
-							{{unread_message_count}}
+							{% if processing_queue < 10 %}
+							{{processing_queue}}
 							{% else %}
 							9+
 							{% endif %}
@@ -74,7 +75,8 @@
 						{% endif %}
 					</a>
 				</li>
-				-->
+				{% endif %}
+				
 
 				<li class="nav-item dropdown">
 					<a href="#" class="dropdown-toggle nav-link" data-toggle="dropdown" role="button"

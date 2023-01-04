@@ -84,7 +84,11 @@ class AnnotationViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return  models.Annotation.objects.filter(image__image_set__team__in=user.team_set.all()).select_related('annotation_type', 'image', 'user', 'last_editor').order_by('id')
+        deleted = self.request.query_params.get('deleted')
+        if deleted is not None:
+            return models.Annotation.objects.filter(image__image_set__team__in=user.team_set.all()).select_related('annotation_type', 'image', 'user', 'last_editor').filter(deleted=deleted).order_by('id')
+        else:
+            return  models.Annotation.objects.filter(image__image_set__team__in=user.team_set.all()).select_related('annotation_type', 'image', 'user', 'last_editor').order_by('id')
 
 
     @action(methods=['get'], detail=False)

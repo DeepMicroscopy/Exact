@@ -35,6 +35,7 @@
 <script type="text/javascript" src="{% static 'annotations/js/searchTool.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/AsthmaAnalysis.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/teamTool.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/processingTool.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/statistics-viewer.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/plugin-handler.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/show-annotation-properties.js' %}"></script>
@@ -161,6 +162,13 @@
                             </li>
 
                             {% endif %}
+
+                            {% if show_processing %}
+                            <li class="nav-item">
+                                <a class="nav-link" id="default_global_annotation_tab" data-toggle="tab"
+                                    href="#nav-item_processing" role="tab" aria-controls="home">Processing</a>
+                            {% endif %}
+
 
                             <li class="nav-item">
                                 <a class="nav-link" id="default_annotation_tab" data-toggle="tab" href="#nav-item_anno"
@@ -364,6 +372,32 @@
                             </div>
 
                             {% endif %}
+                            {% if show_processing %}
+                            <div class="tab-pane fade" id="nav-item_processing">
+                                <table>
+                                    {% for plugin in availablePlugins %}
+                                    <tr style="" id="process-{{plugin.id}}"><td>
+                                        <a class="annotate_button btn btn-success" id="run_processing_{{ plugin.id }}" href="">
+                                         process</a>
+                                        </td><td>{{plugin.name}}</td></tr>
+                                    
+                                        <tr style="display:none" id="processing-{{plugin.id}}"><td>
+                                         <div class="progress" style="width:100px">
+                                            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="{{plugin.processing_complete}}" aria-valuemin="0" aria-valuemax="100" style="width: {{plugin.processing_complete|floatformat:"0"}}%" id="completed-{{ plugin.id }}">-inf %</div>
+                                          </div>
+                                        </td><td>{{plugin.name}}</td></tr>
+                                        <tr style="display:none" id="compl-{{plugin.id}}"><td>
+<label class="btn btn-outline-secondary btn-sm" for="vis-plugin-{{plugin.id}}"><input type="checkbox" class="btn-check btn-sm" id="vis-plugin-{{plugin.id}}" checked autocomplete="off" data-plugin_id={{plugin.id}}
+     data-plugin_resultentries="[]"><image src="{% static 'images/eye_fill_small.svg' %}"></label><br>
+
+                                    </td><td class="text-left"><a data-toggle="collapse" href="#collapsePlugin-{{plugin.id}}" aria-expanded="false" aria-controls="collapseExample">{{plugin.name}}</a></td></tr>
+                                    <tr><td></td><td>
+                                    <div class="collapse text-left" id="collapsePlugin-{{plugin.id}}">
+                                    </div></td></tr>
+                                    {% endfor %}
+                                </table>
+                            </div>
+                            {% endif %}
 
                             <div class="tab-pane fade" id="nav-item_search">
 
@@ -503,17 +537,17 @@
                                             <thead>
                                                 <tr>
                                                     <th scope="col">User</th>
-                                                    <th scope="col" title="Show annotations created by this user">First
+                                                    <th scope="col" title="Show annotations created by this user">created by
                                                     </th>
                                                     <th scope="col" title="Show annotations last edited by this user">
-                                                        Last</th>
+                                                        last edited</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 <tr>
                                                     <td> Toggle All </td>
                                                     <td>
-                                                        <input id="ShowUserCreadedAnnotationsToggle" type="checkbox"
+                                                        <input id="ShowUserCreatedAnnotationsToggle" type="checkbox"
                                                             checked />
                                                     </td>
                                                     <td>
@@ -526,7 +560,7 @@
                                                 <tr>
                                                     <td>{{ user.username }}</td>
                                                     <td>
-                                                        <input id="ShowUserCreadedAnnotations_{{user.id}}"
+                                                        <input id="ShowUserCreatedAnnotations_{{user.id}}"
                                                             type="checkbox" checked data-user_id={{user.id}} />
                                                     </td>
                                                     <td>
@@ -731,6 +765,7 @@
                     <div class="card-footer">
                         <tr>
                             <div class="row">
+                                {% if show_advanced_options %}
                                 <div class="col-md-2">
 
                                     <input id="StrokeWidthSlider" type="range" class="custom-range" min="1" max="500"
@@ -741,8 +776,16 @@
                                         step="0.01" value="0.0" />
                                     <label for="OpacitySlider">Opacity</label>
                                 </div>
+                                {% else %}
+                                <input id="StrokeWidthSlider" type="hidden" class="custom-range" value="5" />
+                                <input id="OpacitySlider" type="hidden" class="custom-range" value="0.01" />
+                                {% endif %}
 
+                                {% if show_advanced_options %}
                                 <div class="col-md-2">
+                                {% else %}
+                                <div class="col-md-4">
+                                {% endif %}
                                     <label for='statistics_total_annotations' title="Total Annotations">Total:</label>
                                     <label id="statistics_total_annotations"
                                         title="Total Annotations">{{ total_annotations }}</label>
@@ -760,6 +803,7 @@
 
                                         {% endfor %}
                                     </select>
+                                    {% if show_advanced_options %}
                                     <div class=""><input type="checkbox" id="display_messages" checked="true" width: auto>Display Messages</div>
                                     <div class="">
                                         <label for="tristate_option">3rd Checkbox state:</label>
@@ -769,6 +813,10 @@
                                         <option value="no_vis">Not Visible, Interaction</option>
                                         </select>
                                     </div>
+                                    {% else %}
+                                     <input type="hidden" id="tristate_option" value="unused">
+                                     <input type="checkbox" id="display_messages" checked="true" width: auto style="display:none">
+                                    {% endif %}
                                 </div>
                             </div>
                         </tr>

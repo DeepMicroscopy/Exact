@@ -81,6 +81,7 @@ class AnnotationSerializer(FlexFieldsModelSerializer):
             'last_edit_time',
             'user',
             'time',
+            'generated',
             'deleted',
             'description',
             'unique_identifier',

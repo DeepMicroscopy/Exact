@@ -451,17 +451,17 @@ class EXACTViewer {
             useSessionStorage: false,    // Save guidelines in sessionStorage
             navImages: {
                 guideHorizontal: {
-                    REST: 'guidehorizontal_rest.png',
-                    GROUP: 'guidehorizontal_grouphover.png',
-                    HOVER: 'guidehorizontal_hover.png',
-                    DOWN: 'guidehorizontal_pressed.png'
+                    REST: 'nothing.png',
+                    GROUP: 'nothing.png',
+                    HOVER: 'nothing.png',
+                    DOWN: 'nothing.png'
                 },
                 guideVertical: {
-                    REST: 'guidevertical_rest.png',
-                    GROUP: 'guidevertical_grouphover.png',
-                    HOVER: 'guidevertical_hover.png',
-                    DOWN: 'guidevertical_pressed.png'
-                }
+                    REST: 'nothing.png',
+                    GROUP: 'nothing.png',
+                    HOVER: 'nothing.png',
+                    DOWN: 'nothing.png'
+                }            
             }
         });
 
@@ -694,6 +694,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
         let team_id = parseInt($('#team_id').html());
         this.teamTool = new TeamTool(this.viewer, team_id);
+        this.processingTool = new ProcessingTool(this.viewer, this.imageId);
 
         this.actionStack = [];
         this.actionMemory = 50;
@@ -723,7 +724,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         viewer.addHandler("team_ChangeCreatorAnnotationsVisibility", function (event) {
 
             for (let anno of Object.values(this.userData.exact_sync.annotations)) {
-                if (anno.user.id === event.User) {
+                if ((anno.generated == false) && (anno.user.id === event.User)) {
                     this.userData.tool.updateAnnotationVisibility(anno.unique_identifier, event.Checked);
                 }
             }
@@ -732,7 +733,15 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         viewer.addHandler("team_ChangeLastEditedAnnotationsVisibility", function (event) {
 
             for (let anno of Object.values(this.userData.exact_sync.annotations)) {
-                if (anno.last_editor.id === event.User) {
+                if ((anno.generated == false) && (anno.last_editor.id === event.User)) {
+                    this.userData.tool.updateAnnotationVisibility(anno.unique_identifier, event.Checked);
+                }
+            }
+        }, this);
+
+        viewer.addHandler("processing_togglePluginResultVisibility", function (event) {
+            for (let anno of Object.values(this.userData.exact_sync.annotations)) {
+                if ((anno.generated == true) && (event.ResultEntries.indexOf(anno.pluginresultentry)>=0)) {
                     this.userData.tool.updateAnnotationVisibility(anno.unique_identifier, event.Checked);
                 }
             }
@@ -1616,7 +1625,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             let annos  = $.map(this.exact_sync.annotations, function(value, key) { return value });
 
             // filter anno types that are not supported like poly or line.
-            annos = annos.filter(anno => [1, 6, 2].includes(annos[0].annotation_type.vector_type))
+            annos = annos.filter(anno => [1, 6, 2].includes(anno.annotation_type.vector_type))
 
             // filter annos according to type visibility
             Object.keys(this.exact_sync.annotationTypes).forEach(annotation_type_id => {
@@ -1902,6 +1911,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
         this.tool.clear();
         this.teamTool.destroy();
+        this.processingTool.destroy();
         this.exact_sync.destroy();
         this.asthmaAnalysis.destroy();
     }

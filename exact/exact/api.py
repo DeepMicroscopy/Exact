@@ -4,6 +4,7 @@ from exact.users import api_views as users_views
 from exact.images import api_views as images_views
 from exact.administration import api_views as administrations_views
 from exact.annotations import api_views as annotations_views
+from exact.processing import api_views as processing_views
 
 router = routers.DefaultRouter()
 router_api = routers.DefaultRouter()
@@ -26,6 +27,12 @@ router_api.register(r'annotations/annotation_media_files', annotations_views.Ann
 router_api.register(r'annotations/verifications', annotations_views.VerificationViewSet, basename='Verification')
 router_api.register(r'annotations/log_image_actions', annotations_views.LogImageActionViewSet, basename='LogImageAction')
 
+router_api.register(r'processing/pluginjobs', processing_views.PluginJobViewSet, basename='PluginJob')
+router_api.register(r'processing/plugins', processing_views.PluginViewSet, basename='Plugin')
+router_api.register(r'processing/pluginresults', processing_views.PluginResultViewSet, basename='PluginResult')
+router_api.register(r'processing/pluginresultentrys', processing_views.PluginResultEntryViewSet, basename='PluginResultEntry')
+router_api.register(r'processing/pluginresultannotations', processing_views.PluginResultAnnotationViewSet, basename='PluginResultAnnotation')
+router_api.register(r'processing/pluginresultbitmaps', processing_views.PluginResultBitmapViewSet, basename='PluginResultBitmap')
 
 router_api.register(r'administration/products', administrations_views.ProductViewset, basename='Product')
 
