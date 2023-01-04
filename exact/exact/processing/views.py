@@ -3,15 +3,10 @@ from django.http import HttpResponseForbidden, HttpResponse, HttpResponseBadRequ
 from django.template.response import TemplateResponse
 
 from .models import PluginJob, Plugin
-from exact.images.models import Image
+from exact.images.models import Image, ImageSet
 from django.db.models import Q
 from django.shortcuts import get_object_or_404,redirect
 from django.urls import reverse
-
-def indexf(request):
-    current_jobs = PluginJob.objects.order_by('-updated_time')[:5]
-    output = ', '.join([q.__str__() for q in current_jobs])
-    return HttpResponse(output)
 
 def submit(request, plugin_id, image_id):
     image = get_object_or_404(Image, id=image_id)
@@ -24,6 +19,20 @@ def submit(request, plugin_id, image_id):
                 creator=request.user)
 
     return redirect(reverse('annotations:annotate', args=(image.id,)))
+
+def submit_imageset(request, plugin_id, imageset_id):
+    imageset = get_object_or_404(ImageSet, id=imageset_id)
+    plugin = get_object_or_404(Plugin, id=plugin_id)
+
+    for image in imageset.images:
+        if (PluginJob.objects.filter(image=image).filter(plugin=plugin).count()==0):
+            pluginJob = PluginJob.objects.create(
+                    image=image,
+                    plugin=plugin,
+                    creator=request.user)
+
+    return index(request)
+
 
 def stop(request, job_id):
     job = get_object_or_404(PluginJob, id=job_id)
