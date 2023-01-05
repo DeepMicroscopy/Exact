@@ -8,8 +8,12 @@ from django.shortcuts import  get_object_or_404
 class PluginJobViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows PluginJobs to be viewed or edited.
+
+    Filtering options (GET parameters):
+    image_id: Only show plugin jobs for image with image.id==image_id
+    incomplete: If true, only show incomplete jobs
+
     """
-#    queryset = models.PluginJob.objects.all().order_by('-created_time')
     serializer_class = serializers.PluginJobSerializer
     permission_classes = [permissions.DjangoModelPermissions]
     def get_queryset(self):
@@ -18,8 +22,11 @@ class PluginJobViewSet(viewsets.ModelViewSet):
         the user as determined by the username portion of the URL.
         """
         image_id = self.request.query_params.get('image_id')
+        incomplete = self.request.query_params.get('incomplete')
         if image_id is not None:
             return models.PluginJob.objects.filter(image__id=image_id)
+        elif incomplete is not None and incomplete:
+            return models.PluginJob.objects.all().filter(~Q(processing_complete=100)).order_by('-created_time')
         else:
             return models.PluginJob.objects.all().order_by('-created_time')
 
