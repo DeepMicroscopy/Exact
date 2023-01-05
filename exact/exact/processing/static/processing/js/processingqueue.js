@@ -12,6 +12,22 @@ function refreshJobList (event) {
         $('#completed-'+job.id).text(job.processing_complete.toFixed(2) + ' %')
         $('#completed-'+job.id).attr("aria-valuenow",job.processing_complete)
         $('#completed-'+job.id).attr("style",'width:' + Math.round(job.processing_complete) + '%')
+
+        if (job.processing_complete==100)
+        { 
+                $('#firstcolumn-'+job.id).html('<img src="'+include_server_subdir('/static/images/check.svg')+'">');
+        }
+        if (job.attached_worker) 
+        {
+            $('#firstcolumn-'+job.id).html('<div class="spinner-border spinner-border-sm" role="status"></div>');
+        }
+       if (((job.error_message) && job.error_message.length>0))
+        {
+            // set exclamation mark
+            $('#firstcolumn-'+job.id).html('<img src="'+include_server_subdir('/static/images/exclamation-octagon.svg')+'">');
+
+            $('#completed-'+job.id).removeClass('bg-danger').addClass('bg-danger'); // make progress bar red
+        }
     }
 }
 
@@ -31,13 +47,11 @@ class EXACTProcessingListSync {
             refreshJobList(event.detail);
         }, this);
 
-        let server_url = window.location.origin + window.location.pathname.split("/processing")[0];
         let user_id = parseInt($('#user_id').html());
-
-        let API_BASE_URL = include_server_subdir('/api/v1/annotations/') 
+        let icb = $('#incomplete_jobs').first().text();
         
         this.results = {};
-        this.API_1_PROCESSING__BASE_URL = include_server_subdir(`/api/v1/processing/pluginjobs/?limit=50`);
+        this.API_1_PROCESSING__BASE_URL = include_server_subdir(`/api/v1/processing/pluginjobs/?filter_ids=${icb}`);
         this.loadPluginJobList(this.API_1_PROCESSING__BASE_URL, this);
 
         setInterval(function(my){

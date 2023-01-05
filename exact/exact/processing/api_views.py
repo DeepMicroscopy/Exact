@@ -2,14 +2,19 @@ from rest_framework import viewsets, permissions
 from django.db.models import Q, Count
 from django.db import transaction
 from . import models
+import json
 from . import serializers
 from django.shortcuts import  get_object_or_404
 
 class PluginJobViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows PluginJobs to be viewed or edited.
+
+    Filtering options (GET parameters):
+    image_id: Only show plugin jobs for image with image.id==image_id
+    incomplete: If true, only show incomplete jobs
+
     """
-#    queryset = models.PluginJob.objects.all().order_by('-created_time')
     serializer_class = serializers.PluginJobSerializer
     permission_classes = [permissions.DjangoModelPermissions]
     def get_queryset(self):
@@ -18,10 +23,18 @@ class PluginJobViewSet(viewsets.ModelViewSet):
         the user as determined by the username portion of the URL.
         """
         image_id = self.request.query_params.get('image_id')
+        user_id = self.request.query_params.get('user_id')
+        filter_ids = self.request.query_params.get('filter_ids')
+        o = models.PluginJob.objects
         if image_id is not None:
-            return models.PluginJob.objects.filter(image__id=image_id)
-        else:
-            return models.PluginJob.objects.all().order_by('-created_time')
+            o = o.filter(image__id=image_id)
+        if user_id is not None:
+            o = o.filter(creator__id=user_id)
+        if filter_ids is not None:
+            allowed_ids = json.loads('['+filter_ids+']')
+            o = o.filter(id__in=allowed_ids)
+
+        return o.order_by('-created_time')
 
 class PluginViewSet(viewsets.ModelViewSet):
     """

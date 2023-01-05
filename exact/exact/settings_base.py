@@ -253,6 +253,8 @@ SHOW_PROCESSING_PANEL = False
 
 SHOW_ADVANCED_OPTIONS = True # advanced options such as stroke width, opacity, and 3rd box state
 
+PAGINATION_PROCESSING_QUEUE = 50 # length of processing queue for pagination
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
