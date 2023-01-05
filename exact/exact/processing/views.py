@@ -52,7 +52,7 @@ from django.core.paginator import Paginator
 
 def index(request):
 
-    current_jobs_user = PluginJob.objects.filter(Q(creator=request.user)).order_by('-created_time')[0:50]
+    current_jobs_user = PluginJob.objects.filter(Q(creator=request.user)).order_by('-created_time')
     current_jobs = PluginJob.objects.order_by('-updated_time')
 
 
