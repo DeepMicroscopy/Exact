@@ -13,7 +13,6 @@ from exact.administration.models import Product
 from exact.users.models import Team
 from exact.administration.serializers import serialize_annotationType, ProductSerializer
 
-
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import ParseError
 from rest_framework.response import Response
@@ -40,7 +39,10 @@ def product(request, product_id):
     })
 
 
+
 def create_product(request):
+
+
     if request.method == 'POST':
         form = ProductCreationForm(request.POST)
 
@@ -53,10 +55,35 @@ def create_product(request):
                     product = form.save()
 
                 messages.success(request, _('The product was created successfully.'))
+
+                if 'copy_product' in request.POST and int(request.POST['copy_product'])>0:
+                    selected_product = get_object_or_404(Product, id=request.POST['copy_product'])
+                    print('Copying from product: ', selected_product)
+                    
+                    for annoType in AnnotationType.objects.filter(product=selected_product.id):
+                        annotationType = AnnotationType.objects.create(
+                            name=annoType.name,
+                            active=annoType.active,
+                            node_count=annoType.node_count,
+                            vector_type=annoType.vector_type,
+                            color_code=annoType.color_code,
+                            sort_order=annoType.sort_order,
+                            enable_blurred=annoType.enable_blurred,
+                            default_height=annoType.default_height,
+                            default_width=annoType.default_width,
+                            closed=annoType.closed,
+                            area_hit_test=annoType.area_hit_test,
+                            product=product,
+                        )
+                        annotationType.save()
+
+
                 return redirect(reverse('administration:product', args=(product.id,)))
         else:
             messages.error(request, _('The name team combination is already in use by an product.'))
+        
 
+            
     return redirect(reverse('administration:products'))
 
 

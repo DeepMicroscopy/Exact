@@ -110,6 +110,21 @@
 
                                 <tr>
                                     <td>
+                                        <label for="id_team">As a copy of</label>
+                                    </td>
+                                    <td>
+                                        <select class="form-control" name="copy_product">
+                                            <option value=0 selected>-- don't copy --</option>
+                                        {% for product in products %}
+                                            <option value="{{product.id}}">{{product.team.name}} - {{product.name}}</option>
+                                        {% endfor %}
+                                    </input>
+                                    </td>
+                                </tr>
+
+
+                                <tr>
+                                    <td>
                                         <input class="btn btn-danger" type="reset" value="Reset">
                                     </td>
                                     <td align="right">
