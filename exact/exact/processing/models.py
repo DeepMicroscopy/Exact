@@ -65,6 +65,9 @@ class PluginJob(models.Model):
     created_time = models.DateTimeField(default=datetime.now)
     updated_time = models.DateTimeField(default=datetime.now)
     eta_time = models.DateTimeField(default=datetime.now)
+    error_message = models.TextField(null=True, blank=True)
+    error_detail = models.TextField(null=True, blank=True)
+    attached_worker = models.CharField(max_length=200, null=True, blank=True)
     image = models.ForeignKey(Image, on_delete=models.CASCADE, related_name="pluginJobs")
 
     def __str__(self):

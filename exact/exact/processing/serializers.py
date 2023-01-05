@@ -38,6 +38,9 @@ class PluginJobSerializer(FlexFieldsModelSerializer):
             'created_time',
             'eta_time',
             'image',
+            'error_message',
+            'error_detail',
+            'attached_worker',
             'processing_complete',
             'updated_time',
             'result'

@@ -3,9 +3,9 @@
 {% load static %}
 
 {% block taggerimports %}
-<script type="text/javascript" src="{% static 'annotations/js/openseadragon.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'scripts/jquery-3.2.1.min.js' %}"></script>
-<script type="text/javascript" src="{% static 'scripts/bootstrap.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'scripts/bootstrap.bundle.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/openseadragon.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'processing/js/processingqueue.js' %}"></script>
 
 
@@ -29,9 +29,25 @@
                 </div>
                 <div class="card-body">
                     <table>
-                        <tr><th>Job ID</th><th>User</th><th>Image</th><th>Plugin</th><th>Created</th><th>Last update</th><th>Complete</th><th>Actions</th></tr>
-                                {% for job in current_jobs %}
-                                        <tr><td>{{job.id}}</td><td>{{job.creator.username}}</td><td><a href="{% url "annotations:annotate" job.image.id %}">{{job.image.name}}</a></td><td>{{job.plugin.name}}</td><td>{{job.created_time}}</td><td>{{job.updated_time}}</td><td>
+                        <tr><th></th><th>Job ID</th><th>Image</th><th>Plugin</th><th>Created</th><th>Last update</th><th>Complete</th><th>Actions</th><th>Details</th></tr>
+                                {% for job in current_jobs_user %}
+                                        <tr><td id="firstcolumn-{{job.id}}">
+                                            {% if job.attached_worker|length > 0 %}
+                                            {% if job.error_message|length == 0 %}
+
+                                            <div class="spinner-border spinner-border-sm" role="status">
+                                              </div>
+                                              {% else %}
+                                              <img src="{% static 'images/exclamation-octagon.svg' %}">
+                                              <i class="bi-alarm"></i>
+                                              {% endif %}
+
+                                              {% elif job.processing_complete == 100 %}
+                                              <img src="{% static 'images/check.svg' %}">                                              
+                                              {% endif %}
+                                            </td>
+                                            
+                                            <td>{{job.id}}</td><td><a href="{% url "annotations:annotate" job.image.id %}">{{job.image.name}}</a></td><td>{{job.plugin.name}}</td><td>{{job.created_time}}</td><td>{{job.updated_time}}</td><td>
                                             <div class="progress">
                                                 <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" id="completed-{{job.id}}" aria-valuenow="{{job.processing_complete|floatformat:1}}" aria-valuemin="0" aria-valuemax="100" style="width: {{job.processing_complete|floatformat:0}}%">{{job.processing_complete|floatformat:1}} %</div>
                                               </div>
@@ -41,15 +57,54 @@
                                             <a href="{% url "processing:stop" job.id %}">X</a>
                                             {% endif %}
                                             {% endif %}
-                                        </td></td></tr>
+                                        </td></td><td id="statusfield-{{job.id}}">
+                                            {% if job.error_message|length > 0 %}
+                                              
+                                                <div class="alert alert-warning" id="exbtn-{{job.id}}" role="alert"  data-placement="bottom" data-toggle="tooltip" title="{{job.error_detail|linebreaks}}">
+                                                {{ job.error_message }}
+                                                <script>$('#exbtn-{{job.id}}').tooltip({html: true})</script>
+                                            </div>                                            
+                                            {% endif %}
+                                        </td></tr>
                                 {% endfor %}
                             
                         </div>
                     </table>
                 </div>
-                ({{ current_jobs.count }} most recent entries).
+                <br>
+            <ul class="nav justify-content-center">
+                    <nav aria-label="...">
+                        <ul class="pagination">
+                          <li class="page-item {% if page_obj.has_previous == False %}disabled{% endif %}">
+                            <a class="page-link" href="{% if page_obj.has_previous %}?page={{ page_obj.previous_page_number }}{% endif %}" tabindex="-1">Previous</a>
+                          </li>
+                          {% for l in page_obj.paginator.page_range %}
+                             {% if l <= page_obj.number|add:3 and l >= page_obj.number|add:-3 %}
+                             {% if l == page_obj.number %}
+                             <li class="page-item active">
+                             {% else %}
+                             <li class="page-item">
+                             {% endif %}
+                              <a class="page-link" href="?page={{ l }}">{{ l }}</a></li>
+
+
+                              {% endif %}
+
+                          {% endfor %}
+                          <li class="page-item {% if page_obj.has_next == False %}disabled{% endif %}">
+                            <a class="page-link" href="{% if page_obj.has_next %}?page={{ page_obj.next_page_number }}{% endif %}">Next</a>
+                          </li>
+                        </ul>
+                      </nav></ul>
+                      <span id="user_id" class="invisible">{{ user_id }}</span>
+                      </div>
+                      <span id="pagination_start_idx" class="invisible">{{ page_obj.start_index }}</span>
+                      <span id="pagination_end_idx" class="invisible">{{ page_obj.end_index }}</span>
+                      <span id="incomplete_jobs" class="invisible">{{ incomplete_jobs }}</span>
             </div>
-        </div>
       </div>
 </div>
+
+
+
 {% endblock %}
