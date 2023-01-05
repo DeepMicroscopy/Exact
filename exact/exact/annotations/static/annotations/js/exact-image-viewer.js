@@ -450,6 +450,13 @@ class EXACTViewer {
             removeOnClose: true,        // Remove guidelines when viewer closes
             useSessionStorage: false,    // Save guidelines in sessionStorage
             navImages: {
+                zoomIn:
+                {
+                    REST: 'zoom-in.svg',
+                    GROUP: 'zoom-in.svg',
+                    HOVER: 'zoom-in.svg',
+                    DOWN: 'zoom-in.svg',
+                },
                 guideHorizontal: {
                     REST: 'nothing.png',
                     GROUP: 'nothing.png',
@@ -523,10 +530,10 @@ class EXACTViewer {
         let showNavigationButton = new OpenSeadragon.Button({
             tooltip: 'Show navigation overview',
             name: "ShowNavigation",
-            srcRest: viewer.prefixUrl + `map.svg`,
-            srcGroup: viewer.prefixUrl + `map.svg`,
-            srcHover: viewer.prefixUrl + `map.svg`,
-            srcDown: viewer.prefixUrl + `map.svg`,
+            srcRest: viewer.prefixUrl + `map_rest.png`,
+            srcGroup: viewer.prefixUrl + `map_grouphover.png`,
+            srcHover: viewer.prefixUrl + `map_hover.png`,
+            srcDown: viewer.prefixUrl + `map_pressed.png`,
             onClick: this.uiShowNavigatorToggle.bind(this),
         });
         viewer.buttons.buttons.push(showNavigationButton);
@@ -1304,10 +1311,10 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         let element = new OpenSeadragon.Button({
             tooltip: 'Draw annotations (y)',
             name: "DrawAnnotations",
-            srcRest: this.viewer.prefixUrl + `eye_fill.svg`,
-            srcGroup: this.viewer.prefixUrl + `eye_fill.svg`,
-            srcHover: this.viewer.prefixUrl + `eye_slash.svg`,
-            srcDown: this.viewer.prefixUrl + `eye_slash.svg`,
+            srcRest: this.viewer.prefixUrl + `anno_rest.png`,
+            srcGroup: this.viewer.prefixUrl + `anno_grouphover.png`,
+            srcHover: this.viewer.prefixUrl + `anno_hover.png`,
+            srcDown: this.viewer.prefixUrl + `anno_pressed.png`,
             onClick: this.uiShowAnnotationsToggle.bind(this),
         });
         this.viewer.buttons.buttons.push(element);
@@ -1317,10 +1324,10 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         let element_heatmap = new OpenSeadragon.Button({
             tooltip: 'Draw Heatmap',
             name: "DrawHeatmap",
-            srcRest: this.viewer.prefixUrl + `flip_rest.png`,
-            srcGroup: this.viewer.prefixUrl + `flip_grouphover.png`,
-            srcHover: this.viewer.prefixUrl + `flip_hover.png`,
-            srcDown: this.viewer.prefixUrl + `flip_pressed.png`,
+            srcRest: this.viewer.prefixUrl + `heatmap_rest.png`,
+            srcGroup: this.viewer.prefixUrl + `heatmap_grouphover.png`,
+            srcHover: this.viewer.prefixUrl + `heatmap_hover.png`,
+            srcDown: this.viewer.prefixUrl + `heatmap_pressed.png`,
             onClick: this.uiShowHeatmapToggle.bind(this),
         });
         this.viewer.buttons.buttons.push(element_heatmap);
@@ -1329,10 +1336,10 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         let element_heatmap_inv = new OpenSeadragon.Button({
             tooltip: 'Draw Heatmap Inv',
             name: "DrawHeatmapInv",
-            srcRest: this.viewer.prefixUrl + `flip_rest.png`,
-            srcGroup: this.viewer.prefixUrl + `flip_grouphover.png`,
-            srcHover: this.viewer.prefixUrl + `flip_hover.png`,
-            srcDown: this.viewer.prefixUrl + `flip_pressed.png`,
+            srcRest: this.viewer.prefixUrl + `heatmap_inv_rest.png`,
+            srcGroup: this.viewer.prefixUrl + `heatmap_inv_grouphover.png`,
+            srcHover: this.viewer.prefixUrl + `heatmap_inv_hover.png`,
+            srcDown: this.viewer.prefixUrl + `heatmap_inv_pressed.png`,
             onClick: this.uiShowHeatmapInvToggle.bind(this),
         });
         this.viewer.buttons.buttons.push(element_heatmap_inv);
@@ -1343,64 +1350,64 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             new OpenSeadragon.Button({
                 tooltip: 'Save (v)',
                 name: "save_button",
-                srcRest: this.viewer.prefixUrl + `hdd.svg`,
-                srcGroup: this.viewer.prefixUrl + `hdd.svg`,
-                srcHover: this.viewer.prefixUrl + `hdd.svg`,
-                srcDown: this.viewer.prefixUrl + `hdd.svg`,
+                srcRest: this.viewer.prefixUrl + `save_rest.png`,
+                srcGroup: this.viewer.prefixUrl + `save_grouphover.png`,
+                srcHover: this.viewer.prefixUrl + `save_hover.png`,
+                srcDown: this.viewer.prefixUrl + `save_pressed.png`,
                 onClick: this.do_finishAnnotation.bind(this),
             }),
             new OpenSeadragon.Button({
                 tooltip: 'Undo (Ctrl + Z)',
                 name: "undo_button",
-                srcRest: this.viewer.prefixUrl + `arrow_counterclockwise.svg`,
-                srcGroup: this.viewer.prefixUrl + `arrow_counterclockwise.svg`,
-                srcHover: this.viewer.prefixUrl + `arrow_counterclockwise.svg`,
-                srcDown: this.viewer.prefixUrl + `arrow_counterclockwise.svg`,
+                srcRest: this.viewer.prefixUrl + `undo_rest.png`,
+                srcGroup: this.viewer.prefixUrl + `undo_grouphover.png`,
+                srcHover: this.viewer.prefixUrl + `undo_hover.png`,
+                srcDown: this.viewer.prefixUrl + `undo_pressed.png`,
                 onClick: this.undo.bind(this),
             }),
             new OpenSeadragon.Button({
                 tooltip: 'Verify',
                 name: "verify_annotation_button",
-                srcRest: this.viewer.prefixUrl + `check.svg`,
-                srcGroup: this.viewer.prefixUrl + `check.svg`,
-                srcHover: this.viewer.prefixUrl + `check.svg`,
-                srcDown: this.viewer.prefixUrl + `check.svg`,
+                srcRest: this.viewer.prefixUrl + `check_rest.png`,
+                srcGroup: this.viewer.prefixUrl + `check_grouphover.png`,
+                srcHover: this.viewer.prefixUrl + `check_hover.png`,
+                srcDown: this.viewer.prefixUrl + `check_pressed.png`,
                 onClick: this.verifyAnnotation.bind(this),
             }),
             new OpenSeadragon.Button({
                 tooltip: 'Delete (DEL, x)',
                 name: "delete_annotation_button",
-                srcRest: this.viewer.prefixUrl + `trash.svg`,
-                srcGroup: this.viewer.prefixUrl + `trash.svg`,
-                srcHover: this.viewer.prefixUrl + `trash.svg`,
-                srcDown: this.viewer.prefixUrl + `trash.svg`,
+                srcRest: this.viewer.prefixUrl + `trash_rest.png`,
+                srcGroup: this.viewer.prefixUrl + `trash_grouphover.png`,
+                srcHover: this.viewer.prefixUrl + `trash_hover.png`,
+                srcDown: this.viewer.prefixUrl + `trash_pressed.png`,
                 onClick: this.do_deleteAnnotation.bind(this),
             }),
             new OpenSeadragon.Button({
                 tooltip: 'Substract the slected objects area from all other objects ',
                 name: "NOT",
-                srcRest: this.viewer.prefixUrl + `subtract.svg`,
-                srcGroup: this.viewer.prefixUrl + `subtract.svg`,
-                srcHover: this.viewer.prefixUrl + `subtract.svg`,
-                srcDown: this.viewer.prefixUrl + `subtract.svg`,
+                srcRest: this.viewer.prefixUrl + `subtract_rest.png`,
+                srcGroup: this.viewer.prefixUrl + `subtract_rest.png`,
+                srcHover: this.viewer.prefixUrl + `subtract_hover.png`,
+                srcDown: this.viewer.prefixUrl + `subtract_pressed.png`,
                 onClick: this.tool.clickPolyOperation.bind(this),
             }),
             new OpenSeadragon.Button({
                 tooltip: 'Merge all polygon objects from the same class touching the selected object',
                 name: "UNION",
-                srcRest: this.viewer.prefixUrl + `union.svg`,
-                srcGroup: this.viewer.prefixUrl + `union.svg`,
-                srcHover: this.viewer.prefixUrl + `union.svg`,
-                srcDown: this.viewer.prefixUrl + `union.svg`,
+                srcRest: this.viewer.prefixUrl + `union_rest.png`,
+                srcGroup: this.viewer.prefixUrl + `union_rest.png`,
+                srcHover: this.viewer.prefixUrl + `union_hover.png`,
+                srcDown: this.viewer.prefixUrl + `union_pressed.png`,
                 onClick: this.tool.clickPolyOperation.bind(this),
             }),
             new OpenSeadragon.Button({
                 tooltip: 'Changes the class of all included objects to selected class if possible',
                 name: "HARMONIZE",
-                srcRest: this.viewer.prefixUrl + `basket.svg`,
-                srcGroup: this.viewer.prefixUrl + `basket.svg`,
-                srcHover: this.viewer.prefixUrl + `basket.svg`,
-                srcDown: this.viewer.prefixUrl + `basket.svg`,
+                srcRest: this.viewer.prefixUrl + `basket_rest.png`,
+                srcGroup: this.viewer.prefixUrl + `basket_rest.png`,
+                srcHover: this.viewer.prefixUrl + `basket_hover.png`,
+                srcDown: this.viewer.prefixUrl + `basket_pressed.png`,
                 onClick: this.tool.clickPolyOperation.bind(this),
             })
         ]
@@ -1408,28 +1415,28 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         this.operatorButtons = {}
         this.operatorButtons["SCISSOR"] = new OpenSeadragon.Button({tooltip: 'Draw a polygon to cut from the currently selected one (s)',
                                                         name: "SCISSOR",
-                                                        srcRest: this.viewer.prefixUrl + `scissors_base.svg`,
-                                                        srcGroup: this.viewer.prefixUrl + `scissors_base.svg`,
-                                                        srcHover: this.viewer.prefixUrl + `scissors_base.svg`,
-                                                        srcDown: this.viewer.prefixUrl + `scissors_active.svg`,
+                                                        srcRest: this.viewer.prefixUrl + `scissors_rest.png`,
+                                                        srcGroup: this.viewer.prefixUrl + `scissors_rest.png`,
+                                                        srcHover: this.viewer.prefixUrl + `scissors_hover.png`,
+                                                        srcDown: this.viewer.prefixUrl + `scissors_pressed.png`,
                                                         onClick: this.tool.activateSinglePolyOperation.bind(this),
                                                         })
 
         this.operatorButtons["GLUE"] = new OpenSeadragon.Button({   tooltip: 'Draw a polygon to gulue it to the currently selected one (g)',
                                                         name: "GLUE",
-                                                        srcRest: this.viewer.prefixUrl + `glue_base.svg`,
-                                                        srcGroup: this.viewer.prefixUrl + `glue_base.svg`,
-                                                        srcHover: this.viewer.prefixUrl + `glue_base.svg`,
-                                                        srcDown: this.viewer.prefixUrl + `glue_active.svg`,
+                                                        srcRest: this.viewer.prefixUrl + `glue_rest.png`,
+                                                        srcGroup: this.viewer.prefixUrl + `glue_rest.png`,
+                                                        srcHover: this.viewer.prefixUrl + `glue_hover.png`,
+                                                        srcDown: this.viewer.prefixUrl + `glue_pressed.png`,
                                                         onClick: this.tool.activateSinglePolyOperation.bind(this),
                                                         })
 
         this.operatorButtons["KNIFE"] = new OpenSeadragon.Button({   tooltip: 'Draw a line to cut through polygons (d)',
                                                         name: "KNIFE",
-                                                        srcRest: this.viewer.prefixUrl + `knife_base.svg`,
-                                                        srcGroup: this.viewer.prefixUrl + `knife_base.svg`,
-                                                        srcHover: this.viewer.prefixUrl + `knife_base.svg`,
-                                                        srcDown: this.viewer.prefixUrl + `knife_active.svg`,
+                                                        srcRest: this.viewer.prefixUrl + `knife_rest.png`,
+                                                        srcGroup: this.viewer.prefixUrl + `knife_rest.png`,
+                                                        srcHover: this.viewer.prefixUrl + `knife_hover.png`,
+                                                        srcDown: this.viewer.prefixUrl + `knife_pressed.png`,
                                                         onClick: this.tool.activateMultiPolyOperation.bind(this),
                                                         })
 

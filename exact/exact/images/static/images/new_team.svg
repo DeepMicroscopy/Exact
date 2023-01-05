@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="8.8918381mm"
+   height="8.8918381mm"
+   viewBox="0 0 8.891838 8.891838"
+   version="1.1"
+   id="svg31074"
+   inkscape:version="1.2.1 (9c6d41e, 2022-07-14)"
+   sodipodi:docname="new_team.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview31076"
+     pagecolor="#ffffff"
+     bordercolor="#999999"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:zoom="3.985886"
+     inkscape:cx="67.86446"
+     inkscape:cy="102.86295"
+     inkscape:window-width="2560"
+     inkscape:window-height="1310"
+     inkscape:window-x="1440"
+     inkscape:window-y="25"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs31071" />
+  <g
+     inkscape:label="Ebene 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-73.175721,-93.304353)">
+    <rect
+       style="fill:none;stroke:#cccccc;stroke-width:0.300001;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:2, 1;stroke-dashoffset:0"
+       id="rect31247"
+       width="5.6869898"
+       height="5.6869898"
+       x="74.778145"
+       y="94.906776" />
+    <g
+       id="g31620"
+       transform="matrix(0.17681083,0,0,0.17681083,61.570005,78.139676)"
+       style="fill:#ffffff;stroke:#000000;stroke-width:5.65575">
+      <path
+         style="fill:#ffffff;stroke:#000000;stroke-width:1.49642px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="M 85.033193,110.91286 H 96.535268"
+         id="path31251" />
+      <path
+         style="fill:#ffffff;stroke:#000000;stroke-width:1.49642px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="M 90.784231,116.6639 V 105.16182"
+         id="path31253" />
+    </g>
+  </g>
+</svg>
