@@ -47,20 +47,20 @@
 {% endblock additional_annotation_js %}
 {% block bodyblock %}
 
-<div class="container-fluid  h-100">
+<div class="container-fluid h-100" >
     <div class="row justify-content-center h-100">
-        <div class="row">
+        <div class="row h-100">
             <button type="button" class="btn btn-light" id="loadAnnotationMenu">
                 <image src="{% static 'images/LayouttextSidebarReverse.svg' %}"></image>
             </button>
         </div>
 
-        <div class="col-3" style="max-height: 90vh; overflow-y: auto" id="annotationMenu">
-            <div>
-                <div class="card">
+        <div class="col-3 h-100" style="overflow-y: hidden; padding:0px"  id="annotationMenu">
+            <div class="h-100" style="background-color: #fff;">
+                <div class="card" style="height:40vh">
                     <div class="card-header">
                         <a href="{% url 'images:view_imageset' selected_image.image_set.id %}">
-                            <h5 class="panel-title"><u>{{ selected_image.image_set.name }}</u></h5>
+                            <h5 class="panel-title">{{ selected_image.image_set.name }}</h5>
                         </a>
                     </div>
                     <div class="card-body">
@@ -137,12 +137,13 @@
                         </div>
                     </div>
                 </div>
-
-                <div class="card">
+            
+                <div class="card" style="height:calc(60vh - 75px)">
                     <div class="card-header">
                         <h5 id="active_image_name">{{ selected_image.name }}</h5>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body d-flex flex-column" >
+                        
                         {% csrf_token %}
 
                         <ul class="nav nav-tabs" id="statistics_tabs" role="tablist"
@@ -762,7 +763,7 @@
 
                         </div>
                     </div>
-                    <div class="card-footer">
+                    <div class="card-footer" style="height:60px">
                         <tr>
                             <div class="row">
                                 {% if show_advanced_options %}
@@ -831,18 +832,18 @@
         </div>
 
         <div class="col h-100" id="annotationImage">
-            <div style="width: 100%; display: table;">
+            <div style="width: 100%; display: table;color:#888">
                 <div style="display: table-row">
                     <div id="zoomSlider" style="width: 20vw; display: table-cell"></div>
-                    <div style="width: 5vw; display: table-cell"></div>
+                    <div style="width: 50vh; display: table-cell"></div>
                     <div id="overlaySlider" style="width: 20vw; display: table-cell"></div>
                 </div>
             </div>
              <!-- style="width: 25vw;" -->
             <div style="height: 85vh;">
-                <div class="seadragon-viewer" id="openseadragon_background"  style="position: absolute; height: 85vh; width: 100%">
+                <div class="seadragon-viewer" id="openseadragon_background"  style="position: absolute; height: 90vh; width: 100%">
                 </div>
-                <div class="seadragon-viewer" id="openseadragon1" style="position: absolute; height: 85vh; width: 100%">        
+                <div class="seadragon-viewer" id="openseadragon1" style="position: absolute; height: 90vh; width: 100%">        
                 </div>    
             </div>
             <div id="frameSlider" style="width: 35vw;"></div>
@@ -862,7 +863,7 @@
             </div>
         </div>
 
-        <div class="row">
+        <div class="row" style="width:20px">
             <button type="button" class="btn btn-light" id="loadImagesetThumbnails">
                 <image src="{% static 'images/LayoutTextSidebar.svg' %}"></image>
             </button>

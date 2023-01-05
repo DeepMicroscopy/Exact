@@ -17,32 +17,12 @@
 	<link href="{% static 'css/font-awesome.min.css' %}" rel="stylesheet">
 	
 	{% block selectorblock %}{% endblock %}
-	<nav class="navbar navbar-light bg-light fixed-top navbar-expand-md">
-		<a class="navbar-brand exact-logo" href="/images/">
-			<img src="{% static 'symbols/exact_small.png' %}" height="40px">
-		</a>
 
-		<div id="navbar" class="navbar-collapse collapse">
-			<ul class="nav navbar-nav ml-auto">
-				<li class="nav-item dropdown">
-					<a href="#" class="dropdown-toggle nav-link" data-toggle="dropdown" role="button"
-						aria-haspopup="true" aria-expanded="false" id="exactNavbarDropdown">
-						EXACT Label Server
-					</a>
-					<div class="dropdown-menu" aria-labelledby="exactNavbarDropdown">
-						<a href="https://github.com/ChristianMarzahl/exact" class="nav-link"> GitHub </a>
-						<a target="_blank" href="{% url 'base:problem' %}" class="nav-link"> Report an issue </a>
-						<a href="https://lme.tf.fau.de/person/marzahl/" class="nav-link"> About </a>
-						
-						{% load djversion_tags %}
-						{% project_version as VERSION %}
-						<textarea readonly cols="60" rows="6">
-							{{ VERSION }} 							
-						</textarea>
-					</div>
-				</li>
-			</ul>
-		</div>
+		
+	<nav class="navbar navbar-dark bg-dark fixed-top navbar-expand-md">
+		<a class="navbar-brand exact-logo" href="/images/">
+			<img src="{% static 'images/logo.svg' %}" height="40px">
+		</a>
 
 		<div id="navbar" class="navbar-collapse collapse">
 			<ul class="nav navbar-nav ml-auto">
