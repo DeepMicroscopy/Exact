@@ -20,7 +20,9 @@
                         <div class="col-sm-3">
                             <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist" aria-orientation="vertical">
                                 {% for team in userteams %}
-                                    {% if forloop.first %}
+                                    {% if forloop.first and not last_image_action and last_image_action.image.id is not None %}
+                                        <a class="nav-link active" id="v-pills-profile-tab" data-toggle="pill" href="#v-pills-{{team.id}}" role="tab" aria-controls="v-pills-{{team.id}}" aria-selected="false">{{team.name}}</a>
+                                    {% elif last_image_action.image.image_set.team.id == team.id %}
                                         <a class="nav-link active" id="v-pills-profile-tab" data-toggle="pill" href="#v-pills-{{team.id}}" role="tab" aria-controls="v-pills-{{team.id}}" aria-selected="false">{{team.name}}</a>
                                     {% else %}
                                         <a class="nav-link" id="v-pills-profile-tab" data-toggle="pill" href="#v-pills-{{team.id}}" role="tab" aria-controls="v-pills-{{team.id}}" aria-selected="false">{{team.name}}</a>
@@ -46,10 +48,12 @@
                         <div class="col-sm">
                             <div class="tab-content" id="v-pills-tabContent">
                                 {% for team in userteams %}
-                                {% if forloop.first %}
-                                <div class="tab-pane fade show active" id="v-pills-{{team.id}}" role="tabpanel" aria-labelledby="v-pills-{{team.id}}-tab">
+                                {% if forloop.first and not last_image_action and last_image_action.image.id is not None %}
+                                    <div class="tab-pane fade show active" id="v-pills-{{team.id}}" role="tabpanel" aria-labelledby="v-pills-{{team.id}}-tab">
+                                {% elif last_image_action.image.image_set.team.id == team.id %}
+                                    <div class="tab-pane fade show active" id="v-pills-{{team.id}}" role="tabpanel" aria-labelledby="v-pills-{{team.id}}-tab">
                                 {% else %}
-                                <div class="tab-pane fade" id="v-pills-{{team.id}}" role="tabpanel" aria-labelledby="v-pills-{{team.id}}-tab">
+                                    <div class="tab-pane fade" id="v-pills-{{team.id}}" role="tabpanel" aria-labelledby="v-pills-{{team.id}}-tab">
                                 {% endif %}
                                     <div class="card">
                                         <div class="card-body">
@@ -75,15 +79,15 @@
                                                     </div>
                                                 {% endfor %} 
                                                 <div class="card">
-                                                            <a href="#" id="newImagesetButton">
+                                                            <a href="#" id="newImagesetButton-{{team.id}}">
                                                             <img class="card-img-top" src="{% static 'images/new_imageset.svg' %}" alt="Create new imageset">
                                                         </a>
-                                                    <div class="card-body" id="newImageSetBody">
+                                                    <div class="card-body" id="newImageSetBody-{{team.id}}">
                                                         <h5 class="card-title" >
                                                                 Create new
                                                         </h5>                
                                                     </div>
-                                                    <div class="card-body" id="newImageSetBodyActive" style="display:none">
+                                                    <div class="card-body" id="newImageSetBodyActive-{{team.id}}" style="display:none">
                                                         <h5 class="card-title" >
                                                             <form method="post" action="{% url 'images:create_imageset' %}">
                                                                 {% csrf_token %}                                                                
@@ -92,7 +96,7 @@
                                                                     <input type="text" name="name" class="form-control" placeholder="Imageset name" aria-label="Imageset name" aria-describedby="button-addon2">
                                                                     <div class="input-group-append">
                                                                       <input class="btn btn-primary" type="submit" id="button-addon2" value="&#10003;"></input>
-                                                                      <button class="btn btn-danger" type="button" id="cancelbutton">&#10006;</button>
+                                                                      <button class="btn btn-danger" type="button" id="cancelbutton-{{team.id}}">&#10006;</button>
                                                                     </div>
                                                                   </div>                                                            
                                                             </form>
@@ -116,14 +120,16 @@
 
 <script>
     $('.dropdown-toggle').dropdown()
-    $('#newImagesetButton').on('click', function(){
-        $('#newImageSetBody').attr('style','display:none')
-        $('#newImageSetBodyActive').attr('style','')
+    {% for team in userteams %}
+        $('#newImagesetButton-{{team.id}}').on('click', function(){
+        $('#newImageSetBody-{{team.id}}').attr('style','display:none')
+        $('#newImageSetBodyActive-{{team.id}}').attr('style','')
     });
-    $('#cancelbutton').on('click', function(){
-        $('#newImageSetBody').attr('style','')
-        $('#newImageSetBodyActive').attr('style','display:none')
+    $('#cancelbutton-{{team.id}}').on('click', function(){
+        $('#newImageSetBody-{{team.id}}').attr('style','')
+        $('#newImageSetBodyActive-{{team.id}}').attr('style','display:none')
     });
+    {% endfor %}
     $('#newTeamButton').on('click', function(){
         $('#newTeamBody').attr('style','display:none')
         $('#newTeamBodyActive').attr('style','')
