@@ -24,6 +24,8 @@ class UI_User(models.Model):
 
     frontend = models.IntegerField(choices=Frontends.choices, default=1)
 
+    def __str__(self):
+        return 'UI properties of user '+str(self.user)
 
 # Add new users to teams if the ADD_USER_TO_TEAM is set
 @receiver([post_save], sender=User)

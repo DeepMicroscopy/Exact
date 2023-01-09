@@ -19,7 +19,7 @@ from exact.administration.forms import ProductCreationForm
 from exact.administration.models import Product
 from exact.images.models import ImageSet
 from exact.users.forms import TeamCreationForm, UserEditForm
-from .models import Team, User
+from .models import Team, UI_User, User
 from .serializers import TeamSerializer
 
 @login_required
@@ -272,6 +272,8 @@ def user(request, user_id):
             user.save()
 
         if (user.is_superuser) and request.POST['frontend']:
+            if not hasattr(user,'ui'):
+                user.ui = UI_User(user=user)
             user.ui.frontend = int(request.POST['frontend'])
             user.ui.save()
 
