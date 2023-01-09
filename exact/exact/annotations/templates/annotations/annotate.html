@@ -50,7 +50,7 @@
 <div class="container-fluid h-100" >
     <div class="row justify-content-center h-100">
         <div class="row h-100">
-            <button type="button" class="btn btn-light" id="loadAnnotationMenu">
+            <button type="button" class="btn" id="loadAnnotationMenu">
                 <image src="{% static 'images/LayouttextSidebarReverse.svg' %}"></image>
             </button>
         </div>
@@ -97,7 +97,7 @@
                                 </button>
                             </span>
                         </div>
-                        <br>
+                        
                         <div id="image_list" data-static-file="{% static '' %}" 
                                                 data-static_cdn={{USE_CDN_WSI}}
                                                 data-image_set_name="{{ selected_image.image_set.name }}">
@@ -831,7 +831,7 @@
             </div>
         </div>
 
-        <div class="col h-100" id="annotationImage">
+        <div class="col" style="width:1000px" id="annotationImage">
             <div style="width: 100%; display: table;color:#888">
                 <div style="display: table-row">
                     <div id="zoomSlider" style="width: 20vw; display: table-cell"></div>
@@ -841,9 +841,9 @@
             </div>
              <!-- style="width: 25vw;" -->
             <div style="height: 85vh;">
-                <div class="seadragon-viewer" id="openseadragon_background"  style="position: absolute; height: 90vh; width: 100%">
+                <div class="seadragon-viewer" id="openseadragon_background"  style="position: absolute; height: 90vh; width: 100vh">
                 </div>
-                <div class="seadragon-viewer" id="openseadragon1" style="position: absolute; height: 90vh; width: 100%">        
+                <div class="seadragon-viewer" id="openseadragon1" style="position: absolute; height: 85vh; width: 98%">        
                 </div>    
             </div>
             <div id="frameSlider" style="width: 35vw;"></div>
@@ -863,8 +863,8 @@
             </div>
         </div>
 
-        <div class="row" style="width:20px">
-            <button type="button" class="btn btn-light" id="loadImagesetThumbnails">
+        <div class="row" style="width:30px">
+            <button type="button" class="btn" id="loadImagesetThumbnails">
                 <image src="{% static 'images/LayoutTextSidebar.svg' %}"></image>
             </button>
         </div>
