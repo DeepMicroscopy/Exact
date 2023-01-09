@@ -152,14 +152,14 @@
                             <form id="fileupload" action="{% url 'images:upload_image' imageset.id %}" method="POST" enctype="multipart/form-data">
                                     {% csrf_token %}
                                 <div class="form-group inputDnD" id="inputDND">
-                                    <label class="sr-only" for="inputFiles[]">File Upload</label>
-                                    <input type="file" class="form-control-file text-primary font-weight-bold" id="inputFiles[]" accept="image/*" multiple onchange="" style="--bg-image:url({% static 'images/new_imageset.svg' %})" data-title="Drag and drop a file">
+                                    <label class="sr-only" for="inputFiles">File Upload</label>
+                                    <input type="file" class="form-control-file text-primary font-weight-bold" id="inputFiles" accept="image/*" multiple style="--bg-image:url({% static 'images/new_imageset.svg' %})" data-title="Drag and drop a file">
                                 </div>
                             </form>
                             <div class="card-body drop" id="uploadimage">
                             Upload
                             <script>
-                                var drop = document.getElementById("inputFiles[]");
+                                var drop = document.getElementById("inputFiles");
                                 drop.addEventListener("dragenter", change, false);
                                 drop.addEventListener("dragleave",change_back,false);
                                 drop.addEventListener("drop", change_back, false);
@@ -684,6 +684,8 @@
         autoUpload: true,
         uploadTemplateId: 'template-upload',
         filesContainer: ifile,
+        maxFileSize: 10000000000,
+        sequentialUploads: true, // solves the issues with high Image counts... hopefully.
         url: "{% url 'images:upload_image' imageset.id %}",
         formData: [
             {
@@ -696,8 +698,11 @@
             }],
         });
     });
+    var id = $('#inputFiles');
+    
+
   </script> 
 
-<script src="{% static 'jQuery-File-Upload/js/main.js' %}"></script>
+<script src="{% static 'jQuery-File-Upload/js/main_v2.js' %}"></script>
 
 {% endblock bodyblock%}
