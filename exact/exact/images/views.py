@@ -176,8 +176,9 @@ def index(request):
 
     last_image_action = LogImageAction.objects.filter(user=request.user).order_by('-time').first()
 
+    template = 'images/index_v2.html' if hasattr(request.user,'ui') and hasattr(request.user.ui,'frontend') and request.user.ui.frontend==2 else 'images/index.html'
 
-    return TemplateResponse(request, 'images/index.html', {
+    return TemplateResponse(request, template, {
         'last_image_action': last_image_action,
         'user': request.user,
         'team_creation_form': team_creation_form,
@@ -657,6 +658,7 @@ def view_imageset(request, image_set_id):
     annotation_types = AnnotationType.objects.filter(product__in=imageset.product_set.all(), active=True)
     
     user_teams = Team.objects.filter(members=request.user)
+
     imageset_edit_form = ImageSetEditForm(instance=imageset)
     imageset_edit_form.fields['main_annotation_type'].queryset = AnnotationType.objects\
         .filter(active=True, product__in=imageset.product_set.all()).order_by('product', 'sort_order')
@@ -666,13 +668,16 @@ def view_imageset(request, image_set_id):
         .filter(Q(team__in=request.user.team_set.all())|Q(public=True))
 
     all_products = Product.objects.filter(team=imageset.team).order_by('name')
-    return render(request, 'images/imageset.html', {
+    template = 'images/imageset_v2.html' if hasattr(request.user,'ui') and hasattr(request.user.ui,'frontend') and request.user.ui.frontend==2 else 'images/imageset.html'
+    return render(request, template, {
         'image_count': imageset.images.count(),
         'imageset': imageset,
         'real_image_number': imageset.images.filter(~Q(image_type=Image.ImageSourceTypes.SERVER_GENERATED)).count(),
+        'computer_generated_image_number' : imageset.images.filter(Q(image_type=Image.ImageSourceTypes.SERVER_GENERATED)).count(),
         'all_products': all_products,
         'annotation_types': annotation_types,
         'exports': exports,
+        'api': request.build_absolute_uri('/api/'),
         'filtered': filtered,
         'edit_form': imageset_edit_form,
         'imageset_perms': imageset.get_perms(request.user),

@@ -20,12 +20,15 @@ def base_data(request):
         unread_message_count = 0
         processing_queue = 0
 
+
+
     return {
         'IMPRINT_URL': settings.IMPRINT_URL,
         'USE_IMPRINT': settings.USE_IMPRINT,
         'IMPRINT_NAME': settings.IMPRINT_NAME,
         'TOOLS_ENABLED': settings.TOOLS_ENABLED,
         'my_teams': my_teams,
+        'frontend' : request.user.ui.frontend if hasattr(request.user,'ui') and hasattr(request.user.ui,'frontend') and request.user.ui.frontend else 1,
         'unread_message_count': unread_message_count,
         'processing_queue': processing_queue,
         'show_processing_panel' : show_processing_panel,

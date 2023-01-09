@@ -15,6 +15,16 @@ class User(AbstractUser):
     points = models.IntegerField(default=0)
 
 
+class UI_User(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="ui")
+
+    class Frontends(models.IntegerChoices):
+            Default = 1
+            Lightroom = 2
+
+    frontend = models.IntegerField(choices=Frontends.choices, default=1)
+
+
 # Add new users to teams if the ADD_USER_TO_TEAM is set
 @receiver([post_save], sender=User)
 def add_user_to_team_handler(sender, instance, **kwargs):
