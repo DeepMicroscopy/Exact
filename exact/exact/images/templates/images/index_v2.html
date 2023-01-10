@@ -67,7 +67,9 @@
                                                             </a>
                                                         {% endfor %}
                                                         {% if imageset.images.count == 0 %}
-                                                        <img class="card-img-top" src="{% static 'images/empty_imageset.svg' %}" alt="Create new imageset">
+                                                        <a href="{% url 'images:view_imageset' imageset.id%}">
+                                                            <img class="card-img-top" src="{% static 'images/empty_imageset.svg' %}" alt="Create new imageset">
+                                                            </a>
                                                         {% endif %}
                                                         <div class="card-body">
                                                             <h5 class="card-title">
