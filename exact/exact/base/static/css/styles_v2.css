@@ -251,6 +251,10 @@ body {
   overflow-y: scroll;
 }
 
+.card-body {
+  padding: 0px;
+}
+
 .card {
   text-align: center;
   color: #333;

@@ -49,15 +49,15 @@
 
 <div class="container-fluid h-100" >
     <div class="row justify-content-center h-100">
-        <div class="row h-100">
-            <button type="button" class="btn" id="loadAnnotationMenu">
-                <image src="{% static 'images/LayouttextSidebarReverse.svg' %}"></image>
+        <div class="row">
+            <button type="button" class="btn" id="loadAnnotationMenu" style="background: repeating-linear-gradient(-45deg, #2a2a2a, #4b444a 5px); cursor:w-resize; color:#ccc;width:20px;text-align: center; margin:0px; margin-right:20px; padding:0px">
+                &#10311;
             </button>
         </div>
 
-        <div class="col-3 h-100" style="overflow-y: hidden; padding:0px"  id="annotationMenu">
+        <div class="col-3" style="overflow-y: hidden; padding:0px"  id="annotationMenu">
             <div class="h-100" style="background-color: #fff;">
-                <div class="card" style="height:40vh">
+                <div class="card" style="height:40vh;overflow-y:scroll">
                     <div class="card-header">
                         <a href="{% url 'images:view_imageset' selected_image.image_set.id %}">
                             <h5 class="panel-title">{{ selected_image.image_set.name }}</h5>
@@ -98,7 +98,7 @@
                             </span>
                         </div>
                         
-                        <div id="image_list" data-static-file="{% static '' %}" 
+                        <div id="image_list" style="overflow:scroll" data-static-file="{% static '' %}" 
                                                 data-static_cdn={{USE_CDN_WSI}}
                                                 data-image_set_name="{{ selected_image.image_set.name }}">
                             {% for set_image in set_images %}
@@ -831,17 +831,17 @@
             </div>
         </div>
 
-        <div class="col" style="width:1000px" id="annotationImage">
+        <div class="col h-100" id="annotationImage">
             <div style="width: 100%; display: table;color:#888">
                 <div style="display: table-row">
                     <div id="zoomSlider" style="width: 20vw; display: table-cell"></div>
-                    <div style="width: 50vh; display: table-cell"></div>
+                    <div style="width: 5vw; display: table-cell"></div>
                     <div id="overlaySlider" style="width: 20vw; display: table-cell"></div>
                 </div>
             </div>
              <!-- style="width: 25vw;" -->
             <div style="height: 85vh;">
-                <div class="seadragon-viewer" id="openseadragon_background"  style="position: absolute; height: 90vh; width: 100vh">
+                <div class="seadragon-viewer" id="openseadragon_background"  style="position: absolute; height: 85vh; width: 98%">
                 </div>
                 <div class="seadragon-viewer" id="openseadragon1" style="position: absolute; height: 85vh; width: 98%">        
                 </div>    
@@ -854,7 +854,7 @@
                 {% for set_image in set_images %}
                 <div class="card" id="thumbnailCard_{{ set_image.id }}">
                     <a href="{% url 'annotations:annotate' set_image.id %}">
-                        <img class="card-img-top" id="imageThumbnail_{{ set_image.id }}" alt="Loading thumbnail"
+                        <img class="card-img-top" style="max-width: 80px" id="imageThumbnail_{{ set_image.id }}" alt="Loading thumbnail"
                             data-image_id="{{ set_image.id }}">
                     </a>
                 </div>
@@ -864,8 +864,8 @@
         </div>
 
         <div class="row" style="width:30px">
-            <button type="button" class="btn" id="loadImagesetThumbnails">
-                <image src="{% static 'images/LayoutTextSidebar.svg' %}"></image>
+            <button type="button" class="btn" id="loadImagesetThumbnails" style="background: repeating-linear-gradient(-45deg, #2a2a2a, #4b444a 5px); cursor:w-resize; color:#ccc;width:30px;text-align: center; margin:0px; margin-left:10px; padding:0px">
+                &#10311;
             </button>
         </div>
     </div>
