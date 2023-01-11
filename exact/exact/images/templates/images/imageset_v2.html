@@ -339,7 +339,7 @@
                                 <td id="products-with-delete" class="tag-container">
                                     {% for product in imageset.product_set.all %}
                                         <span class="label label-info" value="{{ product.id }}" id="product_{{ product.id }}">
-                                            <a href="{% url 'administration:product' product.id%}"> {{ product.name }}&nbsp;</a>
+                                            <a href="{% url 'administration:product' product.id %}"> {{ product.name }}&nbsp;</a>
                                             <span class="fa fa-remove product-delete" value={{ product.id }} data_id={{ product.id }}></span>
                                         </span>&#8203;
                                     {% endfor %}
@@ -651,7 +651,7 @@
         </div>
     </div>
 </div>
-<!--- <span id="image_set_id" class="hidden">{{ imageset.id }}</span> -->
+<span id="image_set_id" style="display:none">{{ imageset.id }}</span>
 <!-- The jQuery UI widget factory, can be omitted if jQuery UI is already included -->
 <script src="{% static 'jQuery-File-Upload/js/vendor/jquery.ui.widget.js' %}"></script>
 <!-- The Templates plugin is included to render the upload/download listings -->
