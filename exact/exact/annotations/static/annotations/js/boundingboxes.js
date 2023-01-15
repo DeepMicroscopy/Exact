@@ -905,7 +905,7 @@ class BoundingBoxes {
                 ellipse.strokeWidth = this.strokeWidth;
                 if (annotation.generated)
                 {
-                rect.dashArray = [4, 1];
+                    ellipse.dashArray = [4, 1];
                 }
                 ellipse.name = annotation.unique_identifier;
                 ellipse.fillColor = annotation.annotation_type.color_code
