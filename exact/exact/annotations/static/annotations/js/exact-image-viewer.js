@@ -156,6 +156,7 @@ class EXACTViewer {
             //visibilityRatio: 1,
             zoomPerScroll: 1.1,
             timeout: 120000,
+            showFullPageControl: false,
             sequenceMode: false,
             showReferenceStrip: false,
         };
