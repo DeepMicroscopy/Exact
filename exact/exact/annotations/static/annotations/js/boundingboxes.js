@@ -849,14 +849,13 @@ class BoundingBoxes {
                 {
                     rect.data.area_hit_test = false;
                     rect.locked = true;
-                    rect.visible = true;
                 }
                 else
                 {
                     rect.data.area_hit_test = annotation.annotation_type.area_hit_test;
                     rect.locked = checkbox.indeterminate;
-                    rect.visible = checkbox.checked; // only non-generated annotations are hidden by clicking the annotation type
                 }
+                rect.visible = checkbox.checked; // only non-generated annotations are hidden by clicking the annotation type
 
 
                 this.group.addChild(rect);
@@ -886,14 +885,13 @@ class BoundingBoxes {
                 {
                     rect.data.area_hit_test = false;
                     rect.locked = true;
-                    rect.visible = true;
                 }
                 else
                 {
                     rect.data.area_hit_test = annotation.annotation_type.area_hit_test;
                     rect.locked = checkbox.indeterminate;
-                    rect.visible = checkbox.checked;
                 }
+                rect.visible = checkbox.checked;
 
                 this.group.addChild(rect);
                 break;
@@ -923,14 +921,13 @@ class BoundingBoxes {
                 {
                     ellipse.data.area_hit_test = false;
                     ellipse.locked = true;
-                    ellipse.visible = true;
                 }
                 else
                 {
                     ellipse.data.area_hit_test = annotation.annotation_type.area_hit_test;
                     ellipse.locked = checkbox.indeterminate;
-                    ellipse.visible = checkbox.checked;                    
                 }
+                ellipse.visible = checkbox.checked;                    
 
                 this.group.addChild(ellipse);
                 break;
@@ -957,14 +954,13 @@ class BoundingBoxes {
                 {
                     line.data.area_hit_test = false;
                     line.locked = true;
-                    line.visible = checkbox.checked;
                 }
                 else
                 {
                     line.data.area_hit_test = annotation.annotation_type.area_hit_test;
                     line.locked = checkbox.indeterminate;
-                    line.visible = true;
                 }
+                line.visible = checkbox.checked;
 
 
                 this.group.addChild(line);
@@ -1001,14 +997,13 @@ class BoundingBoxes {
                 {
                     poly.data.area_hit_test = false;
                     poly.locked = true;
-                    poly.visible = true;
                 }
                 else
                 {
                     poly.data.area_hit_test = annotation.annotation_type.area_hit_test;
                     poly.locked = checkbox.indeterminate;
-                    poly.visible = checkbox.checked;
                 }
+                poly.visible = checkbox.checked;
 
                 this.group.addChild(poly);
                 break;
