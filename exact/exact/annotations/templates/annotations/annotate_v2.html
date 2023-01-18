@@ -47,18 +47,18 @@
 {% endblock additional_annotation_js %}
 {% block bodyblock %}
 
-<div class="container-fluid h-100" >
-    <div class="row justify-content-center h-100">
-        <div class="row">
-            <button type="button" class="btn" id="loadAnnotationMenu" style="background: repeating-linear-gradient(-45deg, #2a2a2a, #4b444a 5px); cursor:w-resize; color:#ccc;width:20px;text-align: center; margin:0px; margin-right:20px; padding:0px">
+<div class="container-fluid" style="padding-top:0px;position:absolute;top:60px;height: calc(100vh - 60px)">
+    <div class="row justify-content-center" style="padding: 0px;height: calc(100vh - 60px); overflow-y:hidden">
+        <div class="row" style="height: calc(100vh - 60px)">
+            <button type="button" class="btn" id="loadAnnotationMenu" style="background: repeating-linear-gradient(-45deg, #2a2a2a, #4b444a 5px); cursor:w-resize; color:#ccc;width:20px;text-align: center; margin:0px; margin-right:20px; padding:0px; height: calc(100vh - 60px)">
                 &#10311;
             </button>
         </div>
 
-        <div class="col-3" style="overflow-y: hidden; padding:0px"  id="annotationMenu">
-            <div class="h-100" style="background-color: #fff;">
+        <div class="col-3" style="overflow-y: hidden; padding:0px"  id="annotationMenu" style="height:calc(100vh - 60px)">
+            <div style="background-color: #fff;" style="height: calc(100vh - 60px)" >
                 <div class="card" style="height:40vh;overflow-y:scroll">
-                    <div class="card-header">
+                    <div class="card-header" style="padding:0px">
                         <a href="{% url 'images:view_imageset' selected_image.image_set.id %}">
                             <h5 class="panel-title">{{ selected_image.image_set.name }}</h5>
                         </a>
@@ -114,40 +114,40 @@
                     <div class="card-footer">
                         <div class="d-flex justify-content-between"
                             style="overflow-x: auto; flex-wrap: nowrap; overflow-y: hidden">
-                            <button type="button" class="annotate_button btn btn-primary" id="back_button">
-                                <image src="{% static 'images/backspace.svg' %}"> (q)
+                            <button type="button" class="annotate_button btn btn-primary" id="back_button"  data-toggle="tooltip" title="back (q)">
+                                <image src="{% static 'images/backspace.svg' %}">
                             </button>
 
                             {% if 'delete_images' in imageset_perms and not imageset_lock %}
-                            <button type="button" class="btn btn-danger" id="deleteImageButton">
+                            <button type="button" class="btn btn-danger" id="deleteImageButton"  data-toggle="tooltip" title="delete image">
                                 <image src="{% static 'images/trash2.svg' %}">
                             </button>
                             {% endif %}
 
                             {% if 'annotate' in imageset_perms %}
-                            <button type="button" class="annotate_button btn btn-success" id="verify_image_button">
-                                <image src="{% static 'images/CheckAll.svg' %}"> Verify (f)
+                            <button type="button" class="annotate_button btn btn-success" id="verify_image_button" data-toggle="tooltip" title="verify (f)">
+                                <image src="{% static 'images/CheckAll.svg' %}">
                             </button>
                             {% endif %}
 
 
-                            <button type="button" class="annotate_button btn btn-primary" id="skip_button">
-                                <image src="{% static 'images/BackspaceReverse.svg' %}"> (e)
+                            <button type="button" class="annotate_button btn btn-primary" id="skip_button" data-toggle="tooltip" title="reverse (e)">
+                                <image src="{% static 'images/BackspaceReverse.svg' %}">
                             </button>
                         </div>
                     </div>
                 </div>
             
-                <div class="card" style="height:calc(60vh - 75px)">
-                    <div class="card-header">
+                <div class="card" style="height:calc(60vh - 70px)">
+                    <div class="card-header" style="padding:0px">
                         <h5 id="active_image_name">{{ selected_image.name }}</h5>
                     </div>
-                    <div class="card-body d-flex flex-column" >
+                    <div class="card-body flex-column bottomcard">
                         
                         {% csrf_token %}
 
                         <ul class="nav nav-tabs" id="statistics_tabs" role="tablist"
-                            style="overflow-x: auto; flex-wrap: nowrap; overflow-y: hidden">
+                            style="overflow-x: auto; flex-wrap: nowrap; overflow-y: hidden;height:35px">
 
                             {% if annotation_types %}
                             <li class="nav-item">
@@ -391,7 +391,7 @@
 <label class="btn btn-outline-secondary btn-sm" for="vis-plugin-{{plugin.id}}"><input type="checkbox" class="btn-check btn-sm" id="vis-plugin-{{plugin.id}}" checked autocomplete="off" data-plugin_id={{plugin.id}}
      data-plugin_resultentries="[]"><image src="{% static 'images/eye_fill_small.svg' %}"></label><br>
 
-                                    </td><td class="text-left"><a data-toggle="collapse" href="#collapsePlugin-{{plugin.id}}" aria-expanded="false" aria-controls="collapseExample">{{plugin.name}}</a></td></tr>
+                                    </td><td class="text-left"><a data-toggle="collapse" href="#collapsePlugin-{{plugin.id}}" aria-expanded="false" aria-controls="collapseExample">{{plugin.name}}</a></td><td><input type="range" id='alpha-plugin-{{plugin.id}}' min="1" max="100" value="{% if plugin.result  %}{{plugin.result.default_alpha|floatformat:"0"}}{%  else  %}100{% endif %}" class="visslider" data-plugin_id={{plugin.id}}></td></tr>
                                     <tr><td></td><td>
                                     <div class="collapse text-left" id="collapsePlugin-{{plugin.id}}">
                                     </div></td></tr>
@@ -849,7 +849,7 @@
             <div id="frameSlider" style="width: 35vw;"></div>
         </div>
 
-        <div class="col-3 collapse" style="max-height: 90vh; overflow-y: auto" id="imagesetThumbnails">
+        <div class="col-3 collapse" style="height: calc(100vh - 60px); overflow-y: auto" id="imagesetThumbnails">
             <div class="card-columns">
                 {% for set_image in set_images %}
                 <div class="card" id="thumbnailCard_{{ set_image.id }}">
@@ -871,34 +871,4 @@
     </div>
 </div>
 
-
-<!--
-{% if 'delete_images' in imageset_perms and not imageset_lock %}
-<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
-                        aria-hidden="true">&times;</span></button>
-                <h4 class="modal-title" id="myModalLabel">
-                    Delete the image
-                </h4>
-            </div>
-            <div class="modal-body">
-                Do you really want to permanently delete this image from the imageset?
-            </div>
-            <div class="modal-footer">
-                <form method="post" action="{% url 'images:delete_images' selected_image.id %}">
-                    {% csrf_token %}
-                    <input id="next-image-id" type="hidden" name="next-image-id" value="{{ set_images.first.id }}">
-                    <div class="input-group" role="group" aria-label="delete-image">
-                        <button type="submit" class="btn btn-danger">Yes</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
--->
 {% endblock %}

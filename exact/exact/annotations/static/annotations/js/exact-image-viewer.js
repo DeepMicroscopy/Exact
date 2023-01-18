@@ -753,8 +753,32 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                     this.userData.tool.updateAnnotationVisibility(anno.unique_identifier, event.Checked);
                 }
             }
+            for (let bitmap of Object.values(this.userData.exact_sync.bitmaps))
+            {
+                if (event.Checked)
+                {
+                    $('#overlay-bitmap-'+bitmap.id).css("opacity", "100%")
+
+                }
+                else
+                {
+                    $('#overlay-bitmap-'+bitmap.id).css("opacity", "0%")
+                }
+            }
         }, this);
 
+
+        viewer.addHandler("processing_changePluginResultAlpha", function (event) {
+            for (let anno of Object.values(this.userData.exact_sync.annotations)) {
+                if ((anno.generated == true) && (event.ResultEntries.indexOf(anno.pluginresultentry.id)>=0)) {
+                    this.userData.tool.updateAnnotationAlpha(anno.unique_identifier, event.Value/100);
+                }
+            }
+            for (let bitmap of Object.values(this.userData.exact_sync.bitmaps))
+            {
+                $('#overlay-bitmap-'+bitmap.id).css("opacity", event.Value+'%')
+            }
+        }, this);        
 
         viewer.addHandler("search_ShowAnnotation", function (event) {
 
@@ -1271,6 +1295,50 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
     }
 
     initToolEventHandler(viewer) {
+
+        viewer.addHandler('sync_drawOverlays', function (event) {
+
+            // Convert from viewport coordinates to image coordinates.
+            if (event.bitmaps.length>0)
+            {
+                // clear all overlays
+                viewer.clearOverlays()
+            }
+
+            for (let bitmap of event.bitmaps) {
+                if ( (!(bitmap.location_rect.hasOwnProperty('x'))) || (!(bitmap.location_rect.hasOwnProperty('y')))
+                    || (!(bitmap.location_rect.hasOwnProperty('width'))) || (!(bitmap.location_rect.hasOwnProperty('height'))) )
+                    {
+                        $.notify('Malformed location rectangle.', { position: "bottom center", className: "error" });
+                        continue;
+                    }
+                let rect = new OpenSeadragon.Rect(bitmap.location_rect.x, bitmap.location_rect.y, bitmap.location_rect.width, bitmap.location_rect.height)
+                var rect_viewport = viewer.viewport.imageToViewportRectangle(rect);
+
+                if (bitmap.channels==3) {
+                    // RGB overlay
+                    var elt = document.createElement("div");
+                    elt.id = "overlay-bitmap-"+bitmap.id;
+                    elt.className = "bmpoverlay";
+
+                    var alpha = 100;
+                    if ($('#alpha-plugin-'+bitmap.pluginresultentry.pluginresult.plugin).length>0)
+                    {
+                      alpha = parseInt($('#alpha-plugin-'+bitmap.pluginresultentry.pluginresult.plugin)[0].value)
+                    }
+
+                    elt.innerHTML = '<img src="'+bitmap.bitmap+'" class="bmpoverlay" style="width=100%;height:100%">'
+                    elt.style = "opacity:"+alpha+"%"                    
+
+                    viewer.addOverlay({
+                        element: elt,
+                        location: rect_viewport
+                    }); 
+                }
+                
+            }
+            
+        }, this);
 
         viewer.addHandler('sync_drawAnnotations', function (event) {
             event.userData.tool.drawExistingAnnotations(event.annotations, event.userData.drawAnnotations);

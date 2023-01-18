@@ -15,6 +15,23 @@
   width: auto;
 }
 
+input[type="range"]::-moz-range-progress {
+  background-color: green;
+  height: 1em;
+}
+
+ul.nav-tabs{
+  height: 30px;
+}
+
+.invisible{
+  display:none
+}
+
+div.bottomcard{
+  overflow-y: scroll;
+}
+
 .js_feedback {
   position: fixed;
   top: 5px;
@@ -26,6 +43,12 @@
   text-align: center;
 
   z-index: 10000;
+}
+
+.bmpoverlay {
+  margin: 0px;
+  padding: 0px;
+  border: 0px;
 }
 
 div.wrapper{
@@ -197,6 +220,12 @@ input.form-control[type="checkbox"] {
 .autocomplete-group strong {
   display: block;
   border-bottom: 1px solid #000;
+}
+
+.navbar-dark
+{
+  padding:5px;
+  height: 60px;
 }
 
 .nav-tabs

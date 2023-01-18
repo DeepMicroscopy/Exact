@@ -124,8 +124,6 @@ class EXACTProcessingSync {
         this.plugins = {};
         this.viewer = viewer;
 
-        this.API_1_PLUGINS_URL = include_server_subdir(`/api/v1/processing/plugins/?imageset_from_image_id=${image_id}&expand=result,result.entries`);
-        this.loadPluginInformation(this.API_1_PLUGINS_URL, this);
         this.API_1_PROCESSING__BASE_URL = include_server_subdir(`/api/v1/processing/pluginjobs/?image_id=${image_id}&expand=result,result.entries`);
         this.loadPluginJobInformation(this.API_1_PROCESSING__BASE_URL, this);
 
@@ -546,6 +544,7 @@ class EXACTAnnotationSync {
         this.user_id = user_id;
         this.viewer = viewer; // just for notification reasons remove later!
         this.annotations = {};
+        this.bitmaps = {};
         this.annotationTypes = annotationTypes;
         this.imageId = imageId;
         this.gHeaders = gHeaders;
@@ -558,8 +557,12 @@ class EXACTAnnotationSync {
 
         this.API_ANNOTATIONS_BASE_URL = include_server_subdir('/annotations/api/');
         this.API_1_ANNOTATIONS_BASE_URL = include_server_subdir('/api/v1/annotations/');
-        this.API_1_PLUGINRESULTS_BASE_URL = include_server_subdir('/api/v1/processing/pluginresultannotations/');
+        this.API_1_PLUGINRESULTS_ANNOTATIONS_URL = include_server_subdir('/api/v1/processing/pluginresultannotations/');
+        this.API_1_PLUGINRESULTS_BITMAPS_URL = include_server_subdir('/api/v1/processing/pluginresultbitmaps/');
+
         this.API_1_ANNOTATION_EXPAND = 'expand=user,last_editor,uploaded_media_files&';
+        this.API_1_ANNOTATIONRESULT_EXPAND = 'expand=pluginresultentry.pluginresult&';
+        this.API_1_BITMAPS_EXPAND = 'expand=pluginresultentry.pluginresult&'
         this.API_1_FILTERS = 'image=' + imageId + '&'
         this.API_1_FILTERS += 'deleted=0&'
         if (this.collaboration_type === 1) {
@@ -618,8 +621,11 @@ class EXACTAnnotationSync {
 
             let url = `${this.API_1_ANNOTATIONS_BASE_URL}annotations/?limit=${limit}&${filter}${this.API_1_ANNOTATION_EXPAND}${this.API_1_ANNOTATION_FIELDS}`
             this.loadAnnotations(url, this.API_1_ANNOTATIONS_BASE_URL, imageId, this, annotation_type)
-            let url_pluginresults = `${this.API_1_PLUGINRESULTS_BASE_URL}?limit=${limit}&${filter}${this.API_1_ANNOTATION_EXPAND}${this.API_1_PLUGINRESULTS_FIELDS}`
-            this.loadAnnotations(url_pluginresults, this.API_1_PLUGINRESULTS_BASE_URL, imageId, this, annotation_type)
+            let url_pluginresultsannos = `${this.API_1_PLUGINRESULTS_ANNOTATIONS_URL}?limit=${limit}&${filter}${this.API_1_ANNOTATIONRESULT_EXPAND}${this.API_1_PLUGINRESULTS_FIELDS}`
+            this.loadAnnotations(url_pluginresultsannos, this.API_1_PLUGINRESULTS_ANNOTATIONS_URL, imageId, this, annotation_type)
+            let url_pluginresultsbitmaps = `${this.API_1_PLUGINRESULTS_BITMAPS_URL}?limit=${limit}&${this.API_1_FILTERS}${this.API_1_BITMAPS_EXPAND}`
+            this.loadAnnotationBitmaps(url_pluginresultsbitmaps, this.API_1_PLUGINRESULTS_ANNOTATIONS_URL, imageId, this, annotation_type)
+
 
         }
     }
@@ -637,6 +643,34 @@ class EXACTAnnotationSync {
 
             loadAnnotations(url, baseurl, this.imageId, this, annotation_type)
         }
+    }
+
+    loadAnnotationBitmaps(url, baseurl, imageId, context, annotation_type = undefined) {
+        $.ajax(url, {
+            type: 'GET', headers: context.gHeaders, dataType: 'json',
+            success: function (data) {
+
+                for (let bitmap of data.results) {
+                    // set annoation type
+                    context.bitmaps[bitmap.id] = bitmap;
+                }
+
+                if (data.results.length > 0) {
+                    let bitmaps = data.results;
+                    context.viewer.raiseEvent('sync_drawOverlays', { bitmaps });
+                }
+
+                
+                
+            },
+            error: function (request, status, error) {
+                if (request.responseText !== undefined) {
+                    $.notify(request.responseText, { position: "bottom center", className: "error" });
+                } else {
+                    $.notify(`Server ERR_CONNECTION_TIMED_OUT`, { position: "bottom center", className: "error" });
+                }
+            }
+        });
     }
 
     loadAnnotations(url, baseurl, imageId, context, annotation_type = undefined) {
@@ -917,8 +951,10 @@ class EXACTGlobalAnnotationSync extends EXACTAnnotationSync {
         
         let url = `${this.API_1_ANNOTATIONS_BASE_URL}annotations/?limit=${limit}&${filter}${this.API_1_ANNOTATION_EXPAND}${this.API_1_ANNOTATION_FIELDS}`
         this.loadAnnotations(url, this.API_1_ANNOTATIONS_BASE_URL, imageId, this)
-        let url_pluginresults = `${this.API_1_PLUGINRESULTS_BASE_URL}?limit=${limit}&${filter}${this.API_1_ANNOTATION_EXPAND}${this.API_1_PLUGINRESULTS_FIELDS}`
-        this.loadAnnotations(url_pluginresults, this.API_1_PLUGINRESULTS_BASE_URL, imageId, this)
+        let url_pluginresults = `${this.API_1_PLUGINRESULTS_ANNOTATIONS_URL}?limit=${limit}&${filter}${this.API_1_ANNOTATIONRESULT_EXPAND}${this.API_1_PLUGINRESULTS_FIELDS}`
+        this.loadAnnotations(url_pluginresults, this.API_1_PLUGINRESULTS_ANNOTATIONS_URL, imageId, this)
+        let url_pluginresultsbitmaps = `${this.API_1_PLUGINRESULTS_BITMAPS_URL}?limit=${limit}&${this.API_1_FILTERS}${this.API_1_BITMAPS_EXPAND}`
+        this.loadAnnotationBitmaps(url_pluginresultsbitmaps, this.API_1_PLUGINRESULTS_ANNOTATIONS_URL, imageId, this)
 }
 
     loadAnnotations(url, baseurl, imageId, context, annotation_type = undefined) {
@@ -1121,8 +1157,10 @@ class EXACTGlobalFrameAnnotationSync extends EXACTGlobalAnnotationSync {
 
             let url = `${this.API_1_ANNOTATIONS_BASE_URL}annotations/?limit=${limit}&${filter}${this.API_1_ANNOTATION_EXPAND}${this.API_1_ANNOTATION_FIELDS}`
             this.loadAnnotations(url, this.API_1_ANNOTATIONS_BASE_URL, imageId, this, annotation_type)
-            let url_pluginresults = `${this.API_1_PLUGINRESULTS_BASE_URL}?limit=${limit}&${filter}${this.API_1_ANNOTATION_EXPAND}${this.API_1_PLUGINRESULTS_FIELDS}`
-            this.loadAnnotations(url2, this.API_1_PLUGINRESULTS_BASE_URL, imageId, this, )
+            let url_pluginresults = `${this.API_1_PLUGINRESULTS_ANNOTATIONS_URL}?limit=${limit}&${filter}${this.API_1_ANNOTATIONRESULT_EXPAND}${this.API_1_PLUGINRESULTS_FIELDS}`
+            this.loadAnnotations(url_pluginresults, this.API_1_PLUGINRESULTS_ANNOTATIONS_URL, imageId, this, )
+            let url_pluginresultsbitmaps = `${this.API_1_PLUGINRESULTS_BITMAPS_URL}?limit=${limit}&${this.API_1_FILTERS}${this.API_1_BITMAPS_EXPAND}`
+            this.loadAnnotationBitmaps(url_pluginresultsbitmaps, this.API_1_PLUGINRESULTS_ANNOTATIONS_URL, imageId, this, annotation_type)
             }
     }
 
