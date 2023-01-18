@@ -98,7 +98,7 @@
                             </span>
                         </div>
                         
-                        <div id="image_list" style="overflow:scroll" data-static-file="{% static '' %}" 
+                        <div id="image_list" style="overflow:scroll; height:40vh" data-static-file="{% static '' %}" 
                                                 data-static_cdn={{USE_CDN_WSI}}
                                                 data-image_set_name="{{ selected_image.image_set.name }}">
                             {% for set_image in set_images %}
