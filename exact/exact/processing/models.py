@@ -130,6 +130,10 @@ class PluginResultBitmap(models.Model):
     pluginresultentry = models.ForeignKey(
         PluginResultEntry, on_delete=models.CASCADE, related_name='bitmap_results')
 
+    @property
+    def plugin(self):
+        return self.pluginresultentry.pluginresult.plugin.id
+
 class PluginResultAnnotation(models.Model):
     id = models.AutoField(primary_key=True)
     annotation_type = models.ForeignKey(AnnotationType, on_delete=models.PROTECT)
@@ -145,6 +149,10 @@ class PluginResultAnnotation(models.Model):
     @property
     def generated(self):
         return True
+
+    @property
+    def plugin(self):
+        return self.pluginresultentry.pluginresult.plugin.id
 
     @property
     def user(self):

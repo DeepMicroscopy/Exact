@@ -563,8 +563,8 @@ class EXACTAnnotationSync {
         this.API_1_PLUGINRESULTS_BITMAPS_URL = include_server_subdir('/api/v1/processing/pluginresultbitmaps/');
 
         this.API_1_ANNOTATION_EXPAND = 'expand=user,last_editor,uploaded_media_files&';
-        this.API_1_ANNOTATIONRESULT_EXPAND = 'expand=pluginresultentry.pluginresult&';
-        this.API_1_BITMAPS_EXPAND = 'expand=pluginresultentry.pluginresult&'
+        this.API_1_ANNOTATIONRESULT_EXPAND = '';
+        this.API_1_BITMAPS_EXPAND = ''
         this.API_1_FILTERS = 'image=' + imageId + '&'
         this.API_1_FILTERS += 'deleted=0&'
         if (this.collaboration_type === 1) {
@@ -572,7 +572,7 @@ class EXACTAnnotationSync {
         }
 
         this.API_1_ANNOTATION_FIELDS = 'fields=image,annotation_type,id,vector,generated,deleted,description,verified_by_user,uploaded_media_files,unique_identifier,remark,user.id,user.username,last_editor.id,last_editor.username&';
-        this.API_1_PLUGINRESULTS_FIELDS = 'fields=image,annotation_type,id,vector,generated,description,unique_identifier,pluginresultentry&';
+        this.API_1_PLUGINRESULTS_FIELDS = 'fields=image,annotation_type,id,vector,generated,plugin,description,unique_identifier,pluginresultentry&';
 
         this.initLoadAnnotations(annotationTypes, imageId)
         this.refreshAnnotationsFromServer = setInterval(this.refreshAnnotations(this), this.upDateFromServerInterval, this);

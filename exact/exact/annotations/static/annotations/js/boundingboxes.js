@@ -839,9 +839,9 @@ class BoundingBoxes {
                 if (annotation.generated)
                 {
                 rect.dashArray = [4, 2];
-                if ($('#alpha-plugin-'+annotation.pluginresultentry.pluginresult.plugin).length>0)
+                if ($('#alpha-plugin-'+annotation.plugin).length>0)
                 {
-                  alpha = parseInt($('#alpha-plugin-'+annotation.pluginresultentry.pluginresult.plugin)[0].value)/100
+                  alpha = parseInt($('#alpha-plugin-'+annotation.plugin)[0].value)/100
                 }
                 }
                 
@@ -896,9 +896,9 @@ class BoundingBoxes {
                 {
                     rect.data.area_hit_test = false;
                     rect.locked = true;
-                    if ($('#alpha-plugin-'+annotation.pluginresultentry.pluginresult.plugin).length>0)
+                    if ($('#alpha-plugin-'+annotation.plugin).length>0)
                     {
-                      alpha = parseInt($('#alpha-plugin-'+annotation.pluginresultentry.pluginresult.plugin)[0].value)/100
+                      alpha = parseInt($('#alpha-plugin-'+annotation.plugin)[0].value)/100
                     }
                 }
                 else
@@ -937,9 +937,9 @@ class BoundingBoxes {
                 {
                     ellipse.data.area_hit_test = false;
                     ellipse.locked = true;
-                    if ($('#alpha-plugin-'+annotation.pluginresultentry.pluginresult.plugin).length>0)
+                    if ($('#alpha-plugin-'+annotation.plugin).length>0)
                     {
-                      alpha = parseInt($('#alpha-plugin-'+annotation.pluginresultentry.pluginresult.plugin)[0].value)/100
+                      alpha = parseInt($('#alpha-plugin-'+annotation.plugin)[0].value)/100
                     }
                 }
                 else
@@ -976,9 +976,9 @@ class BoundingBoxes {
                 {
                     line.data.area_hit_test = false;
                     line.locked = true;
-                    if ($('#alpha-plugin-'+annotation.pluginresultentry.pluginresult.plugin).length>0)
+                    if ($('#alpha-plugin-'+annotation.plugin).length>0)
                     {
-                      alpha = parseInt($('#alpha-plugin-'+annotation.pluginresultentry.pluginresult.plugin)[0].value)/100
+                      alpha = parseInt($('#alpha-plugin-'+annotation.plugin)[0].value)/100
                     }
                 }
                 else
@@ -1009,9 +1009,9 @@ class BoundingBoxes {
                 if (annotation.generated)
                 {
                 poly.dashArray = [4, 1];
-                if ($('#alpha-plugin-'+annotation.pluginresultentry.pluginresult.plugin).length>0)
+                if ($('#alpha-plugin-'+annotation.plugin).length>0)
                 {
-                  alpha = parseInt($('#alpha-plugin-'+annotation.pluginresultentry.pluginresult.plugin)[0].value)/100
+                  alpha = parseInt($('#alpha-plugin-'+annotation.plugin)[0].value)/100
                 }
                 }
                 poly.strokeColor.alpha=alpha

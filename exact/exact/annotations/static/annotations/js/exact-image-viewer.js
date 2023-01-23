@@ -770,7 +770,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
         viewer.addHandler("processing_changePluginResultAlpha", function (event) {
             for (let anno of Object.values(this.userData.exact_sync.annotations)) {
-                if ((anno.generated == true) && (event.ResultEntries.indexOf(anno.pluginresultentry.id)>=0)) {
+                if ((anno.generated == true) && (event.ResultEntries.indexOf(anno.pluginresultentry)>=0)) {
                     this.userData.tool.updateAnnotationAlpha(anno.unique_identifier, event.Value/100);
                 }
             }
@@ -1322,9 +1322,9 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                     elt.className = "bmpoverlay";
 
                     var alpha = 100;
-                    if ($('#alpha-plugin-'+bitmap.pluginresultentry.pluginresult.plugin).length>0)
+                    if ($('#alpha-plugin-'+bitmap.plugin).length>0)
                     {
-                      alpha = parseInt($('#alpha-plugin-'+bitmap.pluginresultentry.pluginresult.plugin)[0].value)
+                      alpha = parseInt($('#alpha-plugin-'+bitmap.plugin)[0].value)
                     }
 
                     elt.innerHTML = '<img src="'+bitmap.bitmap+'" class="bmpoverlay" style="width=100%;height:100%">'
