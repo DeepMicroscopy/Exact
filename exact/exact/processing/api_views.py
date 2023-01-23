@@ -102,10 +102,13 @@ class PluginResultAnnotationViewSet(viewsets.ModelViewSet):
         the user as determined by the username portion of the URL.
         """
         image_id = self.request.query_params.get('image')
+        annotation_type = self.request.query_params.get('annotation_type')
+        objects = models.PluginResultAnnotation.objects.all()
         if image_id is not None:
-            return models.PluginResultAnnotation.objects.filter(image__id=image_id)
-        else:
-            return models.PluginResultAnnotation.objects.all().order_by('-id')
+            objects = objects.filter(image__id=image_id)
+        if annotation_type is not None:
+            objects = objects.filter(annotation_type=annotation_type)
+        return objects.order_by('-id')
 
 
 class PluginResultBitmapViewSet(viewsets.ModelViewSet):
