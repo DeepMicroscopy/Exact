@@ -681,8 +681,15 @@ class EXACTViewerWithoutAnnotations extends EXACTViewer {
             super(server_url, options, imageInformation, headers, user_id);
 
             this.processingTool = new ProcessingTool(this.viewer, this.imageId);
-    }
 
+            // EXACT sync is necessary for retrieving processing results of 
+            this.exact_sync = this.createSyncModules({}, this.imageId, headers, this.viewer, user_id, 0);
+        }
+
+    createSyncModules(annotationTypes, imageId, headers, viewer, user_id, collaboration_type) {
+        return new EXACTAnnotationSync(annotationTypes, imageId, headers, viewer, user_id, collaboration_type)
+    }
+    
 }
 
 class EXACTViewerLocalAnnotations extends EXACTViewer {
