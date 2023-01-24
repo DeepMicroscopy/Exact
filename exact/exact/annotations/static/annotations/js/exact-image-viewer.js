@@ -682,9 +682,57 @@ class EXACTViewerWithoutAnnotations extends EXACTViewer {
 
             this.processingTool = new ProcessingTool(this.viewer, this.imageId);
 
+            this.initToolEventHandler(this.viewer);
+
             // EXACT sync is necessary for retrieving processing results of 
             this.exact_sync = this.createSyncModules({}, this.imageId, headers, this.viewer, user_id, 0);
         }
+    initToolEventHandler(viewer) {
+
+        viewer.addHandler('sync_drawOverlays', function (event) {
+
+            // Convert from viewport coordinates to image coordinates.
+            if (event.bitmaps.length>0)
+            {
+                // clear all overlays
+                viewer.clearOverlays()
+            }
+
+            for (let bitmap of event.bitmaps) {
+                if ( (!(bitmap.location_rect.hasOwnProperty('x'))) || (!(bitmap.location_rect.hasOwnProperty('y')))
+                    || (!(bitmap.location_rect.hasOwnProperty('width'))) || (!(bitmap.location_rect.hasOwnProperty('height'))) )
+                    {
+                        $.notify('Malformed location rectangle.', { position: "bottom center", className: "error" });
+                        continue;
+                    }
+                let rect = new OpenSeadragon.Rect(bitmap.location_rect.x, bitmap.location_rect.y, bitmap.location_rect.width, bitmap.location_rect.height)
+                var rect_viewport = viewer.viewport.imageToViewportRectangle(rect);
+
+                if (bitmap.channels==3) {
+                    // RGB overlay
+                    var elt = document.createElement("div");
+                    elt.id = "overlay-bitmap-"+bitmap.id;
+                    elt.className = "bmpoverlay";
+
+                    var alpha = 100;
+                    if ($('#alpha-plugin-'+bitmap.plugin).length>0)
+                    {
+                        alpha = parseInt($('#alpha-plugin-'+bitmap.plugin)[0].value)
+                    }
+
+                    elt.innerHTML = '<img src="'+bitmap.bitmap+'" class="bmpoverlay" style="width=100%;height:100%">'
+                    elt.style = "opacity:"+alpha+"%"                    
+
+                    viewer.addOverlay({
+                        element: elt,
+                        location: rect_viewport
+                    }); 
+                }
+                
+            }
+            
+        }, this);
+    }
 
     createSyncModules(annotationTypes, imageId, headers, viewer, user_id, collaboration_type) {
         return new EXACTAnnotationSync(annotationTypes, imageId, headers, viewer, user_id, collaboration_type)
