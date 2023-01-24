@@ -344,8 +344,11 @@ button.nav-link {
   visibility: hidden;
   cursor: pointer;
   margin: 0 auto;
-  background-color: #c61c23;
+  background-color: #ffffff;
 }
+
+
+
 .inputDnD .form-control-file:before {
   content: "";
   background-image: var(--bg-image);
@@ -359,6 +362,21 @@ button.nav-link {
   visibility: visible;
   overflow: hidden;
 }
+
+@supports (-moz-appearance:none)
+  {
+    .inputDnD .form-control-file {
+      visibility: visible;
+      background-image: var(--bg-image);
+    }
+    .form-control-file::file-selector-button
+    {
+      visibility: hidden;
+    }
+
+  }
+
+
 .inputDnD .form-control-file:hover:before {
   background-color: #EFF2AA;
 }
