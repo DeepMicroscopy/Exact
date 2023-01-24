@@ -368,6 +368,7 @@ button.nav-link {
     .inputDnD .form-control-file {
       visibility: visible;
       background-image: var(--bg-image);
+      background-repeat: no-repeat;
     }
     .form-control-file::file-selector-button
     {
