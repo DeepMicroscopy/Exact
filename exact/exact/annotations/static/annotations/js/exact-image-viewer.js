@@ -138,7 +138,7 @@ class EXACTViewer {
             }
         } else {
             // create viewer without the option to handle annotations
-            return new EXACTViewer(server_url, options, imageInformation, headers, user_id);
+            return new EXACTViewerWithoutAnnotations(server_url, options, imageInformation, headers, user_id);
         }
     }
 
@@ -673,6 +673,16 @@ class EXACTViewer {
 
         this.viewer.viewport.fitBoundsWithConstraints(vpRect);
     }
+}
+
+class EXACTViewerWithoutAnnotations extends EXACTViewer {
+    constructor(server_url, options, imageInformation, collaboration_type, annotationTypes,
+        headers, user_id, drawAnnotations = true, strokeWidth = 5) {
+            super(server_url, options, imageInformation, headers, user_id);
+
+            this.processingTool = new ProcessingTool(this.viewer, this.imageId);
+    }
+
 }
 
 class EXACTViewerLocalAnnotations extends EXACTViewer {
