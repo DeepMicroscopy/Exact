@@ -625,12 +625,12 @@ class EXACTAnnotationSync {
             this.loadAnnotations(url, this.API_1_ANNOTATIONS_BASE_URL, imageId, this, annotation_type)
             let url_pluginresultsannos = `${this.API_1_PLUGINRESULTS_ANNOTATIONS_URL}?limit=${limit}&${filter}${this.API_1_ANNOTATIONRESULT_EXPAND}${this.API_1_PLUGINRESULTS_FIELDS}`
             this.loadAnnotations(url_pluginresultsannos, this.API_1_PLUGINRESULTS_ANNOTATIONS_URL, imageId, this, annotation_type)
-            let url_pluginresultsbitmaps = `${this.API_1_PLUGINRESULTS_BITMAPS_URL}?limit=${limit}&${this.API_1_FILTERS}${this.API_1_BITMAPS_EXPAND}`
-            this.loadAnnotationBitmaps(url_pluginresultsbitmaps, this.API_1_PLUGINRESULTS_ANNOTATIONS_URL, imageId, this, annotation_type)
 
 
         }
-    }
+        let url_pluginresultsbitmaps = `${this.API_1_PLUGINRESULTS_BITMAPS_URL}?limit=${limit}&${this.API_1_FILTERS}${this.API_1_BITMAPS_EXPAND}`
+        this.loadAnnotationBitmaps(url_pluginresultsbitmaps, this.API_1_PLUGINRESULTS_ANNOTATIONS_URL, imageId, this)
+}
 
     stopLoadAnnotationsCache() {
         this.interruptLoading = true;
@@ -647,7 +647,7 @@ class EXACTAnnotationSync {
         }
     }
 
-    loadAnnotationBitmaps(url, baseurl, imageId, context, annotation_type = undefined) {
+    loadAnnotationBitmaps(url, baseurl, imageId, context) {
         $.ajax(url, {
             type: 'GET', headers: context.gHeaders, dataType: 'json',
             success: function (data) {
@@ -1161,9 +1161,9 @@ class EXACTGlobalFrameAnnotationSync extends EXACTGlobalAnnotationSync {
             this.loadAnnotations(url, this.API_1_ANNOTATIONS_BASE_URL, imageId, this, annotation_type)
             let url_pluginresults = `${this.API_1_PLUGINRESULTS_ANNOTATIONS_URL}?limit=${limit}&${filter}${this.API_1_ANNOTATIONRESULT_EXPAND}${this.API_1_PLUGINRESULTS_FIELDS}`
             this.loadAnnotations(url_pluginresults, this.API_1_PLUGINRESULTS_ANNOTATIONS_URL, imageId, this, )
-            let url_pluginresultsbitmaps = `${this.API_1_PLUGINRESULTS_BITMAPS_URL}?limit=${limit}&${this.API_1_FILTERS}${this.API_1_BITMAPS_EXPAND}`
-            this.loadAnnotationBitmaps(url_pluginresultsbitmaps, this.API_1_PLUGINRESULTS_ANNOTATIONS_URL, imageId, this, annotation_type)
             }
+        let url_pluginresultsbitmaps = `${this.API_1_PLUGINRESULTS_BITMAPS_URL}?limit=${limit}&${this.API_1_FILTERS}${this.API_1_BITMAPS_EXPAND}`
+        this.loadAnnotationBitmaps(url_pluginresultsbitmaps, this.API_1_PLUGINRESULTS_ANNOTATIONS_URL, imageId, this)
     }
 
     loadAnnotations(url, baseurl, imageId, context, annotation_type = undefined) {
