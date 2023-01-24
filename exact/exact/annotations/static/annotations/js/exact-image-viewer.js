@@ -341,6 +341,40 @@ class EXACTViewer {
 
         }, this);
 
+        viewer.addHandler("processing_togglePluginResultVisibility", function (event) {
+            for (let anno of Object.values(this.userData.exact_sync.annotations)) {
+                if ((anno.generated == true) && (event.ResultEntries.indexOf(anno.pluginresultentry)>=0)) {
+                    this.userData.tool.updateAnnotationVisibility(anno.unique_identifier, event.Checked);
+                }
+            }
+            for (let bitmap of Object.values(this.userData.exact_sync.bitmaps))
+            {
+                if (event.Checked)
+                {
+                    $('#overlay-bitmap-'+bitmap.id).css("opacity", "100%")
+
+                }
+                else
+                {
+                    $('#overlay-bitmap-'+bitmap.id).css("opacity", "0%")
+                }
+            }
+        }, this);
+
+
+        viewer.addHandler("processing_changePluginResultAlpha", function (event) {
+            for (let anno of Object.values(this.userData.exact_sync.annotations)) {
+                if ((anno.generated == true) && (event.ResultEntries.indexOf(anno.pluginresultentry)>=0)) {
+                    this.userData.tool.updateAnnotationAlpha(anno.unique_identifier, event.Value/100);
+                }
+            }
+            for (let bitmap of Object.values(this.userData.exact_sync.bitmaps))
+            {
+                $('#overlay-bitmap-'+bitmap.id).css("opacity", event.Value+'%')
+            }
+        }, this);        
+
+
         viewer.addHandler("viewCoordinates", function (event) {
 
             var coordinates = event.coordinates;
@@ -812,38 +846,6 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             }
         }, this);
 
-        viewer.addHandler("processing_togglePluginResultVisibility", function (event) {
-            for (let anno of Object.values(this.userData.exact_sync.annotations)) {
-                if ((anno.generated == true) && (event.ResultEntries.indexOf(anno.pluginresultentry)>=0)) {
-                    this.userData.tool.updateAnnotationVisibility(anno.unique_identifier, event.Checked);
-                }
-            }
-            for (let bitmap of Object.values(this.userData.exact_sync.bitmaps))
-            {
-                if (event.Checked)
-                {
-                    $('#overlay-bitmap-'+bitmap.id).css("opacity", "100%")
-
-                }
-                else
-                {
-                    $('#overlay-bitmap-'+bitmap.id).css("opacity", "0%")
-                }
-            }
-        }, this);
-
-
-        viewer.addHandler("processing_changePluginResultAlpha", function (event) {
-            for (let anno of Object.values(this.userData.exact_sync.annotations)) {
-                if ((anno.generated == true) && (event.ResultEntries.indexOf(anno.pluginresultentry)>=0)) {
-                    this.userData.tool.updateAnnotationAlpha(anno.unique_identifier, event.Value/100);
-                }
-            }
-            for (let bitmap of Object.values(this.userData.exact_sync.bitmaps))
-            {
-                $('#overlay-bitmap-'+bitmap.id).css("opacity", event.Value+'%')
-            }
-        }, this);        
 
         viewer.addHandler("search_ShowAnnotation", function (event) {
 
