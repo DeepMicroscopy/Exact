@@ -676,8 +676,8 @@ class EXACTViewer {
 }
 
 class EXACTViewerWithoutAnnotations extends EXACTViewer {
-    constructor(server_url, options, imageInformation, collaboration_type, annotationTypes,
-        headers, user_id, drawAnnotations = true, strokeWidth = 5) {
+    constructor(server_url, options, imageInformation, headers, user_id) {
+
             super(server_url, options, imageInformation, headers, user_id);
 
             this.processingTool = new ProcessingTool(this.viewer, this.imageId);
