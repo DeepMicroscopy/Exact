@@ -16,6 +16,7 @@ from django.template.response import TemplateResponse
 from django.utils.translation import ugettext_lazy as _
 from django.core.cache import caches
 from json import JSONDecodeError
+from io import BytesIO
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import ParseError
 from rest_framework.response import Response
@@ -223,6 +224,7 @@ def upload_image(request, imageset_id):
                 with open(os.path.join(imageset.root_path(), zipname), 'wb') as out:
                     for chunk in f.chunks():
                         out.write(chunk)
+                        
                 # unpack zip-file
                 zip_ref = zipfile.ZipFile(os.path.join(imageset.root_path(), zipname), 'r')
                 zip_ref.extractall(os.path.join(imageset.root_path()))
@@ -596,11 +598,24 @@ def download_image_api(request, image_id) -> Response:
     file_path = Path(settings.IMAGE_PATH) / image.path()
     if original_image is not None and 'True' == original_image:
         file_path =  Path(image.original_path())
+    
+    if file_path.suffix.upper() == '.MRXS': # MRXS files need to be zipped before
+        # strip the suffix
+        folder_path = file_path.with_suffix('')
+        content = BytesIO()
 
-    response = FileResponse(open(str(file_path), 'rb'), content_type='application/zip')
+        with zipfile.ZipFile(content, 'w') as f:
+                for filename in os.listdir(str(folder_path)):
+                    f.write(os.path.join(str(folder_path), filename), os.path.join(folder_path.parts[-1],filename))
+                f.write(str(file_path), file_path.parts[-1])
 
-    response['Content-Length'] = os.path.getsize(file_path)
-    response['Content-Disposition'] = "attachment; filename={}".format(file_path.name)
+        response = HttpResponse(content.getvalue(), content_type='application/zip')
+        response['Content-Disposition'] = "attachment; filename={}".format(file_path.name+'.zip')
+    else:
+        response = FileResponse(open(str(file_path), 'rb'), content_type='application/zip')
+
+        response['Content-Length'] = os.path.getsize(file_path)
+        response['Content-Disposition'] = "attachment; filename={}".format(file_path.name)
 
     return response
 
