@@ -43,7 +43,17 @@ class ProcessingTool {
                     entries.push(entry.id)
                 }
                 $('#vis-plugin-' + job.plugin).attr('data-plugin_resultentries',JSON.stringify(entries))
+                $('#alpha-plugin-' + job.plugin).attr('data-plugin_resultentries',JSON.stringify(entries))
                 $('#vis-plugin-' + job.plugin).attr('data-plugin_id',job.plugin)
+                var sliderValue;
+                if ($('#alpha-plugin-'+ job.plugin).length>0)
+                {
+                 sliderValue = $('#alpha-plugin-'+ job.plugin)[0].value;
+                }
+                else
+                {
+                 sliderValue = 50;
+                }
                 let txt = '';
                 for (let resultentry of job.result.entries)
                 {
@@ -64,6 +74,9 @@ class ProcessingTool {
                     txt += '<br/>';
                 }
                 $('#collapsePlugin-' + job.plugin).html(txt)
+                $('#alpha-plugin-' + job.plugin).change(this.togglePluginResultAlpha.bind(this)); 
+                $('#alpha-plugin-' + job.plugin).on('input', this.togglePluginResultAlpha.bind(this)); 
+
             }
             else
             {
@@ -77,6 +90,16 @@ class ProcessingTool {
 
     }
 
+
+    togglePluginResultAlpha(event) {
+
+        let plugin_id = parseInt(event.target.dataset.plugin_id);
+        let pluginresult_entries = event.target.dataset.plugin_resultentries.replace(',]', ']')
+        pluginresult_entries = JSON.parse(pluginresult_entries);
+        let value = parseInt(event.currentTarget.value);
+
+        this.viewer.raiseEvent('processing_changePluginResultAlpha', { "Plugin": plugin_id, "ResultEntries": pluginresult_entries, "Value": value });
+    }
 
 
     togglePluginResultVisibility(event) {
@@ -93,7 +116,10 @@ class ProcessingTool {
     destroy() { 
 
         for (let job of Object.values(this.processing_sync.results)) {
+                $('#alpha-plugin-' + job.plugin).off("change");
+                $('#alpha-plugin-' + job.plugin).off("input");
                 $('#vis-plugin-' + job.plugin).off("change");
+
                 $('#compl-'+job.plugin).attr("style","display:none");
                 $('#processing-'+job.plugin).attr("style","display:none");
                 $('#process-'+job.plugin).attr("style","");

@@ -1,0 +1,146 @@
+{% extends 'base/base.html' %} {% load static %} {% load widget_tweaks %} {% block taggerimports %}
+<script type="text/javascript" src="{% static 'scripts/jquery-3.2.1.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'scripts/bootstrap.bundle.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/openseadragon.min.js' %}"></script>
+
+
+{% endblock taggerimports %} 
+ {% block bodyblock %}
+
+
+<div class="container-fluid h-100 text-bg-dark" style="padding-top:20px">
+    <div class="row justify-content-center h-100">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                </div>
+                <div class="card-body">
+                    <div class="row">
+
+                        <div class="col-sm-3">
+                            <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+                                {% for team in userteams %}
+                                    {% if forloop.first and not last_image_action and last_image_action.image.id is not None %}
+                                        <a class="nav-link active" id="v-pills-profile-tab" data-toggle="pill" href="#v-pills-{{team.id}}" role="tab" aria-controls="v-pills-{{team.id}}" aria-selected="false">{{team.name}}</a>
+                                    {% elif last_image_action.image.image_set.team.id == team.id %}
+                                        <a class="nav-link active" id="v-pills-profile-tab" data-toggle="pill" href="#v-pills-{{team.id}}" role="tab" aria-controls="v-pills-{{team.id}}" aria-selected="false">{{team.name}}</a>
+                                    {% else %}
+                                        <a class="nav-link" id="v-pills-profile-tab" data-toggle="pill" href="#v-pills-{{team.id}}" role="tab" aria-controls="v-pills-{{team.id}}" aria-selected="false">{{team.name}}</a>
+                                    {% endif %}
+                                {% endfor %}
+                                    <div id="newTeamBodyActive" style="display:none">
+                                        <form method="post" action="{% url 'users:create_team' %}">
+                                            {% csrf_token %}                                                                
+                                            <div class="input-group mb-3">
+                                                <input type="text" name="name" class="form-control" placeholder="Team name" aria-label="Team name" aria-describedby="button-addon2">
+                                                <div class="input-group-append">
+                                                  <input class="btn btn-primary" type="submit" id="button-addon2" value="&#10003;"></input>
+                                                  <button class="btn btn-danger" type="button" id="cancelTeambutton">&#10006;</button>
+                                                </div>
+                                              </div>                                                            
+                                        </form>
+                                    </div>
+                                    <div id="newTeamBody">
+                                    <a href="#" class="nav-link" id="newTeamButton"><img src="{% static 'images/new_team.svg' %}">New Team</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm">
+                            <div class="tab-content" id="v-pills-tabContent">
+                                {% for team in userteams %}
+                                {% if forloop.first and not last_image_action and last_image_action.image.id is not None %}
+                                    <div class="tab-pane fade show active" id="v-pills-{{team.id}}" role="tabpanel" aria-labelledby="v-pills-{{team.id}}-tab">
+                                {% elif last_image_action.image.image_set.team.id == team.id %}
+                                    <div class="tab-pane fade show active" id="v-pills-{{team.id}}" role="tabpanel" aria-labelledby="v-pills-{{team.id}}-tab">
+                                {% else %}
+                                    <div class="tab-pane fade" id="v-pills-{{team.id}}" role="tabpanel" aria-labelledby="v-pills-{{team.id}}-tab">
+                                {% endif %}
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <div class="row">
+                                                {% for imageset in team.image_sets.all|dictsort:"name" %}                    
+                                                    <div class="card imagecard">
+                                                        {% for image in imageset.images.all|slice:":1" %}
+                                                            <a href="{% url 'images:view_imageset' imageset.id%}">
+                                                                <img class="card-img-top" src="/api/v1/images/images/{{image.id}}/thumbnail/"
+                                                                    alt="Thumbnail {{image.name}} not found!" data-imageid="{{ image.id }}">
+                                                            </a>
+                                                        {% endfor %}
+                                                        {% if imageset.images.count == 0 %}
+                                                        <a href="{% url 'images:view_imageset' imageset.id%}">
+                                                            <img class="card-img-top" src="{% static 'images/empty_imageset.svg' %}" alt="Create new imageset">
+                                                            </a>
+                                                        {% endif %}
+                                                        <div class="card-body">
+                                                            <h5 class="card-title">
+                                                                <a href="{% url 'images:view_imageset' imageset.id%}">
+                                                                    {{ imageset.name }} <br> ({{ imageset.image_count }} images) {{ imageset.prio_symbol | safe }}
+                                                                </a>
+                                                            </h5>                
+                                                        </div>
+                                                    </div>
+                                                {% endfor %} 
+                                                <div class="card imagecard">
+                                                            <a href="#" id="newImagesetButton-{{team.id}}">
+                                                            <img class="card-img-top" src="{% static 'images/new_imageset.svg' %}" alt="Create new imageset">
+                                                        </a>
+                                                    <div class="card-body" id="newImageSetBody-{{team.id}}">
+                                                        <h5 class="card-title" >
+                                                                New imageset
+                                                        </h5>                
+                                                    </div>
+                                                    <div class="card-body" id="newImageSetBodyActive-{{team.id}}" style="display:none">
+                                                        <h5 class="card-title" >
+                                                            <form method="post" action="{% url 'images:create_imageset' %}">
+                                                                {% csrf_token %}                                                                
+                                                                <div class="input-group mb-3">
+                                                                    <input type="hidden" name="team" value="{{team.id}}">
+                                                                    <input type="text" name="name" class="form-control" placeholder="Imageset name" aria-label="Imageset name" aria-describedby="button-addon2">
+                                                                    <div class="input-group-append">
+                                                                      <input class="btn btn-primary" type="submit" id="button-addon2" value="&#10003;"></input>
+                                                                      <button class="btn btn-danger" type="button" id="cancelbutton-{{team.id}}">&#10006;</button>
+                                                                    </div>
+                                                                  </div>                                                            
+                                                            </form>
+                                                        </h5>                
+                                                    </div>
+                                                </div>
+                                        </div>    
+                                        </div> 
+                                    </div> 
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+      </div>
+</div>
+
+<script>
+    $('.dropdown-toggle').dropdown()
+    {% for team in userteams %}
+        $('#newImagesetButton-{{team.id}}').on('click', function(){
+        $('#newImageSetBody-{{team.id}}').attr('style','display:none')
+        $('#newImageSetBodyActive-{{team.id}}').attr('style','')
+    });
+    $('#cancelbutton-{{team.id}}').on('click', function(){
+        $('#newImageSetBody-{{team.id}}').attr('style','')
+        $('#newImageSetBodyActive-{{team.id}}').attr('style','display:none')
+    });
+    {% endfor %}
+    $('#newTeamButton').on('click', function(){
+        $('#newTeamBody').attr('style','display:none')
+        $('#newTeamBodyActive').attr('style','')
+    });
+    $('#cancelTeambutton').on('click', function(){
+        $('#newTeamBody').attr('style','')
+        $('#newTeamBodyActive').attr('style','display:none')
+    });
+
+</script>
+
+{% endblock %}

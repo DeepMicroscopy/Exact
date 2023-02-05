@@ -89,6 +89,7 @@ class PluginResult(models.Model):
     )
     created_time = models.DateTimeField(default=datetime.now)
     completed_time = models.DateTimeField(default=datetime.now)
+    default_alpha = models.FloatField(default=1.0)
     image = models.ForeignKey(Image, on_delete=models.CASCADE, related_name="pluginResults")
 
     def __str__(self):
@@ -121,12 +122,17 @@ class PluginResultBitmap(models.Model):
     default_threshold = models.FloatField(default=0) # default threshold
     default_alpha = models.FloatField(default=1) # default alpha channel (opacity)
     channels = models.IntegerField(default=1) # RGB=3 channels, heatmap = 1 channel
-    transformation_matrix = models.JSONField(null=True)
-    meta_data = models.JSONField(null=True)
+    location_rect = models.JSONField(null=True, default='{ "x": 0,"y": 0,"w": 10000,"h": 10000 }') # location of the image, in original image coordinates, including width and height
+    frame = models.IntegerField(default=1) # frame (in multi-frame objects)
+    meta_data = models.JSONField(null=True, blank=True)
     image = models.ForeignKey(Image, on_delete=models.CASCADE)
     bitmap=models.FileField(upload_to=plugin_bitmap_directory)
     pluginresultentry = models.ForeignKey(
         PluginResultEntry, on_delete=models.CASCADE, related_name='bitmap_results')
+
+    @property
+    def plugin(self):
+        return self.pluginresultentry.pluginresult.plugin.id
 
 class PluginResultAnnotation(models.Model):
     id = models.AutoField(primary_key=True)
@@ -143,6 +149,10 @@ class PluginResultAnnotation(models.Model):
     @property
     def generated(self):
         return True
+
+    @property
+    def plugin(self):
+        return self.pluginresultentry.pluginresult.plugin.id
 
     @property
     def user(self):

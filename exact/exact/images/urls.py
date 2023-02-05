@@ -9,7 +9,7 @@ urlpatterns = [
     url(r'^api/list_imagesets/$', views.api_index, name='Index (REST API)'),
     url(r'^image/delete/(\d+)/$', views.delete_images, name='delete_images'),
     url(r'^api/image/delete/(\d+)/$', views.delete_images_api, name='delete images (API)'),
-    url(r'^api/image/download/(\d+)/$', views.download_image_api, name='download images (API)'),
+    url(r'^api/image/download/(\d+)/$', views.download_image_api, name='download_api'),
     url(r'^image/copy/(\d+)/(\d+)/$', views.copy_image, name='copy_image'),
 
     url(r'^api/image/opened/(\d+)/$', views.image_opened, name='image_opened'),

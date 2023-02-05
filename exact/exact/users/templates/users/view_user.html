@@ -1,11 +1,69 @@
 {% extends 'base/base.html' %}
+{% load i18n %}
+{% load widget_tweaks %}
 {% block bodyblock %}
 
 <div class="card" style="text-align: left;">
     <div class="card-header">
-        <h3>{{ user.username }}  ({{ user.points }} Points)</h3>
+        <h3>User profile ({{ user.username }})</h3>
     </div>
-    <div class="card-body">
+    
+    {% if not passwordmatching %}
+    <div class="alert alert-warning">Passwords mismatch</div>
+    
+    {% endif %}
+    {% if info %}
+    <div class="alert alert-info">{{info}}</div>
+    {% endif %}
+
+    <form class="login" method="POST" action="{% url 'users:user' user.id %}">
+        {% csrf_token %}
+        <table class="table table-striped">
+            <tr>
+                <td><label for="id_firstname">First Name</label></td>
+                <td><input type="text" id="id_firstname" name="first_name" value="{{user.first_name}}"></td>
+            </tr>
+            <tr>
+                <td><label for="id_lastname">Last Name</label></td>
+                <td><input type="text" id="id_lastname" name="last_name" value="{{user.last_name}}"></td>
+            </tr>
+            <tr>
+                <td><label for="id_email">Email <address></address></label></td>
+                <td><input type="text" id="id_email" name="email" value="{{user.email}}"></td>
+            </tr>
+            <tr>
+                <td><label for="id_password">New Password</label></td>
+                <td><input type="password" id="id_password" name="password1"></td>
+            </tr>
+            <tr>
+                <td><label for="id_password2">New Password (repeat)</label></td>
+                <td><input type="password" id="id_password2" name="password2"></td>
+            </tr>
+            {% if user.is_superuser %}
+            <tr>
+                <td>
+                    <label for="id_frontend">User Interface</label>
+                </td>
+                <td>
+                    <select id="id_frontend" name="frontend" class="form-control">
+                                            
+                        <option value=1 {% if frontend == 1 %}selected {% endif %}
+                            class="bold">default</option>
+                    
+                        <option value=2 {% if frontend == 2 %}selected {% endif %}
+                            class="bold">Lightroom</option>
+                    
+                </select>
+                            </td>
+            </tr>
+            {% endif %}
+
+        </table>
+        <center>
+        <input type="submit" value="{% trans 'Save' %}" class="btn btn-primary" />
+    </center>
+    </form>
+        <hr>
         <h4>Teams:</h4>
         <ul>
             {% for team in teams %}

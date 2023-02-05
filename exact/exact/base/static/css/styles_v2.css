@@ -1,0 +1,396 @@
+.content{
+  padding-top: 70px;
+  background-color: #252129;
+  overflow-y:scroll;
+}
+
+
+.checkbox{
+  border-radius: 3px;
+  border-color: silver;
+  border-style: solid;
+  border-width: thin;
+  text-align: left;
+  font-size: 15px;
+  width: auto;
+}
+
+input[type="range"]::-moz-range-progress {
+  background-color: green;
+  height: 1em;
+}
+
+ul.nav-tabs{
+  height: 30px;
+}
+
+.invisible{
+  display:none
+}
+
+div.bottomcard{
+  overflow-y: scroll;
+}
+
+.js_feedback {
+  position: fixed;
+  top: 5px;
+  left: 0;
+  right: 0;
+  width: 50em;
+  margin: auto;
+
+  text-align: center;
+
+  z-index: 10000;
+}
+
+.bmpoverlay {
+  margin: 0px;
+  padding: 0px;
+  border: 0px;
+}
+
+div.wrapper{
+  position: relative;
+}
+
+div.panel-heading {
+  word-wrap:break-word;
+  color: #CCC;
+}
+
+div.card-header {
+  word-wrap:break-word;
+}
+
+#image_list, #imageGrid {
+  max-height : calc(40vh - 140px);
+  overflow-y: scroll;
+}
+
+#statistics_tabs_content {
+  overflow-y: scroll;
+}
+
+
+#annotation_type_select {
+  width: 100%;
+}
+
+div.annotation{
+  border-radius: 5px;
+  border-color: silver;
+  border-style: solid;
+  border-width: thin;
+  padding: 5px;
+  margin-top: 5px;
+}
+
+#additional_feature_table{
+  width: 90%;
+}
+
+a.exact-logo{
+  padding-top: 5px;
+}
+
+.team-table {
+  margin-top: 1em;
+}
+
+.team-table td {
+  padding: 0 0.3em 0 0;
+}
+
+.team-table td:nth-of-type(2), .team-table td:nth-of-type(3) {
+  text-align: right;
+    width: 10em;
+}
+
+.form-inline {
+  margin-left: -0.8em;
+  display: inline;
+}
+
+.align-right {
+  text-align: right;
+}
+
+
+.annotate_image_link {
+  display: block;
+}
+
+.annotate_image_link.active, .annotate_image_link.active:active,
+.annotate_image_link.active:hover, .annotation_link.active,
+.annotation_link.active:active, .annotation_link.active:hover {
+  color: black;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.bold {
+  font-weight: bold;
+}
+
+table#coordinate_table tr td:nth-of-type(1) {
+  width: 3.5em;
+}
+
+.annotation-filter {
+  padding: 3px;
+}
+
+.annotation-filter .form-control, .set-search .form-control {
+  width: 50%;
+}
+
+
+input.form-control[type="checkbox"] {
+  height: auto;
+}
+
+.tag-delete {
+  cursor: pointer;
+}
+
+.tag-container > span, .tag-container > a {
+  margin: 2px;
+}
+
+.upper-bandage {
+  padding: 1px 3px;
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-size : 70%;
+  color: #FFF;
+  background-color : rgb(71, 59, 142);
+}
+
+.upper-bandage-parent {
+  position: absolute; 
+  top: 50%; 
+  transform: translateY(-50%);
+  display: inline-block;
+  position: relative;
+  padding: 3px 10px;
+  color: #999;
+  text-decoration: none;
+}
+
+.upper-bandage-parent:hover {
+  color: #ddd;
+  text-decoration: none;
+}
+
+
+
+/* Autocomplete (from https://www.devbridge.com/sourcery/components/jquery-autocomplete/) */
+.autocomplete-suggestions {
+  border: 1px solid #999;
+  background: #FFF;
+  overflow: auto;
+}
+
+.autocomplete-suggestion {
+  padding: 5px 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.autocomplete-suggestion:hover {
+  background: #DDD;
+}
+
+.autocomplete-selected {
+  background: #DDD;
+}
+
+.autocomplete-suggestions strong {
+  color: #3399FF;
+}
+
+.autocomplete-group {
+  padding: 2px 5px;
+}
+
+.autocomplete-group strong {
+  display: block;
+  border-bottom: 1px solid #000;
+}
+
+.navbar-dark
+{
+  padding:5px;
+  height: 60px;
+}
+
+.nav-tabs
+{
+  border-bottom: none;
+}
+
+/* Sticky footer styles (from http://holdirbootstrap.de/examples/sticky-footer-navbar/sticky-footer-navbar.css)
+-------------------------------------------------- */
+/*html {
+  position: relative;
+  min-height: 100%;
+}*/
+
+html{height:100%;}
+
+body {
+  /* Margin bottom by footer height */
+  height: 100%;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.footer {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  /* Set the fixed height of the footer here */
+  height: 60px;
+  background-color: #f5f5f5;
+}
+
+.container.text-muted {
+  margin: 20px 0;
+}
+
+.login-panel-footer {
+  margin-top: 1em;
+}
+
+.login-panel {
+  margin-top: 2em;
+  color: #EEE;
+}
+
+.card-img-top {
+  width: 128px;
+  padding-top: 20px;
+  height: 148px;  
+}
+
+.card-body-extend {
+  overflow-y: scroll;
+}
+
+.card-body {
+  padding: 0px;
+}
+
+.card {
+  text-align: center;
+  color: #333;
+}
+button.nav-link {
+  color: #EEE;
+}
+
+
+.drop_window {
+  border: 2px dashed lightgray;
+  overflow: hidden;
+  position: relative;
+  height: 150px;
+  width: 150px;
+  margin: 15px;
+  vertical-align: middle;
+}
+.drop * {pointer-events: none;}
+
+.card_container:hover a .image {
+  opacity: 0.8;
+}
+.card_container:hover a .image2 {
+  opacity: 1.0;
+}
+
+.card_container {
+  text-align: center;
+  display: inline-block
+}
+
+.imagecard {
+  width: 35vh;
+  margin: 5px;
+}
+
+.image2 {
+  position: relative;
+  opacity: 0.0;
+  top: -40px;
+  transition: .5s ease;
+  left: -30px;
+  backface-visibility: hidden;
+}
+
+.image {
+  opacity: 1;
+  transition: .5s ease;
+  backface-visibility: hidden;
+}
+
+.inputDnD .form-control-file {
+  position: relative;
+  width: 134px;
+  height: 142px;
+  outline: none;
+  visibility: hidden;
+  cursor: pointer;
+  margin: 0 auto;
+  background-color: #ffffff;
+}
+
+
+
+.inputDnD .form-control-file:before {
+  content: "";
+  background-image: var(--bg-image);
+  background-repeat: no-repeat;  
+  position: absolute;
+  top: 0.5em;
+  left: 0;
+  width: 134px;
+  height: 134px;
+  opacity: 1;
+  visibility: visible;
+  overflow: hidden;
+}
+
+@supports (-moz-appearance:none)
+  {
+    .inputDnD .form-control-file {
+      visibility: visible;
+      background-image: var(--bg-image);
+      background-repeat: no-repeat;
+    }
+    .form-control-file::file-selector-button
+    {
+      visibility: hidden;
+    }
+
+  }
+
+
+.inputDnD .form-control-file:hover:before {
+  background-color: #EFF2AA;
+}
+
+.bg-purple {
+  background: rgb(48,0,50);
+}
+.bg-gray {
+  background: rgb(74,74,74);
+}
+.bg-blue {
+  background: rgb(50,101,196);
+}
+.bg-red {
+  background: rgb(196,50,53);
+}

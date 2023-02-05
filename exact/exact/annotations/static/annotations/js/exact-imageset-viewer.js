@@ -28,7 +28,7 @@ class EXACTImageSetViewer {
             return;
 
         var is_selecting = false
-        if (this.exact_viewer != undefined)
+        if ((this.exact_viewer != undefined) && (this.exact_viewer.viewer) && (this.exact_viewer.viewer.selectionInstance))
         {
             is_selecting = this.exact_viewer.viewer.selectionInstance.isSelecting
         }

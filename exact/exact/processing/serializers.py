@@ -61,6 +61,7 @@ class PluginResultAnnotationSerializer(FlexFieldsModelSerializer):
             'vector',
             'unique_identifier',
             'generated',
+            'plugin',
             'image',
             'time'
         )
@@ -83,8 +84,10 @@ class PluginResultBitmapSerializer(FlexFieldsModelSerializer):
             'meta_data',
             'name',
             'scale_max',
+            'plugin',
             'scale_min',
-            'transformation_matrix',
+            'location_rect',
+            'frame',
             'pluginresultentry',
             'image'
         )
@@ -121,6 +124,7 @@ class PluginResultSerializer(FlexFieldsModelSerializer):
             'image',
             'job',
             'plugin',
+            'default_alpha',
             'completed_time',
             'created_time',
             'entries'
