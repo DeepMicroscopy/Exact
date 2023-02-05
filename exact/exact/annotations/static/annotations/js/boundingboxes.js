@@ -826,6 +826,7 @@ class BoundingBoxes {
         }
 
         var opacity = $('#OpacitySlider')[0].value
+        var mem_ids = {}
 
         switch (annotation.annotation_type.vector_type) {
             case 1:  // Rect
@@ -834,10 +835,17 @@ class BoundingBoxes {
 
                 rect.strokeColor = annotation.annotation_type.color_code;
                 rect.strokeWidth = this.strokeWidth;
+                var alpha = 1;
                 if (annotation.generated)
                 {
-                rect.dashArray = [4, 1];
+                rect.dashArray = [4, 2];
+                if ($('#alpha-plugin-'+annotation.plugin).length>0)
+                {
+                  alpha = parseInt($('#alpha-plugin-'+annotation.plugin)[0].value)/100
                 }
+                }
+                
+                rect.strokeColor.alpha = alpha
                 rect.name = annotation.unique_identifier;
                 rect.fillColor = annotation.annotation_type.color_code
                 rect.fillColor.alpha = opacity
@@ -853,10 +861,10 @@ class BoundingBoxes {
                 else
                 {
                     rect.data.area_hit_test = annotation.annotation_type.area_hit_test;
-                    rect.locked = checkbox.indeterminate
+                    rect.locked = checkbox.indeterminate;
                 }
+                rect.visible = checkbox.checked; // only non-generated annotations are hidden by clicking the annotation type
 
-                rect.visible = checkbox.checked
 
                 this.group.addChild(rect);
                 break;
@@ -881,17 +889,25 @@ class BoundingBoxes {
                 rect.data.type_id = annotation.annotation_type.id;
 
                 var checkbox = $('#DrawCheckBox_' + annotation.annotation_type.id)[0]
+                var alpha = 1;
+                
+
                 if (annotation.generated)
                 {
                     rect.data.area_hit_test = false;
                     rect.locked = true;
+                    if ($('#alpha-plugin-'+annotation.plugin).length>0)
+                    {
+                      alpha = parseInt($('#alpha-plugin-'+annotation.plugin)[0].value)/100
+                    }
                 }
                 else
                 {
                     rect.data.area_hit_test = annotation.annotation_type.area_hit_test;
-                    rect.locked = checkbox.indeterminate
+                    rect.locked = checkbox.indeterminate;
                 }
-                rect.visible = checkbox.checked
+                rect.visible = checkbox.checked;
+                rect.strokeColor.alpha = alpha
 
                 this.group.addChild(rect);
                 break;
@@ -905,7 +921,7 @@ class BoundingBoxes {
                 ellipse.strokeWidth = this.strokeWidth;
                 if (annotation.generated)
                 {
-                rect.dashArray = [4, 1];
+                    ellipse.dashArray = [4, 2];
                 }
                 ellipse.name = annotation.unique_identifier;
                 ellipse.fillColor = annotation.annotation_type.color_code
@@ -916,17 +932,23 @@ class BoundingBoxes {
                 ellipse.data.type_id = annotation.annotation_type.id;
 
                 var checkbox = $('#DrawCheckBox_' + annotation.annotation_type.id)[0]
-                ellipse.visible = checkbox.checked
+                var alpha = 1
                 if (annotation.generated)
                 {
                     ellipse.data.area_hit_test = false;
                     ellipse.locked = true;
+                    if ($('#alpha-plugin-'+annotation.plugin).length>0)
+                    {
+                      alpha = parseInt($('#alpha-plugin-'+annotation.plugin)[0].value)/100
+                    }
                 }
                 else
                 {
                     ellipse.data.area_hit_test = annotation.annotation_type.area_hit_test;
-                    ellipse.locked = checkbox.indeterminate
+                    ellipse.locked = checkbox.indeterminate;
                 }
+                ellipse.visible = checkbox.checked;                    
+                ellipse.strokeColor.alpha = alpha
 
                 this.group.addChild(ellipse);
                 break;
@@ -942,24 +964,30 @@ class BoundingBoxes {
                 line.fillColor.alpha = opacity
                 if (annotation.generated)
                 {
-                line.dashArray = [4, 1];
+                line.dashArray = [4, 2];
                 }
 
                 line.data.type = "line";
                 line.data.type_id = annotation.annotation_type.id;
 
                 var checkbox = $('#DrawCheckBox_' + annotation.annotation_type.id)[0]
-                line.visible = checkbox.checked
+                var alpha = 1
                 if (annotation.generated)
                 {
                     line.data.area_hit_test = false;
                     line.locked = true;
+                    if ($('#alpha-plugin-'+annotation.plugin).length>0)
+                    {
+                      alpha = parseInt($('#alpha-plugin-'+annotation.plugin)[0].value)/100
+                    }
                 }
                 else
                 {
                     line.data.area_hit_test = annotation.annotation_type.area_hit_test;
-                    line.locked = checkbox.indeterminate
+                    line.locked = checkbox.indeterminate;
                 }
+                line.visible = checkbox.checked;
+                line.strokeColor.alpha = alpha
 
 
                 this.group.addChild(line);
@@ -977,10 +1005,16 @@ class BoundingBoxes {
                 poly.fillColor = annotation.annotation_type.color_code
                 poly.fillColor.alpha = opacity
 
+                var alpha = 1
                 if (annotation.generated)
                 {
                 poly.dashArray = [4, 1];
+                if ($('#alpha-plugin-'+annotation.plugin).length>0)
+                {
+                  alpha = parseInt($('#alpha-plugin-'+annotation.plugin)[0].value)/100
                 }
+                }
+                poly.strokeColor.alpha=alpha
 
                 poly.data.type = "poly";
                 poly.data.type_id = annotation.annotation_type.id;
@@ -1000,8 +1034,9 @@ class BoundingBoxes {
                 else
                 {
                     poly.data.area_hit_test = annotation.annotation_type.area_hit_test;
-                    poly.locked = checkbox.indeterminate
+                    poly.locked = checkbox.indeterminate;
                 }
+                poly.visible = checkbox.checked;
 
                 this.group.addChild(poly);
                 break;
@@ -1024,6 +1059,14 @@ class BoundingBoxes {
             item.visible = visibility;
         }
     }
+
+    updateAnnotationAlpha(unique_identifier, alpha) {
+        var item = this.getItemFromUUID(unique_identifier);
+
+        if (item !== undefined) {
+            item.strokeColor.alpha = alpha
+        }
+    }    
 
     updateVisbility(annotation_type_id, visibility, disabled_hitTest = false, keep_interaction = false) {
         var opacity = $('#OpacitySlider')[0].value

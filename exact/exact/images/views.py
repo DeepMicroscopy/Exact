@@ -16,6 +16,7 @@ from django.template.response import TemplateResponse
 from django.utils.translation import ugettext_lazy as _
 from django.core.cache import caches
 from json import JSONDecodeError
+from io import BytesIO
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import ParseError
 from rest_framework.response import Response
@@ -176,8 +177,9 @@ def index(request):
 
     last_image_action = LogImageAction.objects.filter(user=request.user).order_by('-time').first()
 
+    template = 'images/index_v2.html' if hasattr(request.user,'ui') and hasattr(request.user.ui,'frontend') and request.user.ui.frontend==2 else 'images/index.html'
 
-    return TemplateResponse(request, 'images/index.html', {
+    return TemplateResponse(request, template, {
         'last_image_action': last_image_action,
         'user': request.user,
         'team_creation_form': team_creation_form,
@@ -222,6 +224,7 @@ def upload_image(request, imageset_id):
                 with open(os.path.join(imageset.root_path(), zipname), 'wb') as out:
                     for chunk in f.chunks():
                         out.write(chunk)
+                        
                 # unpack zip-file
                 zip_ref = zipfile.ZipFile(os.path.join(imageset.root_path(), zipname), 'r')
                 zip_ref.extractall(os.path.join(imageset.root_path()))
@@ -595,11 +598,24 @@ def download_image_api(request, image_id) -> Response:
     file_path = Path(settings.IMAGE_PATH) / image.path()
     if original_image is not None and 'True' == original_image:
         file_path =  Path(image.original_path())
+    
+    if file_path.suffix.upper() == '.MRXS': # MRXS files need to be zipped before
+        # strip the suffix
+        folder_path = file_path.with_suffix('')
+        content = BytesIO()
 
-    response = FileResponse(open(str(file_path), 'rb'), content_type='application/zip')
+        with zipfile.ZipFile(content, 'w') as f:
+                for filename in os.listdir(str(folder_path)):
+                    f.write(os.path.join(str(folder_path), filename), os.path.join(folder_path.parts[-1],filename))
+                f.write(str(file_path), file_path.parts[-1])
 
-    response['Content-Length'] = os.path.getsize(file_path)
-    response['Content-Disposition'] = "attachment; filename={}".format(file_path.name)
+        response = HttpResponse(content.getvalue(), content_type='application/zip')
+        response['Content-Disposition'] = "attachment; filename={}".format(file_path.name+'.zip')
+    else:
+        response = FileResponse(open(str(file_path), 'rb'), content_type='application/zip')
+
+        response['Content-Length'] = os.path.getsize(file_path)
+        response['Content-Disposition'] = "attachment; filename={}".format(file_path.name)
 
     return response
 
@@ -657,6 +673,7 @@ def view_imageset(request, image_set_id):
     annotation_types = AnnotationType.objects.filter(product__in=imageset.product_set.all(), active=True)
     
     user_teams = Team.objects.filter(members=request.user)
+
     imageset_edit_form = ImageSetEditForm(instance=imageset)
     imageset_edit_form.fields['main_annotation_type'].queryset = AnnotationType.objects\
         .filter(active=True, product__in=imageset.product_set.all()).order_by('product', 'sort_order')
@@ -666,13 +683,16 @@ def view_imageset(request, image_set_id):
         .filter(Q(team__in=request.user.team_set.all())|Q(public=True))
 
     all_products = Product.objects.filter(team=imageset.team).order_by('name')
-    return render(request, 'images/imageset.html', {
+    template = 'images/imageset_v2.html' if hasattr(request.user,'ui') and hasattr(request.user.ui,'frontend') and request.user.ui.frontend==2 else 'images/imageset.html'
+    return render(request, template, {
         'image_count': imageset.images.count(),
         'imageset': imageset,
         'real_image_number': imageset.images.filter(~Q(image_type=Image.ImageSourceTypes.SERVER_GENERATED)).count(),
+        'computer_generated_image_number' : imageset.images.filter(Q(image_type=Image.ImageSourceTypes.SERVER_GENERATED)).count(),
         'all_products': all_products,
         'annotation_types': annotation_types,
         'exports': exports,
+        'api': request.build_absolute_uri('/api/'),
         'filtered': filtered,
         'edit_form': imageset_edit_form,
         'imageset_perms': imageset.get_perms(request.user),

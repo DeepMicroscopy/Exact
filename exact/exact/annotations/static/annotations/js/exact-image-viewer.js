@@ -138,7 +138,7 @@ class EXACTViewer {
             }
         } else {
             // create viewer without the option to handle annotations
-            return new EXACTViewer(server_url, options, imageInformation, headers, user_id);
+            return new EXACTViewerWithoutAnnotations(server_url, options, imageInformation, headers, user_id);
         }
     }
 
@@ -156,6 +156,7 @@ class EXACTViewer {
             //visibilityRatio: 1,
             zoomPerScroll: 1.1,
             timeout: 120000,
+            showFullPageControl: false,
             sequenceMode: false,
             showReferenceStrip: false,
         };
@@ -340,6 +341,40 @@ class EXACTViewer {
 
         }, this);
 
+        viewer.addHandler("processing_togglePluginResultVisibility", function (event) {
+            for (let anno of Object.values(this.userData.exact_sync.annotations)) {
+                if ((anno.generated == true) && (event.ResultEntries.indexOf(anno.pluginresultentry)>=0)) {
+                    this.userData.tool.updateAnnotationVisibility(anno.unique_identifier, event.Checked);
+                }
+            }
+            for (let bitmap of Object.values(this.userData.exact_sync.bitmaps))
+            {
+                if (event.Checked)
+                {
+                    $('#overlay-bitmap-'+bitmap.id).css("opacity", "100%")
+
+                }
+                else
+                {
+                    $('#overlay-bitmap-'+bitmap.id).css("opacity", "0%")
+                }
+            }
+        }, this);
+
+
+        viewer.addHandler("processing_changePluginResultAlpha", function (event) {
+            for (let anno of Object.values(this.userData.exact_sync.annotations)) {
+                if ((anno.generated == true) && (event.ResultEntries.indexOf(anno.pluginresultentry)>=0)) {
+                    this.userData.tool.updateAnnotationAlpha(anno.unique_identifier, event.Value/100);
+                }
+            }
+            for (let bitmap of Object.values(this.userData.exact_sync.bitmaps))
+            {
+                $('#overlay-bitmap-'+bitmap.id).css("opacity", event.Value+'%')
+            }
+        }, this);        
+
+
         viewer.addHandler("viewCoordinates", function (event) {
 
             var coordinates = event.coordinates;
@@ -450,6 +485,13 @@ class EXACTViewer {
             removeOnClose: true,        // Remove guidelines when viewer closes
             useSessionStorage: false,    // Save guidelines in sessionStorage
             navImages: {
+                zoomIn:
+                {
+                    REST: 'zoom-in.svg',
+                    GROUP: 'zoom-in.svg',
+                    HOVER: 'zoom-in.svg',
+                    DOWN: 'zoom-in.svg',
+                },
                 guideHorizontal: {
                     REST: 'nothing.png',
                     GROUP: 'nothing.png',
@@ -523,10 +565,10 @@ class EXACTViewer {
         let showNavigationButton = new OpenSeadragon.Button({
             tooltip: 'Show navigation overview',
             name: "ShowNavigation",
-            srcRest: viewer.prefixUrl + `map.svg`,
-            srcGroup: viewer.prefixUrl + `map.svg`,
-            srcHover: viewer.prefixUrl + `map.svg`,
-            srcDown: viewer.prefixUrl + `map.svg`,
+            srcRest: viewer.prefixUrl + `map_rest.png`,
+            srcGroup: viewer.prefixUrl + `map_grouphover.png`,
+            srcHover: viewer.prefixUrl + `map_hover.png`,
+            srcDown: viewer.prefixUrl + `map_pressed.png`,
             onClick: this.uiShowNavigatorToggle.bind(this),
         });
         viewer.buttons.buttons.push(showNavigationButton);
@@ -667,6 +709,71 @@ class EXACTViewer {
     }
 }
 
+class EXACTViewerWithoutAnnotations extends EXACTViewer {
+    constructor(server_url, options, imageInformation, headers, user_id) {
+
+            super(server_url, options, imageInformation, headers, user_id);
+
+            this.processingTool = new ProcessingTool(this.viewer, this.imageId);
+
+            this.initToolEventHandler(this.viewer);
+
+            // EXACT sync is necessary for retrieving processing results of 
+            this.exact_sync = this.createSyncModules({}, this.imageId, headers, this.viewer, user_id, 0);
+        }
+    initToolEventHandler(viewer) {
+
+        viewer.addHandler('sync_drawOverlays', function (event) {
+
+            // Convert from viewport coordinates to image coordinates.
+            if (event.bitmaps.length>0)
+            {
+                // clear all overlays
+                viewer.clearOverlays()
+            }
+
+            for (let bitmap of event.bitmaps) {
+                if ( (!(bitmap.location_rect.hasOwnProperty('x'))) || (!(bitmap.location_rect.hasOwnProperty('y')))
+                    || (!(bitmap.location_rect.hasOwnProperty('width'))) || (!(bitmap.location_rect.hasOwnProperty('height'))) )
+                    {
+                        $.notify('Malformed location rectangle.', { position: "bottom center", className: "error" });
+                        continue;
+                    }
+                let rect = new OpenSeadragon.Rect(bitmap.location_rect.x, bitmap.location_rect.y, bitmap.location_rect.width, bitmap.location_rect.height)
+                var rect_viewport = viewer.viewport.imageToViewportRectangle(rect);
+
+                if (bitmap.channels==3) {
+                    // RGB overlay
+                    var elt = document.createElement("div");
+                    elt.id = "overlay-bitmap-"+bitmap.id;
+                    elt.className = "bmpoverlay";
+
+                    var alpha = 100;
+                    if ($('#alpha-plugin-'+bitmap.plugin).length>0)
+                    {
+                        alpha = parseInt($('#alpha-plugin-'+bitmap.plugin)[0].value)
+                    }
+
+                    elt.innerHTML = '<img src="'+bitmap.bitmap+'" class="bmpoverlay" style="width=100%;height:100%">'
+                    elt.style = "opacity:"+alpha+"%"                    
+
+                    viewer.addOverlay({
+                        element: elt,
+                        location: rect_viewport
+                    }); 
+                }
+                
+            }
+            
+        }, this);
+    }
+
+    createSyncModules(annotationTypes, imageId, headers, viewer, user_id, collaboration_type) {
+        return new EXACTAnnotationSync(annotationTypes, imageId, headers, viewer, user_id, collaboration_type)
+    }
+    
+}
+
 class EXACTViewerLocalAnnotations extends EXACTViewer {
 
     constructor(server_url, options, imageInformation, collaboration_type, annotationTypes,
@@ -734,14 +841,6 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
             for (let anno of Object.values(this.userData.exact_sync.annotations)) {
                 if ((anno.generated == false) && (anno.last_editor.id === event.User)) {
-                    this.userData.tool.updateAnnotationVisibility(anno.unique_identifier, event.Checked);
-                }
-            }
-        }, this);
-
-        viewer.addHandler("processing_togglePluginResultVisibility", function (event) {
-            for (let anno of Object.values(this.userData.exact_sync.annotations)) {
-                if ((anno.generated == true) && (event.ResultEntries.indexOf(anno.pluginresultentry)>=0)) {
                     this.userData.tool.updateAnnotationVisibility(anno.unique_identifier, event.Checked);
                 }
             }
@@ -1264,6 +1363,50 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
     initToolEventHandler(viewer) {
 
+        viewer.addHandler('sync_drawOverlays', function (event) {
+
+            // Convert from viewport coordinates to image coordinates.
+            if (event.bitmaps.length>0)
+            {
+                // clear all overlays
+                viewer.clearOverlays()
+            }
+
+            for (let bitmap of event.bitmaps) {
+                if ( (!(bitmap.location_rect.hasOwnProperty('x'))) || (!(bitmap.location_rect.hasOwnProperty('y')))
+                    || (!(bitmap.location_rect.hasOwnProperty('width'))) || (!(bitmap.location_rect.hasOwnProperty('height'))) )
+                    {
+                        $.notify('Malformed location rectangle.', { position: "bottom center", className: "error" });
+                        continue;
+                    }
+                let rect = new OpenSeadragon.Rect(bitmap.location_rect.x, bitmap.location_rect.y, bitmap.location_rect.width, bitmap.location_rect.height)
+                var rect_viewport = viewer.viewport.imageToViewportRectangle(rect);
+
+                if (bitmap.channels==3) {
+                    // RGB overlay
+                    var elt = document.createElement("div");
+                    elt.id = "overlay-bitmap-"+bitmap.id;
+                    elt.className = "bmpoverlay";
+
+                    var alpha = 100;
+                    if ($('#alpha-plugin-'+bitmap.plugin).length>0)
+                    {
+                      alpha = parseInt($('#alpha-plugin-'+bitmap.plugin)[0].value)
+                    }
+
+                    elt.innerHTML = '<img src="'+bitmap.bitmap+'" class="bmpoverlay" style="width=100%;height:100%">'
+                    elt.style = "opacity:"+alpha+"%"                    
+
+                    viewer.addOverlay({
+                        element: elt,
+                        location: rect_viewport
+                    }); 
+                }
+                
+            }
+            
+        }, this);
+
         viewer.addHandler('sync_drawAnnotations', function (event) {
             event.userData.tool.drawExistingAnnotations(event.annotations, event.userData.drawAnnotations);
         }, this);
@@ -1304,10 +1447,10 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         let element = new OpenSeadragon.Button({
             tooltip: 'Draw annotations (y)',
             name: "DrawAnnotations",
-            srcRest: this.viewer.prefixUrl + `eye_fill.svg`,
-            srcGroup: this.viewer.prefixUrl + `eye_fill.svg`,
-            srcHover: this.viewer.prefixUrl + `eye_slash.svg`,
-            srcDown: this.viewer.prefixUrl + `eye_slash.svg`,
+            srcRest: this.viewer.prefixUrl + `anno_rest.png`,
+            srcGroup: this.viewer.prefixUrl + `anno_grouphover.png`,
+            srcHover: this.viewer.prefixUrl + `anno_hover.png`,
+            srcDown: this.viewer.prefixUrl + `anno_pressed.png`,
             onClick: this.uiShowAnnotationsToggle.bind(this),
         });
         this.viewer.buttons.buttons.push(element);
@@ -1317,10 +1460,10 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         let element_heatmap = new OpenSeadragon.Button({
             tooltip: 'Draw Heatmap',
             name: "DrawHeatmap",
-            srcRest: this.viewer.prefixUrl + `flip_rest.png`,
-            srcGroup: this.viewer.prefixUrl + `flip_grouphover.png`,
-            srcHover: this.viewer.prefixUrl + `flip_hover.png`,
-            srcDown: this.viewer.prefixUrl + `flip_pressed.png`,
+            srcRest: this.viewer.prefixUrl + `heatmap_rest.png`,
+            srcGroup: this.viewer.prefixUrl + `heatmap_grouphover.png`,
+            srcHover: this.viewer.prefixUrl + `heatmap_hover.png`,
+            srcDown: this.viewer.prefixUrl + `heatmap_pressed.png`,
             onClick: this.uiShowHeatmapToggle.bind(this),
         });
         this.viewer.buttons.buttons.push(element_heatmap);
@@ -1329,10 +1472,10 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         let element_heatmap_inv = new OpenSeadragon.Button({
             tooltip: 'Draw Heatmap Inv',
             name: "DrawHeatmapInv",
-            srcRest: this.viewer.prefixUrl + `flip_rest.png`,
-            srcGroup: this.viewer.prefixUrl + `flip_grouphover.png`,
-            srcHover: this.viewer.prefixUrl + `flip_hover.png`,
-            srcDown: this.viewer.prefixUrl + `flip_pressed.png`,
+            srcRest: this.viewer.prefixUrl + `heatmap_inv_rest.png`,
+            srcGroup: this.viewer.prefixUrl + `heatmap_inv_grouphover.png`,
+            srcHover: this.viewer.prefixUrl + `heatmap_inv_hover.png`,
+            srcDown: this.viewer.prefixUrl + `heatmap_inv_pressed.png`,
             onClick: this.uiShowHeatmapInvToggle.bind(this),
         });
         this.viewer.buttons.buttons.push(element_heatmap_inv);
@@ -1343,64 +1486,64 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             new OpenSeadragon.Button({
                 tooltip: 'Save (v)',
                 name: "save_button",
-                srcRest: this.viewer.prefixUrl + `hdd.svg`,
-                srcGroup: this.viewer.prefixUrl + `hdd.svg`,
-                srcHover: this.viewer.prefixUrl + `hdd.svg`,
-                srcDown: this.viewer.prefixUrl + `hdd.svg`,
+                srcRest: this.viewer.prefixUrl + `save_rest.png`,
+                srcGroup: this.viewer.prefixUrl + `save_grouphover.png`,
+                srcHover: this.viewer.prefixUrl + `save_hover.png`,
+                srcDown: this.viewer.prefixUrl + `save_pressed.png`,
                 onClick: this.do_finishAnnotation.bind(this),
             }),
             new OpenSeadragon.Button({
                 tooltip: 'Undo (Ctrl + Z)',
                 name: "undo_button",
-                srcRest: this.viewer.prefixUrl + `arrow_counterclockwise.svg`,
-                srcGroup: this.viewer.prefixUrl + `arrow_counterclockwise.svg`,
-                srcHover: this.viewer.prefixUrl + `arrow_counterclockwise.svg`,
-                srcDown: this.viewer.prefixUrl + `arrow_counterclockwise.svg`,
+                srcRest: this.viewer.prefixUrl + `undo_rest.png`,
+                srcGroup: this.viewer.prefixUrl + `undo_grouphover.png`,
+                srcHover: this.viewer.prefixUrl + `undo_hover.png`,
+                srcDown: this.viewer.prefixUrl + `undo_pressed.png`,
                 onClick: this.undo.bind(this),
             }),
             new OpenSeadragon.Button({
                 tooltip: 'Verify',
                 name: "verify_annotation_button",
-                srcRest: this.viewer.prefixUrl + `check.svg`,
-                srcGroup: this.viewer.prefixUrl + `check.svg`,
-                srcHover: this.viewer.prefixUrl + `check.svg`,
-                srcDown: this.viewer.prefixUrl + `check.svg`,
+                srcRest: this.viewer.prefixUrl + `check_rest.png`,
+                srcGroup: this.viewer.prefixUrl + `check_grouphover.png`,
+                srcHover: this.viewer.prefixUrl + `check_hover.png`,
+                srcDown: this.viewer.prefixUrl + `check_pressed.png`,
                 onClick: this.verifyAnnotation.bind(this),
             }),
             new OpenSeadragon.Button({
                 tooltip: 'Delete (DEL, x)',
                 name: "delete_annotation_button",
-                srcRest: this.viewer.prefixUrl + `trash.svg`,
-                srcGroup: this.viewer.prefixUrl + `trash.svg`,
-                srcHover: this.viewer.prefixUrl + `trash.svg`,
-                srcDown: this.viewer.prefixUrl + `trash.svg`,
+                srcRest: this.viewer.prefixUrl + `trash_rest.png`,
+                srcGroup: this.viewer.prefixUrl + `trash_grouphover.png`,
+                srcHover: this.viewer.prefixUrl + `trash_hover.png`,
+                srcDown: this.viewer.prefixUrl + `trash_pressed.png`,
                 onClick: this.do_deleteAnnotation.bind(this),
             }),
             new OpenSeadragon.Button({
                 tooltip: 'Substract the slected objects area from all other objects ',
                 name: "NOT",
-                srcRest: this.viewer.prefixUrl + `subtract.svg`,
-                srcGroup: this.viewer.prefixUrl + `subtract.svg`,
-                srcHover: this.viewer.prefixUrl + `subtract.svg`,
-                srcDown: this.viewer.prefixUrl + `subtract.svg`,
+                srcRest: this.viewer.prefixUrl + `subtract_rest.png`,
+                srcGroup: this.viewer.prefixUrl + `subtract_rest.png`,
+                srcHover: this.viewer.prefixUrl + `subtract_hover.png`,
+                srcDown: this.viewer.prefixUrl + `subtract_pressed.png`,
                 onClick: this.tool.clickPolyOperation.bind(this),
             }),
             new OpenSeadragon.Button({
                 tooltip: 'Merge all polygon objects from the same class touching the selected object',
                 name: "UNION",
-                srcRest: this.viewer.prefixUrl + `union.svg`,
-                srcGroup: this.viewer.prefixUrl + `union.svg`,
-                srcHover: this.viewer.prefixUrl + `union.svg`,
-                srcDown: this.viewer.prefixUrl + `union.svg`,
+                srcRest: this.viewer.prefixUrl + `union_rest.png`,
+                srcGroup: this.viewer.prefixUrl + `union_rest.png`,
+                srcHover: this.viewer.prefixUrl + `union_hover.png`,
+                srcDown: this.viewer.prefixUrl + `union_pressed.png`,
                 onClick: this.tool.clickPolyOperation.bind(this),
             }),
             new OpenSeadragon.Button({
                 tooltip: 'Changes the class of all included objects to selected class if possible',
                 name: "HARMONIZE",
-                srcRest: this.viewer.prefixUrl + `basket.svg`,
-                srcGroup: this.viewer.prefixUrl + `basket.svg`,
-                srcHover: this.viewer.prefixUrl + `basket.svg`,
-                srcDown: this.viewer.prefixUrl + `basket.svg`,
+                srcRest: this.viewer.prefixUrl + `basket_rest.png`,
+                srcGroup: this.viewer.prefixUrl + `basket_rest.png`,
+                srcHover: this.viewer.prefixUrl + `basket_hover.png`,
+                srcDown: this.viewer.prefixUrl + `basket_pressed.png`,
                 onClick: this.tool.clickPolyOperation.bind(this),
             })
         ]
@@ -1408,28 +1551,28 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         this.operatorButtons = {}
         this.operatorButtons["SCISSOR"] = new OpenSeadragon.Button({tooltip: 'Draw a polygon to cut from the currently selected one (s)',
                                                         name: "SCISSOR",
-                                                        srcRest: this.viewer.prefixUrl + `scissors_base.svg`,
-                                                        srcGroup: this.viewer.prefixUrl + `scissors_base.svg`,
-                                                        srcHover: this.viewer.prefixUrl + `scissors_base.svg`,
-                                                        srcDown: this.viewer.prefixUrl + `scissors_active.svg`,
+                                                        srcRest: this.viewer.prefixUrl + `scissors_rest.png`,
+                                                        srcGroup: this.viewer.prefixUrl + `scissors_rest.png`,
+                                                        srcHover: this.viewer.prefixUrl + `scissors_hover.png`,
+                                                        srcDown: this.viewer.prefixUrl + `scissors_pressed.png`,
                                                         onClick: this.tool.activateSinglePolyOperation.bind(this),
                                                         })
 
         this.operatorButtons["GLUE"] = new OpenSeadragon.Button({   tooltip: 'Draw a polygon to gulue it to the currently selected one (g)',
                                                         name: "GLUE",
-                                                        srcRest: this.viewer.prefixUrl + `glue_base.svg`,
-                                                        srcGroup: this.viewer.prefixUrl + `glue_base.svg`,
-                                                        srcHover: this.viewer.prefixUrl + `glue_base.svg`,
-                                                        srcDown: this.viewer.prefixUrl + `glue_active.svg`,
+                                                        srcRest: this.viewer.prefixUrl + `glue_rest.png`,
+                                                        srcGroup: this.viewer.prefixUrl + `glue_rest.png`,
+                                                        srcHover: this.viewer.prefixUrl + `glue_hover.png`,
+                                                        srcDown: this.viewer.prefixUrl + `glue_pressed.png`,
                                                         onClick: this.tool.activateSinglePolyOperation.bind(this),
                                                         })
 
         this.operatorButtons["KNIFE"] = new OpenSeadragon.Button({   tooltip: 'Draw a line to cut through polygons (d)',
                                                         name: "KNIFE",
-                                                        srcRest: this.viewer.prefixUrl + `knife_base.svg`,
-                                                        srcGroup: this.viewer.prefixUrl + `knife_base.svg`,
-                                                        srcHover: this.viewer.prefixUrl + `knife_base.svg`,
-                                                        srcDown: this.viewer.prefixUrl + `knife_active.svg`,
+                                                        srcRest: this.viewer.prefixUrl + `knife_rest.png`,
+                                                        srcGroup: this.viewer.prefixUrl + `knife_rest.png`,
+                                                        srcHover: this.viewer.prefixUrl + `knife_hover.png`,
+                                                        srcDown: this.viewer.prefixUrl + `knife_pressed.png`,
                                                         onClick: this.tool.activateMultiPolyOperation.bind(this),
                                                         })
 

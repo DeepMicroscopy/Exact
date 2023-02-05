@@ -18,8 +18,8 @@ from exact.images.forms import ImageSetCreationForm
 from exact.administration.forms import ProductCreationForm
 from exact.administration.models import Product
 from exact.images.models import ImageSet
-from exact.users.forms import TeamCreationForm
-from .models import Team, User
+from exact.users.forms import TeamCreationForm, UserEditForm
+from .models import Team, UI_User, User
 from .serializers import TeamSerializer
 
 @login_required
@@ -254,13 +254,54 @@ def view_team(request, team_id):
     })
 
 
+
 @login_required
 def user(request, user_id):
     user = get_object_or_404(User, id=user_id)
     teams = Team.objects.filter(members=user)
 
+    info = None
+    passwordmatching=True
+    form = UserEditForm(instance=user)
+    if request.method == 'POST':
+
+        passwordmatching = request.POST['password1']==request.POST['password2']
+
+        if passwordmatching and len(request.POST['password1'])>0:
+            user.set_password(request.POST['password1'])
+            user.save()
+
+        if (user.is_superuser) and request.POST['frontend']:
+            if not hasattr(user,'ui'):
+                user.ui = UI_User(user=user)
+            user.ui.frontend = int(request.POST['frontend'])
+            user.ui.save()
+
+        if  request.POST['first_name']:
+            user.first_name = str(request.POST['first_name'])
+            user.save()
+
+        if  request.POST['last_name']:
+            user.last_name = str(request.POST['last_name'])
+            user.save()
+
+        if  request.POST['email']:
+            user.email = str(request.POST['email'])
+            user.save()
+
+        if passwordmatching:
+            info = 'Information updated.'
+
+
+
+    print('PW Matching: ',passwordmatching)
+
     return render(request, 'users/view_user.html', {
         'user': user,
+        'frontend' : request.user.ui.frontend if hasattr(request.user,'ui') and hasattr(request.user.ui,'frontend') and request.user.ui.frontend else 1,
+        'form': form,
+        'info': info,
+        'passwordmatching' : passwordmatching,
         'teams': teams,
     })
 

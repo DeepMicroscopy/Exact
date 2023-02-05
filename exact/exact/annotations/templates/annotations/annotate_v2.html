@@ -1,0 +1,874 @@
+{% extends 'annotations/base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block additional_annotation_js %}
+<link rel="stylesheet" type="text/css" href="{% static 'annotations/css/bootstrap-slider.min.css' %}">
+
+<script async type="text/javascript" src="{% static 'annotations/js/opencv.js' %}"></script>
+
+<script type="text/javascript" src="{% static 'scripts/jquery-3.2.1.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'scripts/bootstrap.min.js' %}"></script>
+
+<script type="text/javascript" src="{% static 'annotations/js/openseadragon.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/openseadragon-guides.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/boundingboxes.js' %}"></script>
+
+<script async type="text/javascript" src="{% static 'annotations/js/openseadragon-filtering.js' %}"></script>
+
+<script type="text/javascript" src="{% static 'scripts/notify.min.js' %}"></script>
+
+<script type="text/javascript" src="{% static 'annotations/js/selection.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/openseadragon-scalebar.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/heatmap.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/openseadragon-heatmapjs-overlay.js' %}"></script>
+
+
+<script type="text/javascript" src="{% static 'annotations/js/openseadragon-paperjs-overlay.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/paper-full.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/imaginghelper.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/screeningTool.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/exact-sync.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/exact-image-viewer.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/exact-imageset-viewer.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/openseadragon_filtering_viewer.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/searchTool.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/AsthmaAnalysis.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/teamTool.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/processingTool.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/statistics-viewer.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/plugin-handler.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/show-annotation-properties.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/exact-browser-sync.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/exact-quad-tree.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/annotations.js' %}"></script>
+
+<script type="text/javascript" src="{% static 'annotations/js/bootstrap-slider.min.js' %}"></script>
+{% endblock additional_annotation_js %}
+{% block bodyblock %}
+
+<div class="container-fluid" style="padding-top:0px;position:absolute;left:0px; top:60px;height: calc(100vh - 60px)">
+    <div class="row justify-content-center" style="padding: 0px;height: calc(100vh - 60px); overflow-y:hidden">
+        <div class="row" style="height: calc(100vh - 60px);margin-left:0px">
+            <button type="button" class="btn" id="loadAnnotationMenu" style="background: repeating-linear-gradient(-45deg, #2a2a2a, #4b444a 5px); cursor:w-resize; color:#ccc;width:20px;text-align: center; border:0px; margin:0px; margin-right:20px; padding:0px; height: calc(100vh - 60px)">
+                &#10311;
+            </button>
+        </div>
+
+        <div class="col-3" style="overflow-y: hidden; padding:0px"  id="annotationMenu" style="height:calc(100vh - 60px)">
+            <div style="background-color: #fff;" style="height: calc(100vh - 60px)" >
+                <div class="card" style="height:40vh;overflow-y:scroll">
+                    <div class="card-header" style="padding:0px">
+                        <a href="{% url 'images:view_imageset' selected_image.image_set.id %}">
+                            <h5 class="panel-title">{{ selected_image.image_set.name }}</h5>
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        <div class="input-group">
+                            <select id="filter_images" class="form-control">
+                                <option value="All" name="All" class="bold">{% trans 'Show All' %}</option>
+                                <option value="Unverified" name="Unverified" class="bold">
+                                    {% trans 'Show Unverified' %}</option>
+                                <option value="Verified" name="Verified" class="bold">{% trans 'Show Verified' %}
+                                </option>
+                                <option value="NoAnnotations" name="NoAnnotations" class="bold">
+                                    {% trans 'No Annotations' %}</option>
+                                <option value="ComputerGenerated" name="ComputerGenerated" class="bold">
+                                    {% trans 'Computer Generated' %}</option>
+
+                                {% for annotation_type in annotation_types %}
+
+                                <option value="{{ annotation_type.id }}" name="{{ annotation_type.name }}">
+                                    {{ annotation_type.name }} ({{annotation_type.product.name}}) </option>
+
+                                {% endfor %}
+
+                                {% for annotation_type in global_annotation_types %}
+
+                                <option value="{{ annotation_type.id }}" name="{{ annotation_type.name }}">
+                                    {{ annotation_type.name }} ({{annotation_type.product.name}}) </option>
+
+                                {% endfor %}
+
+                            </select>
+                            <span class="input-group-btn">
+                                <button class="btn btn-primary" id="filter_update_btn">
+                                    <image src="{% static 'images/search.svg' %}">
+                                </button>
+                            </span>
+                        </div>
+                        
+                        <div id="image_list" style="overflow:scroll; height:40vh" data-static-file="{% static '' %}" 
+                                                data-static_cdn={{USE_CDN_WSI}}
+                                                data-image_set_name="{{ selected_image.image_set.name }}">
+                            {% for set_image in set_images %}
+                            <a id="annotate_image_link_{{ set_image.id }}"
+                                href="{% url 'annotations:annotate' set_image.id %}{% if filtered is not None %}?selected_annotation_type={{ filtered }}{% endif %}"
+                                class="annotate_image_link {% if set_image.id == selected_image.id %}active{% endif %}"
+                                data-image_id="{{ set_image.id }}">
+                                {{ set_image.name }}
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="d-flex justify-content-between"
+                            style="overflow-x: auto; flex-wrap: nowrap; overflow-y: hidden">
+                            <button type="button" class="annotate_button btn btn-primary" id="back_button"  data-toggle="tooltip" title="back (q)">
+                                <image src="{% static 'images/backspace.svg' %}">
+                            </button>
+
+                            {% if 'delete_images' in imageset_perms and not imageset_lock %}
+                            <button type="button" class="btn btn-danger" id="deleteImageButton"  data-toggle="tooltip" title="delete image">
+                                <image src="{% static 'images/trash2.svg' %}">
+                            </button>
+                            {% endif %}
+
+                            {% if 'annotate' in imageset_perms %}
+                            <button type="button" class="annotate_button btn btn-success" id="verify_image_button" data-toggle="tooltip" title="verify (f)">
+                                <image src="{% static 'images/CheckAll.svg' %}">
+                            </button>
+                            {% endif %}
+
+
+                            <button type="button" class="annotate_button btn btn-primary" id="skip_button" data-toggle="tooltip" title="reverse (e)">
+                                <image src="{% static 'images/BackspaceReverse.svg' %}">
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            
+                <div class="card" style="height:calc(60vh - 70px)">
+                    <div class="card-header" style="padding:0px">
+                        <h5 id="active_image_name">{{ selected_image.name }}</h5>
+                    </div>
+                    <div class="card-body flex-column bottomcard">
+                        
+                        {% csrf_token %}
+
+                        <ul class="nav nav-tabs" id="statistics_tabs" role="tablist"
+                            style="overflow-x: auto; flex-wrap: nowrap; overflow-y: hidden;height:35px">
+
+                            {% if annotation_types %}
+                            <li class="nav-item">
+                                <a class="nav-link active" id="default_statistics_tab" data-toggle="tab" href="#home"
+                                    role="tab" aria-controls="home">Statistics</a>
+                            </li>
+                            {% endif %}
+
+                            {% if global_annotation_types %}
+                            <li class="nav-item">
+                                <a class="nav-link" id="default_global_annotation_tab" data-toggle="tab"
+                                    href="#nav-item_global" role="tab" aria-controls="home">Image</a>
+                            </li>
+
+                            {% endif %}
+
+                            {% if show_processing %}
+                            <li class="nav-item">
+                                <a class="nav-link" id="default_global_annotation_tab" data-toggle="tab"
+                                    href="#nav-item_processing" role="tab" aria-controls="home">Processing</a>
+                            {% endif %}
+
+
+                            <li class="nav-item">
+                                <a class="nav-link" id="default_annotation_tab" data-toggle="tab" href="#nav-item_anno"
+                                    role="tab" aria-controls="home">Annotation</a>
+                            </li>
+
+                            {% if HasMediaFiles %}
+
+                            <li class="nav-item">
+                                <a class="nav-link" id="default_media_tab" data-toggle="tab" href="#nav-item_media"
+                                    role="tab" aria-controls="home">Media</a>
+                            </li>
+
+                            {% endif %}
+
+                            <li class="nav-item">
+                                <a class="nav-link" id="default_search_tab" data-toggle="tab" href="#nav-item_search"
+                                    role="tab" aria-controls="home">Search</a>
+                            </li>
+
+                            <li class="nav-item">
+                                <a class="nav-link" id="default_filter_openseadragon_tab" data-toggle="tab"
+                                    href="#nav-item_openseadragon_filter" role="tab" aria-controls="home">Filter</a>
+                            </li>
+
+                            <li class="nav-item">
+                                <a class="nav-link" id="default_screening_tool" data-toggle="tab"
+                                    href="#nav-item_screening_tool" role="tab" aria-controls="home">Screening</a>
+                            </li>
+
+                            {% if annotation_types %}
+                            <li class="nav-item">
+                                <a class="nav-link" id="team_statistics_tool" data-toggle="tab"
+                                    href="#nav-item_team_statistics_tool" role="tab" aria-controls="home">Team</a>
+                            </li>
+                            {% endif %}
+
+                            {% if asthma  %}
+                            <li class="nav-item">
+                                <a class="nav-link" id="item_asthma" data-toggle="tab" href="#nav-item_asthma"
+                                    role="tab" aria-controls="home">Asthma</a>
+                            </li>
+                            {% endif %}
+
+                            <li class="nav-item">
+                                <a class="nav-link" id="item_browsersync" data-toggle="tab" href="#nav-item_browsersync"
+                                    role="tab" aria-controls="home">Sync</a>
+                            </li>
+
+
+                        </ul>
+
+                        <div class="tab-content" id="statistics_tabs_content">
+
+                            {% if annotation_types %}
+                            <div class="tab-pane fade show active" id="home">
+                                <table style="width: 100%; text-align: center"
+                                    class="table table-striped table-bordered table-sm">
+                                    <tr>
+                                        <th>Label</th>
+                                        <th>Key</th>
+                                        <th>
+                                            <label data-toggle="tooltip" data-placement="right"
+                                                title="( Number of annotations / Number of validated annotations )">
+                                                Count
+
+                                            </label>
+                                        </th>
+                                        <th>Color</th>
+                                        <th>Example</th>
+                                    </tr>
+
+                                    {% for annotation_type in annotation_types %}
+                                    <tr>
+                                        <td id="annotation_type_id_button_{{ annotation_type.id }}"
+                                            data-annotation_type_id={{ annotation_type.id }}>
+                                            {{ annotation_type.name }}
+                                        </td>
+                                        <td>{{ forloop.counter }}</td>
+                                        <td id="{{ annotation_type.name }}_{{ annotation_type.id }}">
+                                            {{ annotation_type.node_count }}</td>
+                                        <td style="background-color: {{ annotation_type.color_code }}">
+                                            <input type="checkbox" id="DrawCheckBox_{{ annotation_type.id }}"
+                                                data-annotation_type_id={{ annotation_type.id }} checked>
+                                        </td>
+                                        <td>
+                                            <a href="{{ annotation_type.image_file}}">
+                                                <img src="{{ annotation_type.image_file}}"
+                                                    style="widows: 50px; height: 50px">
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </table>
+                            </div>
+                            {% endif %}
+
+                            {% if global_annotation_types %}
+
+                            <div class="tab-pane fade" id="nav-item_global">
+                                <table style="width: 100%; text-align: center"
+                                    class="table table-striped table-bordered table-sm">
+                                    <tr>
+                                        <th class="text-center">Label</th>
+                                        <th class="text-center">Key</th>
+                                        <th></th>
+                                    </tr>
+
+                                    {% for annotation_type in global_annotation_types %}
+
+                                    <tr>
+
+                                        <td>{{ annotation_type.name }}</td>
+                                        <td> Shift + {{ forloop.counter }}</td>
+                                        <td>
+                                            <input type="checkbox" id="GlobalAnnotation_{{ annotation_type.id }}"
+                                                data-annotation_type_id={{ annotation_type.id }}
+                                                data-key_number={{ forloop.counter }}>
+                                        </td>
+                                    </tr>
+
+
+                                    {% endfor %}
+
+
+                                </table>
+                            </div>
+
+                            {% endif %}
+
+                            <div class="tab-pane fade" id="nav-item_anno">
+
+                                <div id="AnnotationInformation">
+                                    <table style="width: 100%; margin-top: 10px; text-align: center">
+                                        <tr>
+                                            <th></th>
+                                            <th></th>
+                                            <th>Remark</th>
+                                        </tr>
+
+                                        <tr>
+                                            <td>First Editor:</td>
+                                            <td>
+                                                <a id="annotationFirstEditor"></a>
+                                            </td>
+                                            <td rowspan="5">
+                                                <textarea id="annotationRemark" rows="5" cols="10"
+                                                    style="resize: none;">
+                                                        </textarea>
+                                            </td>
+                                        </tr>
+
+                                        <tr>
+                                            <td>Last Editor:</td>
+                                            <td>
+                                                <a id="annotationLastEditor"></a>
+                                            </td>
+                                        </tr>
+
+                                        <tr>
+                                            <td>Unique ID:</td>
+                                            <td>
+                                                <a id="annotationUniqueID"></a>
+                                            </td>
+                                        </tr>
+
+                                        <tr>
+                                            <td>Verified:</td>
+                                            <td>
+                                                <label id="annotationVerified"></label>
+                                            </td>
+                                        </tr>
+                                    </table>
+
+                                </div>
+
+                            </div>
+
+                            {% if HasMediaFiles %}
+
+                            <div class="tab-pane fade" id="nav-item_media">
+
+                                <div id="AnnotationMediaInformation">
+                                    <table style="width: 100%; margin-top: 10px; text-align: center">
+                                        <tr id="show_audio">
+                                            <td>
+                                                <audio id="audio" controls="controls">
+                                                    <source id="annotationAudio" src="" type="audio/mpeg">
+                                                    Your browser does not support the audio format.
+                                                </audio>
+                                            </td>
+                                            <td>
+                                                <input type='checkbox' id='autoplay_media' name="autoplay_media"
+                                                    checked>
+                                                <label for='autoplay_media'>AutoPlay</label>
+
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+
+                            {% endif %}
+                            {% if show_processing %}
+                            <div class="tab-pane fade" id="nav-item_processing">
+                                <table>
+                                    {% for plugin in availablePlugins %}
+                                    <tr style="" id="process-{{plugin.id}}"><td>
+                                        <a class="annotate_button btn btn-success" id="run_processing_{{ plugin.id }}" href="">
+                                         process</a>
+                                        </td><td>{{plugin.name}}</td></tr>
+                                    
+                                        <tr style="display:none" id="processing-{{plugin.id}}"><td>
+                                         <div class="progress" style="width:100px">
+                                            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="{{plugin.processing_complete}}" aria-valuemin="0" aria-valuemax="100" style="width: {{plugin.processing_complete|floatformat:"0"}}%" id="completed-{{ plugin.id }}">-inf %</div>
+                                          </div>
+                                        </td><td>{{plugin.name}}</td></tr>
+                                        <tr style="display:none" id="compl-{{plugin.id}}"><td>
+<label class="btn btn-outline-secondary btn-sm" for="vis-plugin-{{plugin.id}}"><input type="checkbox" class="btn-check btn-sm" id="vis-plugin-{{plugin.id}}" checked autocomplete="off" data-plugin_id={{plugin.id}}
+     data-plugin_resultentries="[]"><image src="{% static 'images/eye_fill_small.svg' %}"></label><br>
+
+                                    </td><td class="text-left"><a data-toggle="collapse" href="#collapsePlugin-{{plugin.id}}" aria-expanded="false" aria-controls="collapseExample">{{plugin.name}}</a></td><td><input type="range" id='alpha-plugin-{{plugin.id}}' min="1" max="100" value="{% if plugin.result  %}{{plugin.result.default_alpha|floatformat:"0"}}{%  else  %}100{% endif %}" class="visslider" data-plugin_id={{plugin.id}}></td></tr>
+                                    <tr><td></td><td>
+                                    <div class="collapse text-left" id="collapsePlugin-{{plugin.id}}">
+                                    </div></td></tr>
+                                    {% endfor %}
+                                </table>
+                            </div>
+                            {% endif %}
+
+                            <div class="tab-pane fade" id="nav-item_search">
+
+                                <div class="input-group">
+                                    <input type="text" id="searchInputAnnotation" placeholder="Search for annotations.."
+                                        title="Search Syntax: @Field:Value; [@Field:Value]" class="form-control">
+                                    <span class="input-group-btn">
+                                        <button class="btn btn-primary" id="search_update_btn">
+                                            <image src="{% static 'images/search.svg' %}">
+                                        </button>
+                                    </span>
+                                </div>
+
+                                <div class="d-flex justify-content-between" 
+                                        style="overflow-x: auto; flex-wrap: nowrap; overflow-y: hidden">     
+
+                                    <button type="button" class="annotate_button btn btn-primary" id="back_button_search">
+                                        <image src="{% static 'images/backspace.svg' %}"> 
+                                    </button>
+
+                                    <input type="text" id="currentSearchElement" title="Current ID" class="form-control">
+                                    
+                                    <button type="button" class="annotate_button btn btn-primary" id="next_button_search">
+                                        <image src="{% static 'images/BackspaceReverse.svg' %}"> 
+                                    </button>
+                                </div>
+
+                                <table style="width: 100%; margin-top: 10px; text-align: center"
+                                    class="table table-striped table-bordered table-sm">
+                                    <tbody id="annotationSearchResults">
+                                        <tr>
+                                            <th>ID:</th>
+                                            <th>Label:</th>
+                                            <th>First Editor:</th>
+                                            <th>Last Editor:</th>
+                                            <th>Verified:</th>
+                                            <th>Remark:</th>
+                                        </tr>
+                                    </tbody>
+
+                                </table>
+                            </div>
+
+
+                            <div class="tab-pane fade" id="nav-item_openseadragon_filter">
+
+                                <div class="card">
+                                    <div class="card-body">
+
+                                        <div class="d-flex justify-content-between">
+                                            <label for="BRIGHTNESSSlider">Brigthness</label>
+                                            <input id="BRIGHTNESSSlider" type="text" data-slider-min="-255"
+                                                data-slider-max="255" data-slider-step="1" data-slider-value="0"
+                                                data-slider-enabled="false" />
+
+                                            <input id="BRIGHTNESSSlider-enabled" type="checkbox" />
+
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <label for="ContrastSlider">Contrast</label>
+                                            <input id="ContrastSlider" type="text" data-slider-min="0"
+                                                data-slider-max="10" data-slider-step="0.1" data-slider-value="1"
+                                                data-slider-enabled="false" />
+                                            <input id="ContrastSlider-enabled" type="checkbox" />
+                                        </div>
+
+                                        <div class="d-flex justify-content-between">
+                                            <label for="CLAHESlider">CLAHE</label>
+                                            <input id="CLAHESlider" type="text" data-slider-min="0" data-slider-max="50"
+                                                data-slider-step="1" data-slider-value="1"
+                                                data-slider-enabled="false" />
+                                            <input id="CLAHESlider-enabled" type="checkbox" />
+                                        </div>
+
+                                        <div class="d-flex justify-content-between">
+                                            <label for="THRESHOLDINGSlider">Thresholding</label>
+                                            <input id="THRESHOLDINGSlider" type="text" data-slider-min="0"
+                                                data-slider-max="255" data-slider-step="1" data-slider-value="128"
+                                                data-slider-enabled="false" />
+                                            <input id="THRESHOLDINGSlider-enabled" type="checkbox" />
+                                        </div>
+
+                                        <div class="d-flex justify-content-between">
+                                            <div class="col">
+                                                <input id="Invert-enabled" type="checkbox" title="Invert" /> I
+                                            </div>
+                                            <div class="col">
+                                                <input id="GREYSCALE-enabled" type="checkbox" title="Grey" /> S
+                                            </div>
+                                            <div class="col">
+                                                <input id="Red-enabled" type="checkbox" checked=true /> R
+                                            </div>
+                                            <div class="col">
+                                                <input id="Green-enabled" type="checkbox" checked=true /> G
+                                            </div>
+                                            <div class="col">
+                                                <input id="Blue-enabled" type="checkbox" checked=true /> B
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="tab-pane fade" id="nav-item_screening_tool">
+
+                                <div class="card">
+                                    <div class="card-header">
+                                        <div class="d-flex justify-content-between">
+                                            <input type="number" id="screeningResolutionX" placeholder="350"
+                                                title="Screening tile size in pixel X" class="form-control"
+                                                value={{ resolution_x }}>
+                                            <input type="number" id="screeningResolutionY" placeholder="350"
+                                                title="Screening tile size in pixel Y" class="form-control"
+                                                value={{ resolution_y }}>
+                                            <button class="btn btn-primary" id="screening_resolution_update_btn">
+                                                <image src="{% static 'images/play.svg' %}">
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="collapse">
+                                            <img id="screeningImage" alt="Screening mode not initialised!">
+                                        </div>
+
+                                        <canvas id="screeningImageOutput"
+                                            alt="Screening mode not initialised!"></canvas>
+
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="tab-pane fade" id="nav-item_team_statistics_tool">
+
+                                <div class="card">
+                                    <div class="card-body">
+                                        <table class="table">
+                                            <thead>
+                                                <tr>
+                                                    <th scope="col">User</th>
+                                                    <th scope="col" title="Show annotations created by this user">created by
+                                                    </th>
+                                                    <th scope="col" title="Show annotations last edited by this user">
+                                                        last edited</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td> Toggle All </td>
+                                                    <td>
+                                                        <input id="ShowUserCreatedAnnotationsToggle" type="checkbox"
+                                                            checked />
+                                                    </td>
+                                                    <td>
+                                                        <input id="ShowUserLastEditedAnnotationsToggle" type="checkbox"
+                                                            checked />
+                                                    </td>
+                                                </tr>
+
+                                                {% for user in team.members.all %}
+                                                <tr>
+                                                    <td>{{ user.username }}</td>
+                                                    <td>
+                                                        <input id="ShowUserCreatedAnnotations_{{user.id}}"
+                                                            type="checkbox" checked data-user_id={{user.id}} />
+                                                    </td>
+                                                    <td>
+                                                        <input id="ShowUserLastEditedAnnotations_{{user.id}}"
+                                                            type="checkbox" checked data-user_id={{user.id}} />
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="tab-pane fade" id="nav-item_asthma">
+
+                                <table style="white-space:nowrap; width: 100%; margin-top: 10px; text-align: center"
+                                    class="table table-striped table-bordered table-sm">
+                                    <tbody id="annotationSearchResults">
+                                        <tr>
+                                            <th>
+                                                <button class="btn btn-success" id="asthma_update_btn">
+                                                    <span class="fa fa-refresh"></span>
+                                                </button>
+
+                                            </th>
+                                            <th>Actual:</th>
+                                            <th>Healtly:</th>
+                                            <th>IAD:</th>
+                                            <th>RAO:</th>
+                                            <th> bacterial pneumonia: </th>
+                                        </tr>
+
+                                        <tr>
+                                            <td>Neutrophils</td>
+                                            <td id=asthma_neutrophils></td>
+                                            <td> &#060; 5 %</td>
+                                            <td>5–20 %</td>
+                                            <td> &#062; 20–25 %</td>
+                                            <td> &#060; 90 %</td>
+                                        </tr>
+
+                                        <tr>
+                                            <td>Macrophages</td>
+                                            <td id=asthma_macrophages></td>
+                                            <td> 50–70 %</td>
+                                            <td> </td>
+                                            <td> </td>
+                                            <td> </td>
+                                        </tr>
+
+                                        <tr>
+                                            <td>Eosinophils</td>
+                                            <td id=asthma_eosinophils></td>
+                                            <td> &#060; 0.5 %</td>
+                                            <td> &#062; 0.5 % </td>
+                                            <td> &#062; 0.5 % </td>
+                                            <td> </td>
+                                        </tr>
+
+                                        <tr>
+                                            <td>Mast Cells</td>
+                                            <td id=asthma_mast_cell></td>
+                                            <td> &#060; 1 %</td>
+                                            <td> &#062; 1 % </td>
+                                            <td> &#062; 1 % </td>
+                                            <td> </td>
+                                        </tr>
+
+                                        <tr>
+                                            <td>Total</td>
+                                            <td id=asthma_total></td>
+                                            <td> </td>
+                                            <td> </td>
+                                            <td> </td>
+                                            <td> </td>
+                                        </tr>
+                                    </tbody>
+
+                                </table>
+
+                                <a href="https://bib.vetmed.fu-berlin.de/pubdb/pub/23441-die-zytologie-von-tracheobronchialsekret-tbs-und-bronchoalveola/">
+                                    Robert Klopfleisch, Christof A. Bertram <br>
+                                    Die Zytologie von Tracheobronchialsekret (TBS) und bronchoalveolärer Lavage-Flüssigkeit (BALF) beim Pferd mit equinem Asthma:
+                                </a>
+                            </div>
+
+
+                            <div class="tab-pane fade" id="nav-item_browsersync">
+
+                                <div class="input-group">
+                                    <select id="sync_browser_image" name="Open images">  </select>
+                                    <span class="input-group-btn">
+                                        <button class="btn btn-primary" id="search_browserimages_btn">
+                                            <image src="{% static 'images/search.svg' %}">
+                                        </button>
+                                    </span>
+                                    <span class="input-group-btn" id="open_registration_image_visibility">
+                                        <a href="" id="open_registration_image"><span class="fa fa-window-maximize  fa-2x"> </span></a>
+                                    </span>
+                                </div>
+
+                                <table style="white-space:nowrap; width: 100%; margin-top: 10px; text-align: center"
+                                    class="table table-striped table-bordered table-sm">
+
+                                    <tbody id="syncBrowserOptions">
+                                        <tr>
+                                            <th>Sync</th>
+                                            <th>Active</th>
+                                            <th>Update</th>
+                                        </tr>
+
+                                        <tr>
+                                            <td>Search</td>
+                                            <td> 
+                                                <input id="SyncBrowserSearch-enabled" type="checkbox" />
+                                            </td>
+                                        </tr>
+
+                                        <tr>
+                                            <td>Viewpoint</td>
+                                            <td> 
+                                                <input id="SyncBrowserViewpoint-enabled" type="checkbox" />
+                                            </td>
+
+                                            <td>
+                                                <span class="input-group-btn">
+                                                    <button class="btn btn-primary" id="update_browser_sync_images_btn">
+                                                        <image src="{% static 'images/search.svg' %}">
+                                                    </button>
+                                                </span>
+                                            </td>
+                                        </tr>
+
+                                        <tr>
+                                            <td>Overlay <br> Opacity</td>
+                                            <td>
+                                                <input id="OverlayRegImage-enabled" type="checkbox" />
+                                            </td>
+
+                                            <td>
+                                            </td>
+                                        </tr>
+
+                                        <tr>
+                                            <td>Sync<br> Annos</td>
+                                            <td>
+                                                <input id="SyncAnnosToView-enabled" type="checkbox" />
+                                            </td>
+                                        </tr>
+
+                                        <tr>
+                                            <td>
+                                                <tbody id="registrationTables">
+                                                    <tr>
+                                                        <td>
+                                                            <input type="number" id="registration00" placeholder=1 class="form-control">
+                                                        </td>
+                                                        <td>
+                                                            <input type="number" id="registration01" placeholder=0 class="form-control">
+                                                        </td>
+                                                        <td>
+                                                            <input type="number" id="registration02" placeholder=0 class="form-control">
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>
+                                                            <input type="number" id="registration10" placeholder=0 class="form-control">
+                                                        </td>
+                                                        <td>
+                                                            <input type="number" id="registration11" placeholder=1 class="form-control">
+                                                        </td>
+                                                        <td>
+                                                            <input type="number" id="registration12" placeholder=0 class="form-control">
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>
+                                                            <input type="number" id="registration20" placeholder=0 class="form-control">
+                                                        </td>
+                                                        <td>
+                                                            <input type="number" id="registration21" placeholder=0 class="form-control">
+                                                        </td>
+                                                        <td>
+                                                            <input type="number" id="registration22" placeholder=1 class="form-control">
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </td>
+
+                                        </tr>
+                                    </tbody>
+                            
+                                </table>
+
+                            </div>
+
+
+                        </div>
+                    </div>
+                    <div class="card-footer" style="height:60px">
+                        <tr>
+                            <div class="row">
+                                {% if show_advanced_options %}
+                                <div class="col-md-2">
+
+                                    <input id="StrokeWidthSlider" type="range" class="custom-range" min="1" max="500"
+                                        step="1" value="5" />
+                                    <label for="StrokeWidthSlider">Stroke</label>
+
+                                    <input id="OpacitySlider" type="range" class="custom-range" min="0.01" max="1.0"
+                                        step="0.01" value="0.0" />
+                                    <label for="OpacitySlider">Opacity</label>
+                                </div>
+                                {% else %}
+                                <input id="StrokeWidthSlider" type="hidden" class="custom-range" value="5" />
+                                <input id="OpacitySlider" type="hidden" class="custom-range" value="0.01" />
+                                {% endif %}
+
+                                {% if show_advanced_options %}
+                                <div class="col-md-2">
+                                {% else %}
+                                <div class="col-md-4">
+                                {% endif %}
+                                    <label for='statistics_total_annotations' title="Total Annotations">Total:</label>
+                                    <label id="statistics_total_annotations"
+                                        title="Total Annotations">{{ total_annotations }}</label>
+                                </div>
+
+                                <div class="col-md-8">
+                                    <select id="annotation_type_id" name="selected_annotation_type" class="form-control">
+                                        {% for annotation_type in annotation_types %}
+
+                                        <option value="{{ annotation_type.id }}" name="{{ annotation_type.name }}"
+                                            id="annotation_type_{{ annotation_type.id }}"
+                                            data-annotation_type_key={{ forloop.counter }}>
+                                            {{ annotation_type.name }} ({{forloop.counter}})
+                                        </option>
+
+                                        {% endfor %}
+                                    </select>
+                                    {% if show_advanced_options %}
+                                    <div class=""><input type="checkbox" id="display_messages" checked="true" width: auto>Display Messages</div>
+                                    <div class="">
+                                        <label for="tristate_option">3rd Checkbox state:</label>
+                                        <select id="tristate_option">
+                                        <option value="unused">Deactivated</option>
+                                        <option value="no_interact">Visible, no Interaction</option>
+                                        <option value="no_vis">Not Visible, Interaction</option>
+                                        </select>
+                                    </div>
+                                    {% else %}
+                                     <input type="hidden" id="tristate_option" value="unused">
+                                     <input type="checkbox" id="display_messages" checked="true" width: auto style="display:none">
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </tr>
+                    </div>
+                </div>
+
+                <span id="image_id" class="invisible">{{ selected_image.id }}</span>
+                <span id="image_set_id" class="invisible">{{ selected_image.image_set.id }}</span>
+                <span id="user_id" class="invisible">{{ user_id }}</span>
+                <span id="team_id" class="invisible">{{ team.id }}</span>
+            </div>
+        </div>
+
+        <div class="col h-100" id="annotationImage">
+            <div style="width: 100%; display: table;color:#888">
+                <div style="display: table-row">
+                    <div id="zoomSlider" style="width: 20vw; display: table-cell"></div>
+                    <div style="width: 5vw; display: table-cell"></div>
+                    <div id="overlaySlider" style="width: 20vw; display: table-cell"></div>
+                </div>
+            </div>
+             <!-- style="width: 25vw;" -->
+            <div style="height: 85vh;">
+                <div class="seadragon-viewer" id="openseadragon_background"  style="position: absolute; height: 85vh; width: 98%">
+                </div>
+                <div class="seadragon-viewer" id="openseadragon1" style="position: absolute; height: 85vh; width: 98%">        
+                </div>    
+            </div>
+            <div id="frameSlider" style="width: 35vw;"></div>
+        </div>
+
+        <div class="col-3 collapse" style="height: calc(100vh - 60px); overflow-y: auto" id="imagesetThumbnails">
+            <div class="card-columns">
+                {% for set_image in set_images %}
+                <div class="card" id="thumbnailCard_{{ set_image.id }}">
+                    <a href="{% url 'annotations:annotate' set_image.id %}">
+                        <img class="card-img-top" style="max-width: 80px" id="imageThumbnail_{{ set_image.id }}" alt="Loading thumbnail"
+                            data-image_id="{{ set_image.id }}">
+                    </a>
+                </div>
+                {% endfor %}
+
+            </div>
+        </div>
+
+        <div class="row" style="width:30px">
+            <button type="button" class="btn" id="loadImagesetThumbnails" style="background: repeating-linear-gradient(-45deg, #2a2a2a, #4b444a 5px); cursor:w-resize; color:#ccc;width:30px;text-align: center; margin:0px; margin-left:10px; padding:0px">
+                &#10311;
+            </button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
