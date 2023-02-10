@@ -1,0 +1,67 @@
+{% extends 'base/base.html' %}
+{% load i18n %}
+{% load static %}
+{% load widget_tweaks %}
+{% block taggerimports %}
+
+<script type="text/javascript" src="{% static 'scripts/jquery-3.2.1.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'scripts/bootstrap.min.js' %}"></script>
+
+{% endblock taggerimports %}
+{% block additional_js %}
+<script type="text/javascript" src="{% static 'scripts/plugins_products.js' %}"></script>
+<script type="text/javascript" src="{% static 'scripts/notify.min.js' %}"></script>
+{% endblock additional_js %}
+
+
+{% block bodyblock %}
+{% csrf_token %}
+<div class="container-fluid h-100">
+        <div class="row justify-content-center h-100">
+            <div class="col-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>
+                            Plugin overview
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="col-md-12">
+                            <table>
+                                <tr><th>Plugin ID</th><th>Name</th><th>Jobs</th><th>Available for Products</th></tr>
+                            {% for plugin in plugins %}
+                            <tr><td>{{ plugin.id }}</td><td>
+                                            {{ plugin.name }}
+                                        </td><td>{{ plugin.jobs.all|length }}</td>
+                                        <td id="products-with-delete-{{ plugin.id }}" class="tag-container">
+                                            <div class="input-group" role="group" aria-label="team_creation">
+                                                <select id="product_id" name="selected_product" class="form-control">
+                                                    {% for product in all_products %}
+                                                       <option value="{{plugin.id}}#{{ product.id }}"
+                                                            class="bold">{{ product.name }} ({{ product.team }})</option>
+                                                    {% endfor %}
+                                                </select>
+                                                <span class="input-group-btn">
+                                                    <input id="add_product_btn" class="btn btn-primary" type="button" value="Add">
+                                                </span>
+                                            </div>
+                                            {% for product in plugin.products.all %}
+                                            <span class="label label-info" value="{{ product.id }}" id="product_{{ plugin.id}}_{{ product.id }}">
+                                                <a href="{% url 'administration:product' product.id %}"> {{ product.name }}&nbsp;</a>
+                                                <span class="fa fa-remove product-delete" value="{{plugin.id}}#{{ product.id }}" data_id={{ product.id }}></span>
+                                            </span>&#8203;
+                                            {% endfor %}
+        
+
+                                        </td>
+                                        </tr>
+                                            
+
+                            {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+        </div>
+    </div>
+{% endblock %}

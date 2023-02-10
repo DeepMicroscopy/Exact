@@ -18,6 +18,12 @@ urlpatterns = [
     url(r'^products/create/$', views.create_product, name='create_product'),
 
     url(r'^products/edit/(\d+)/$', views.edit_product, name='edit_product'),
+    url(r'^plugins/list/$', views.plugins, name='plugins'),
+
+    url(r'^api/plugins/product/add/$', views.add_plugin_product, name='add_plugin_product'),
+    url(r'^api/plugins/product/delete/$', views.remove_plugin_product, name='remove_plugin_product'),
+
+
     url(r'^annotation_type/list/$', views.annotation_types, name='annotation_types'),
     url(r'^annotation_type/(\d+)/$', views.annotation_type, name='annotation_type'),
     url(r'^annotation_type/create/$', views.create_annotation_type, name='create_annotation_type'),

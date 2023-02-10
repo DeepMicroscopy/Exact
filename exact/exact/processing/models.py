@@ -39,7 +39,7 @@ class Plugin(models.Model):
     contact = models.EmailField(max_length=80)
     abouturl = models.URLField(max_length=80)
     icon = models.ImageField(upload_to=plugins_directory)
-    products = models.ManyToManyField(Product, related_name="plugins")
+    products = models.ManyToManyField(Product, related_name="plugins", blank=True)
 
     def __str__(self):
         return u'Plugin: {0}'.format(self.name)

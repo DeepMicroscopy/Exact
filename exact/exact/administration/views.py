@@ -6,6 +6,10 @@ from django.contrib import messages
 from django.db import transaction
 from django.core.files.storage import FileSystemStorage
 from django.core.paginator import Paginator
+from django.contrib.auth.decorators import login_required
+
+from exact.processing.models import Plugin
+from exact.processing.serializers import PluginSerializer
 
 from .forms import AnnotationTypeCreationForm, AnnotationTypeEditForm, ProductCreationForm, ProductEditForm
 from exact.annotations.models import Annotation, AnnotationType
@@ -135,6 +139,69 @@ def annotation_type(request, annotation_type_id):
         'edit_form': edit_form,
         'teams': teams
     })
+
+def plugins(request):
+
+    teams = Team.objects.filter(members=request.user)
+    all_products = Product.objects.filter(team__in=request.user.team_set.all()).order_by('name')
+    print('All products:',all_products)
+    return render(request, 'administration/plugins.html', {
+        'plugins' : Plugin.objects.order_by('name'),
+        'all_products' : all_products,
+        'teams': teams
+    })
+
+@api_view(['POST'])
+def add_plugin_product(request) -> Response:
+    print('Running add product with:',request.data)
+    try:
+        plugin_id = int(request.data['plugin_id'])
+        product_id = int(request.data['product_id'])
+    except (KeyError, TypeError, ValueError):
+        raise ParseError
+    plugin = get_object_or_404(Plugin, pk=plugin_id)
+
+    product = Product.objects.filter(id=product_id).first()
+
+    plugin.products.add(product)
+    plugin.save()
+
+    serializer = ProductSerializer(product)
+
+
+    return Response({
+        'detail': 'added a product to the plugin.',
+        'product': serializer.data,
+        'plugin': PluginSerializer(plugin).data,
+    }, status=HTTP_201_CREATED)
+
+@login_required
+@api_view(['DELETE'])
+def remove_plugin_product(request) -> Response:
+    print('Running delete product with:',request.data)
+    try:
+        plugin_id = int(request.data['plugin_id'])
+        product_id = int(request.data['product_id'])
+    except (KeyError, TypeError, ValueError):
+        raise ParseError
+
+    plugin = get_object_or_404(Plugin, pk=plugin_id)
+    product = get_object_or_404(Product, id=product_id)
+
+
+
+    plugin.products.remove(product)
+
+    serializer = ProductSerializer(product)
+    serializer_data = serializer.data
+
+    product.save()
+
+    return Response({
+        'detail': 'removed the product.',
+        'product': serializer_data,
+        'plugin': PluginSerializer(plugin).data,
+    }, status=HTTP_201_CREATED)
 
 @api_view(['POST'])
 def api_delete_annotation_type(request) -> Response:
