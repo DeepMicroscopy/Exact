@@ -24,9 +24,9 @@
             <div class="card">
                 <div class="card-header">
                     <h3>
-                        Processing Queue
+                        Processing Queue 
                     </h3>
-                </div>
+                  </div>
                 <div class="card-body">
                     <table>
                         <tr><th></th><th>Job ID</th><th>Image</th><th>Plugin</th><th>Created</th><th>Last update</th><th>Complete</th><th>Actions</th><th>Details</th></tr>
@@ -76,7 +76,7 @@
                     <nav aria-label="...">
                         <ul class="pagination">
                           <li class="page-item {% if page_obj.has_previous == False %}disabled{% endif %}">
-                            <a class="page-link" href="{% if page_obj.has_previous %}?page={{ page_obj.previous_page_number }}{% endif %}" tabindex="-1">Previous</a>
+                            <a class="page-link" href="{% if page_obj.has_previous %}?completed={{ include_completed }}&page={{ page_obj.previous_page_number }}{% endif %}" tabindex="-1">Previous</a>
                           </li>
                           {% for l in page_obj.paginator.page_range %}
                              {% if l <= page_obj.number|add:3 and l >= page_obj.number|add:-3 %}
@@ -85,19 +85,30 @@
                              {% else %}
                              <li class="page-item">
                              {% endif %}
-                              <a class="page-link" href="?page={{ l }}">{{ l }}</a></li>
+                              <a class="page-link" href="?completed={{ include_completed }}&page={{ l }}">{{ l }}</a></li>
 
 
                               {% endif %}
 
                           {% endfor %}
                           <li class="page-item {% if page_obj.has_next == False %}disabled{% endif %}">
-                            <a class="page-link" href="{% if page_obj.has_next %}?page={{ page_obj.next_page_number }}{% endif %}">Next</a>
+                            <a class="page-link" href="{% if page_obj.has_next %}?completed={{ include_completed }}&page={{ page_obj.next_page_number }}{% endif %}">Next</a>
                           </li>
+                          &nbsp;
+                          <li class="page-item">
+                            {% if include_completed == 0 %}
+                            <a class="page-link" href="?completed=1">Also show completed</a>
+                            {% else %}
+                            <a class="page-link" href="?completed=0">Hide completed</a>
+                            {% endif %}
+                          </li>
+                          <li>
+                        </li>
                         </ul>
+
                       </nav></ul>
                       <span id="user_id" class="invisible">{{ user_id }}</span>
-                      </div>
+                    </div>
                       <span id="pagination_start_idx" class="invisible">{{ page_obj.start_index }}</span>
                       <span id="pagination_end_idx" class="invisible">{{ page_obj.end_index }}</span>
                       <span id="incomplete_jobs" class="invisible">{{ incomplete_jobs }}</span>

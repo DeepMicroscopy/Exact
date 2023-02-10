@@ -55,6 +55,11 @@ def index(request):
     current_jobs_user = PluginJob.objects.filter(Q(creator=request.user)).order_by('-created_time')
     current_jobs = PluginJob.objects.order_by('-updated_time')
 
+    if ('completed' not in request.GET) or (int(request.GET['completed'])==0):
+        current_jobs_user = current_jobs_user.filter(~Q(processing_complete=100))
+        completed=0
+    else:
+        completed=1
 
     P = Paginator(current_jobs_user, settings.PAGINATION_PROCESSING_QUEUE)
     page_number = request.GET.get('page')
@@ -71,6 +76,7 @@ def index(request):
             'current_jobs' : current_jobs,
             'current_jobs_user' : P.get_page(page_number).object_list,
             'user': request.user,
+            'include_completed' : completed,
             'incomplete_jobs' : incomplete_jobs[1:-1],
             'page_obj': P.get_page(page_number),
             'user_id': request.user.id,
