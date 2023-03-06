@@ -2,6 +2,7 @@
 {% load i18n %}
 {% load static %}
 
+{% load widget_tweaks %}
 {% block taggerimports %}
 <script type="text/javascript" src="{% static 'scripts/jquery-3.2.1.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'scripts/bootstrap.bundle.min.js' %}"></script>
@@ -10,6 +11,10 @@
 
 
 {% endblock taggerimports %} 
+{% block additional_js %}
+<script type="text/javascript" src="{% static 'scripts/notify.min.js' %}"></script>
+{% endblock additional_js %}
+
 {% block bodyblock %}
 
 <!-- refresh after 60 seconds to also catch new jobs -->
