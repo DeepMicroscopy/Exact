@@ -77,10 +77,16 @@ class PluginResultViewSet(viewsets.ModelViewSet):
         the user as determined by the username portion of the URL.
         """
         image_id = self.request.query_params.get('image_id')
+        job_id = self.request.query_params.get('job_id')
+        objects = models.PluginResult.objects.all()
         if image_id is not None:
-            return models.PluginResult.objects.filter(image__id=image_id)
-        else:
-            return models.PluginResult.objects.all().order_by('-created_time')
+            objects = objects.filter(image__id=image_id)
+        if job_id is not None:
+            objects = objects.filter(job__id=job_id)
+        if job_id is not None:
+            objects = objects.filter(job__id=job_id)
+        
+        return objects.order_by('-created_time')
 
 class PluginResultEntryViewSet(viewsets.ModelViewSet):
     """
