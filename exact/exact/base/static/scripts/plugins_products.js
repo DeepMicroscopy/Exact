@@ -111,7 +111,10 @@ function include_server_subdir(url) {
             "Content-Type": 'application/json',
             "X-CSRFTOKEN": gCsrfToken
         };
-        $('#add_product_btn').click(addProduct);
+
+        $.each($('.add_product_btn'), function (number, element) {
+            $(element).click(addProduct);
+        });
 
         $.each($('.product-delete'), function (number, element) {
             $(element).click(deleteProduct);
