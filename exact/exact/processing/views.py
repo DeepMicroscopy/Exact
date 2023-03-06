@@ -3,7 +3,7 @@ from django.http import HttpResponseForbidden, HttpResponse, HttpResponseBadRequ
 from django.template.response import TemplateResponse
 from django.conf import settings
 
-from .models import PluginJob, Plugin
+from .models import PluginJob, Plugin, PluginResult
 from exact.images.models import Image, ImageSet
 from django.db.models import Q
 from django.shortcuts import get_object_or_404,redirect
@@ -44,6 +44,9 @@ def stop(request, job_id):
         return HttpResponse('Error: Job is owned by another user.')
     
     job.delete()
+
+    # Also delete all dependent objects
+    results = PluginResult.objects.filter(job=job_id).delete()
     
     return index(request)
 
