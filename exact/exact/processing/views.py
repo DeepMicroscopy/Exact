@@ -2,7 +2,13 @@ from django.http import HttpResponseForbidden, HttpResponse, HttpResponseBadRequ
     FileResponse, HttpRequest
 from django.template.response import TemplateResponse
 from django.conf import settings
+from rest_framework.decorators import api_view
+from rest_framework.exceptions import ParseError
+from rest_framework.response import Response
+from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_200_OK, \
+    HTTP_403_FORBIDDEN
 
+from .serializers import PluginJobSerializer
 from .models import PluginJob, Plugin, PluginResult
 from exact.images.models import Image, ImageSet
 from django.db.models import Q
@@ -22,6 +28,27 @@ def submit(request, plugin_id, image_id):
                 creator=request.user)
 
     return redirect(reverse('annotations:annotate', args=(image.id,)))
+
+
+@api_view(['POST'])
+def create_job(request) -> Response:
+    try:
+        image_id = int(request.data['image_id'])
+        plugin_id = int(request.data['plugin_id'])
+    except (KeyError, TypeError, ValueError):
+        raise ParseError
+
+    image = get_object_or_404(Image, pk=image_id)
+    plugin = get_object_or_404(Plugin, pk=plugin_id)
+
+    if (PluginJob.objects.filter(image=image).filter(plugin=plugin).count()==0):
+        pluginJob = PluginJob.objects.create(
+                image=image,
+                plugin=plugin,
+                creator=request.user)
+        serializer = PluginJobSerializer(pluginJob)
+        return Response(serializer.data, status=HTTP_201_CREATED)
+    return Response([], status=HTTP_400_BAD_REQUEST)
 
 def submit_imageset(request, plugin_id, imageset_id):
     imageset = get_object_or_404(ImageSet, id=imageset_id)
