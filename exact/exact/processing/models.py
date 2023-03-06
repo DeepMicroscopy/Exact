@@ -85,7 +85,7 @@ class PluginResult(models.Model):
         Plugin, on_delete=models.CASCADE, related_name="results"
     )
     job = models.OneToOneField(
-        PluginJob, on_delete=models.SET_NULL, null=True, related_name="result", 
+        PluginJob, on_delete=models.SET_NULL, null=True, blank=True, related_name="result", 
     )
     created_time = models.DateTimeField(default=datetime.now)
     completed_time = models.DateTimeField(default=datetime.now)
