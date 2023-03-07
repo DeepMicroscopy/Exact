@@ -59,7 +59,10 @@
                                             </td><td>
                                             {%if job.processing_complete == 0 or job.error_message|length > 0 %}
                                             {% if job.creator == user %}
-                                            <a href="{% url "processing:stop" job.id %}">X</a>
+                                            <a href="{% url "processing:stop" job.id %}" class="btn btn-outline-danger">&#10007;</a>
+                                            {% if job.error_message|length > 0 %}
+                                            <a href="{% url "processing:restart" job.id %}" class="btn btn-outline-info">&#10226;</a>
+                                            {% endif %}
                                             {% endif %}
                                             {% endif %}
                                         </td></td><td id="statusfield-{{job.id}}">

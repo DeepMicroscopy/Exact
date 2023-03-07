@@ -7,6 +7,7 @@ from rest_framework.exceptions import ParseError
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_200_OK, \
     HTTP_403_FORBIDDEN
+from datetime import datetime
 
 from .serializers import PluginJobSerializer
 from .models import PluginJob, Plugin, PluginResult
@@ -63,6 +64,24 @@ def submit_imageset(request, plugin_id, imageset_id):
 
     return index(request)
 
+
+def restart(request, job_id):
+    job = get_object_or_404(PluginJob, id=job_id)
+
+    if (job.creator != request.user):
+        return HttpResponse('Error: Job is owned by another user.')
+    
+    # Delete all dependent objects
+    results = PluginResult.objects.filter(job=job_id).delete()
+    
+    job.processing_complete=0
+    job.error_detail=None
+    job.error_message=None
+    job.created_time = datetime.now()
+    job.save()
+
+
+    return index(request)
 
 def stop(request, job_id):
     job = get_object_or_404(PluginJob, id=job_id)
