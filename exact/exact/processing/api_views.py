@@ -109,11 +109,14 @@ class PluginResultAnnotationViewSet(viewsets.ModelViewSet):
         """
         image_id = self.request.query_params.get('image')
         annotation_type = self.request.query_params.get('annotation_type')
+        pluginresultentry_id = self.request.query_params.get('pluginresultentry')
         objects = models.PluginResultAnnotation.objects.all()
         if image_id is not None:
             objects = objects.filter(image__id=image_id)
         if annotation_type is not None:
             objects = objects.filter(annotation_type=annotation_type)
+        if pluginresultentry_id is not None: 
+            objects = objects.filter(pluginresultentry__id=pluginresultentry_id)
         return objects.order_by('-id')
 
 
