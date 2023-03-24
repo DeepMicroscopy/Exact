@@ -1066,7 +1066,14 @@ class BoundingBoxes {
         if (item !== undefined) {
             item.strokeColor.alpha = alpha
         }
-    }    
+    }   
+    updateThresholdedVisibility(unique_identifier, visible)
+    {
+        var item = this.getItemFromUUID(unique_identifier);  
+        if (item !== undefined) {
+            item.visible=visible;
+        }
+    } 
 
     updateVisbility(annotation_type_id, visibility, disabled_hitTest = false, keep_interaction = false) {
         var opacity = $('#OpacitySlider')[0].value

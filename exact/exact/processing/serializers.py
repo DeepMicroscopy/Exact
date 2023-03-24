@@ -108,6 +108,7 @@ class PluginResultEntrySerializer(FlexFieldsModelSerializer):
             'created_time',
             'name',
             'visible',
+            'default_threshold',
             'annotation_results',
             'bitmap_results'
         )

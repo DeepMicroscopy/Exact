@@ -103,6 +103,7 @@ class PluginResultEntry(models.Model):
     pluginresult = models.ForeignKey(
         PluginResult, on_delete=models.CASCADE, related_name="entries"
     )
+    default_threshold = models.FloatField(default=0.0)
     name = models.CharField(max_length=200)
     visible = models.BooleanField(default=True)
     created_time = models.DateTimeField(default=datetime.now)

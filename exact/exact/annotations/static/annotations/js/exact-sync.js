@@ -572,7 +572,7 @@ class EXACTAnnotationSync {
         }
 
         this.API_1_ANNOTATION_FIELDS = 'fields=image,annotation_type,id,vector,generated,deleted,description,verified_by_user,uploaded_media_files,unique_identifier,remark,user.id,user.username,last_editor.id,last_editor.username&';
-        this.API_1_PLUGINRESULTS_FIELDS = 'fields=image,annotation_type,id,vector,generated,plugin,description,unique_identifier,pluginresultentry&';
+        this.API_1_PLUGINRESULTS_FIELDS = 'fields=image,annotation_type,id,vector,score,generated,plugin,description,unique_identifier,pluginresultentry&';
 
         this.initLoadAnnotations(annotationTypes, imageId)
         this.refreshAnnotationsFromServer = setInterval(this.refreshAnnotations(this), this.upDateFromServerInterval, this);

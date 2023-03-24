@@ -55,9 +55,10 @@ class ProcessingTool {
                  sliderValue = 50;
                 }
                 let txt = '';
+                var threshold_fields = []
                 for (let resultentry of job.result.entries)
                 {
-                    txt += resultentry.name;
+                    txt += '<table><tr><th colspan=2>'+resultentry.name
                     if ((resultentry.annotation_results.length>0) && (resultentry.bitmap_results.length>0))
                     {
                         txt += ' ('+resultentry.annotation_results.length+' annotations, ';
@@ -71,9 +72,34 @@ class ProcessingTool {
                     {
                         txt += ' ('+resultentry.bitmap_results.length+' bitmaps)';
                     }
-                    txt += '<br/>';
+                    if (resultentry.annotation_results.length>0)
+                    {
+                        txt += '</th></tr><tr><td>'
+                        var currentthreshold
+                        if ($('#resultentry-threshold-'+resultentry.id).length>0)
+                        {
+                            currentthreshold = $('#resultentry-threshold-'+resultentry.id)[0].value;
+                        }
+                        else
+                        {
+                         currentthreshold = resultentry.default_threshold;
+                        }
+                        txt += ' Threshold: <input size=3 id="resultentry-threshold-'+resultentry.id+'" type=text data-plugin_id='+job.plugin+' data-pluginresultentry_id='+resultentry.id+' value=' + currentthreshold+'>';
+                        threshold_fields.push(resultentry.id)
+                    }
+                    txt += '</tr></table><br/>';
                 }
-                $('#collapsePlugin-' + job.plugin).html(txt)
+                
+                if ($('#collapsePlugin-' + job.plugin)[0].ariaLabel != job.result.entries.length)
+                {
+                    // only refresh if change needed. We store the length in the aria Label for this.
+                    $('#collapsePlugin-' + job.plugin).html(txt)
+                    $('#collapsePlugin-' + job.plugin)[0].ariaLabel=job.result.entries.length
+                }
+                for (let rentry of threshold_fields)
+                {
+                    $('#resultentry-threshold-' + rentry).change(this.changePluginResThreshold.bind(this)); 
+                }
                 $('#alpha-plugin-' + job.plugin).change(this.togglePluginResultAlpha.bind(this)); 
                 $('#alpha-plugin-' + job.plugin).on('input', this.togglePluginResultAlpha.bind(this)); 
 
@@ -90,6 +116,15 @@ class ProcessingTool {
 
     }
 
+    changePluginResThreshold(event)
+    {
+        let pluginresultentry_id = parseInt(event.target.dataset.pluginresultentry_id);
+        let plugin_id = parseInt(event.target.dataset.plugin_id);
+        let value = parseFloat(event.currentTarget.value);
+        this.viewer.raiseEvent('processing_adjustThreshold', { "Plugin": plugin_id, "ResultEntry": pluginresultentry_id, "Value": value });
+
+
+    }
 
     togglePluginResultAlpha(event) {
 
