@@ -138,6 +138,7 @@ class PluginResultAnnotation(models.Model):
     id = models.AutoField(primary_key=True)
     annotation_type = models.ForeignKey(AnnotationType, on_delete=models.PROTECT)
     vector = models.JSONField(null=True)
+    score = models.FloatField(null=True, default=0)
     time = models.DateTimeField(auto_now_add=True)
     meta_data = models.JSONField(null=True)
     description = models.TextField(max_length=1000, blank=True)
