@@ -83,6 +83,20 @@ def restart(request, job_id):
 
     return index(request)
 
+def cleanup(request, job_id):
+    job = get_object_or_404(PluginJob, id=job_id)
+
+    if (job.creator != request.user):
+        return HttpResponse('Error: Job is owned by another user.')
+    
+    # Delete all dependent objects
+    results = PluginResult.objects.filter(job=job_id).delete()
+    
+    job.delete()
+
+
+    return index(request)
+
 def stop(request, job_id):
     job = get_object_or_404(PluginJob, id=job_id)
 

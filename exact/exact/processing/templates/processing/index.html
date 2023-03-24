@@ -25,7 +25,7 @@
 </script>
 <div class="container-fluid h-100">
     <div class="row justify-content-center h-100">
-        <div class="col-8">
+        <div class="col-12">
             <div class="card">
                 <div class="card-header">
                     <h3>
@@ -34,7 +34,7 @@
                   </div>
                 <div class="card-body">
                     <table>
-                        <tr><th></th><th>Job ID</th><th>Image</th><th>Plugin</th><th>Created</th><th>Last update</th><th>Complete</th><th>Actions</th><th>Details</th></tr>
+                        <tr><th></th><th>Job ID</th><th>Image</th><th>Plugin</th><th>Created</th><th>Last update</th><th>Complete</th><th style="min-width:120px">Actions</th><th>Details</th></tr>
                                 {% for job in current_jobs_user %}
                                         <tr><td id="firstcolumn-{{job.id}}">
                                             {% if job.attached_worker|length > 0 %}
@@ -60,10 +60,11 @@
                                             {%if job.processing_complete == 0 or job.error_message|length > 0 %}
                                             {% if job.creator == user %}
                                             <a href="{% url "processing:stop" job.id %}" class="btn btn-outline-danger">&#10007;</a>
-                                            {% if job.error_message|length > 0 %}
+                                            {% endif %}
+                                            {% endif %}
+                                            {% if job.error_message|length > 0 or job.processing_complete == 100 %}
                                             <a href="{% url "processing:restart" job.id %}" class="btn btn-outline-info">&#10226;</a>
-                                            {% endif %}
-                                            {% endif %}
+                                            <a href="{% url "processing:cleanup" job.id %}" class="btn btn-outline-info">&#9249;</a>
                                             {% endif %}
                                         </td></td><td id="statusfield-{{job.id}}">
                                             {% if job.error_message|length > 0 %}

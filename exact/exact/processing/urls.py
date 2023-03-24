@@ -14,6 +14,7 @@ urlpatterns = [
     # ex: /processing/5/
     path('<int:job_id>/stop', views.stop, name='stop'),
     path('<int:job_id>/restart', views.restart, name='restart'),
+    path('<int:job_id>/cleanup', views.cleanup, name='cleanup'),
     url(r'^api/plugin_job/create/$', views.create_job, name='create_job'),
 
     # ex: /processing/submit/4/3
