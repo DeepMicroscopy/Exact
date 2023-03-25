@@ -12,9 +12,9 @@ function include_server_subdir(url) {
     var gHeaders;
 
 
-    function addProduct() {
-        let plugin_id = parseInt($('#product_id').val().split('#')[0]);
-        let product_id = parseInt($('#product_id').val().split('#')[1]);
+    function addProduct(event) {
+        let plugin_id = event.target.dataset.plugin_id;
+        let product_id = parseInt($('#product_id_'+plugin_id).val().split('#')[1]);
         let data = {
             product_id: product_id,
             plugin_id: plugin_id

@@ -35,19 +35,19 @@
                                         </td><td>{{ plugin.jobs.all|length }}</td>
                                         <td id="products-with-delete-{{ plugin.id }}" class="tag-container">
                                             <div class="input-group" role="group" aria-label="team_creation">
-                                                <select id="product_id" name="selected_product" class="form-control">
+                                                <select id="product_id_{{ plugin.id }}" name="selected_product" class="form-control">
                                                     {% for product in all_products %}
                                                        <option value="{{plugin.id}}#{{ product.id }}"
                                                             class="bold">{{ product.name }} ({{ product.team }})</option>
                                                     {% endfor %}
                                                 </select>
                                                 <span class="input-group-btn">
-                                                    <input id="add_product_btn" class="btn btn-primary add_product_btn" type="button" value="Add">
+                                                    <input id="add_product_btn" class="btn btn-primary add_product_btn" type="button" data-plugin_id={{ plugin.id }} value="Add">
                                                 </span>
                                             </div>
                                             {% for product in plugin.products.all %}
                                             <span class="label label-info" value="{{ product.id }}" id="product_{{ plugin.id}}_{{ product.id }}">
-                                                <a href="{% url 'administration:product' product.id %}"> {{ product.name }}&nbsp;</a>
+                                                <a href="{% url 'administration:product' product.id %}"> {{ product.name }} ( {{ product.id }})&nbsp;</a>
                                                 <span class="fa fa-remove product-delete" value="{{plugin.id}}#{{ product.id }}" data_id={{ product.id }}></span>
                                             </span>&#8203;
                                             {% endfor %}
