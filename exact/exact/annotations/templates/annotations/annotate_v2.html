@@ -147,7 +147,7 @@
                         {% csrf_token %}
 
                         <ul class="nav nav-tabs" id="statistics_tabs" role="tablist"
-                            style="overflow-x: auto; flex-wrap: nowrap; overflow-y: hidden;height:35px">
+                            style="overflow-x: auto; flex-wrap: nowrap; overflow-y: hidden;height:50px">
 
                             {% if annotation_types %}
                             <li class="nav-item">
@@ -392,7 +392,7 @@
      data-plugin_resultentries="[]"><image src="{% static 'images/eye_fill_small.svg' %}"></label><br>
 
                                     </td><td class="text-left"><a data-toggle="collapse" href="#collapsePlugin-{{plugin.id}}" aria-expanded="false" aria-controls="collapseExample">{{plugin.name}}</a></td><td><input type="range" id='alpha-plugin-{{plugin.id}}' min="1" max="100" value="{% if plugin.result  %}{{plugin.result.default_alpha|floatformat:"0"}}{%  else  %}100{% endif %}" class="visslider" data-plugin_id={{plugin.id}}></td></tr>
-                                    <tr><td></td><td>
+                                    <tr><td></td><td colspan=2 >
                                     <div class="collapse text-left" id="collapsePlugin-{{plugin.id}}">
                                     </div></td></tr>
                                     {% endfor %}

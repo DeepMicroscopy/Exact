@@ -684,7 +684,7 @@
         autoUpload: true,
         uploadTemplateId: 'template-upload',
         filesContainer: ifile,
-        maxFileSize: 10000000000,
+        maxFileSize: 50000000000, // 50 GB limit per file
         sequentialUploads: true, // solves the issues with high Image counts... hopefully.
         url: "{% url 'images:upload_image' imageset.id %}",
         formData: [

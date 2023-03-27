@@ -60,11 +60,7 @@
 						Process
 						{% if processing_queue %}
 						<span class="badge upper-bandage">
-							{% if processing_queue < 10 %}
 							{{processing_queue}}
-							{% else %}
-							9+
-							{% endif %}
 						</span>
 						{% endif %}
 					</a>
@@ -80,6 +76,9 @@
 					<div class="dropdown-menu" aria-labelledby="administrationNavbarDropdown">
 						<a class="dropdown-item" href="{% url 'administration:products' %}">Products</a>
 						<a class="dropdown-item" href="{% url 'administration:annotation_types' %}">Annotation Types</a>
+						{% if show_processing_panel %}
+						<a class="dropdown-item" href="{% url 'administration:plugins' %}">Plugins</a>
+						{% endif %}
 					</div>
 				</li>
 				{% if my_teams %}

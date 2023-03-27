@@ -2,6 +2,7 @@
 {% load i18n %}
 {% load static %}
 
+{% load widget_tweaks %}
 {% block taggerimports %}
 <script type="text/javascript" src="{% static 'scripts/jquery-3.2.1.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'scripts/bootstrap.bundle.min.js' %}"></script>
@@ -10,6 +11,10 @@
 
 
 {% endblock taggerimports %} 
+{% block additional_js %}
+<script type="text/javascript" src="{% static 'scripts/notify.min.js' %}"></script>
+{% endblock additional_js %}
+
 {% block bodyblock %}
 
 <!-- refresh after 60 seconds to also catch new jobs -->
@@ -20,16 +25,16 @@
 </script>
 <div class="container-fluid h-100">
     <div class="row justify-content-center h-100">
-        <div class="col-8">
+        <div class="col-12">
             <div class="card">
                 <div class="card-header">
                     <h3>
-                        Processing Queue
+                        Processing Queue 
                     </h3>
-                </div>
+                  </div>
                 <div class="card-body">
                     <table>
-                        <tr><th></th><th>Job ID</th><th>Image</th><th>Plugin</th><th>Created</th><th>Last update</th><th>Complete</th><th>Actions</th><th>Details</th></tr>
+                        <tr><th></th><th>Job ID</th><th>Image</th><th>Plugin</th><th>Created</th><th>Last update</th><th>Complete</th><th style="min-width:120px">Actions</th><th>Details</th></tr>
                                 {% for job in current_jobs_user %}
                                         <tr><td id="firstcolumn-{{job.id}}">
                                             {% if job.attached_worker|length > 0 %}
@@ -52,10 +57,14 @@
                                                 <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" id="completed-{{job.id}}" aria-valuenow="{{job.processing_complete|floatformat:1}}" aria-valuemin="0" aria-valuemax="100" style="width: {{job.processing_complete|floatformat:0}}%">{{job.processing_complete|floatformat:1}} %</div>
                                               </div>
                                             </td><td>
-                                            {%if job.processing_complete == 0 %}
+                                            {%if job.processing_complete == 0 or job.error_message|length > 0 %}
                                             {% if job.creator == user %}
-                                            <a href="{% url "processing:stop" job.id %}">X</a>
+                                            <a href="{% url "processing:stop" job.id %}" class="btn btn-outline-danger">&#10007;</a>
                                             {% endif %}
+                                            {% endif %}
+                                            {% if job.error_message|length > 0 or job.processing_complete == 100 %}
+                                            <a href="{% url "processing:restart" job.id %}" class="btn btn-outline-info">&#10226;</a>
+                                            <a href="{% url "processing:cleanup" job.id %}" class="btn btn-outline-info">&#9249;</a>
                                             {% endif %}
                                         </td></td><td id="statusfield-{{job.id}}">
                                             {% if job.error_message|length > 0 %}
@@ -76,7 +85,7 @@
                     <nav aria-label="...">
                         <ul class="pagination">
                           <li class="page-item {% if page_obj.has_previous == False %}disabled{% endif %}">
-                            <a class="page-link" href="{% if page_obj.has_previous %}?page={{ page_obj.previous_page_number }}{% endif %}" tabindex="-1">Previous</a>
+                            <a class="page-link" href="{% if page_obj.has_previous %}?completed={{ include_completed }}&page={{ page_obj.previous_page_number }}{% endif %}" tabindex="-1">Previous</a>
                           </li>
                           {% for l in page_obj.paginator.page_range %}
                              {% if l <= page_obj.number|add:3 and l >= page_obj.number|add:-3 %}
@@ -85,19 +94,30 @@
                              {% else %}
                              <li class="page-item">
                              {% endif %}
-                              <a class="page-link" href="?page={{ l }}">{{ l }}</a></li>
+                              <a class="page-link" href="?completed={{ include_completed }}&page={{ l }}">{{ l }}</a></li>
 
 
                               {% endif %}
 
                           {% endfor %}
                           <li class="page-item {% if page_obj.has_next == False %}disabled{% endif %}">
-                            <a class="page-link" href="{% if page_obj.has_next %}?page={{ page_obj.next_page_number }}{% endif %}">Next</a>
+                            <a class="page-link" href="{% if page_obj.has_next %}?completed={{ include_completed }}&page={{ page_obj.next_page_number }}{% endif %}">Next</a>
                           </li>
+                          &nbsp;
+                          <li class="page-item">
+                            {% if include_completed == 0 %}
+                            <a class="page-link" href="?completed=1">Also show completed</a>
+                            {% else %}
+                            <a class="page-link" href="?completed=0">Hide completed</a>
+                            {% endif %}
+                          </li>
+                          <li>
+                        </li>
                         </ul>
+
                       </nav></ul>
                       <span id="user_id" class="invisible">{{ user_id }}</span>
-                      </div>
+                    </div>
                       <span id="pagination_start_idx" class="invisible">{{ page_obj.start_index }}</span>
                       <span id="pagination_end_idx" class="invisible">{{ page_obj.end_index }}</span>
                       <span id="incomplete_jobs" class="invisible">{{ incomplete_jobs }}</span>

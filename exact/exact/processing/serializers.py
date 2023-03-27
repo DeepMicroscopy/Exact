@@ -59,6 +59,7 @@ class PluginResultAnnotationSerializer(FlexFieldsModelSerializer):
             'pluginresultentry',
             'meta_data',
             'vector',
+            'score',
             'unique_identifier',
             'generated',
             'plugin',
@@ -72,6 +73,7 @@ class PluginResultAnnotationSerializer(FlexFieldsModelSerializer):
             "image": (ImageSerializer, {'read_only':True, 'many': False}),
         }
 
+    
 class PluginResultBitmapSerializer(FlexFieldsModelSerializer):
     class Meta:
         model = PluginResultBitmap
@@ -106,6 +108,7 @@ class PluginResultEntrySerializer(FlexFieldsModelSerializer):
             'created_time',
             'name',
             'visible',
+            'default_threshold',
             'annotation_results',
             'bitmap_results'
         )

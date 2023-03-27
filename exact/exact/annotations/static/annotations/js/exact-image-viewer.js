@@ -362,6 +362,14 @@ class EXACTViewer {
         }, this);
 
 
+        viewer.addHandler("processing_adjustThreshold", function (event) {
+            for (let anno of Object.values(this.userData.exact_sync.annotations)) {
+                if ((anno.generated == true) && (event.ResultEntry == anno.pluginresultentry)) {
+                    this.userData.tool.updateThresholdedVisibility(anno.unique_identifier, anno.score>=event.Value);
+                }
+            }
+        }, this);       
+
         viewer.addHandler("processing_changePluginResultAlpha", function (event) {
             for (let anno of Object.values(this.userData.exact_sync.annotations)) {
                 if ((anno.generated == true) && (event.ResultEntries.indexOf(anno.pluginresultentry)>=0)) {
