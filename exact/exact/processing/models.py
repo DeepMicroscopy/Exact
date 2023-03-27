@@ -39,7 +39,7 @@ class Plugin(models.Model):
     contact = models.EmailField(max_length=80)
     abouturl = models.URLField(max_length=80)
     icon = models.ImageField(upload_to=plugins_directory)
-    products = models.ManyToManyField(Product, related_name="plugins")
+    products = models.ManyToManyField(Product, related_name="plugins", blank=True)
 
     def __str__(self):
         return u'Plugin: {0}'.format(self.name)
@@ -85,7 +85,7 @@ class PluginResult(models.Model):
         Plugin, on_delete=models.CASCADE, related_name="results"
     )
     job = models.OneToOneField(
-        PluginJob, on_delete=models.SET_NULL, null=True, related_name="result", 
+        PluginJob, on_delete=models.SET_NULL, null=True, blank=True, related_name="result", 
     )
     created_time = models.DateTimeField(default=datetime.now)
     completed_time = models.DateTimeField(default=datetime.now)
@@ -103,6 +103,7 @@ class PluginResultEntry(models.Model):
     pluginresult = models.ForeignKey(
         PluginResult, on_delete=models.CASCADE, related_name="entries"
     )
+    default_threshold = models.FloatField(default=0.0)
     name = models.CharField(max_length=200)
     visible = models.BooleanField(default=True)
     created_time = models.DateTimeField(default=datetime.now)
@@ -138,6 +139,7 @@ class PluginResultAnnotation(models.Model):
     id = models.AutoField(primary_key=True)
     annotation_type = models.ForeignKey(AnnotationType, on_delete=models.PROTECT)
     vector = models.JSONField(null=True)
+    score = models.FloatField(null=True, default=0)
     time = models.DateTimeField(auto_now_add=True)
     meta_data = models.JSONField(null=True)
     description = models.TextField(max_length=1000, blank=True)

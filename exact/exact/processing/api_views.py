@@ -77,10 +77,17 @@ class PluginResultViewSet(viewsets.ModelViewSet):
         the user as determined by the username portion of the URL.
         """
         image_id = self.request.query_params.get('image_id')
+        job_id = self.request.query_params.get('job_id')
+        plugin_id = self.request.query_params.get('plugin_id')
+        objects = models.PluginResult.objects.all()
         if image_id is not None:
-            return models.PluginResult.objects.filter(image__id=image_id)
-        else:
-            return models.PluginResult.objects.all().order_by('-created_time')
+            objects = objects.filter(image__id=image_id)
+        if job_id is not None:
+            objects = objects.filter(job__id=job_id)
+        if plugin_id is not None:
+            objects = objects.filter(plugin__id=plugin_id)
+        
+        return objects.order_by('-created_time')
 
 class PluginResultEntryViewSet(viewsets.ModelViewSet):
     """
@@ -103,11 +110,17 @@ class PluginResultAnnotationViewSet(viewsets.ModelViewSet):
         """
         image_id = self.request.query_params.get('image')
         annotation_type = self.request.query_params.get('annotation_type')
+        pluginresultentry_id = self.request.query_params.get('pluginresultentry')
+        plugin_id = self.request.query_params.get('plugin')
         objects = models.PluginResultAnnotation.objects.all()
         if image_id is not None:
             objects = objects.filter(image__id=image_id)
+        if plugin_id is not None:
+            objects = objects.filter(pluginresultentry__pluginresult__plugin_id=plugin_id)
         if annotation_type is not None:
             objects = objects.filter(annotation_type=annotation_type)
+        if pluginresultentry_id is not None: 
+            objects = objects.filter(pluginresultentry__id=pluginresultentry_id)
         return objects.order_by('-id')
 
 
