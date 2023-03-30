@@ -844,6 +844,13 @@ class BoundingBoxes {
                   alpha = parseInt($('#alpha-plugin-'+annotation.plugin)[0].value)/100
                 }
                 }
+                if (($('#resultentry-threshold-'+annotation.pluginresultentry).length>0))
+                {
+                    if (annotation.score < parseFloat($('#resultentry-threshold-'+annotation.pluginresultentry)[0].value))
+                    {
+                        rect.visible = false;
+                    }
+                }
                 
                 rect.strokeColor.alpha = alpha
                 rect.name = annotation.unique_identifier;
