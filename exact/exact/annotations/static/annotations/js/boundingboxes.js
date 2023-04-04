@@ -907,6 +907,13 @@ class BoundingBoxes {
                     {
                       alpha = parseInt($('#alpha-plugin-'+annotation.plugin)[0].value)/100
                     }
+                    if (($('#resultentry-threshold-'+annotation.pluginresultentry).length>0))
+                    {
+                        if (annotation.score < parseFloat($('#resultentry-threshold-'+annotation.pluginresultentry)[0].value))
+                        {
+                            rect.visible = false;
+                        }
+                    }
                 }
                 else
                 {
@@ -948,6 +955,13 @@ class BoundingBoxes {
                     {
                       alpha = parseInt($('#alpha-plugin-'+annotation.plugin)[0].value)/100
                     }
+                    if (($('#resultentry-threshold-'+annotation.pluginresultentry).length>0))
+                    {
+                        if (annotation.score < parseFloat($('#resultentry-threshold-'+annotation.pluginresultentry)[0].value))
+                        {
+                            ellipse.visible = false;
+                        }
+                    }
                 }
                 else
                 {
@@ -987,6 +1001,13 @@ class BoundingBoxes {
                     {
                       alpha = parseInt($('#alpha-plugin-'+annotation.plugin)[0].value)/100
                     }
+                    if (($('#resultentry-threshold-'+annotation.pluginresultentry).length>0))
+                    {
+                        if (annotation.score < parseFloat($('#resultentry-threshold-'+annotation.pluginresultentry)[0].value))
+                        {
+                            line.visible = false;
+                        }
+                    }
                 }
                 else
                 {
@@ -1015,11 +1036,18 @@ class BoundingBoxes {
                 var alpha = 1
                 if (annotation.generated)
                 {
-                poly.dashArray = [4, 1];
-                if ($('#alpha-plugin-'+annotation.plugin).length>0)
-                {
-                  alpha = parseInt($('#alpha-plugin-'+annotation.plugin)[0].value)/100
-                }
+                    poly.dashArray = [4, 1];
+                    if ($('#alpha-plugin-'+annotation.plugin).length>0)
+                    {
+                    alpha = parseInt($('#alpha-plugin-'+annotation.plugin)[0].value)/100
+                    }
+                    if (($('#resultentry-threshold-'+annotation.pluginresultentry).length>0))
+                    {
+                        if (annotation.score < parseFloat($('#resultentry-threshold-'+annotation.pluginresultentry)[0].value))
+                        {
+                            poly.visible = false;
+                        }
+                    }
                 }
                 poly.strokeColor.alpha=alpha
 
@@ -1175,6 +1203,19 @@ class BoundingBoxes {
                 value: hs_intensity,
                 radius: hs_radius
             };
+
+            if (anno_hm.generated)
+            {
+                // check for visibility
+                if (($('#resultentry-threshold-'+anno_hm.pluginresultentry).length>0))
+                {
+                    if (anno_hm.score < parseFloat($('#resultentry-threshold-'+anno_hm.pluginresultentry)[0].value))
+                    {
+                        continue;
+                    }
+                }
+            }
+
             points.push(point);
         }
         var data = {
