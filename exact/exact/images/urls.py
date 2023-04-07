@@ -1,4 +1,6 @@
 from django.conf.urls import url
+from django.urls import path
+
 
 from . import views
 from . import api_views
@@ -43,6 +45,7 @@ urlpatterns = [
 
     url(r'^imageset/(\d+)/$', views.view_imageset, name='view_imageset'),
     url(r'^imageset/(\d+)/download/$', views.download_imageset_zip, name='download_imageset'),
+    path('delete_jobs/<int:plugin_id>/<int:imageset_id>', views.delete_jobs, name='delete_jobs'),
 
     url(r'^imageset/explore_new/$', api_views.ImageSetViewSet.as_view({'get': 'list'}), name='explore_imageset_new'),
 

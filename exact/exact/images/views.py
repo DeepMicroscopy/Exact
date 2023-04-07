@@ -17,6 +17,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.core.cache import caches
 from json import JSONDecodeError
 from io import BytesIO
+from exact.processing.models import Plugin, PluginJob, PluginResult
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import ParseError
 from rest_framework.response import Response
@@ -649,6 +650,21 @@ def delete_images(request, image_id):
 
 
 @login_required
+def delete_jobs(request, plugin_id, imageset_id):
+    imageset = get_object_or_404(ImageSet, id=imageset_id)
+    plugin = get_object_or_404(Plugin, id=plugin_id)
+
+    pluginjobs=PluginJob.objects.filter(image__in=imageset.images.all()).filter(plugin=plugin)
+
+    for job in pluginjobs:
+        results = PluginResult.objects.filter(job=job.id).delete()
+        
+        job.delete()
+
+    return redirect(reverse('images:view_imageset', args=(imageset.id,)))
+
+
+@login_required
 def view_imageset(request, image_set_id):
     # TODO: Cache
     imageset = get_object_or_404(ImageSet, id=image_set_id)
@@ -682,11 +698,18 @@ def view_imageset(request, image_set_id):
     copyImageSetForm.fields['imagesets'].queryset = ImageSet.objects\
         .filter(Q(team__in=request.user.team_set.all())|Q(public=True))
 
+    availablePlugins = Plugin.objects.filter(products__in=imageset.product_set.all())
+    for i,plugin in enumerate(availablePlugins):
+        pgn=PluginJob.objects.filter(image__in=imageset.images.all()).filter(plugin=plugin)
+        availablePlugins[i].alljobs = pgn
+
+
     all_products = Product.objects.filter(team=imageset.team).order_by('name')
     template = 'images/imageset_v2.html' if hasattr(request.user,'ui') and hasattr(request.user.ui,'frontend') and request.user.ui.frontend==2 else 'images/imageset.html'
     return render(request, template, {
         'image_count': imageset.images.count(),
         'imageset': imageset,
+        'availablePlugins': availablePlugins,
         'real_image_number': imageset.images.filter(~Q(image_type=Image.ImageSourceTypes.SERVER_GENERATED)).count(),
         'computer_generated_image_number' : imageset.images.filter(Q(image_type=Image.ImageSourceTypes.SERVER_GENERATED)).count(),
         'all_products': all_products,
