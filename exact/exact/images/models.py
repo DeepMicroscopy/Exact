@@ -208,7 +208,8 @@ class Image(models.Model):
                     self.filename = path.name
                 # check if possible multi frame tiff
                 elif path.suffix.lower().endswith(".tiff") or path.suffix.lower().endswith(".tif"):
-                    shape = tifffile.imread(str(path)).shape
+                    im = tifffile.imread(str(path))
+                    shape = im.shape
                     image_saved = False
                     if len(shape) >= 3: # possible multi channel or frames
                         #Possible formats (10, 300, 300, 3) (10, 300, 300)
@@ -222,7 +223,7 @@ class Image(models.Model):
                             os.chmod(str(folder_path), 0o777)
 
                             for frame_id in range(shape[0]):
-                                vi = pyvips.Image.new_from_file(str(path), page=frame_id)
+                                vi = pyvips.Image.new_from_array(im[frame_id])
                                 vi = vi.scaleimage()
                                 height, width, channels = vi.height, vi.width, vi.bands
                                 self.channels = channels
@@ -270,9 +271,10 @@ class Image(models.Model):
             except (KeyError, ValueError):
                 self.objectivePower = 1
             self.save()
-        except Exception as e:
-            #if path.exists():
-            #    os.remove(str(path))
+        except OSError as e:
+            print('error:',e.__class__, str(e))
+            if path.exists():
+                os.remove(str(path))
             raise
 
     def __str__(self):
