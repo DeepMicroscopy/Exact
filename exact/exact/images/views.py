@@ -13,7 +13,7 @@ from django.http import HttpResponseForbidden, HttpResponse, HttpResponseBadRequ
     FileResponse, HttpRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.response import TemplateResponse
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.core.cache import caches
 from json import JSONDecodeError
 from io import BytesIO
@@ -215,6 +215,7 @@ def upload_image(request, imageset_id):
             f.seek(0)  # reset file cursor to the beginning of the file
 
             file_list = {}
+            print('Magic number: ',str(magic_number))
             if magic_number == b'PK\x03\x04':  # ZIP file magic number
                 error['zip'] = True
                 zipname = ''.join(random.choice(string.ascii_uppercase +
@@ -274,6 +275,7 @@ def upload_image(request, imageset_id):
                 if duplicat_count > 0:
                     error['duplicates'] = duplicat_count
             else:
+                print('Creating file checksum... for file', f.name)
                 # creates a checksum for image
                 fchecksum = hashlib.sha512()
                 for chunk in f.chunks():
@@ -284,7 +286,7 @@ def upload_image(request, imageset_id):
                 # tests for duplicats in  imageset
                 image = Image.objects.filter(Q(filename=filename)|Q(name=f.name), checksum=fchecksum,
                                         image_set=imageset).first()
-
+                print('Image:',image)
                 if image is None:
 
                     with open(filename, 'wb') as out:
@@ -296,7 +298,11 @@ def upload_image(request, imageset_id):
                     error['exists'] = True
                     error['exists_id'] = image.id
 
+                print('File_list:',file_list)
+
+
             for path in file_list:
+                print('Working on ',path)
 
                 try:
                     fchecksum = file_list[path]

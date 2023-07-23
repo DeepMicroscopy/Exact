@@ -112,7 +112,8 @@ class PluginResultEntry(models.Model):
         return u'PluginResultEntry {0} of {1}'.format(self.name, self.pluginresult.__str__())
 
 
-
+def default_rect():
+    return { "x": 0,"y": 0,"w": 10000,"h": 10000 }
 
 
 class PluginResultBitmap(models.Model):
@@ -123,7 +124,7 @@ class PluginResultBitmap(models.Model):
     default_threshold = models.FloatField(default=0) # default threshold
     default_alpha = models.FloatField(default=1) # default alpha channel (opacity)
     channels = models.IntegerField(default=1) # RGB=3 channels, heatmap = 1 channel
-    location_rect = models.JSONField(null=True, default='{ "x": 0,"y": 0,"w": 10000,"h": 10000 }') # location of the image, in original image coordinates, including width and height
+    location_rect = models.JSONField(null=True, default=default_rect) # location of the image, in original image coordinates, including width and height
     frame = models.IntegerField(default=1) # frame (in multi-frame objects)
     meta_data = models.JSONField(null=True, blank=True)
     image = models.ForeignKey(Image, on_delete=models.CASCADE)
