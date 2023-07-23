@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
 from django.db import transaction
@@ -22,6 +22,28 @@ from rest_framework.exceptions import ParseError
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_200_OK, \
     HTTP_403_FORBIDDEN
+from django.conf import settings
+import csv
+def logs(request):
+
+    log=[]
+    for handler in settings.LOGGING['loggers']['django']['handlers']:
+        print(handler)
+        if 'filename' in settings.LOGGING['handlers'][handler]:
+            with open(settings.LOGGING['handlers'][handler]['filename']) as csv_file:
+                csv_reader = csv.reader(csv_file, delimiter=';')
+                line_count = 0
+                for row in csv_reader:
+                    if len(row)>5:
+                        log.append([row[0],row[1],row[2],row[3],row[4],';'.join(row[5:])])
+    log = reversed(log)
+    teams = Team.objects.filter(members=request.user)
+    return render(request, 'administration/log.html', {
+        'products': Product.objects.filter(team__in=request.user.team_set.all()).order_by('team_id'),
+        'create_form': ProductCreationForm,
+        'log':log,
+        'teams': teams
+    })
 
 def products(request):
     teams = Team.objects.filter(members=request.user)

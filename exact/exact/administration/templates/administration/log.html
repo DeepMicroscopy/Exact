@@ -1,0 +1,45 @@
+{% extends 'base/base.html' %}
+{% load i18n %}
+{% load static %}
+{% load widget_tweaks %}
+{% block taggerimports %}
+
+<script type="text/javascript" src="{% static 'scripts/jquery-3.2.1.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'scripts/bootstrap.min.js' %}"></script>
+
+{% endblock taggerimports %}
+{% block additional_js %}
+<script type="text/javascript" src="{% static 'scripts/plugins_products.js' %}"></script>
+<script type="text/javascript" src="{% static 'scripts/notify.min.js' %}"></script>
+{% endblock additional_js %}
+
+
+{% block bodyblock %}
+{% csrf_token %}
+<div class="container-fluid h-100">
+        <div class="row justify-content-center h-100">
+            <div class="col-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>
+                            EXACT logfile
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="col-md-12">
+                            <table>
+                                <tr><th>levelname</th><th>asctime</th><th>module</th><th>process</th><th>thread</th><th>message</th></tr>
+                            {% for entry in log %}
+                                
+                            <tr> {% for column in entry %}<td> {{ column }} </td> {% endfor %} </tr>
+
+                                            
+
+                            {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+        </div>
+    </div>
+{% endblock %}
