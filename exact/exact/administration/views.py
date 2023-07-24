@@ -95,6 +95,7 @@ def create_product(request):
                             color_code=annoType.color_code,
                             sort_order=annoType.sort_order,
                             enable_blurred=annoType.enable_blurred,
+                            multi_frame=annoType.multi_frame,
                             default_height=annoType.default_height,
                             default_width=annoType.default_width,
                             closed=annoType.closed,
@@ -317,6 +318,7 @@ def api_create_annotation_type(request) -> Response:
          product_id = int(request.data.get('product_id',1))
          closed = request.data.get('closed', False)
          area_hit_test = request.data.get('area_hit_test', True)
+         multi_frame = request.data.get('multi_frame', False)
 
     except (KeyError, TypeError, ValueError):
         raise ParseError
@@ -337,6 +339,7 @@ def api_create_annotation_type(request) -> Response:
             default_height=default_height,
             default_width=default_width,
             closed=closed,
+            multi_frame=multi_frame,
             area_hit_test=area_hit_test,
             product=product,
         )
@@ -401,6 +404,7 @@ def edit_annotation_type(request, annotation_type_id):
             selected_annotation_type.sort_order = request.POST['sort_order']
             selected_annotation_type.closed = 'closed' in request.POST
             selected_annotation_type.area_hit_test = 'area_hit_test' in request.POST
+            selected_annotation_type.multi_frame = 'multi_frame' in request.POST
             selected_annotation_type.product = Product.objects.filter(id=request.POST['product']).first()
 
             if 'image_file' in request.FILES:

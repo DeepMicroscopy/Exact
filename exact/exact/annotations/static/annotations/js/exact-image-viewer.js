@@ -2250,7 +2250,7 @@ class EXACTViewerLocalAnnotationsFrames extends EXACTViewerLocalAnnotations {
         }
 
         return Object.values(annotations).filter(function (item) {
-            return item.vector.frame === frame_id && item.deleted === false
+            return ((item.vector.frame === frame_id) || (item.annotation_type.multi_frame)) && item.deleted === false
         });
     }
 

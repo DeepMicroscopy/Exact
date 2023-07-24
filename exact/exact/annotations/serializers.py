@@ -42,6 +42,7 @@ class AnnotationTypeSerializer(FlexFieldsModelSerializer):
             'enable_concealed',
             'enable_blurred',
             'color_code',
+            'multi_frame',
             'default_width',
             'default_height',
             'sort_order',
@@ -189,6 +190,7 @@ def serialize_annotation(anno: Annotation) -> Dict[str, Any]:
             'name': anno.annotation_type.name,
             'vector_type': anno.annotation_type.vector_type,
             'color_code': anno.annotation_type.color_code,
+            'multi_frame' : anno.annotation_type.multi_frame,
             'area_hit_test' : anno.annotation_type.area_hit_test
         },
         'media_files':

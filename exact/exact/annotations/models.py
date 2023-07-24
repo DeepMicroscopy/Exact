@@ -465,6 +465,7 @@ class AnnotationType(models.Model):
     default_width = models.IntegerField(default=50, unique=False)
     default_height = models.IntegerField(default=50, unique=False)
     sort_order = models.IntegerField(default=0, unique=False)
+    multi_frame = models.BooleanField(default=False)
 
     image_file = models.ImageField(upload_to='images/', null=True, verbose_name="")
 
