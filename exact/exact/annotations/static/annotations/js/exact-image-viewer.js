@@ -155,7 +155,7 @@ class EXACTViewer {
             }
         } else {
             // create viewer without the option to handle annotations
-            return new EXACTViewerWithoutAnnotations(server_url, options, imageInformation, headers, user_id);
+            return new EXACTViewerWithoutAnnotations(server_url, options, imageInformation, headers, user_id, frame);
         }
     }
 
@@ -742,16 +742,24 @@ class EXACTViewer {
 }
 
 class EXACTViewerWithoutAnnotations extends EXACTViewer {
-    constructor(server_url, options, imageInformation, headers, user_id) {
+    constructor(server_url, options, imageInformation, headers, user_id, frame) {
 
             super(server_url, options, imageInformation, headers, user_id);
-
+    
             this.processingTool = new ProcessingTool(this.viewer, this.imageId);
 
             this.initToolEventHandler(this.viewer);
 
             // EXACT sync is necessary for retrieving processing results of 
             this.exact_sync = this.createSyncModules({}, this.imageId, headers, this.viewer, user_id, 0);
+
+            this.frames = imageInformation['frames'];
+            this.frame = frame;
+    
+            if (frame > 1) {
+                this.viewer.goToPage(frame - 1);
+            }
+
         }
     initToolEventHandler(viewer) {
 
