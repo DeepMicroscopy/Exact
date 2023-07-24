@@ -1,5 +1,19 @@
 // JS file for handling the openseadragon viewer
 
+
+function value_formatter(labels, value)
+{
+    if (labels.length>=value)
+    {
+        let retval = labels[value] ;
+        return retval;
+    }
+    else
+    {
+        return value;
+    }
+}
+
 class EXACTViewer {
     constructor(server_url, options, imageInformation, gHeaders, user_id) {
 
@@ -85,7 +99,10 @@ class EXACTViewer {
             }
             options.tileSources = tileSources;
             options.sequenceMode = true;
-            options.showReferenceStrip = true;
+            if ((imageInformation["FrameDescriptions"].length==0) || ((imageInformation["FrameDescriptions"][0]["frame_type"]>0)))
+            {
+               options.showReferenceStrip = true;
+            }
             options.preserveViewport = true;
 
             // show referenceStrip at the side 
@@ -531,9 +548,16 @@ class EXACTViewer {
         let objectivePower = imageInformation['objectivePower'];
         let frames = imageInformation['frames'];
         if (frames > 1) {
+            var labels = [];
+            for (let i=0;i < imageInformation.FrameDescriptions.length;i++)
+            {
+                labels.push(imageInformation.FrameDescriptions[i]['description']);
+                
+            }
             this.frameSlider = new Slider("#frameSlider", {
                 ticks_snap_bounds: 1,
                 value: 1,
+                formatter: function(val){ return value_formatter (labels,val) },
                 min: 1,
                 tooltip: 'always',
                 max: frames

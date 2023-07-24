@@ -1,6 +1,7 @@
 from rest_framework.serializers import ModelSerializer
 
 from exact.administration.serializers import ProductSerializer
+from exact.images.models import FrameDescription
 from exact.users.serializers import UserSerializer, TeamSerializer
 from exact.images.models import ImageSet, Image, SetTag, ScreeningMode, SetVersion, ImageRegistration
 from typing import Dict, Any
@@ -21,6 +22,8 @@ class ImageSerializer(FlexFieldsModelSerializer):
             'channels',
             'mpp',
             'objectivePower',
+            'FrameDescriptions',
+            'defaultFrame',
             'image_type',
             'image_set',
             'annotations'
@@ -29,6 +32,7 @@ class ImageSerializer(FlexFieldsModelSerializer):
         expandable_fields = {
             "image_set": ('exact.images.serializers.ImageSetSerializer', {'read_only': True}),
             "annotations": ('exact.annotations.serializers.AnnotationSerializer', {'read_only': True}),
+            "FrameDescriptions" : ('exact.images.serializers.FrameDescriptionSerializer', {'read_only': True, 'many':True}),
         }
 
 
@@ -103,6 +107,14 @@ class ImageRegistrationSerializer(FlexFieldsModelSerializer):
             "source_image": (ImageSerializer, {'read_only': True}),
             "target_image": (ImageSerializer, {'read_only': True}),
         }
+
+class FrameDescriptionSerializer(FlexFieldsModelSerializer):
+    class Meta:
+        model = FrameDescription 
+        fields = ('description',
+                  'frame_id',
+                  'frame_type')
+        
 
 class ImageSetSerializer(FlexFieldsModelSerializer):
     class Meta:

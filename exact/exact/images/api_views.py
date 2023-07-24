@@ -66,6 +66,8 @@ class ImageFilterSet(django_filters.FilterSet):
             'time': ['exact', 'contains'],
             'mpp': ['exact', 'range'],
             'objectivePower': ['exact', 'range'],
+            'defaultFrame' : ['exact','range'],
+            'FrameDescriptions' : [],
             'width': ['exact', 'range'],
             'height': ['exact', 'range'],
             'image_type': [],
