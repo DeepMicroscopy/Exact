@@ -136,7 +136,7 @@
                     {% if image.image_type != 1 %}
                         <div class="card imagecard">
                             <div class="card_container">
-                            <a href="{% url 'annotations:annotate' image.id %}" class="image"><img class="card-img-top image" src="{{ api }}v1/images/images/{{image.id}}/thumbnail/"
+                            <a href="{% url 'annotations:annotate' image.id %}{% if image.defaultFrame > 0%}?frame={{image.defaultFrame}}{% endif %}" class="image"><img class="card-img-top image" src="{{ api }}v1/images/images/{{image.id}}/thumbnail/"
                                     alt="Thumbnail {{image.name}} not found!" data-imageid="{{ image.id }}"></a>
                             <a href="{% url 'images:download_api' image.id %}" download><img src="{% static 'images/download.svg' %}" class="image2"></a>
                         </div>

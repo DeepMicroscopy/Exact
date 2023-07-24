@@ -39,3 +39,4 @@ pandas==2.0.3
 qt-wsi-registration>=0.0.6
 EXCAT-Sync>=0.0.38
 pyyaml>=6.0.1
+aicsimageio==4.11.0
