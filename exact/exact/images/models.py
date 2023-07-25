@@ -257,7 +257,7 @@ class Image(models.Model):
                     self.objectivePower = 40
                     self.filename = path.name
                 # check if possible multi frame tiff
-                elif Path(path).suffixes[-2].lower().endswith('ome') or Path(path).suffixes[-1].lower().startswith('.tif'):
+                elif (len(Path(path).suffixes)>1) and (Path(path).suffixes[-2].lower().endswith('ome') and Path(path).suffixes[-1].lower().startswith('.tif')):
 
                     reader = AICSImage(str(path))
                     im = reader.get_stack().squeeze()
