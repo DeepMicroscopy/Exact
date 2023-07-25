@@ -280,7 +280,7 @@ LOGGING = {
     },
     'loggers': {
         'django': {
-            'handlers': ['console'], # include 'file_info',  to start logging to file
+            'handlers': ['console', 'file_info'], # include 'file_info',  to start logging to file
             'level': 'INFO',
             'propagate': True,
         },

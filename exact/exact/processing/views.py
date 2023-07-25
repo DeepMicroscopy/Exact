@@ -62,7 +62,7 @@ def submit_imageset(request, plugin_id, imageset_id):
                     plugin=plugin,
                     creator=request.user)
 
-    return index(request)
+    return redirect(reverse('processing:index'))
 
 
 def restart(request, job_id):
@@ -81,7 +81,7 @@ def restart(request, job_id):
     job.save()
 
 
-    return index(request)
+    return redirect(reverse('processing:index'))
 
 def cleanup(request, job_id):
     job = get_object_or_404(PluginJob, id=job_id)
@@ -94,8 +94,7 @@ def cleanup(request, job_id):
     
     job.delete()
 
-
-    return index(request)
+    return redirect(reverse('processing:index'))
 
 def stop(request, job_id):
     job = get_object_or_404(PluginJob, id=job_id)
@@ -108,7 +107,7 @@ def stop(request, job_id):
     # Also delete all dependent objects
     results = PluginResult.objects.filter(job=job_id).delete()
     
-    return index(request)
+    return redirect(reverse('processing:index'))
 
 
 from django.core.paginator import Paginator

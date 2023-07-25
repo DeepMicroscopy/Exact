@@ -103,9 +103,10 @@
                                                 data-image_set_name="{{ selected_image.image_set.name }}">
                             {% for set_image in set_images %}
                             <a id="annotate_image_link_{{ set_image.id }}"
-                                href="{% url 'annotations:annotate' set_image.id %}{% if filtered is not None %}?selected_annotation_type={{ filtered }}{% endif %}"
+                                href="{% url 'annotations:annotate' set_image.id %}{% if set_image.defaultFrame > 0%}?frame={{set_image.defaultFrame}}{% endif %}{% if filtered is not None %}?selected_annotation_type={{ filtered }}{% endif %}"
                                 class="annotate_image_link {% if set_image.id == selected_image.id %}active{% endif %}"
-                                data-image_id="{{ set_image.id }}">
+                                data-image_id="{{ set_image.id }}"
+                                data-defaultFrame="{{ set_image.defaultFrame }}">
                                 {{ set_image.name }}
                             </a>
                             {% endfor %}
@@ -846,7 +847,7 @@
                 <div class="seadragon-viewer" id="openseadragon1" style="position: absolute; height: 85vh; width: 98%">        
                 </div>    
             </div>
-            <div id="frameSlider" style="width: 35vw;"></div>
+            <div id="frameSlider" style="width: 60vw;"></div>
         </div>
 
         <div class="col-3 collapse" style="height: calc(100vh - 60px); overflow-y: auto" id="imagesetThumbnails">

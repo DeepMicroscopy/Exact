@@ -13,10 +13,11 @@ from django.http import HttpResponseForbidden, HttpResponse, HttpResponseBadRequ
     FileResponse, HttpRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.response import TemplateResponse
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.core.cache import caches
 from json import JSONDecodeError
 from io import BytesIO
+from exact.processing.models import Plugin, PluginJob, PluginResult
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import ParseError
 from rest_framework.response import Response
@@ -214,6 +215,7 @@ def upload_image(request, imageset_id):
             f.seek(0)  # reset file cursor to the beginning of the file
 
             file_list = {}
+            print('Magic number: ',str(magic_number))
             if magic_number == b'PK\x03\x04':  # ZIP file magic number
                 error['zip'] = True
                 zipname = ''.join(random.choice(string.ascii_uppercase +
@@ -273,6 +275,7 @@ def upload_image(request, imageset_id):
                 if duplicat_count > 0:
                     error['duplicates'] = duplicat_count
             else:
+                print('Creating file checksum... for file', f.name)
                 # creates a checksum for image
                 fchecksum = hashlib.sha512()
                 for chunk in f.chunks():
@@ -283,7 +286,7 @@ def upload_image(request, imageset_id):
                 # tests for duplicats in  imageset
                 image = Image.objects.filter(Q(filename=filename)|Q(name=f.name), checksum=fchecksum,
                                         image_set=imageset).first()
-
+                print('Image:',image)
                 if image is None:
 
                     with open(filename, 'wb') as out:
@@ -295,7 +298,11 @@ def upload_image(request, imageset_id):
                     error['exists'] = True
                     error['exists_id'] = image.id
 
+                print('File_list:',file_list)
+
+
             for path in file_list:
+                print('Working on ',path)
 
                 try:
                     fchecksum = file_list[path]
@@ -310,7 +317,14 @@ def upload_image(request, imageset_id):
 
                     image.save_file(path)
                 except Exception as e:
-                    errors.append(str(e))
+                    import sys
+                    import traceback
+                    exc_type, exc_obj, exc_tb = sys.exc_info()
+                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                    err = f'{e.__class__} {e} {exc_type}, {fname}, {exc_tb.tb_lineno}'
+                    traceback.print_exception(e)
+                    logger.error(err)
+                    errors.append(err)
 
             errormessage = ''
             if error['zip']:
@@ -649,6 +663,21 @@ def delete_images(request, image_id):
 
 
 @login_required
+def delete_jobs(request, plugin_id, imageset_id):
+    imageset = get_object_or_404(ImageSet, id=imageset_id)
+    plugin = get_object_or_404(Plugin, id=plugin_id)
+
+    pluginjobs=PluginJob.objects.filter(image__in=imageset.images.all()).filter(plugin=plugin)
+
+    for job in pluginjobs:
+        results = PluginResult.objects.filter(job=job.id).delete()
+        
+        job.delete()
+
+    return redirect(reverse('images:view_imageset', args=(imageset.id,)))
+
+
+@login_required
 def view_imageset(request, image_set_id):
     # TODO: Cache
     imageset = get_object_or_404(ImageSet, id=image_set_id)
@@ -682,11 +711,18 @@ def view_imageset(request, image_set_id):
     copyImageSetForm.fields['imagesets'].queryset = ImageSet.objects\
         .filter(Q(team__in=request.user.team_set.all())|Q(public=True))
 
+    availablePlugins = Plugin.objects.filter(products__in=imageset.product_set.all())
+    for i,plugin in enumerate(availablePlugins):
+        pgn=PluginJob.objects.filter(image__in=imageset.images.all()).filter(plugin=plugin)
+        availablePlugins[i].alljobs = pgn
+
+
     all_products = Product.objects.filter(team=imageset.team).order_by('name')
     template = 'images/imageset_v2.html' if hasattr(request.user,'ui') and hasattr(request.user.ui,'frontend') and request.user.ui.frontend==2 else 'images/imageset.html'
     return render(request, template, {
         'image_count': imageset.images.count(),
         'imageset': imageset,
+        'availablePlugins': availablePlugins,
         'real_image_number': imageset.images.filter(~Q(image_type=Image.ImageSourceTypes.SERVER_GENERATED)).count(),
         'computer_generated_image_number' : imageset.images.filter(Q(image_type=Image.ImageSourceTypes.SERVER_GENERATED)).count(),
         'all_products': all_products,

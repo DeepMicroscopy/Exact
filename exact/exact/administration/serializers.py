@@ -33,5 +33,7 @@ def serialize_annotationType(annotation_type: AnnotationType) -> Dict[str, Any]:
             'name': annotation_type.name,
             'vector_type': annotation_type.vector_type,
             'color_code': annotation_type.color_code,
+            'multi_frame' : annotation_type.multi_frame,
             'area_hit_test' : annotation_type.area_hit_test
+            
     }
