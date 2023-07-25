@@ -174,6 +174,7 @@ def serialize_imageset(imageset: ImageSet) -> Dict[str, Any]:
                  'name': annotation_type.name,
                  'vector_type': annotation_type.vector_type,
                  'color_code': annotation_type.color_code,
+                 'multi_frame': annotation_type.multi_frame,
                  'area_hit_test': annotation_type.area_hit_test
              } for annotation_type in product.annotationtype_set.all()]
              }
@@ -194,6 +195,7 @@ def serialize_imageset(imageset: ImageSet) -> Dict[str, Any]:
             'name': imageset.main_annotation_type.name,
             'vector_type': imageset.main_annotation_type.vector_type,
             'color_code': imageset.main_annotation_type.color_code,
+            'multi_frame' : imageset.main_annotation_type.multi_frame,
             'area_hit_test' : imageset.main_annotation_type.area_hit_test
         } if imageset.main_annotation_type is not None else None
     }
