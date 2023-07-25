@@ -5,16 +5,16 @@ The `urlpatterns` list routes URLs to views. For more information please see:
 Examples:
 Function views
     1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  url(r'^$', views.home, name='home')
+    2. Add a URL to urlpatterns:  re_path(r'^$', views.home, name='home')
 Class-based views
     1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  url(r'^$', Home.as_view(), name='home')
+    2. Add a URL to urlpatterns:  re_path(r'^$', Home.as_view(), name='home')
 Including another URLconf
     1. Import the include() function: from django.conf.urls import url, include
-    2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
+    2. Add a URL to urlpatterns:  re_path(r'^blog/', include('blog.urls'))
 """
 import logging
-from django.conf.urls import url, include
+from django.urls import re_path, include
 from django.urls import path
 from django.contrib import admin
 from django.shortcuts import render
@@ -38,22 +38,22 @@ schema_view = get_schema_view(
     )
 
 urlpatterns = [
-    url(r'^user/', include('django.contrib.auth.urls')),
-    url(r'^accounts/register/$', RegistrationView.as_view(form_class=UserRegistrationForm)),
-    url(r'^accounts/', include('django_registration.backends.activation.urls')),
-    url(r'^accounts/', include('django.contrib.auth.urls')),
-    url(r'^', include('exact.base.urls')),
-    url(r'^admin/', admin.site.urls),
-    url(r'^administration/', include('exact.administration.urls')),
-    url(r'^annotations/', include('exact.annotations.urls')),
-    url(r'^images/', include('exact.images.urls')),
-    url(r'^users/', include('exact.users.urls')),
-    url(r'^tagger_messages/', include('exact.tagger_messages.urls')),
-    url(r'^tools/', include('exact.tools.urls')),
-    url(r'^datasets/', include('exact.datasets.urls')),
-    url(r'^processing/', include('exact.processing.urls')),
+    re_path(r'^user/', include('django.contrib.auth.urls')),
+    re_path(r'^accounts/register/$', RegistrationView.as_view(form_class=UserRegistrationForm)),
+    re_path(r'^accounts/', include('django_registration.backends.activation.urls')),
+    re_path(r'^accounts/', include('django.contrib.auth.urls')),
+    re_path(r'^', include('exact.base.urls')),
+    re_path(r'^admin/', admin.site.urls),
+    re_path(r'^administration/', include('exact.administration.urls')),
+    re_path(r'^annotations/', include('exact.annotations.urls')),
+    re_path(r'^images/', include('exact.images.urls')),
+    re_path(r'^users/', include('exact.users.urls')),
+    re_path(r'^tagger_messages/', include('exact.tagger_messages.urls')),
+    re_path(r'^tools/', include('exact.tools.urls')),
+    re_path(r'^datasets/', include('exact.datasets.urls')),
+    re_path(r'^processing/', include('exact.processing.urls')),
 
-    url('', include(router.urls)),
+    re_path('', include(router.urls)),
 
     path('api/v1/', include(router_api.urls)),
     path('api/v1/openapi', schema_view, name='openapi-schema'),

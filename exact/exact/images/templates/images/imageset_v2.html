@@ -115,6 +115,9 @@
       <button class="nav-link" id="administration-tab" data-toggle="tab" data-target="#administration" type="button" role="tab" aria-controls="administration" aria-selected="false">Administration</button>
     </li>
     <li class="nav-item" role="presentation">
+        <button class="nav-link" id="processing-tab" data-toggle="tab" data-target="#processing" type="button" role="tab" aria-controls="processing" aria-selected="false">Processing</button>
+      </li>
+      <li class="nav-item" role="presentation">
       <button class="nav-link" id="upload-tab" data-toggle="tab" data-target="#upload" type="button" role="tab" aria-controls="upload" aria-selected="false">Import/Export</button>
     </li>
     </ul>
@@ -133,7 +136,7 @@
                     {% if image.image_type != 1 %}
                         <div class="card imagecard">
                             <div class="card_container">
-                            <a href="{% url 'annotations:annotate' image.id %}" class="image"><img class="card-img-top image" src="{{ api }}v1/images/images/{{image.id}}/thumbnail/"
+                            <a href="{% url 'annotations:annotate' image.id %}{% if image.defaultFrame > 0%}?frame={{image.defaultFrame}}{% endif %}" class="image"><img class="card-img-top image" src="{{ api }}v1/images/images/{{image.id}}/thumbnail/"
                                     alt="Thumbnail {{image.name}} not found!" data-imageid="{{ image.id }}"></a>
                             <a href="{% url 'images:download_api' image.id %}" download><img src="{% static 'images/download.svg' %}" class="image2"></a>
                         </div>
@@ -250,7 +253,41 @@
         <!-- END: Images tab -->
     </div>
 
+    <div class="tab-pane fade" id="processing" role="tabpanel" aria-labelledby="processing-tab">
+        <!-- Administration tab -->
+        <div class="row">
+            <!-- Images tab -->
+            <div class="col-md-10">
+                        <div class="card">
+            <div class="card-header">
+                <h3>{{imageset.name}} : Plugins
+                    </h3>
+            </div>
+            <div class="card-body">
+                <table class="table table-striped">
+                    <tr><th>Plugin</th><th>Processed</th><th>Actions</th></tr>
+                    {% for plugin in availablePlugins %}
+                    <tr><td>{{ plugin.name }}</td><td>
+                        {{ plugin.alljobs|length }} images
+                    </td><td>
 
+                        <a class="annotate_button btn btn-success" href="{% url 'processing:submit_imageset' plugin.id imageset.id %}">
+                            Batch-run
+                        </a>
+                        {% if plugin.alljobs|length > 0 %}
+                        <a class="annotate_button btn btn-danger" href="{% url 'images:delete_jobs' plugin.id imageset.id %}" onclick="return confirm('Are you sure?')">
+                            Delete results
+                        </a>
+                        {% endif %}
+    
+                    </td></tr>
+                    {% endfor %}
+                   </table>
+                </div>
+        </div>
+        </div>
+    </div>
+    </div>
 
     <div class="tab-pane fade" id="administration" role="tabpanel" aria-labelledby="administration-tab">
         <!-- Administration tab -->

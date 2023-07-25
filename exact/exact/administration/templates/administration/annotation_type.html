@@ -73,6 +73,20 @@
                                         {% render_field edit_form.area_hit_test class+='form-control' %}
                                     </td>
                                 </tr>
+                                
+                                <tr>
+                                    <td>
+                                        <label for="multi_frame">{{ edit_form.multi_frame.label }}
+                                            <span data-toggle="tooltip" data-placement="right"
+                                                title="If this field is enabled, the annotations of this type are valid for multiple frames (e.g., z layers or movie frames). In other words, they loose there selectiveness for a single frame."
+                                                class="fa fa-question"></span>
+                                        </label>
+                                    </td>
+                                    <td>
+                                        {% render_field edit_form.multi_frame class+='form-control' %}
+                                    </td>
+                                </tr>
+
                                 <tr>
                                     <td>
                                         <b>Vector Type</b>
@@ -251,6 +265,18 @@
                             </td>
                             <td>
                                 {% render_field create_form.area_hit_test class+='form-control' %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <label for="id_multi_frame">{{ create_form.multi_frame.label }}
+                                    <span data-toggle="tooltip" data-placement="right"
+                                    title="If this field is enabled, the annotations of this type are valid for multiple frames (e.g., z layers or movie frames). In other words, they loose there selectiveness for a single frame."
+                                    class="fa fa-question"></span>
+                                </label>
+                            </td>
+                            <td>
+                                {% render_field create_form.multi_frame class+='form-control' %}
                             </td>
                         </tr>
                         <tr>

@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
 from django.db import transaction
@@ -22,6 +22,28 @@ from rest_framework.exceptions import ParseError
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_200_OK, \
     HTTP_403_FORBIDDEN
+from django.conf import settings
+import csv
+def logs(request):
+
+    log=[]
+    for handler in settings.LOGGING['loggers']['django']['handlers']:
+        print(handler)
+        if 'filename' in settings.LOGGING['handlers'][handler]:
+            with open(settings.LOGGING['handlers'][handler]['filename']) as csv_file:
+                csv_reader = csv.reader(csv_file, delimiter=';')
+                line_count = 0
+                for row in csv_reader:
+                    if len(row)>5:
+                        log.append([row[0],row[1],row[2],row[3],row[4],';'.join(row[5:])])
+    log = reversed(log)
+    teams = Team.objects.filter(members=request.user)
+    return render(request, 'administration/log.html', {
+        'products': Product.objects.filter(team__in=request.user.team_set.all()).order_by('team_id'),
+        'create_form': ProductCreationForm,
+        'log':log,
+        'teams': teams
+    })
 
 def products(request):
     teams = Team.objects.filter(members=request.user)
@@ -73,6 +95,7 @@ def create_product(request):
                             color_code=annoType.color_code,
                             sort_order=annoType.sort_order,
                             enable_blurred=annoType.enable_blurred,
+                            multi_frame=annoType.multi_frame,
                             default_height=annoType.default_height,
                             default_width=annoType.default_width,
                             closed=annoType.closed,
@@ -295,6 +318,7 @@ def api_create_annotation_type(request) -> Response:
          product_id = int(request.data.get('product_id',1))
          closed = request.data.get('closed', False)
          area_hit_test = request.data.get('area_hit_test', True)
+         multi_frame = request.data.get('multi_frame', False)
 
     except (KeyError, TypeError, ValueError):
         raise ParseError
@@ -315,6 +339,7 @@ def api_create_annotation_type(request) -> Response:
             default_height=default_height,
             default_width=default_width,
             closed=closed,
+            multi_frame=multi_frame,
             area_hit_test=area_hit_test,
             product=product,
         )
@@ -379,6 +404,7 @@ def edit_annotation_type(request, annotation_type_id):
             selected_annotation_type.sort_order = request.POST['sort_order']
             selected_annotation_type.closed = 'closed' in request.POST
             selected_annotation_type.area_hit_test = 'area_hit_test' in request.POST
+            selected_annotation_type.multi_frame = 'multi_frame' in request.POST
             selected_annotation_type.product = Product.objects.filter(id=request.POST['product']).first()
 
             if 'image_file' in request.FILES:

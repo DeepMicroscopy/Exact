@@ -1,6 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from exact.users.models import User, Team
 from exact.images.models import ImageSet
@@ -67,4 +67,4 @@ class MITOS_WSI_CMCDatasetForm(DatasetForm):
     database = forms.ChoiceField(choices=DATABASES)
 
 class CATCH_DatasetForm(DatasetForm):
-    images = forms.FileField(widget=forms.ClearableFileInput(attrs={'multiple':True, 'input_type':'file'}))
+    images = forms.FileField(widget=forms.ClearableFileInput(attrs={'allow_multiple_selected':True, 'input_type':'file'}))

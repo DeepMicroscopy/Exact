@@ -203,8 +203,10 @@ class EXACTImageSetViewer {
         event.preventDefault();
 
         let image_id = parseInt(event.currentTarget.dataset.image_id);
+        let defaultFrame = parseInt(event.currentTarget.dataset.defaultframe)
+        let url_parameters = {'frame': defaultFrame}
 
-        this.displayImage(image_id);
+        this.displayImage(image_id,url_parameters);
     }
 
     skip() {

@@ -4,8 +4,8 @@ from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinLengthValidator, MaxLengthValidator
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 from django.utils.functional import cached_property
-from django.utils.translation import ugettext_lazy as _
 from django.dispatch import receiver
 from django.db.models.signals import post_save
 

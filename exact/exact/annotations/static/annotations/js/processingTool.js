@@ -99,6 +99,8 @@ class ProcessingTool {
                 for (let rentry of threshold_fields)
                 {
                     $('#resultentry-threshold-' + rentry).change(this.changePluginResThreshold.bind(this)); 
+                    var event = new Event('change');
+                    $('#resultentry-threshold-' + rentry)[0].dispatchEvent(event);
                 }
                 $('#alpha-plugin-' + job.plugin).change(this.togglePluginResultAlpha.bind(this)); 
                 $('#alpha-plugin-' + job.plugin).on('input', this.togglePluginResultAlpha.bind(this)); 

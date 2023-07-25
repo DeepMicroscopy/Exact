@@ -13,6 +13,8 @@ from django.db.models.signals import post_delete, post_save, m2m_changed
 from django.dispatch import receiver
 from django.utils.functional import cached_property
 
+import logging
+
 import math
 import os
 import numpy as np
@@ -30,9 +32,31 @@ from PIL import Image as PIL_Image
 from datetime import datetime
 from pathlib import Path
 import tifffile
+from aicsimageio import AICSImage, exceptions
+from tifffile import TiffFile, TiffFileError
 
 from exact.users.models import Team
 
+logger = logging.getLogger('django')
+
+
+class FrameDescription(models.Model):
+    class FrameType:
+        ZSTACK = 0
+        TIMESERIES = 1
+        UNDEFINED = 255
+
+    FRAME_TYPES = (
+        (FrameType.ZSTACK, 'z Stack'),
+        (FrameType.TIMESERIES,'time series'),
+        (FrameType.UNDEFINED,'undefined')
+    )
+
+    frame_type = models.IntegerField(choices=FRAME_TYPES, default=FrameType.ZSTACK)
+    description = models.CharField()
+    file_path = models.CharField(default='')
+    frame_id = models.IntegerField(default=0)
+    Image = models.ForeignKey('Image',  on_delete=models.CASCADE, related_name='FrameDescriptions')
 
 
 class Image(models.Model):
@@ -63,6 +87,7 @@ class Image(models.Model):
     depth = models.IntegerField(default=1) #z
     frames = models.IntegerField(default=1) #z
     channels = models.IntegerField(default=3) 
+    defaultFrame = models.IntegerField(default=0) # to set the frame that is loaded by default
     
 
     image_type = models.IntegerField(choices=SOURCE_TYPES, default=ImageSourceTypes.DEFAULT)
@@ -107,6 +132,7 @@ class Image(models.Model):
                 osr = OpenSlide(str(path))
                 self.filename = path.name
             except:
+                print('Unable to open image with OpenSlide')
                 import pyvips
                 old_path = path
 
@@ -120,6 +146,7 @@ class Image(models.Model):
                     folder_path = Path(self.image_set.root_path()) / path.stem
                     os.makedirs(str(folder_path), exist_ok =True)
                     os.chmod(str(folder_path), 0o777)
+                    self.save() # initially save
                     for frame_id in range(self.frames):
                         height, width = reader.dimensions 
                         np_image = np.array(reader.read_region(location=(0,0), size=(reader.dimensions), level=0, zLevel=frame_id))[:,:,0]
@@ -128,6 +155,15 @@ class Image(models.Model):
 
                         target_file = folder_path / "{}_{}_{}".format(1, frame_id + 1, path.name) #z-axis frame image
                         vi.tiffsave(str(target_file), tile=True, compression='lzw', bigtiff=True, pyramid=True,  tile_width=256, tile_height=256)
+
+                        # save FrameDescription object for each frame
+                        FrameDescription.objects.create(
+                                Image=self,
+                                frame_id=frame_id,
+                                file_path=target_file,
+                                frame_type=FrameDescription.FrameType.TIMESERIES,
+                                description='%.2f s (%d)' % (float(frame_id-1)/float(reader.fps), frame_id)
+                        )
 
                         # save first frame as default file for thumbnail etc.
                         if frame_id == 0:
@@ -162,6 +198,7 @@ class Image(models.Model):
                     folder_path = Path(self.image_set.root_path()) / path.stem
                     os.makedirs(str(folder_path), exist_ok =True)
                     os.chmod(str(folder_path), 0o777)
+                    self.save() # initially save
 
                     cap = cv2.VideoCapture(str(Path(path)))
                     frame_id = 0
@@ -193,9 +230,22 @@ class Image(models.Model):
                         # save first frame as default file for thumbnail etc.
                         if frame_id == 0:
                             self.filename = target_file.name
+
+                        # save FrameDescription object for each frame
+                        FrameDescription.objects.create(
+                                Image=self,
+                                frame_id=frame_id,
+                                file_path=target_file,
+                                frame_type=FrameDescription.FrameType.TIMESERIES,
+                                description='%.2f s (%d)' % ((float(frame_id-1)/cap.get(cv2.CAP_PROP_FPS)), frame_id)
+                        )
+
+
                         frame_id += 1
                                     
                     self.frames = frame_id
+
+                    
                 # check if file is philips iSyntax
                 elif Path(path).suffix.lower().endswith(".isyntax"):
                     from util.ISyntaxContainer import ISyntaxContainer
@@ -207,8 +257,77 @@ class Image(models.Model):
                     self.objectivePower = 40
                     self.filename = path.name
                 # check if possible multi frame tiff
+                elif Path(path).suffixes[-2].lower().endswith('ome') or Path(path).suffixes[-1].lower().startswith('.tif'):
+
+                    reader = AICSImage(str(path))
+                    im = reader.get_stack().squeeze()
+                    shape = im.shape # shape of 1st frame in series
+
+                    image_saved = False
+                    if (len(shape) == 4 and shape[-1] in [1, 3, 4]) or len(shape) == 3 and shape[-1] not in [1, 3, 4]: 
+                        image_saved = True
+                        frames = shape[0]
+                        self.frames = frames
+                        z_positions=[str(x) for x in np.arange(frames)]
+                        z_positions_num=[x for x in np.arange(frames)]
+
+                        if reader.ome_metadata is None:
+                            logger.warning('OME TIFF without metadata: '+str(path))
+                        elif len(reader.ome_metadata.images)==0:
+                            logger.warning('Number of images is zero'+str(path))
+                        else:
+                            z_positions=[]
+                            z_positions_num=[]
+                            for im_meta in reader.ome_metadata.images:
+                                z_positions.append('%.2f %s' % (im_meta.pixels.planes[0].position_z,im_meta.pixels.planes[0].position_z_unit.value))
+                                z_positions_num.append(im_meta.pixels.planes[0].position_z)
+
+                        folder_path = Path(self.image_set.root_path()) / path.stem
+                        os.makedirs(str(folder_path), exist_ok =True)
+                        os.chmod(str(folder_path), 0o777)
+                        
+                        self.save() # initially save
+
+                        for frame_id in range(shape[0]):
+                            vi = pyvips.Image.new_from_array(im[frame_id])
+                            vi = vi.scaleimage()
+                            height, width, channels = vi.height, vi.width, vi.bands
+                            self.channels = channels
+
+                            target_file = folder_path / "{}_{}_{}".format(1, frame_id + 1, path.name) #z-axis frame image
+                            vi.tiffsave(str(target_file), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
+
+                            # save FrameDescription object for each frame
+                            FrameDescription.objects.create(
+                                    Image=self,
+                                    frame_id=frame_id,
+                                    file_path=target_file,
+                                    description=z_positions[frame_id],                                    
+                                    frame_type=FrameDescription.FrameType.ZSTACK,
+                            )
+
+                            # z is the default position
+                            if (0 in z_positions_num):
+                                self.defaultFrame=z_positions_num.index(0)
+
+                            # save first frame or default position for thumbnail etc.
+                            if (frame_id == 0) or (z_positions_num[frame_id]==0):
+                                self.filename = target_file.name
+
+                    else:
+                        path = Path(path).with_suffix('.tiff')
+                        if old_path == path:
+                            path = Path(path).with_suffix('.tif')
+
+                        vi = pyvips.Image.new_from_file(str(old_path))
+                        vi.tiffsave(str(path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
+                        self.filename = path.name
+
                 elif path.suffix.lower().endswith(".tiff") or path.suffix.lower().endswith(".tif"):
-                    shape = tifffile.imread(str(path)).shape
+                    im = tifffile.imread(str(path))
+                    shape = im.shape
+                    print('Shape=',shape)
+
                     image_saved = False
                     if len(shape) >= 3: # possible multi channel or frames
                         #Possible formats (10, 300, 300, 3) (10, 300, 300)
@@ -217,12 +336,14 @@ class Image(models.Model):
                             frames = shape[0]
                             self.frames = frames
 
+
                             folder_path = Path(self.image_set.root_path()) / path.stem
+                            self.save() # initially save
                             os.makedirs(str(folder_path), exist_ok =True)
                             os.chmod(str(folder_path), 0o777)
 
                             for frame_id in range(shape[0]):
-                                vi = pyvips.Image.new_from_file(str(path), page=frame_id)
+                                vi = pyvips.Image.new_from_array(im[frame_id])
                                 vi = vi.scaleimage()
                                 height, width, channels = vi.height, vi.width, vi.bands
                                 self.channels = channels
@@ -230,9 +351,18 @@ class Image(models.Model):
                                 target_file = folder_path / "{}_{}_{}".format(1, frame_id + 1, path.name) #z-axis frame image
                                 vi.tiffsave(str(target_file), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
 
+                                # save FrameDescription object for each frame
+                                FrameDescription.objects.create(
+                                        Image=self,
+                                        frame_id=frame_id,
+                                        file_path=target_file,
+                                        frame_type=FrameDescription.FrameType.ZSTACK,
+                                )
+
                                 # save first frame as default file for thumbnail etc.
                                 if frame_id == 0:
                                     self.filename = target_file.name
+
                         if image_saved == False:
                             path = Path(path).with_suffix('.tiff')
 
@@ -270,9 +400,11 @@ class Image(models.Model):
             except (KeyError, ValueError):
                 self.objectivePower = 1
             self.save()
-        except Exception as e:
-            #if path.exists():
-            #    os.remove(str(path))
+        except OSError as e:
+            print('error:',e.__class__, str(e))
+            logger.error('Error in save_file: '+str(e.__class__)+' - '+str(e))
+            if path.exists():
+                os.remove(str(path))
             raise
 
     def __str__(self):

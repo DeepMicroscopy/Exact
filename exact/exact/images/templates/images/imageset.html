@@ -166,7 +166,7 @@
                             {% for image in imageset.images.all|dictsort:"name" %}
                                 {% if image.image_type != 1 %}
                                 <li>
-                                    <a href="{% url 'annotations:annotate' image.id %}" title="{{image.name}}"> {{image.name|truncatechars:30}}</a>
+                                    <a href="{% url 'annotations:annotate' image.id %}{% if image.defaultFrame > 0%}?frame={{image.defaultFrame}}{% endif %}" title="{{image.name}}"> {{image.name|truncatechars:30}}</a>
                                 </li>
                                 {% endif %}
                             {% endfor %}
