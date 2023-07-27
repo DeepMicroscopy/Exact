@@ -322,7 +322,7 @@ def upload_image(request, imageset_id):
                     exc_type, exc_obj, exc_tb = sys.exc_info()
                     fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
                     err = f'{e.__class__} {e} {exc_type}, {fname}, {exc_tb.tb_lineno}'
-                    traceback.print_exception(e)
+                    traceback.print_exception(exc_obj, exc_type, exc_tb )
                     logger.error(err)
                     errors.append(err)
 

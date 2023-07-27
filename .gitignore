@@ -6,6 +6,10 @@ settings.py
 __pycache__/
 *.py[cod]
 *$py.class
+*.svg
+*.css.map
+*.js.map
+.DS_Store
 
 # C extensions
 *.so
