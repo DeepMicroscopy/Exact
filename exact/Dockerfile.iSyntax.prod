@@ -4,7 +4,7 @@
 
 
 # pull official base image
-FROM ubuntu:18.04 as builder
+FROM ubuntu:22.04 as builder
 
 # set work directory
 WORKDIR /usr/src/app
@@ -46,7 +46,7 @@ RUN chmod +x /usr/src/app/entrypoint.prod.sh
 #########
 
 
-FROM ubuntu:18.04
+FROM ubuntu:22.04
 
 # create directory for the app user
 RUN mkdir -p /home/app
@@ -74,7 +74,7 @@ RUN apt-get update && apt-get install -y python3-pip python3-opencv  python3-ope
 COPY --from=builder /usr/src/app/wheels /wheels
 COPY --from=builder /usr/src/app/requirements.txt .
 RUN pip3 install --upgrade pip
-RUN pip3 install numpy==1.19.4
+#RUN pip3 install numpy==1.19.4
 RUN pip3 install --no-cache /wheels/*
 
 

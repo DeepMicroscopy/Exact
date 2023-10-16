@@ -7,6 +7,7 @@
 
 confusable-homoglyphs==3.2.0
 drf-flex-fields==1.0.2
+Django==3.2.11
 django-appconf==1.0.5
 django-extensions==3.2.3
 django-filter==23.2

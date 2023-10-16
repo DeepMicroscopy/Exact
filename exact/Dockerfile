@@ -1,5 +1,5 @@
 # pull official base image
-FROM ubuntu:18.04 as builder
+FROM ubuntu:22.04 as builder
 
 # set work directory
 WORKDIR /usr/src/exact
@@ -14,7 +14,7 @@ ENV PYTHONUNBUFFERED 1
 
 # install dependencies
 RUN pip3 install --upgrade pip
-RUN pip3 install numpy==1.19.4
+#RUN pip3 install numpy==1.19.4
 COPY ./requirements.txt /usr/src/exact/requirements.txt
 
 RUN pip3 install -r requirements.txt
