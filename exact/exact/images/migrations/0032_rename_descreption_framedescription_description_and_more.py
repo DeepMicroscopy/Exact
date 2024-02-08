@@ -18,6 +18,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='framedescription',
             name='file_path',
-            field=models.CharField(default=''),
+            field=models.CharField(default='', max_length=256),
         ),
     ]

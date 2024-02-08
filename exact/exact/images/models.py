@@ -53,8 +53,8 @@ class FrameDescription(models.Model):
     )
 
     frame_type = models.IntegerField(choices=FRAME_TYPES, default=FrameType.ZSTACK)
-    description = models.CharField()
-    file_path = models.CharField(default='')
+    description = models.CharField(max_length=256)
+    file_path = models.CharField(default='', max_length=256)
     frame_id = models.IntegerField(default=0)
     Image = models.ForeignKey('Image',  on_delete=models.CASCADE, related_name='FrameDescriptions')
 
