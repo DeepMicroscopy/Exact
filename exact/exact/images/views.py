@@ -487,8 +487,8 @@ def view_image_navigator_overlay_tile(request, image_id, z_dimension, frame, lev
     file_path = os.path.join(settings.IMAGE_PATH, image.path())
     slide = image_cache.get(file_path)
 
-    tile = slide.get_tile(level, (col, row))
-
+    tile = slide.get_tile(level, (col, row), frame=frame)
+ 
     # replace with databse call to imageset.product
     for product in image.image_set.product_set.all():
         for plugin in plugin_finder.filter_plugins(product_name=product.name, navigation_view_policy=ViewPolicy.RGB_IMAGE):
@@ -501,7 +501,7 @@ def view_image_navigator_overlay_tile(request, image_id, z_dimension, frame, lev
     return response
 
 @login_required
-@cache_page(60 * 60 * 24 * 30)
+#@cache_page(60 * 60 * 24 * 30)
 def view_image_tile(request, image_id, z_dimension, frame, level, tile_path):
     """
     This view is to authenticate direct access to the images via nginx auth_request directive
@@ -531,7 +531,7 @@ def view_image_tile(request, image_id, z_dimension, frame, level, tile_path):
     try:
         slide = image_cache.get(file_path)
 
-        tile = slide.get_tile(level, (col, row))
+        tile = slide.get_tile(level, (col, row),frame=frame)
 
         buf = PILBytesIO()
         tile.save(buf, format, quality=90)
@@ -539,7 +539,7 @@ def view_image_tile(request, image_id, z_dimension, frame, level, tile_path):
             
         load_from_drive_time = timer() - start
 
-        logger.info(f"{load_from_drive_time:.4f};{request.path}")
+        logger.info(f"{load_from_drive_time:.4f};{request.path};NC")
 
         if hasattr(cache, "delete_pattern"):
             tiles_cache.set(cache_key, buffer, 7*24*60*60)
