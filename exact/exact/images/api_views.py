@@ -148,7 +148,7 @@ class ImageViewSet(viewsets.ModelViewSet):
         try:
             slide = image_cache.get(file_path)
 
-            tile = slide.get_tile(level, (col, row))
+            tile = slide.get_tile(level, (col, row), frame=frame)
 
             buf = PILBytesIO()
             tile.save(buf, format, quality=90)
@@ -210,7 +210,7 @@ class ImageViewSet(viewsets.ModelViewSet):
                     cache_key = f"{pk}/{z_dimension}/{frame}/{level}/{col}/{row}"
                     if tiles_cache.has_key(cache_key) == False:
 
-                        tile = slide.get_tile(level, (col, row))
+                        tile = slide.get_tile(level=level, address=(col, row), frame=frame)
 
                         buf = PILBytesIO()
                         tile.save(buf, "jpeg", quality=90)
