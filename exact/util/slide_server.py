@@ -286,8 +286,12 @@ def getSlideHandler(path):
             for ftype in candidates:
                 if (path.split('.')[-1].lower() in ftype.extensions):
                     filehandler = ftype.handler
-                    print('Found file handler: ',filehandler(path))
-                    return  filehandler(path)        
+                    print('Found file handler: ',filehandler)
+                    try:
+                        return  filehandler(path)        
+                    except Exception as e:
+                        print('But unable to open. :-()')
+                        pass
         
         # as last resort, try openSlide:
         try:
