@@ -43,11 +43,13 @@ class LabelImage:
             )
         
     @property
-    def dimensions(self):
-        return self.data.shape
+    def dimensions(self) -> Tuple[int, int]:
+        """Returns (width, height) tuple of the image."""
+        return self.data.shape[:2][::-1]
     
     @property
     def get_data(self) -> np.ndarray:
+        """Returns the content of the image as numpy array."""
         return self.data[:]
 
 
@@ -64,13 +66,15 @@ class ThumbNail:
             imread(self.filename, series=self.series, aszarr=True), 
             mode='r'
             )
-
+         
     @property
-    def dimensions(self):
-        return self.data.shape
+    def dimensions(self) -> Tuple[int, int]:
+        """Returns (width, height) tuple of the image."""
+        return self.data.shape[:2][::-1]
     
     @property
     def get_data(self) -> np.ndarray:
+        """Returns the content of the image as numpy array."""
         return self.data[:]
 
 
@@ -98,7 +102,7 @@ class PyramidalTIFF:
     @property
     def level_dimensions(self) -> List[Tuple[int, int]]:
         """A list of (width, height) tuples, one for each level of the image."""
-        return [arr.shape[:2] for _, arr in self.data.arrays()]
+        return [arr.shape[:2][::-1] for _, arr in self.data.arrays()]
     
 
     @property
@@ -127,8 +131,6 @@ class PyramidalTIFF:
             size: Tuple[int, int]
             ) -> Image:
         """Return a PIL.Image containing the contents of the region.
-
-        TODO: x, y are currently not with respect to the level 0 reference frame
 
         Args:
             location (Tuple[int, int]): (x, y) tuple giving the top left pixel.
@@ -309,7 +311,6 @@ class PyramidalZStack:
             frame: int = 0) -> Image:
         """Return a PIL.Image containing the contents of the region.
 
-        TODO: x, y are currently not with respect to the level 0 reference frame
         TODO: Add support to load regions from multiple zlevels.
 
         Args:
