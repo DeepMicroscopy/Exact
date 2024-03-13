@@ -141,6 +141,10 @@ class Image(models.Model):
                         )
                     print('Added',osr.nFrames,'frames')
                     self.frames=osr.nFrames
+                    if openslide.PROPERTY_NAME_OBJECTIVE_POWER in osr.properties:
+                        self.objectivePower = osr.properties[openslide.PROPERTY_NAME_OBJECTIVE_POWER]
+                    if openslide.PROPERTY_NAME_MPP_X in osr.properties:
+                        self.mpp = osr.properties[openslide.PROPERTY_NAME_MPP_X]
                     
             except Exception as e:
                 print('Unable to open image with OpenSlide',e)
