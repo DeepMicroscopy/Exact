@@ -23,12 +23,12 @@ def remove_natively_handled_files_auxfiles(apps, schema_editor):
                 if slide is None:
                     continue
                 if image.depth==1:
-                    if not os.path.exists(image.get_file_name()):
+                    rp = image.image_set.root_path()
+                    if not os.path.exists(rp / Path(image.filename)):
                         print('Setting image filename from: ',image.filename,'to:',image.name)
                         image.filename = image.name
                         image.save()
                     for frame in range(image.frames):
-                        rp = image.image_set.root_path()
                         filepath = rp / Path(Path(image.name).stem) / "{}_{}_{}".format(1, frame+1, image.name)
                         if os.path.exists(filepath):
                             print('Removing: ', filepath)
