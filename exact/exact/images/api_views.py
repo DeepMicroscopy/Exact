@@ -383,7 +383,7 @@ class ImageViewSet(viewsets.ModelViewSet):
             f.seek(0)  # reset file cursor to the beginning of the file
 
             file_list = {}
-            print('Magic number: ',hex(magic_number))
+#            print('Magic number: ',hex(magic_number))
             if magic_number == b'PK\x03\x04':
                 zipname = ''.join(random.choice(string.ascii_uppercase +
                                                 string.ascii_lowercase +
