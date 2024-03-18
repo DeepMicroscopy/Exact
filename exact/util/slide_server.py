@@ -134,7 +134,7 @@ class ImageSlide3D(openslide.ImageSlide):
             tile.paste(crop, tile_offset)
         return tile  
 
-vendor_handlers = {'Aperio': OpenSlideWrapper,
+vendor_handlers = {'aperio': OpenSlideWrapper,
                     'dicom' : OpenSlideWrapper,
                     'mirax' : OpenSlideWrapper,
                     'philips' : OpenSlideWrapper,
@@ -186,6 +186,9 @@ class GenericTiffHandler:
         vendor = openslide.lowlevel.detect_vendor(file)
         if vendor in vendor_handlers:
             return type("GenericTiffHandler", (vendor_handlers[vendor],openslide.OpenSlide), {})(file)
+        else:
+            return type("GenericTiffHandler", (ImageSlide3D, openslide.ImageSlide), {})(file)
+            
 
 
 class TiffHandler(openslide.OpenSlide):
