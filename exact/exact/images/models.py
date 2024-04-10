@@ -36,6 +36,7 @@ from aicsimageio import AICSImage, exceptions
 from tifffile import TiffFile, TiffFileError
 
 from exact.users.models import Team
+import h5py
 
 logger = logging.getLogger('django')
 
@@ -380,6 +381,21 @@ class Image(models.Model):
                         vi = pyvips.Image.new_from_file(str(old_path))
                         vi.tiffsave(str(path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
                         self.filename = path.name
+
+                elif path.suffix.lower().endswith(".hdf5") :                          
+                    with h5py.File(str(path), 'r') as hf:
+                        data = hf["segmentation"]
+                        ndarray_data = np.array(data)
+
+                        scaled_image_data = (ndarray_data * (255 / len(np.unique(ndarray_data)))).astype(np.uint8)
+                        colored_image = cv2.applyColorMap(scaled_image_data, cv2.COLORMAP_VIRIDIS)
+                        colored_image = cv2.cvtColor(colored_image, cv2.COLOR_BGR2RGB)
+
+                        vi = pyvips.Image.new_from_array(colored_image)
+                        path = Path(path).with_suffix('.tiff')
+                        vi.tiffsave(str(path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
+                        self.filename = path.name
+
                 else:                            
                     path = Path(path).with_suffix('.tiff')
 
@@ -387,7 +403,11 @@ class Image(models.Model):
                     vi.tiffsave(str(path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
                     self.filename = path.name
 
-            osr = OpenSlide(self.path())
+            osr = OpenSlide(str(path))
+
+            if not Path(self.path()).suffix.lower().endswith(".hdf5") :  
+                osr = OpenSlide(self.path())
+                
             self.width, self.height = osr.level_dimensions[0]
             try:
                 mpp_x = osr.properties[openslide.PROPERTY_NAME_MPP_X]

@@ -11,9 +11,6 @@ class FakeBroadcastChannel {
     close() { }
 }
 
-
-
-
 class EXACTBrowserSync {
 
     constructor(source_image, viewer, exact_registration_sync) {
@@ -77,10 +74,46 @@ class EXACTBrowserSync {
         this.getChannelObject("GetImageInformation").onmessage = 
                     this.sendImageInformation.bind(this);
 
-        $("#sync_browser_image").on("change",this.createRegistration.bind(this));
+        $("#sync_browser_image").on("change",this.imageHandlerSelection.bind(this));
+    }
+
+    imageHandlerSelection(event) {
+        
+        let backgroundColor = $("select#sync_browser_image option:selected").css("background-color");
+
+        if (backgroundColor == "rgb(0, 0, 255)") {
+            this.createOverlayOpacity(event);
+        }
+        else {
+            this.createRegistration(event);
+        }
+    }
+
+    createOverlayOpacity(event) {
+        var selectElement = document.getElementById('sync_browser_image');
+        var selectedOption = selectElement.options[selectElement.selectedIndex];
+
+        var selectedImageId = selectedOption.getAttribute('data-image_id');
+        var selectedImageName = selectedOption.label;
+
+        this.openTabImageInformations[selectedImageId] = selectedImageName;
+
+        if (this.registration !== undefined) {
+            this.registration.destroy();
+        }
+
+        var imageInfo = new Map();
+
+        imageInfo.set('target_image_id', this.source_image.id);
+        imageInfo.set('target_image_name', this.source_image.name);
+        imageInfo.set('source_image_id', selectedImageId);
+        imageInfo.set('source_image_name', selectedImageName);
+
+        this.registration = new EXACTOverlayOpacityHandler(this.viewer, imageInfo, this);
     }
 
     createRegistration(event) {
+
         let registration_pair = this.exact_registration_sync.registeredImagePairs[$( "select#sync_browser_image").val()];
 
         if(registration_pair === undefined || registration_pair.target_image.id !== this.source_image.id) {
@@ -125,6 +158,28 @@ class EXACTBrowserSync {
                                         data-image_id=${registration_pair.source_image.id}>
                                     ${registration_pair.source_image.name}
                                 </option>`);
+        }
+
+        // set all segmentation pairs at UI
+        var imageListDiv = document.getElementById('image_list');
+        var imageLinks = imageListDiv.getElementsByTagName('a');
+
+        for (var i = 0; i < imageLinks.length; i++) {
+            var imageName = imageLinks[i].textContent.trim();
+            imageName = imageName.replace(/\s/g, '');
+            imageName = imageName.replace(/\n/g, '');
+            var imageId = imageLinks[i].getAttribute('data-image_id');
+            console.log('Image Name: ' + imageName + ', Image ID: ' + imageId);
+
+            var name1 = this.source_image.name.split('.').slice(0, -1).join('.');
+            var name2 = imageName.split('.').slice(0, -1).join('.');
+        
+            if (name1 === name2 && this.source_image.name !== imageName) {
+                image_list.append(`<option style="background-color: blue"
+                                        data-image_id=${imageId}>
+                                        ${imageName}
+                                    </option>`);
+            }
         }
 
         if($('#sync_browser_image > option').length >= 1) {
