@@ -113,7 +113,6 @@ class EXACTBrowserSync {
     }
 
     createRegistration(event) {
-
         let registration_pair = this.exact_registration_sync.registeredImagePairs[$( "select#sync_browser_image").val()];
 
         if(registration_pair === undefined || registration_pair.target_image.id !== this.source_image.id) {
@@ -169,7 +168,6 @@ class EXACTBrowserSync {
             imageName = imageName.replace(/\s/g, '');
             imageName = imageName.replace(/\n/g, '');
             var imageId = imageLinks[i].getAttribute('data-image_id');
-            console.log('Image Name: ' + imageName + ', Image ID: ' + imageId);
 
             var name1 = this.source_image.name.split('.').slice(0, -1).join('.');
             var name2 = imageName.split('.').slice(0, -1).join('.');
