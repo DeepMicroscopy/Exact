@@ -556,15 +556,15 @@ class EXACTViewer {
             }
             this.frameSlider = new Slider("#frameSlider", {
                 ticks_snap_bounds: 1,
-                value: 1,
+                value: 0,
                 formatter: function(val){ return value_formatter (labels,val) },
-                min: 1,
+                min: 0,
                 tooltip: 'always',
-                max: frames
+                max: frames-1
             });
             this.frameSlider.on('change', this.onFrameSliderChanged.bind(this));
         }
-        else if (objectivePower > 1) {
+        if (objectivePower > 1) {
 
             const default_ticks = [0, 1, 2, 5, 10, 20, 40, 80, 160];
             const default_names = ["0x", "1x", "2x", "5x", "10x", "20x", "40x", "80x", "160x"];

@@ -13,14 +13,15 @@
 """
 
 import numpy as np
-import pydicom
 from pydicom.encaps import decode_data_sequence
 from PIL import Image
 import io
 import os
 import struct
 from os import stat
+import openslide
 
+from util.enums import FrameType
 
 class fileinfo:
     offset = 16 # fixed: 16 byte header
@@ -45,9 +46,53 @@ class ReadableCellVizioMKTDataset():
         [type]: [description]
     """
 
-    fi = fileinfo()
+    def __init__(self,filename):
+        #print('Opening:',filename)
+        self.fileName = filename;
+        self.fi = fileinfo()
+        self.fileHandle = open(filename, 'rb');
+        self.fileHandle.seek(5) # we find the FPS at position 05
+        fFPSByte = self.fileHandle.read(4)
+        self.fps = struct.unpack('>f', fFPSByte)[0]
 
-    def __init__(self, filename):
+
+        self.fileHandle.seek(10) # we find the image size at position 10
+        fSizeByte = self.fileHandle.read(4)
+        self.fi.size = int.from_bytes(fSizeByte, byteorder='big', signed=True)
+        self.fi.nImages=1000
+
+        self.fi.width = 576
+        if ((self.fi.size/(2*self.fi.width))%2!=0):
+             self.fi.width=512
+             self.fi.height=int(self.fi.size/(2*self.fi.width))
+        else:
+             self.fi.height=int(self.fi.size/(2*self.fi.width))
+
+        self.filestats = stat(self.fileName)
+        self.fi.nImages = int((self.filestats.st_size-self.fi.offset) / (self.fi.size+self.fi.gapBetweenImages))
+
+        self.numberOfFrames = self.fi.nImages
+
+        self.geometry_imsize = [self.fi.height, self.fi.width]
+        self.imsize = [self.fi.height, self.fi.width]
+        self.geometry_tilesize = [(self.fi.height, self.fi.width)]
+        self.geometry_rows = [1]
+        self.geometry_columns = [1]
+        self.levels = [1]
+        self.channels = 1
+        self.mpp_x = 250/576 # approximate number for gastroflex, 250 ym field of view, 576 px
+        self.mpp_y  = 250/576
+    
+        # generate circular mask for this file
+        self.circMask = circularMask(self.fi.width,self.fi.height, self.fi.width-2).mask
+        #print('Circular mask shape:',self.circMask.shape)
+        self.properties = { openslide.PROPERTY_NAME_BACKGROUND_COLOR:  '000000',
+                           openslide.PROPERTY_NAME_MPP_X: self.mpp_x,
+                           openslide.PROPERTY_NAME_MPP_Y: self.mpp_y,
+                           openslide.PROPERTY_NAME_OBJECTIVE_POWER:20,
+                           openslide.PROPERTY_NAME_VENDOR: 'MKT'}
+
+    def _2_init__(self, filename):
 
        self.fileName = filename
        self.fileHandle = open(filename, 'rb')
@@ -55,7 +100,7 @@ class ReadableCellVizioMKTDataset():
        fFPSByte = self.fileHandle.read(4)
        self.fps = struct.unpack('>f', fFPSByte)[0]
 
-
+       self.fi = fileinfo()
        self.fileHandle.seek(10) # we find the image size at position 10
        fSizeByte = self.fileHandle.read(4)
        self.fi.size = int.from_bytes(fSizeByte, byteorder='big', signed=True)
@@ -81,8 +126,14 @@ class ReadableCellVizioMKTDataset():
        self.geometry_columns = [1]
        self.levels = [1]
        self.channels = 1
-       self.mpp_x = 1e-6
-       self.mpp_y  = 1e-6
+       self.mpp_x = 250/576 # approximate number for gastroflex, 250 ym field of view, 576 px
+       self.mpp_y  = 250/576
+
+       self.properties = { openslide.PROPERTY_NAME_BACKGROUND_COLOR:  '000000',
+                           openslide.PROPERTY_NAME_MPP_X: self.mpp_x,
+                           openslide.PROPERTY_NAME_MPP_Y: self.mpp_y,
+                           openslide.PROPERTY_NAME_OBJECTIVE_POWER:20,
+                           openslide.PROPERTY_NAME_VENDOR: 'MKT'}
 
        self.circMask = circularMask(self.fi.width,self.fi.height, self.fi.width-2).mask
 
@@ -100,17 +151,48 @@ class ReadableCellVizioMKTDataset():
     def level_dimensions(self):
         return [self.geometry_imsize]
 
+    @property 
+    def nFrames(self):
+        return self.numberOfFrames
+    
+    @property
+    def frame_descriptors(self) -> list[str]:
+        """ returns a list of strings, used as descriptor for each frame
+        """
+        return ['%.2f s (%d)' % (float(frame_id)/float(self.fps), frame_id) for frame_id in range(self.nFrames)]
+
+    @property 
+    def nLayers(self):
+        return 1
+
+    @property
+    def layer_descriptors(self) -> list[str]:
+        """ returns a list of strings, used as descriptor for each layer
+        """
+        return ['']
+
+    @property
+    def frame_type(self):
+        return FrameType.TIMESERIES
+
+
+    def get_thumbnail(self, size):
+        return self.read_region((0,0),0, self.dimensions).resize(size)
+
     def readImage(self, position=0):
 
-       self.fileHandle.seek(self.fi.offset + self.fi.size*position + self.fi.gapBetweenImages*position)
+        seekpos=self.fi.offset + self.fi.size*position + self.fi.gapBetweenImages*position
+        image = np.fromfile(self.fileName, offset=seekpos, dtype=np.int16, count=int(self.fi.size/2))
 
-       image = np.fromfile(self.fileHandle, dtype=np.int16, count=int(self.fi.size/2))
-       image = np.clip(image, 0, np.max(image))
+        if (image.size > 0):
+            image = np.clip(image, 0, np.max(image))
 
-       image=np.reshape(image, newshape=(self.fi.height, self.fi.width))
+        if (image.shape[0]!=self.fi.height* self.fi.width):
+            image = np.zeros((self.fi.height, self.fi.width))
 
-       image = np.ma.masked_array(image, 1-self.circMask) # apply mask to image
-       return image
+        image=np.reshape(image, newshape=(self.fi.height, self.fi.width))
+
+        return image
 
     def scaleImageUINT8(self, image, mask = None):
        # read image and scale to uint8 [0;255] format
@@ -142,7 +224,7 @@ class ReadableCellVizioMKTDataset():
        image = self.scaleImageUINT8(image)
        return image
 
-    def read_region(self, location: tuple, level:int, size:tuple, zLevel:int):
+    def read_region(self, location: tuple, level:int, size:tuple, frame:int=0):
         img = np.zeros((size[1],size[0],4), np.uint8)
         img[:,:,3]=255
         offset=[0,0]
@@ -153,7 +235,7 @@ class ReadableCellVizioMKTDataset():
             offset[1] = -location[0]
             location = (0,location[1])
 
-        pixel_array = self.readImageUINT8(position=zLevel)
+        pixel_array = self.readImageUINT8(position=frame)
         imgcut = pixel_array[location[1]:location[1]+size[1]-offset[0],location[0]:location[0]+size[0]-offset[1]]
         imgcut = np.uint8(np.clip(np.float32(imgcut),0,255))
 
