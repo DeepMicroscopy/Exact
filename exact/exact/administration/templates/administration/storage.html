@@ -45,16 +45,14 @@
                             <table class="table">
                                 {% for team in teams %}
                                     <thead data-toggle="collapse" data-target="#group{{ team.id }}">
-                                    <tr class="table-primary"><th colspan=4>Team  {{ team.name }}, total: {{ team.storage_disk }} </th></tr>
+                                    <tr class="table-primary"><th colspan=2>Team  {{ team.name }}</th><th style="text-align:right"> total: {{ team.storage_disk }}</th></tr>
                                 </thead>
                                 <tbody id="group{{ team.id }}" class="collapse">
-                                    <tr><th style="width:20%">Imageset ID</th><th style="width:60%">Name</th><th  style="width:20%">Storage (on disk)</th></tr>
+                                    <tr><th style="width:20%">Imageset ID</th><th style="width:60%">Name</th><th  style="width:20%;text-align:right">Storage (on disk)</th></tr>
                                 {% for imageset in team.imagesets %}
                                     <tr><td>{{ imageset.id }}</td><td style="text-align: left;">
                                             {{ imageset.name }}
-                                        </td><td>{{ imageset.storage_disk }}</td>
-                                    </td><td>{{ imageset.storage_files }}</td>
-                                        </td>
+                                        </td><td style="text-align:right">{{ imageset.storage_disk }}</td>
                                         </tr>
                                         {% endfor %}
                                     </tbody>
