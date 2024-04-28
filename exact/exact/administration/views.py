@@ -15,6 +15,7 @@ from .forms import AnnotationTypeCreationForm, AnnotationTypeEditForm, ProductCr
 from exact.annotations.models import Annotation, AnnotationType
 from exact.administration.models import Product
 from exact.users.models import Team
+from exact.images.models import ImageSet
 from exact.administration.serializers import serialize_annotationType, ProductSerializer
 
 from rest_framework.decorators import api_view
@@ -24,6 +25,7 @@ from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_2
     HTTP_403_FORBIDDEN
 from django.conf import settings
 import csv
+import os
 def logs(request):
 
     log=[]
@@ -172,6 +174,42 @@ def plugins(request):
         'plugins' : Plugin.objects.order_by('name'),
         'all_products' : all_products,
         'teams': teams
+    })
+
+
+def folder_size(path):
+    """
+    Calculates the size of a folder
+    :param path: path to folder to analyze
+    :return: size in GB of the folder
+    """
+    size = 0
+    for dirpath, dirnames, filenames in os.walk(path):
+        for f in filenames:
+            fp = os.path.join(dirpath, f)
+            if os.path.isfile(fp) and not os.path.islink(fp):
+                size += os.path.getsize(fp)
+    return round(size / (1024.0 * 1024.0 * 1024.0), 2)
+
+def storage(request):
+
+    teams = Team.objects.filter(members=request.user)
+    #if (request.user.is_superuser):
+    teams = Team.objects.all()
+
+    for team in teams:
+        imagesets = ImageSet.objects.filter(team=team).order_by('name')
+        totalteam = 0
+        for imageset in imagesets:
+            filesize_gb = folder_size(imageset.root_path())
+            imageset.storage_disk = '%.2f GB' % filesize_gb
+            totalteam += filesize_gb
+        team.storage_disk = '%.2f GB' % totalteam
+        team.imagesets = imagesets
+        
+
+    return render(request, 'administration/storage.html', {
+        'teams' : teams,
     })
 
 @api_view(['POST'])

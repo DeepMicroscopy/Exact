@@ -1,0 +1,66 @@
+{% extends 'base/base.html' %}
+{% load i18n %}
+{% load static %}
+{% load widget_tweaks %}
+{% block taggerimports %}
+
+<script type="text/javascript" src="{% static 'scripts/jquery-3.2.1.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'scripts/bootstrap.min.js' %}"></script>
+
+{% endblock taggerimports %}
+{% block additional_js %}
+<script type="text/javascript" src="{% static 'scripts/plugins_products.js' %}"></script>
+<script type="text/javascript" src="{% static 'scripts/notify.min.js' %}"></script>
+<script>
+    $(document).ready(function() {
+  // Collapse all groups by default (except the first one, if desired)
+  $('.table-group:not(:first-child)').collapse('hide');
+
+  // Add a click event listener to toggle headers
+  $('.group-header').click(function() {
+    $(this).siblings('tbody').collapse('toggle');
+  });
+});
+</script>
+{% endblock additional_js %}
+
+
+{% block bodyblock %}
+{% csrf_token %}
+<div class="container-fluid h-100">
+        <div class="row justify-content-center h-100">
+            <div class="col-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>
+                            Storage overview
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="col-md-12">
+                            <table class="table">
+                                {% for team in teams %}
+                                    <thead data-toggle="collapse" data-target="#group{{ team.id }}">
+                                    <tr class="table-primary"><th colspan=4>Team  {{ team.name }}, total: {{ team.storage_disk }} </th></tr>
+                                </thead>
+                                <tbody id="group{{ team.id }}" class="collapse">
+                                    <tr><th style="width:20%">Imageset ID</th><th style="width:60%">Name</th><th  style="width:20%">Storage (on disk)</th></tr>
+                                {% for imageset in team.imagesets %}
+                                    <tr><td>{{ imageset.id }}</td><td style="text-align: left;">
+                                            {{ imageset.name }}
+                                        </td><td>{{ imageset.storage_disk }}</td>
+                                    </td><td>{{ imageset.storage_files }}</td>
+                                        </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+
+                            {% endfor %}
+                        </table>
+                    </div>
+                        </div>
+                    </div>
+                </div>
+        </div>
+    </div>
+{% endblock %}
