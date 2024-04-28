@@ -36,6 +36,10 @@
                             Storage overview
                         </h3>
                     </div>
+                    <div style="text-align: left;">
+                    Click on the team to see details.
+                    </div>
+
                     <div class="card-body">
                         <div class="col-md-12">
                             <table class="table">
@@ -60,6 +64,13 @@
                     </div>
                         </div>
                     </div>
+                    <div class="card text-white bg-primary mb-3" style="width: 18rem; float: right">
+                        Total storage is: {{ total_storage_gb }}
+                        </div>
+                        <div class="card text-white bg-secondary mb-3" style="width: 18rem; float: right">
+                            Free space: {{ total_free_gb }}
+                        </div>
+                            
                 </div>
         </div>
     </div>

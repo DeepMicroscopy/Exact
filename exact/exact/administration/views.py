@@ -26,6 +26,8 @@ from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_2
 from django.conf import settings
 import csv
 import os
+import shutil
+
 def logs(request):
 
     log=[]
@@ -191,12 +193,32 @@ def folder_size(path):
                 size += os.path.getsize(fp)
     return round(size / (1024.0 * 1024.0 * 1024.0), 2)
 
+
+def get_estimated_free_space(path):
+  """
+  This function estimates free space on the filesystem using shutil.disk_usage.
+
+  Args:
+      path: The path to check for free space (e.g., '/')
+
+  Returns:
+      The estimated free space in bytes as a float, 
+      or None on error.
+  """
+  try:
+    total, used, free = shutil.disk_usage(path)
+    return float(free)
+  except Exception as e:
+    print(f"Error getting free space: {e}")
+    return 0
+
 def storage(request):
 
     teams = Team.objects.filter(members=request.user)
     #if (request.user.is_superuser):
     teams = Team.objects.all()
 
+    total_storage_gb = 0
     for team in teams:
         imagesets = ImageSet.objects.filter(team=team).order_by('name')
         totalteam = 0
@@ -206,10 +228,14 @@ def storage(request):
             totalteam += filesize_gb
         team.storage_disk = '%.2f GB' % totalteam
         team.imagesets = imagesets
-        
+        total_storage_gb += totalteam
+
+    total_free = get_estimated_free_space(settings.IMAGE_PATH)
 
     return render(request, 'administration/storage.html', {
         'teams' : teams,
+        'total_storage_gb' : '%.2f GB' % total_storage_gb,
+        'total_free_gb' : '%.2f GB' % (total_free/1024/1024/1024)
     })
 
 @api_view(['POST'])
