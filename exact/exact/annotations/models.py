@@ -88,6 +88,10 @@ class Annotation(models.Model):
 
     meta_data = models.JSONField(null=True)
 
+    #Minsu
+    drawing_time = models.IntegerField(default=0)
+    num_points = models.IntegerField(default=0)
+
     def __str__(self):
         return 'Annotation: {0}'.format(self.annotation_type.name)
 
