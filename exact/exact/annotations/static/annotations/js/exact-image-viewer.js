@@ -847,7 +847,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
         this.actionStack = [];
         this.actionMemory = 50;
-        this.currentAction = undefined
+        this.currentAction = undefined;
 
         this.pressedDigits = {
             1 : false,
@@ -861,7 +861,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             9 : false
         }
 
-        this.insertNewAnno = false
+        this.insertNewAnno = false;
 
         this.initUiEvents(this.annotationTypes);
     }
@@ -930,7 +930,12 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             event.userData.cancelEditAnnotation();
         }, this);
 
+        //Minsu
+        var startTime = null;
         viewer.addHandler('selection_onPress', function (event) {
+            // Minsu start record 
+            startTime = new Date().getTime();
+
             viewer.canvas.focus()
             // setup viewport
             var viewportPoint = viewer.viewport.pointFromPixel(event.position);
@@ -1009,6 +1014,14 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         }, this);
 
         viewer.addHandler("selection_onRelease", function (event) {
+            // Minsu
+            let drawingTime = null;
+            if (startTime != null) {
+                let endTime = new Date().getTime();
+                drawingTime = endTime - startTime;
+                startTime = null;
+            }
+
             viewer.canvas.focus()
             // setup viewport
             var viewportPoint = viewer.viewport.pointFromPixel(event.position);
@@ -1039,6 +1052,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
                     var last_uuid = tool.selection.item.name;
                     var anno = exact_sync.annotations[last_uuid];
+                    anno["drawing_time"] = drawingTime
                     event.userData.do_finishAnnotation(anno);
 
                     // select the new item, if it was not deleted (because it was to small)
@@ -1159,6 +1173,14 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
                 let annotation = exact_sync.getAnnotation(unique_identifier)
                 annotation.vector = event.userData.getAnnotationVector(annotation.unique_identifier);
+                
+                //Minsu
+                let annotation1 = exact_sync.getAnnotation(tool.selection.item.name)
+                let time1 = Math.round(annotation1.drawing_time / annotation1.num_points) * el[2];
+                let time2 = Math.round(annotation.drawing_time / annotation.num_points) * el[3];
+                
+                annotation.drawing_time = time1 + time2
+
                 exact_sync.saveAnnotation(annotation)
 
                 var action = {
@@ -1190,11 +1212,22 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 }
             }
 
-            for (let newAnno of resultDict.insert) 
+            for (let el of resultDict.insert) 
             {
+                let newAnno = el[0];
+
                 if (Number.isInteger(newAnno.annotation_type)) {
                     newAnno.annotation_type = exact_sync.annotationTypes[newAnno.annotation_type]
                 }
+
+                //Minsu
+                let annotation1 = exact_sync.getAnnotation(tool.selection.item.name)
+                let annotation2 = exact_sync.getAnnotation(el[1])
+                let time1 = Math.round(annotation1.drawing_time / annotation1.num_points) * el[2];
+                let time2 = Math.round(annotation2.drawing_time / annotation2.num_points) * el[3];
+                
+                newAnno.drawing_time = time1 + time2
+
                 exact_sync.addAnnotationToCache(newAnno)
                 exact_sync.saveAnnotation(newAnno)
 

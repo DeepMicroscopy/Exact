@@ -88,7 +88,9 @@ class AnnotationSerializer(FlexFieldsModelSerializer):
             'unique_identifier',
             'uploaded_media_files',
             'meta_data',
-            'annotationversion_set'
+            'annotationversion_set',
+            'drawing_time', #Minsu
+            'num_points' #Minsu
         )
 
         expandable_fields = {
@@ -169,7 +171,7 @@ class AnnotationSerializerFast(ModelSerializer):
             'deleted',
             'description',
             'unique_identifier',
-            'meta_data'
+            'meta_data',
         )
         read_only_fields = fields
 

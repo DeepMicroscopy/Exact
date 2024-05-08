@@ -573,9 +573,8 @@ class EXACTAnnotationSync {
             this.API_1_FILTERS += "user=" + user_id + "&"
         }
 
-        this.API_1_ANNOTATION_FIELDS = 'fields=image,annotation_type,id,vector,generated,deleted,description,verified_by_user,uploaded_media_files,unique_identifier,remark,user.id,user.username,last_editor.id,last_editor.username&';
+        this.API_1_ANNOTATION_FIELDS = 'fields=image,annotation_type,id,vector,generated,deleted,description,verified_by_user,uploaded_media_files,unique_identifier,remark,user.id,user.username,last_editor.id,last_editor.username,drawing_time,num_points&';
         this.API_1_PLUGINRESULTS_FIELDS = 'fields=image,annotation_type,id,vector,score,generated,plugin,description,unique_identifier,pluginresultentry&';
-
         this.initLoadAnnotations(annotationTypes, imageId)
         this.refreshAnnotationsFromServer = setInterval(this.refreshAnnotations(this), this.upDateFromServerInterval, this);
     }
@@ -819,13 +818,14 @@ class EXACTAnnotationSync {
 
         var action = 'POST';
         var url = this.API_1_ANNOTATIONS_BASE_URL + "annotations/";
-
         var data = {
             deleted: annotation.deleted,
             annotation_type: annotation.annotation_type.id,
             image: annotation.image,
             vector: annotation.vector,
-            unique_identifier: annotation.unique_identifier
+            unique_identifier: annotation.unique_identifier,
+            drawing_time: annotation.drawing_time,
+            num_points: Object.keys(annotation.vector).length / 2
         };
 
         // edit instead of create
@@ -1042,7 +1042,9 @@ class EXACTGlobalAnnotationSync extends EXACTAnnotationSync {
             annotation_type: annotation.annotation_type.id,
             image: annotation.image,
             vector: annotation.vector,
-            unique_identifier: annotation.unique_identifier
+            unique_identifier: annotation.unique_identifier,
+            drawing_time: annotation.drawing_time,
+            num_points: Object.keys(annotation.vector).length / 2
         };
 
         // edit instead of create
@@ -1296,7 +1298,9 @@ class EXACTGlobalFrameAnnotationSync extends EXACTGlobalAnnotationSync {
             annotation_type: annotation.annotation_type.id,
             image: annotation.image,
             vector: annotation.vector,
-            unique_identifier: annotation.unique_identifier
+            unique_identifier: annotation.unique_identifier,
+            drawing_time: annotation.drawing_time,
+            num_points: Object.keys(annotation.vector).length / 2
         };
 
         // edit instead of create

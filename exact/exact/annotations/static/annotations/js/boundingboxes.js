@@ -345,11 +345,20 @@ class BoundingBoxes {
                         el.remove();
                         this.group.addChild(result)
 
-                        resultDict.update.push([result.name, org_item])
+                        //Minsu
+                        //나중에 함수로 만들때는 빼기 결과가 음수일 경우를 고려
+                        let num_seg_obj1 = result.getIntersections(this.selection.item).length;
+                        let num_seg_obj2 = result._segments.length - num_seg_obj1;
+
+                        resultDict.update.push([result.name, org_item, num_seg_obj1, num_seg_obj2])
                     }
                 }
                 else {
                     result.children.forEach(old_path => {
+                        //Minsu
+                        let num_seg_obj1 = old_path.getIntersections(this.selection.item).length;
+                        let num_seg_obj2 = old_path._segments.length - num_seg_obj1;
+
                         // add childs as new elements
                         var new_path = old_path.clone(subOptions)
                         new_path.data = old_path.parent.data
@@ -360,7 +369,7 @@ class BoundingBoxes {
                         new_path.name = this.uuidv4();
                         this.group.addChild(new_path);
 
-                        resultDict.insert.push({
+                        resultDict.insert.push([{
                             annotation_type: el.data.type_id,
                             id: -1,
                             vector: this.getAnnotationVector(new_path.name),
@@ -368,8 +377,10 @@ class BoundingBoxes {
                             last_editor: { id: null, username: "you" },
                             image: this.imageid,
                             unique_identifier: new_path.name,
-                            deleted: false
-                        });
+                            deleted: false,
+                            drawing_time: 0,
+                            num_points: 0
+                        }, el.name,  num_seg_obj1, num_seg_obj2]);
                     })
 
                     result.remove()
@@ -425,7 +436,7 @@ class BoundingBoxes {
                     new_path.name = this.uuidv4();
                     this.group.addChild(new_path);
 
-                    resultDict.insert.push({
+                    resultDict.insert.push([{
                         annotation_type: this.singlePolyOperation.selected.item.data.type_id,
                         id: -1,
                         vector: this.getAnnotationVector(new_path.name),
@@ -434,7 +445,7 @@ class BoundingBoxes {
                         image: this.imageid,
                         unique_identifier: new_path.name,
                         deleted: false
-                    });
+                    }]);
 
                 }
 
@@ -654,7 +665,7 @@ class BoundingBoxes {
                     new_path.name = this.uuidv4();
                     this.group.addChild(new_path);
 
-                    resultDict.insert.push({
+                    resultDict.insert.push([{
                         annotation_type: el.data.type_id,
                         id: -1,
                         vector: this.getAnnotationVector(new_path.name),
@@ -663,7 +674,7 @@ class BoundingBoxes {
                         image: this.imageid,
                         unique_identifier: new_path.name,
                         deleted: false
-                    });
+                    }]);
 
                     polys[id].remove()
                     lines[id].remove()
