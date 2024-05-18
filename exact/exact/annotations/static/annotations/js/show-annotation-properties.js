@@ -15,6 +15,11 @@ function polygon_area(vector) {
     return Math.abs(total);
 }
 
+function rect_area(vector)
+{
+    return Math.round((vector["x2"]-vector["x1"])*(vector["y2"]-vector["y1"]))
+}
+
 function line_length(vector) {
     return Math.round(Math.sqrt(Math.pow(vector["x2"]-vector["x1"],2)+Math.pow(vector["y2"]-vector["y1"],2)))
 }
@@ -53,11 +58,19 @@ class ShowAnnotationProperties{
                         $("#annotationSizeLengthLabel").html('Length (px)');
                         $("#annotationSize").text(line_length(annotation.vector));
                     }
-                else
+                else 
+                {   
+                    $("#annotationSizeLengthLabel").html('Area (px^2)');
+                    if (annotation.annotation_type.vector_type==1) // rect
                     {
-                        $("#annotationSizeLengthLabel").html('Area (px^2)');
+                        $("#annotationSize").text(rect_area(annotation.vector));
+            
+                    }
+                    else
+                    {
                         $("#annotationSize").text(polygon_area(annotation.vector));
                     }
+                }
                 $("#annotationRemark").val(annotation.description);
     
                 if (annotation.verified_by_user !== undefined)
