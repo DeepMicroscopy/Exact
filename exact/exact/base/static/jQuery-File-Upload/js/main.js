@@ -19,7 +19,7 @@ $(function () {
         // Uncomment the following to send cross-domain cookies:
         //xhrFields: {withCredentials: true},
         sequentialUploads: true, // solves the issues with high Image counts... hopefully.
-        maxFileSize: 10000000000
+        maxFileSize: 50000000000
     });
 
     // Enable iframe cross-domain access via redirect option:
