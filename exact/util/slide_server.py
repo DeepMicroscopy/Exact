@@ -61,6 +61,10 @@ class OpenSlideWrapper(openslide.OpenSlide):
         Wraps an openslide.OpenSlide object. The rationale here is that OpenSlide.read_region does not support z Stacks / frames as arguments, hence we have to encapsulate it
 
     """
+    @property 
+    def nFrames(self):
+        return 1    
+        
     def read_region(self, location, level, size, frame=0):
         return openslide.OpenSlide.read_region(self, location, level, size)
 
