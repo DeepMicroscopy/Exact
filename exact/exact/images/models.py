@@ -50,8 +50,8 @@ class FrameDescription(models.Model):
     )
 
     frame_type = models.IntegerField(choices=FRAME_TYPES, default=FrameType.ZSTACK)
-    description = models.CharField()
-    file_path = models.CharField(default='')
+    description = models.CharField(max_length=160)
+    file_path = models.CharField(default='', max_length=320)
     frame_id = models.IntegerField(default=0)
     Image = models.ForeignKey('Image',  on_delete=models.CASCADE, related_name='FrameDescriptions')
 
@@ -271,72 +271,6 @@ class Image(models.Model):
                     converter.convert(str(path), 0)
                     self.objectivePower = 40
                     self.filename = path.name
-                # check if possible multi frame tiff
-                elif (len(Path(path).suffixes)>1) and (Path(path).suffixes[-2].lower().endswith('ome') and Path(path).suffixes[-1].lower().startswith('.tif')):
-
-                    reader = AICSImage(str(path))
-                    im = reader.get_stack().squeeze()
-                    shape = im.shape # shape of 1st frame in series
-
-                    image_saved = False
-                    if (len(shape) == 4 and shape[-1] in [1, 3, 4]) or len(shape) == 3 and shape[-1] not in [1, 3, 4]: 
-                        image_saved = True
-                        frames = shape[0]
-                        self.frames = frames
-                        z_positions=[str(x) for x in np.arange(frames)]
-                        z_positions_num=[x for x in np.arange(frames)]
-
-                        if reader.ome_metadata is None:
-                            logger.warning('OME TIFF without metadata: '+str(path))
-                        elif len(reader.ome_metadata.images)==0:
-                            logger.warning('Number of images is zero'+str(path))
-                        else:
-                            z_positions=[]
-                            z_positions_num=[]
-                            for im_meta in reader.ome_metadata.images:
-                                z_positions.append('%.2f %s' % (im_meta.pixels.planes[0].position_z,im_meta.pixels.planes[0].position_z_unit.value))
-                                z_positions_num.append(im_meta.pixels.planes[0].position_z)
-
-                        folder_path = Path(self.image_set.root_path()) / path.stem
-                        os.makedirs(str(folder_path), exist_ok =True)
-                        os.chmod(str(folder_path), 0o777)
-                        
-                        self.save() # initially save
-
-                        for frame_id in range(shape[0]):
-                            vi = pyvips.Image.new_from_array(im[frame_id])
-                            vi = vi.scaleimage()
-                            height, width, channels = vi.height, vi.width, vi.bands
-                            self.channels = channels
-
-                            target_file = folder_path / "{}_{}_{}".format(1, frame_id + 1, path.name) #z-axis frame image
-                            vi.tiffsave(str(target_file), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
-
-                            # save FrameDescription object for each frame
-                            FrameDescription.objects.create(
-                                    Image=self,
-                                    frame_id=frame_id,
-                                    file_path=target_file,
-                                    description=z_positions[frame_id],                                    
-                                    frame_type=FrameDescription.FrameType.ZSTACK,
-                            )
-
-                            # z is the default position
-                            if (0 in z_positions_num):
-                                self.defaultFrame=z_positions_num.index(0)
-
-                            # save first frame or default position for thumbnail etc.
-                            if (frame_id == 0) or (z_positions_num[frame_id]==0):
-                                self.filename = target_file.name
-
-                    else:
-                        path = Path(path).with_suffix('.tiff')
-                        if old_path == path:
-                            path = Path(path).with_suffix('.tif')
-
-                        vi = pyvips.Image.new_from_file(str(old_path))
-                        vi.tiffsave(str(path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
-                        self.filename = path.name
 
                 elif path.suffix.lower().endswith(".tiff") or path.suffix.lower().endswith(".tif"):
                     im = tifffile.imread(str(path))
