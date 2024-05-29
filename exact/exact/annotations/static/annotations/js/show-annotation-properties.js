@@ -1,4 +1,29 @@
 
+/* Get area of a polygon/surface */
+function polygon_area(vector) {
+    let total = 0;
+
+    let len = Object.keys(vector).length/2
+    for (let i = 1; i <= len; i++) {
+        
+        const addX = vector["x" + i];
+        const addY = vector["y" + (i === len ? 1 : i + 1)];
+        const subX = vector["x" + (i === len ? 1 : i + 1)];
+        const subY = vector["y" + i];
+        total += (addX * addY * 0.5) - (subX * subY * 0.5);
+    }
+    return Math.abs(total);
+}
+
+function rect_area(vector)
+{
+    return Math.round((vector["x2"]-vector["x1"])*(vector["y2"]-vector["y1"]))
+}
+
+function line_length(vector) {
+    return Math.round(Math.sqrt(Math.pow(vector["x2"]-vector["x1"],2)+Math.pow(vector["y2"]-vector["y1"],2)))
+}
+
 /// Bind Annotation Properties to UI
 class ShowAnnotationProperties{
     constructor(viewer, exact_sync) {
@@ -27,7 +52,25 @@ class ShowAnnotationProperties{
     
                 $("#annotationLastEditor").text(annotation.last_editor.username);
                 $("#annotationLastEditor").attr("href", include_server_subdir(`/users/user/${annotation.last_editor.id}/`));
-    
+
+                if (annotation.annotation_type.vector_type==3) // line
+                    {
+                        $("#annotationSizeLengthLabel").html('Length (px)');
+                        $("#annotationSize").text(line_length(annotation.vector));
+                    }
+                else 
+                {   
+                    $("#annotationSizeLengthLabel").html('Area (px^2)');
+                    if (annotation.annotation_type.vector_type==1) // rect
+                    {
+                        $("#annotationSize").text(rect_area(annotation.vector));
+            
+                    }
+                    else
+                    {
+                        $("#annotationSize").text(polygon_area(annotation.vector));
+                    }
+                }
                 $("#annotationRemark").val(annotation.description);
     
                 if (annotation.verified_by_user !== undefined)
