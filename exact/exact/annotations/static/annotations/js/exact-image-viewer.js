@@ -908,8 +908,14 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             event.userData.tool.handleMouseDrag(event);
         }, this);
 
-
+        var startInspectionTime = null;
         viewer.addHandler('selection_toggle', function (event) {
+            if (event.enabled === true) {
+                startInspectionTime = new Date().getTime();
+            }
+            else {
+                startInspectionTime = null;
+            }
 
             if (event.enabled === false &&
                 event.userData.tool.selection !== undefined) {
@@ -930,11 +936,9 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             event.userData.cancelEditAnnotation();
         }, this);
 
-        //Minsu
-        var startTime = null;
+        var startDrawingTime = null;
         viewer.addHandler('selection_onPress', function (event) {
-            // Minsu start record 
-            startTime = new Date().getTime();
+            startDrawingTime = new Date().getTime();
 
             viewer.canvas.focus()
             // setup viewport
@@ -1014,12 +1018,17 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         }, this);
 
         viewer.addHandler("selection_onRelease", function (event) {
-            // Minsu
+            let endTime = new Date().getTime();
             let drawingTime = null;
-            if (startTime != null) {
-                let endTime = new Date().getTime();
-                drawingTime = endTime - startTime;
-                startTime = null;
+            if (startDrawingTime != null) {
+                drawingTime = endTime - startDrawingTime;
+                startDrawingTime = null;
+            }
+
+            let inspectionTime = null;
+            if (startInspectionTime != null) {
+                inspectionTime = endTime - startInspectionTime;
+                startInspectionTime = endTime;
             }
 
             viewer.canvas.focus()
@@ -1037,11 +1046,21 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 // a new polygon is currently drawn
                 if (event.userData.tool.singlePolyOperation.active)
                 {
+                    var last_uuid = tool.selection.item.name;
+                    exact_sync.annotations[last_uuid]["drawing_time"] = drawingTime;
+                    var points = event.userData.getAnnotationVector(last_uuid);
+                    var num_points = Object.keys(points).length / 2
+                    exact_sync.annotations[last_uuid]["num_points"] = num_points;
                     viewer.raiseEvent('boundingboxes_PolyOperation', {name: event.userData.tool.singlePolyOperation.mode});
                     tool.resetSinglePolyOperation();
                 }
                 else if (event.userData.tool.multiPolyOperation.active)
                 {
+                    var last_uuid = tool.selection.item.name;
+                    exact_sync.annotations[last_uuid]["drawing_time"] = drawingTime;
+                    var points = event.userData.getAnnotationVector(last_uuid);
+                    var num_points = Object.keys(points).length / 2
+                    exact_sync.annotations[last_uuid]["num_points"] = num_points;
                     viewer.raiseEvent('boundingboxes_PolyOperation', {name: event.userData.tool.multiPolyOperation.mode});
                     tool.resetMultiPolyOperation();
                     tool.resetSelection()
@@ -1052,7 +1071,8 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
                     var last_uuid = tool.selection.item.name;
                     var anno = exact_sync.annotations[last_uuid];
-                    anno["drawing_time"] = drawingTime
+                    anno["drawing_time"] = drawingTime;
+                    anno["inspection_time"] = inspectionTime;
                     event.userData.do_finishAnnotation(anno);
 
                     // select the new item, if it was not deleted (because it was to small)
@@ -1169,24 +1189,51 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
             for (let el of resultDict.update) 
             {
-                var unique_identifier = el[0]
+                var unique_identifier = el[0];
 
                 let annotation = exact_sync.getAnnotation(unique_identifier)
                 annotation.vector = event.userData.getAnnotationVector(annotation.unique_identifier);
                 
-                //Minsu
-                let annotation1 = exact_sync.getAnnotation(tool.selection.item.name)
-                let time1 = Math.round(annotation1.drawing_time / annotation1.num_points) * el[2];
-                let time2 = Math.round(annotation.drawing_time / annotation.num_points) * el[3];
-                
-                annotation.drawing_time = time1 + time2
+                let drawing_time = Math.round(annotation.drawing_time / annotation.num_points) * el[2];
 
-                exact_sync.saveAnnotation(annotation)
+                for (let [uid, points] of el[3].entries()) {
+                    let anno = exact_sync.getAnnotation(uid);
+                    drawing_time += Math.round(anno.drawing_time / anno.num_points) * points;
+                }
+                
+                annotation.drawing_time = drawing_time;
+
+                exact_sync.saveAnnotation(annotation);
 
                 var action = {
                     type: "Updated",
                     uuid: unique_identifier,
                     old_item: el[1]
+                }
+                current_Action.push(action)
+            }
+
+            for (let el of resultDict.insert) 
+            {
+                let newAnno = el[0];
+
+                if (Number.isInteger(newAnno.annotation_type)) {
+                    newAnno.annotation_type = exact_sync.annotationTypes[newAnno.annotation_type]
+                }
+
+                let annotation1 = exact_sync.getAnnotation(el[1][0]);
+                let annotation2 = exact_sync.getAnnotation(el[2][0]);
+                let time1 = Math.round(annotation1.drawing_time / annotation1.num_points) * el[1][1];
+                let time2 = Math.round(annotation2.drawing_time / annotation2.num_points) * el[2][1];
+                
+                newAnno.drawing_time = time1 + time2
+
+                exact_sync.addAnnotationToCache(newAnno)
+                exact_sync.saveAnnotation(newAnno)
+
+                var action ={
+                    type: "Created",
+                    uuid: newAnno.unique_identifier
                 }
                 current_Action.push(action)
             }
@@ -1210,32 +1257,6 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                     }
                     current_Action.push(action)
                 }
-            }
-
-            for (let el of resultDict.insert) 
-            {
-                let newAnno = el[0];
-
-                if (Number.isInteger(newAnno.annotation_type)) {
-                    newAnno.annotation_type = exact_sync.annotationTypes[newAnno.annotation_type]
-                }
-
-                //Minsu
-                let annotation1 = exact_sync.getAnnotation(tool.selection.item.name)
-                let annotation2 = exact_sync.getAnnotation(el[1])
-                let time1 = Math.round(annotation1.drawing_time / annotation1.num_points) * el[2];
-                let time2 = Math.round(annotation2.drawing_time / annotation2.num_points) * el[3];
-                
-                newAnno.drawing_time = time1 + time2
-
-                exact_sync.addAnnotationToCache(newAnno)
-                exact_sync.saveAnnotation(newAnno)
-
-                var action ={
-                    type: "Created",
-                    uuid: newAnno.unique_identifier
-                }
-                current_Action.push(action)
             }
 
             for (let unique_identifier of new Set(resultDict.included)) 

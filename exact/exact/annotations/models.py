@@ -88,9 +88,9 @@ class Annotation(models.Model):
 
     meta_data = models.JSONField(null=True)
 
-    #Minsu
     drawing_time = models.IntegerField(default=0)
     num_points = models.IntegerField(default=0)
+    inspection_time = models.IntegerField(default=0)
 
     def __str__(self):
         return 'Annotation: {0} (image: {1}, image set: {2}, team: {3})'.format(self.annotation_type.name, self.image.name, self.image.image_set.name, self.image.image_set.team.name)

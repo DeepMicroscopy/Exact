@@ -89,8 +89,9 @@ class AnnotationSerializer(FlexFieldsModelSerializer):
             'uploaded_media_files',
             'meta_data',
             'annotationversion_set',
-            'drawing_time', #Minsu
-            'num_points' #Minsu
+            'drawing_time',
+            'num_points',
+            'inspection_time'
         )
 
         expandable_fields = {
