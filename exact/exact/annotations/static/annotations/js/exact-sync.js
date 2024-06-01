@@ -824,7 +824,8 @@ class EXACTAnnotationSync {
             vector: annotation.vector,
             unique_identifier: annotation.unique_identifier,
             drawing_time: annotation.drawing_time,
-            num_points: Object.keys(annotation.vector).length / 2
+            num_points: Object.keys(annotation.vector).length / 2,
+            inspection_time: annotation.inspection_time
         };
 
         // edit instead of create
@@ -1043,7 +1044,8 @@ class EXACTGlobalAnnotationSync extends EXACTAnnotationSync {
             vector: annotation.vector,
             unique_identifier: annotation.unique_identifier,
             drawing_time: annotation.drawing_time,
-            num_points: Object.keys(annotation.vector).length / 2
+            num_points: Object.keys(annotation.vector).length / 2,
+            inspection_time: annotation.inspection_time
         };
 
         // edit instead of create
@@ -1299,7 +1301,8 @@ class EXACTGlobalFrameAnnotationSync extends EXACTGlobalAnnotationSync {
             vector: annotation.vector,
             unique_identifier: annotation.unique_identifier,
             drawing_time: annotation.drawing_time,
-            num_points: Object.keys(annotation.vector).length / 2
+            num_points: Object.keys(annotation.vector).length / 2,
+            inspection_time: annotation.inspection_time
         };
 
         // edit instead of create

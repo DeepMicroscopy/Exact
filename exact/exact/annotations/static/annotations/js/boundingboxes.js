@@ -293,10 +293,17 @@ class BoundingBoxes {
             var org_selection = this.selection.item.clone(subOptions)
             var modified = false
 
+            let unselectedObjPointsMap = new Map();
+            let selectedObjPoints = 0;
+
             hit_children.forEach(el => {
                 let result = this.selection.item.unite(el, subOptions)
+                selectedObjPoints = result.getIntersections(this.selection.item).length;
+
                 // error occurce if the result can not represented as one poly
                 if (result.children === undefined) {
+                    let interSection = result.getIntersections(el).length;
+                    unselectedObjPointsMap.set(el.name, interSection)
 
                     this.selection.item.remove();
                     this.selection.item = result;
@@ -306,9 +313,9 @@ class BoundingBoxes {
                 }
             })
 
-            if (modified) {
+            if (modified) {                
                 this.group.addChild(this.selection.item)
-                resultDict.update.push([this.selection.item.name, org_selection]);
+                resultDict.update.push([this.selection.item.name, org_selection, selectedObjPoints, unselectedObjPointsMap]);
             }
 
         }
@@ -345,19 +352,22 @@ class BoundingBoxes {
                         el.remove();
                         this.group.addChild(result)
 
-                        //Minsu
-                        //나중에 함수로 만들때는 빼기 결과가 음수일 경우를 고려
-                        let num_seg_obj1 = result.getIntersections(this.selection.item).length;
-                        let num_seg_obj2 = result._segments.length - num_seg_obj1;
+                        let intersectionMap = new Map();
+                        
+                        let intersection = result.getIntersections(this.selection.item).length;
+                        let unSelectedObjPoints = result.getIntersections(el).length;
 
-                        resultDict.update.push([result.name, org_item, num_seg_obj1, num_seg_obj2])
+                        intersectionMap.set(this.selection.item.name, intersection)
+
+                        resultDict.update.push([result.name, org_item, unSelectedObjPoints, intersectionMap])
                     }
                 }
                 else {
                     result.children.forEach(old_path => {
-                        //Minsu
-                        let num_seg_obj1 = old_path.getIntersections(this.selection.item).length;
-                        let num_seg_obj2 = old_path._segments.length - num_seg_obj1;
+                        let item1 = this.selection.item;
+                        let item2 = el;
+                        let points1 = old_path.getIntersections(item1).length;
+                        let points2 = old_path.getIntersections(item2).length;
 
                         // add childs as new elements
                         var new_path = old_path.clone(subOptions)
@@ -380,7 +390,7 @@ class BoundingBoxes {
                             deleted: false,
                             drawing_time: 0,
                             num_points: 0
-                        }, el.name,  num_seg_obj1, num_seg_obj2]);
+                        }, [item1.name, points1], [item2.name, points2]]);
                     })
 
                     result.remove()
@@ -409,11 +419,20 @@ class BoundingBoxes {
                 // the polygon is not cut into multiple pieces
                 if (Math.ceil(result.area) !== Math.ceil(this.singlePolyOperation.selected.item.area)) {
                     // the area of the polygon changed
+
+                    let selectedObj = this.singlePolyOperation.selected.item;
+                    let selectedObjPoints = result.getIntersections(selectedObj).length;
+
+                    let scissorObj = this.selection.item
+                    let scissorObjPointsMap = new Map();
+                    let scissorObjPoints = result.getIntersections(scissorObj).length;
+                    scissorObjPointsMap.set(scissorObj.name, scissorObjPoints)
+
                     this.singlePolyOperation.selected.item.remove();
                     this.singlePolyOperation.selected.item = result
                     this.group.addChild(result)
 
-                    resultDict.update.push([result.name, org_selection])
+                    resultDict.update.push([result.name, org_selection, selectedObjPoints, scissorObjPointsMap])
                 }
 
                 resultDict.deleted.push([this.selection.item.name, false])
@@ -425,6 +444,7 @@ class BoundingBoxes {
                 // the polygon is cut into multiple pieces
 
                 for (var child_id = 0; child_id < result.children.length; child_id++) {
+
                     // add childs as new elements
                     var old_path = result.children[child_id]
                     var new_path = old_path.clone(subOptions)
@@ -436,6 +456,11 @@ class BoundingBoxes {
                     new_path.name = this.uuidv4();
                     this.group.addChild(new_path);
 
+                    let item1 = this.singlePolyOperation.selected.item;
+                    let item2 = this.selection.item
+                    let points1 = old_path.getIntersections(item1).length;
+                    let points2 = old_path.getIntersections(item2).length;
+
                     resultDict.insert.push([{
                         annotation_type: this.singlePolyOperation.selected.item.data.type_id,
                         id: -1,
@@ -445,7 +470,7 @@ class BoundingBoxes {
                         image: this.imageid,
                         unique_identifier: new_path.name,
                         deleted: false
-                    }]);
+                    }, [item1.name, points1], [item2.name, points2]]);
 
                 }
 
@@ -478,13 +503,20 @@ class BoundingBoxes {
             var result = this.singlePolyOperation.selected.item.unite(this.selection.item, subOptions)
             // error occurce if the result can not represented as one poly
             if (result.children === undefined) {
+                let selectedObj = this.singlePolyOperation.selected.item;
+                let selectedObjPoints = result.getIntersections(selectedObj).length;
+                
+                let glueObj = this.selection.item
+                let glueObjPointsMap = new Map();
+                let glueObjPoints = result.getIntersections(glueObj).length;
+                glueObjPointsMap.set(glueObj.name, glueObjPoints)
 
                 this.singlePolyOperation.selected.item.remove();
                 this.singlePolyOperation.selected.item = result;
                 this.group.addChild(result)
 
                 resultDict.deleted.push([this.selection.item.name, false]);
-                resultDict.update.push([this.singlePolyOperation.selected.item.name, org_selection]);
+                resultDict.update.push([this.singlePolyOperation.selected.item.name, org_selection, selectedObjPoints, glueObjPointsMap]);
 
                 this.selection = this.singlePolyOperation.selected
                 this.singlePolyOperation.selected = undefined
@@ -665,6 +697,11 @@ class BoundingBoxes {
                     new_path.name = this.uuidv4();
                     this.group.addChild(new_path);
 
+                    let item1 = el;
+                    let item2 = this.selection.item
+                    let points1 = old_path.getIntersections(item1).length;
+                    let points2 = old_path.getIntersections(item2).length;
+
                     resultDict.insert.push([{
                         annotation_type: el.data.type_id,
                         id: -1,
@@ -674,7 +711,7 @@ class BoundingBoxes {
                         image: this.imageid,
                         unique_identifier: new_path.name,
                         deleted: false
-                    }]);
+                    }, [item1.name, points1], [item2.name, points2]]);
 
                     polys[id].remove()
                     lines[id].remove()
