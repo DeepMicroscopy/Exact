@@ -20,6 +20,7 @@ urlpatterns = [
 
     re_path(r'^products/edit/(\d+)/$', views.edit_product, name='edit_product'),
     re_path(r'^plugins/list/$', views.plugins, name='plugins'),
+    re_path(r'^storage/$', views.storage, name='storage'),
 
     re_path(r'^api/plugins/product/add/$', views.add_plugin_product, name='add_plugin_product'),
     re_path(r'^api/plugins/product/delete/$', views.remove_plugin_product, name='remove_plugin_product'),
