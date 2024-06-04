@@ -15,6 +15,7 @@ from .forms import AnnotationTypeCreationForm, AnnotationTypeEditForm, ProductCr
 from exact.annotations.models import Annotation, AnnotationType
 from exact.administration.models import Product
 from exact.users.models import Team
+from exact.images.models import ImageSet
 from exact.administration.serializers import serialize_annotationType, ProductSerializer
 
 from rest_framework.decorators import api_view
@@ -24,6 +25,9 @@ from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_2
     HTTP_403_FORBIDDEN
 from django.conf import settings
 import csv
+import os
+import shutil
+
 def logs(request):
 
     log=[]
@@ -172,6 +176,66 @@ def plugins(request):
         'plugins' : Plugin.objects.order_by('name'),
         'all_products' : all_products,
         'teams': teams
+    })
+
+
+def folder_size(path):
+    """
+    Calculates the size of a folder
+    :param path: path to folder to analyze
+    :return: size in GB of the folder
+    """
+    size = 0
+    for dirpath, dirnames, filenames in os.walk(path):
+        for f in filenames:
+            fp = os.path.join(dirpath, f)
+            if os.path.isfile(fp) and not os.path.islink(fp):
+                size += os.path.getsize(fp)
+    return round(size / (1024.0 * 1024.0 * 1024.0), 2)
+
+
+def get_estimated_free_space(path):
+  """
+  This function estimates free space on the filesystem using shutil.disk_usage.
+
+  Args:
+      path: The path to check for free space (e.g., '/')
+
+  Returns:
+      The estimated free space in bytes as a float, 
+      or None on error.
+  """
+  try:
+    total, used, free = shutil.disk_usage(path)
+    return float(free)
+  except Exception as e:
+    print(f"Error getting free space: {e}")
+    return 0
+
+def storage(request):
+
+    teams = Team.objects.filter(members=request.user)
+    #if (request.user.is_superuser):
+    teams = Team.objects.all()
+
+    total_storage_gb = 0
+    for team in teams:
+        imagesets = ImageSet.objects.filter(team=team).order_by('name')
+        totalteam = 0
+        for imageset in imagesets:
+            filesize_gb = folder_size(imageset.root_path())
+            imageset.storage_disk = '%.2f GB' % filesize_gb
+            totalteam += filesize_gb
+        team.storage_disk = '%.2f GB' % totalteam
+        team.imagesets = imagesets
+        total_storage_gb += totalteam
+
+    total_free = get_estimated_free_space(settings.IMAGE_PATH)
+
+    return render(request, 'administration/storage.html', {
+        'teams' : teams,
+        'total_storage_gb' : '%.2f GB' % total_storage_gb,
+        'total_free_gb' : '%.2f GB' % (total_free/1024/1024/1024)
     })
 
 @api_view(['POST'])

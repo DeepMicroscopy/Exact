@@ -12,7 +12,7 @@ from django.core.cache import cache
 from django.db.models.signals import post_delete, post_save, m2m_changed
 from django.dispatch import receiver
 from django.utils.functional import cached_property
-
+from util.slide_server import getSlideHandler
 import logging
 
 import math
@@ -40,12 +40,9 @@ import h5py
 
 logger = logging.getLogger('django')
 
+from util.enums import FrameType
 
 class FrameDescription(models.Model):
-    class FrameType:
-        ZSTACK = 0
-        TIMESERIES = 1
-        UNDEFINED = 255
 
     FRAME_TYPES = (
         (FrameType.ZSTACK, 'z Stack'),
@@ -54,8 +51,8 @@ class FrameDescription(models.Model):
     )
 
     frame_type = models.IntegerField(choices=FRAME_TYPES, default=FrameType.ZSTACK)
-    description = models.CharField()
-    file_path = models.CharField(default='')
+    description = models.CharField(max_length=160)
+    file_path = models.CharField(default='', max_length=320)
     frame_id = models.IntegerField(default=0)
     Image = models.ForeignKey('Image',  on_delete=models.CASCADE, related_name='FrameDescriptions')
 
@@ -94,7 +91,7 @@ class Image(models.Model):
     image_type = models.IntegerField(choices=SOURCE_TYPES, default=ImageSourceTypes.DEFAULT)
 
     def get_file_name(self, depth=1, frame=1): 
-        if depth > 1 or frame > 1 or self.frames > 1 or self.depth > 1:
+        if depth > 1 or self.depth > 1:
             return str(Path(Path(self.name).stem) / "{}_{}_{}".format(depth, frame, self.name))
         else:
             return self.filename
@@ -128,12 +125,30 @@ class Image(models.Model):
     def save_file(self, path:Path):
 
         try:
-            # check if the file can be opened by OpenSlide if not convert it
+            # check if the file can be opened natively, if not convert it
             try:
-                osr = OpenSlide(str(path))
+                osr = getSlideHandler(str(path))
                 self.filename = path.name
-            except:
-                print('Unable to open image with OpenSlide')
+                self.save()
+                if (osr.nFrames>1):
+                    for frame_id in range(osr.nFrames):
+                        # save FrameDescription object for each frame
+                        FrameDescription.objects.create(
+                                Image=self,
+                                frame_id=frame_id,
+                                file_path=self.filename,
+                                description=osr.frame_descriptors[frame_id],                                    
+                                frame_type=osr.frame_type,
+                        )
+                    print('Added',osr.nFrames,'frames')
+                    self.frames=osr.nFrames
+                    if openslide.PROPERTY_NAME_OBJECTIVE_POWER in osr.properties:
+                        self.objectivePower = osr.properties[openslide.PROPERTY_NAME_OBJECTIVE_POWER]
+                    if openslide.PROPERTY_NAME_MPP_X in osr.properties:
+                        self.mpp = osr.properties[openslide.PROPERTY_NAME_MPP_X]
+                    
+            except Exception as e:
+                print('Unable to open image with OpenSlide',e)
                 import pyvips
                 old_path = path
 
@@ -150,7 +165,7 @@ class Image(models.Model):
                     self.save() # initially save
                     for frame_id in range(self.frames):
                         height, width = reader.dimensions 
-                        np_image = np.array(reader.read_region(location=(0,0), size=(reader.dimensions), level=0, zLevel=frame_id))[:,:,0]
+                        np_image = np.array(reader.read_region(location=(0,0), size=(reader.dimensions), level=0, frame=frame_id))[:,:,0]
                         linear = np_image.reshape(height * width * self.channels)
                         vi = pyvips.Image.new_from_memory(np.ascontiguousarray(linear.data), height, width, self.channels, 'uchar')
 
@@ -257,72 +272,6 @@ class Image(models.Model):
                     converter.convert(str(path), 0)
                     self.objectivePower = 40
                     self.filename = path.name
-                # check if possible multi frame tiff
-                elif (len(Path(path).suffixes)>1) and (Path(path).suffixes[-2].lower().endswith('ome') and Path(path).suffixes[-1].lower().startswith('.tif')):
-
-                    reader = AICSImage(str(path))
-                    im = reader.get_stack().squeeze()
-                    shape = im.shape # shape of 1st frame in series
-
-                    image_saved = False
-                    if (len(shape) == 4 and shape[-1] in [1, 3, 4]) or len(shape) == 3 and shape[-1] not in [1, 3, 4]: 
-                        image_saved = True
-                        frames = shape[0]
-                        self.frames = frames
-                        z_positions=[str(x) for x in np.arange(frames)]
-                        z_positions_num=[x for x in np.arange(frames)]
-
-                        if reader.ome_metadata is None:
-                            logger.warning('OME TIFF without metadata: '+str(path))
-                        elif len(reader.ome_metadata.images)==0:
-                            logger.warning('Number of images is zero'+str(path))
-                        else:
-                            z_positions=[]
-                            z_positions_num=[]
-                            for im_meta in reader.ome_metadata.images:
-                                z_positions.append('%.2f %s' % (im_meta.pixels.planes[0].position_z,im_meta.pixels.planes[0].position_z_unit.value))
-                                z_positions_num.append(im_meta.pixels.planes[0].position_z)
-
-                        folder_path = Path(self.image_set.root_path()) / path.stem
-                        os.makedirs(str(folder_path), exist_ok =True)
-                        os.chmod(str(folder_path), 0o777)
-                        
-                        self.save() # initially save
-
-                        for frame_id in range(shape[0]):
-                            vi = pyvips.Image.new_from_array(im[frame_id])
-                            vi = vi.scaleimage()
-                            height, width, channels = vi.height, vi.width, vi.bands
-                            self.channels = channels
-
-                            target_file = folder_path / "{}_{}_{}".format(1, frame_id + 1, path.name) #z-axis frame image
-                            vi.tiffsave(str(target_file), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
-
-                            # save FrameDescription object for each frame
-                            FrameDescription.objects.create(
-                                    Image=self,
-                                    frame_id=frame_id,
-                                    file_path=target_file,
-                                    description=z_positions[frame_id],                                    
-                                    frame_type=FrameDescription.FrameType.ZSTACK,
-                            )
-
-                            # z is the default position
-                            if (0 in z_positions_num):
-                                self.defaultFrame=z_positions_num.index(0)
-
-                            # save first frame or default position for thumbnail etc.
-                            if (frame_id == 0) or (z_positions_num[frame_id]==0):
-                                self.filename = target_file.name
-
-                    else:
-                        path = Path(path).with_suffix('.tiff')
-                        if old_path == path:
-                            path = Path(path).with_suffix('.tif')
-
-                        vi = pyvips.Image.new_from_file(str(old_path))
-                        vi.tiffsave(str(path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
-                        self.filename = path.name
 
                 elif path.suffix.lower().endswith(".tiff") or path.suffix.lower().endswith(".tif"):
                     im = tifffile.imread(str(path))
@@ -402,11 +351,7 @@ class Image(models.Model):
                     vi.tiffsave(str(path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
                     self.filename = path.name
 
-            osr = OpenSlide(str(path))
-
-            if not Path(self.path()).suffix.lower().endswith(".hdf5") :  
-                osr = OpenSlide(self.path())
-                
+            osr = getSlideHandler(self.path())
             self.width, self.height = osr.level_dimensions[0]
             try:
                 mpp_x = osr.properties[openslide.PROPERTY_NAME_MPP_X]
@@ -766,22 +711,6 @@ class ImageRegistration(models.Model):
         return - math.atan2(self.transformation_matrix["t_01"], self.transformation_matrix["t_00"]) * 180 / math.pi
 
 
-    def fixedCvInvert(self, H):
-        """[If the determinate is zero, OpenCV returns a wrong inverted matrix. ]
-
-        Args:
-            H ([type]): [3x3 Matrix]
-
-        Returns:
-            [type]: [Inverted matrix]
-        """   
-        if (cv2.determinant(H) != 0.0):
-            return cv2.invert(H)[1]
-        else:
-            return np.array([[1., 0., -H[0,-1]],
-                          [0., 1., -H[1,-1]],
-                          [0., 0., 0.]])
-
     @cached_property
     def inv_matrix(self):
 
@@ -791,7 +720,8 @@ class ImageRegistration(models.Model):
                         [t["t_20"], t["t_21"], t["t_22"]]])
 
 
-        M = self.fixedCvInvert(H)
+        # Using numpys pseudo-inverse as this is the generalization for singular matrices
+        M = np.linalg.pinv(H)
 
         return {
             "t_00": M [0,0], 
@@ -820,7 +750,7 @@ class ImageRegistration(models.Model):
                         [0.         ,             0, 1]])
         
 
-        inv_rot = self.fixedCvInvert(H)
+        inv_rot = np.linalg.pinv(rot)
 
         M = H@inv_rot
         return M
@@ -836,7 +766,7 @@ class ImageRegistration(models.Model):
     def get_inv_scale(self):
 
         M = self.get_matrix_without_rotation
-        M = self.fixedCvInvert(M)
+        M = np.linalg.pinv(M)
         return M[0][0], M[1][1]
 
     def __str__(self):

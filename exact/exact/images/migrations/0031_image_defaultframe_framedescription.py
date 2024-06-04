@@ -42,7 +42,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('frame_type', models.IntegerField(choices=[(0, 'z Stack'), (1, 'time series'), (255, 'undefined')], default=0)),
-                ('descreption', models.CharField()),
+                ('descreption', models.CharField(default='')),
                 ('frame_id', models.IntegerField(default=0)),
                 ('Image', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='FrameDescriptions', to='images.image')),
             ],
