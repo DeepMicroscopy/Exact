@@ -12,6 +12,7 @@ from django.core.cache import cache
 from django.db.models.signals import post_delete, post_save, m2m_changed
 from django.dispatch import receiver
 from django.utils.functional import cached_property
+import h5py
 from util.slide_server import getSlideHandler
 import logging
 
@@ -330,6 +331,19 @@ class Image(models.Model):
                         vi = pyvips.Image.new_from_file(str(old_path))
                         vi.tiffsave(str(path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
                         self.filename = path.name
+                elif path.suffix.lower().endswith(".hdf5") :                          
+                     with h5py.File(str(path), 'r') as hf:
+                         hdf_path = Path(path)
+                         key = list(hf.keys())[-1] # Only create overlay for first element in hdf5 file
+                         data = hf[key]
+                         ndarray_data = np.array(data)
+                         scaled_image_data = (ndarray_data * (255 / len(np.unique(ndarray_data)))).astype(np.uint8)
+                         colored_image = cv2.applyColorMap(scaled_image_data, cv2.COLORMAP_VIRIDIS)
+                         colored_image = cv2.cvtColor(colored_image, cv2.COLOR_BGR2RGB)
+                         vi = pyvips.Image.new_from_array(colored_image)
+                         path = hdf_path.with_stem(hdf_path.stem + "_{}".format(key)).with_suffix('.tiff')
+                         vi.tiffsave(str(path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
+                         self.filename = path.name
                 else:                            
                     path = Path(path).with_suffix('.tiff')
 
