@@ -161,6 +161,11 @@ class ReadableCellVizioMKTDataset():
         """
         return ['%.2f s (%d)' % (float(frame_id)/float(self.fps), frame_id) for frame_id in range(self.nFrames)]
 
+    @property
+    def frame_descriptors(self) -> list[str]:
+        return 0
+
+
     @property 
     def nLayers(self):
         return 1

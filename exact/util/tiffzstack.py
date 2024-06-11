@@ -227,6 +227,10 @@ class PyramidalZStack:
         return ['z=%s %s' % (str(self.metadata[m]['PositionZ']), self.metadata[m]['PositionZUnit']) for m in self.metadata if 'PositionZ' in self.metadata[m]]
 
     @property
+    def default_frame(self) -> list[str]:
+        return 0
+
+    @property
     def properties(self) -> Dict[str, Union[str, float, int]]:
         """ returns a list of properties that all OpenSlide objects have
         """
