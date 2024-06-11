@@ -141,7 +141,7 @@ class Image(models.Model):
                         )
                     print('Added',osr.nFrames,'frames')
                     self.frames=osr.nFrames
-                    self.defaultFrame = osr.default_frame()
+                    self.defaultFrame = osr.default_frame
                     if openslide.PROPERTY_NAME_OBJECTIVE_POWER in osr.properties:
                         self.objectivePower = osr.properties[openslide.PROPERTY_NAME_OBJECTIVE_POWER]
                     if openslide.PROPERTY_NAME_MPP_X in osr.properties:
