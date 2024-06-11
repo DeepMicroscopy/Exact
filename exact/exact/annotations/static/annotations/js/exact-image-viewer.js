@@ -338,7 +338,7 @@ class EXACTViewer {
             let xmax = Math.round(imageRect.x + imageRect.width);
             let ymax = Math.round(imageRect.y + imageRect.height);
             let z_dimension = 1;
-            let frame = this.userData.frame;
+            let frame = this.userData.frameSlider._state.value[0];
 
             let coordinates = {
                 "x_min": xmin, 
@@ -2398,7 +2398,7 @@ class EXACTViewerGlobalAnnotationsFrame extends EXACTViewer {
         }
 
         var parameters = `frame=${this.frame}`;
-        if (window.location.search) {
+        if (imageSetInformationLoaded) {
             let url_parameters = decodeURIComponent(window.location.search.substring(1)).split('&');
             url_parameters = Object.assign({}, ...url_parameters.map((x) => ({ [x.split("=")[0]]: x.split("=")[1] })));
 

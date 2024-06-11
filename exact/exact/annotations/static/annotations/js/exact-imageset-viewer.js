@@ -188,9 +188,15 @@ class EXACTImageSetViewer {
 
         $('#annotate_image_link_' + imageId).addClass('active');
         $('#active_image_name').text(image_information.name);
+        let frameInfo=''
+        if (image_information.defaultFrame>0)
+            {
+                frameInfo = '?frame='+image_information.defaultFrame;
+            }
 
         //Update URL
-        window.history.pushState("object or string",  `${image_information.name}`, include_server_subdir(`/annotations/${imageId}/`));
+        
+        window.history.pushState("object or string",  `${image_information.name}`, include_server_subdir(`/annotations/${imageId}/${frameInfo}`));
 
         const options = {url_parameters: url_parameters};
         this.exact_viewer = EXACTViewer.factoryCreateViewer(this.server_url, this.image_id, options,
