@@ -90,6 +90,10 @@ class ImageSlide3D(openslide.ImageSlide):
         return [str(x) for x in range(self.nFrames)]
 
     @property
+    def default_frame(self) -> list[str]:
+        return 0
+
+    @property
     def frame_type(self):
         return FrameType.ZSTACK
 
