@@ -347,7 +347,7 @@ class EXACTImageSetSync {
     loadImageSetInformation(success_notification, context) {
 
         $.ajax(this.API_1_IMAGES_BASE_URL + 'image_sets/' + this.imageSetId +
-            '/?expand=product_set.annotationtype_set,images,images.FrameDescriptions,team.memberships' +
+            '/?expand=product_set.annotationtype_set,images,images.defaultFrame,images.FrameDescriptions,team.memberships' +
             '&omit=product_set.imagesets,description,location,path,images.annotations,images.time,team.id,team.name,team.members,team.image_sets,team.product_set,team.memberships.id,team.memberships.team', {
             type: 'GET',
             headers: this.gHeaders,
@@ -383,6 +383,7 @@ class EXACTImageSetSync {
                     context.imageInformation[image.id] = {
                         "id": image.id, "name": image.name, "width": image.width, "height": image.height,
                         "FrameDescriptions" : image.FrameDescriptions,
+                        "defaultFrame" : image.defaultFrame,
                         "mpp": image.mpp, "objectivePower": image.objectivePower, 'depth': image.depth, 'frames': image.frames
                     }
                 }
