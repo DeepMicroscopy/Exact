@@ -2398,7 +2398,7 @@ class EXACTViewerGlobalAnnotationsFrame extends EXACTViewer {
         }
 
         var parameters = `frame=${this.frame}`;
-        if (imageSetInformationLoaded) {
+        if (window.location.search) {
             let url_parameters = decodeURIComponent(window.location.search.substring(1)).split('&');
             url_parameters = Object.assign({}, ...url_parameters.map((x) => ({ [x.split("=")[0]]: x.split("=")[1] })));
 
