@@ -229,7 +229,7 @@ class PyramidalZStack:
     @property
     def default_frame(self) -> int:
         """ returns the default frame """
-        zpos_vector = [self.metadata[m]['PositionZ'] for m in self.metadata if 'PositionZ' not in self.metadata[m]]
+        zpos_vector = [self.metadata[m]['PositionZ'] for m in self.metadata if 'PositionZ' in self.metadata[m]]
         if 0 in zpos_vector:
             return zpos_vector.index(0)
         # default case: return 0
