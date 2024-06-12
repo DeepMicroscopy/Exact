@@ -338,7 +338,9 @@ class EXACTViewer {
             let xmax = Math.round(imageRect.x + imageRect.width);
             let ymax = Math.round(imageRect.y + imageRect.height);
             let z_dimension = 1;
-            let frame = this.userData.frameSlider._state.value[0];
+            
+
+            let frame = this.userData.frameSlider?._state.value[0] ?? 0;
 
             let coordinates = {
                 "x_min": xmin, 
