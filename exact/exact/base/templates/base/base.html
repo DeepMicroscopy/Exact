@@ -102,7 +102,10 @@
 					</a>
 					<div class="dropdown-menu" aria-labelledby="usernameNavbarDropdown">
 						<a class="dropdown-item" href="{% url 'users:user' user.id %}">Profile</a>
-						<a class="dropdown-item" href="{% url 'logout' %}">Logout</a>
+						<form action="{% url 'logout' %}" method="post">
+							{% csrf_token %}
+							<button class="dropdown-item" type="submit">Logout</button>
+						</form>
 						<a class="dropdown-item" href="{% url 'password_change' %}">Change Password</a>
 					</div>
 				</li>
