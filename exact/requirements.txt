@@ -39,8 +39,9 @@ czifile==2019.7.2
 gitpython==3.1.11
 gdown==5.1.0
 pandas==2.2.1
-qt-wsi-registration==0.0.11
+qt-wsi-registration==0.0.12
 EXCAT-Sync>=0.0.38
 pyyaml>=6.0.1
 aicsimageio==4.11.0
+Werkzeug==2.3.7
 h5py==3.10.0
