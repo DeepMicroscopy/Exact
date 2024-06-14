@@ -8,6 +8,7 @@
 <script type="text/javascript" src="{% static 'scripts/jquery-3.2.1.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'scripts/bootstrap.min.js' %}"></script>
 
+
 {% if "edit_set" in imageset_perms and not imageset.image_lock %}
 <!-- CSS to style the file input field as button and adjust the Bootstrap progress bars -->
 <link rel="stylesheet" href="{% static 'jQuery-File-Upload/css/jquery.fileupload.css' %}">
@@ -42,6 +43,7 @@
 </div>
 {% } %}
 </script>
+
 <!-- The template to display files available for download -->
 <script id="template-download" type="text/x-tmpl">
 {% for (var i=0, file; file=o.files[i]; i++) { %}
@@ -78,9 +80,57 @@
 <script type="text/javascript" src="{% static 'scripts/versions.js' %}"></script>
 <script type="text/javascript" src="{% static 'scripts/notify.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'scripts/jquery.autocomplete.js' %}"></script>
+
 <![endif]-->
 {% endblock additional_js %}
+
 {% block bodyblock %}
+<div class="modal fade" id="renameModal" tabindex="-1" aria-labelledby="renameModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="renameModalLabel">Rename Item</h5>
+                <button type="button" class="btn-close" data-dismiss="modal" aria-label="Close">X</button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" id="renameForm" action="{% url 'images:rename_image' imageset.id %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="newName" class="form-label">New Name</label>
+                        <input type="hidden" name="oldName" id="oldName" value="">
+                        <input type="hidden" name="fileID" id="fileID" value="">
+                        <input type="text" class="form-control" name="newName" id="newName" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="renameSubmit">Rename</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    document.getElementById('renameSubmit').addEventListener('click', function() {
+        var newName = document.getElementById('newName').value;
+        if (newName) {
+            // Perform the rename action here
+            document.getElementById('renameForm').submit();
+        }
+    });
+
+
+          
+
+    function showRenameDialog(oldName,id) {
+        var renameModal = new bootstrap.Modal(document.getElementById('renameModal'));
+        document.getElementById('oldName').value = oldName;
+        document.getElementById('newName').value = oldName;
+        document.getElementById('fileID').value = id;
+        renameModal.show();
+    }
+    
+</script>
 <div class="container-fluid">
     <div id="feedback_version_added" class="js_feedback alert alert-success invisible">
         {% trans 'The version was added successfully. Please press F5' %}
@@ -143,7 +193,7 @@
 
                             <div class="card-body">
                                 <h5 class="card-title">
-                                    <a href="{% url 'annotations:annotate' image.id %}" title="{{image.name}}"> {{image.name|truncatechars:30}}</a>
+                                    <a href="{% url 'annotations:annotate' image.id %}" title="{{image.name}}"> {{image.name|truncatechars:30}}</a> <button class="btn btn-light" onClick="showRenameDialog('{{image.name}}',{{image.id}})">&#9998;</button>
                                 </h5>                
                             </div>
 
@@ -198,7 +248,7 @@
 
                             <div class="card-body">
                                 <h5 class="card-title">
-                                    <a href="{% url 'annotations:annotate' image.id %}" title="{{image.name}}"> {{image.name|truncatechars:30}}</a>
+                                    <a href="{% url 'annotations:annotate' image.id %}" title="{{image.name}}"> {{image.name|truncatechars:30}}</a> 
                                 </h5>                
                             </div>
 
