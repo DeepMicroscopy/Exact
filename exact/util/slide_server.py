@@ -284,7 +284,7 @@ def getSlideHandler(path):
         f = open(path,'rb')
         magic_number = {0: f.read(4)}
         candidates=[]
-        print('Magic number:',[hex(x) for x in magic_number[0]])
+        #print('Magic number:',[hex(x) for x in magic_number[0]])
         for ftype in SupportedFileTypes:
             mnum = magic_number
             if ftype.magic_number_offset not in magic_number:
@@ -297,11 +297,11 @@ def getSlideHandler(path):
             for ftype in candidates:
                 if (path.split('.')[-1].lower() in ftype.extensions):
                     filehandler = ftype.handler
-                    print('Found file handler: ',filehandler)
+                    #print('Found file handler: ',filehandler)
                     try:
                         return  filehandler(path)        
                     except Exception as e:
-                        print('But unable to open. :-()')
+                        print('Unable to open file handler. :-()')
                         pass
         
         # as last resort, try openSlide:
