@@ -1211,24 +1211,35 @@ def rename_image(request, imageset_id):
         return redirect(reverse('images:view_imageset', args=(imageset_id,)))
     imagestem,imageext = os.path.splitext(image.name)
     newstem,newext = os.path.splitext(newName)
+    filenamestem, filenameext = os.path.splitext(image.filename)
     if not (newext.upper() ==imageext.upper()):
         return redirect(reverse('images:view_imageset', args=(imageset_id,)))
 
 
-    print('FileID',fileID,newName, image, imageset)    
     if 'edit_set' in imageset.get_perms(request.user):
-        print('File name:',image.filename,image.get_file_name(), image.original_path())
-        os.rename(os.path.join(imageset.root_path(),image.name),
-                  os.path.join(imageset.root_path(),newName))
-        if (imageext=='.MRXS'):
+        if os.path.exists(os.path.join(imageset.root_path(),image.name)):
+            os.rename(os.path.join(imageset.root_path(),image.name),
+                    os.path.join(imageset.root_path(),newName))
+        if (image.filename != image.name):
+            # also rename image.name, if exists
+            if os.path.exists(os.path.join(imageset.root_path(),image.filename)):
+                os.rename(os.path.join(imageset.root_path(),image.filename),
+                          os.path.join(imageset.root_path(),newstem+filenameext))
+
+        if (imageext.upper()=='.MRXS') and os.path.exists(os.path.join(imageset.root_path(),imagestem)):
             # for MRXS we need to also rename the directory
             os.rename(os.path.join(imageset.root_path(),imagestem),
                     os.path.join(imageset.root_path(),newstem))
 
+        # rename thumbnail if exists (should always, but who knows ;-) )
+        if (os.path.exists(image.thumbnail_path())):
+            os.rename(image.thumbnail_path(),
+                      os.path.join(imageset.root_path(),newstem+image.thumbnail_extension))
 
+        # filename and name might have a different extension
+        image.filename = newstem+filenameext
         image.name = newName
         image.save()
-        print('New name is now:',image.name)
     else:
         print('Permission not found for user',request.user)
 
