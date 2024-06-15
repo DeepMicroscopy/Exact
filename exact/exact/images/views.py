@@ -1175,6 +1175,75 @@ def toggle_pin_imageset(request, imageset_id):
     return redirect(reverse('images:view_imageset', args=(imageset_id,)))
 
 
+def sanitize_filename(filename):
+    """
+    Sanitize a filename to make it valid by replacing invalid characters with an underscore.
+    
+    Parameters:
+    filename (str): The filename to sanitize.
+
+    Returns:
+    str: A valid filename.
+    """
+    # Define a regex pattern for invalid characters
+    invalid_chars = r'[<>:"/\\|?*]'
+    
+    # Replace invalid characters with an underscore
+    sanitized_name = re.sub(invalid_chars, '_', filename)
+    
+    # Ensure the filename is not empty after sanitization
+    if not sanitized_name:
+        sanitized_name = 'default_filename.tiff'
+    
+    # Truncate the filename to 255 characters if it's too long
+    if len(sanitized_name) > 255:
+        sanitized_name = sanitized_name[:255]
+    
+    return sanitized_name
+
+@login_required
+def rename_image(request, imageset_id):
+    fileID = request.POST.get('fileID')
+    image = get_object_or_404(Image, id=fileID)
+    imageset = get_object_or_404(ImageSet, id=imageset_id)
+    newName = sanitize_filename(request.POST.get('newName',''))
+    if len(newName)<4:
+        return redirect(reverse('images:view_imageset', args=(imageset_id,)))
+    imagestem,imageext = os.path.splitext(image.name)
+    newstem,newext = os.path.splitext(newName)
+    filenamestem, filenameext = os.path.splitext(image.filename)
+    if not (newext.upper() ==imageext.upper()):
+        return redirect(reverse('images:view_imageset', args=(imageset_id,)))
+
+
+    if 'edit_set' in imageset.get_perms(request.user):
+        if os.path.exists(os.path.join(imageset.root_path(),image.name)):
+            os.rename(os.path.join(imageset.root_path(),image.name),
+                    os.path.join(imageset.root_path(),newName))
+        if (image.filename != image.name):
+            # also rename image.name, if exists
+            if os.path.exists(os.path.join(imageset.root_path(),image.filename)):
+                os.rename(os.path.join(imageset.root_path(),image.filename),
+                          os.path.join(imageset.root_path(),newstem+filenameext))
+
+        if (imageext.upper()=='.MRXS') and os.path.exists(os.path.join(imageset.root_path(),imagestem)):
+            # for MRXS we need to also rename the directory
+            os.rename(os.path.join(imageset.root_path(),imagestem),
+                    os.path.join(imageset.root_path(),newstem))
+
+        # rename thumbnail if exists (should always, but who knows ;-) )
+        if (os.path.exists(image.thumbnail_path())):
+            os.rename(image.thumbnail_path(),
+                      os.path.join(imageset.root_path(),newstem+image.thumbnail_extension))
+
+        # filename and name might have a different extension
+        image.filename = newstem+filenameext
+        image.name = newName
+        image.save()
+    else:
+        print('Permission not found for user',request.user)
+
+    return redirect(reverse('images:view_imageset', args=(imageset_id,)))
 
 @login_required
 def copy_image(request, image_id, imageset_id):
