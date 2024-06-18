@@ -25,7 +25,7 @@ xmltodict==0.13.0
 uritemplate==4.1.1
 fasteners==0.15
 monotonic==1.6
-pillow==10.2.0
+pillow<10
 psycopg2-binary==2.9.9
 pytz==2024.1
 gunicorn==21.2.0
