@@ -25,7 +25,7 @@ xmltodict==0.13.0
 uritemplate==4.1.1
 fasteners==0.15
 monotonic==1.6
-pillow<10
+pillow>=10.3.0
 psycopg2-binary==2.9.9
 pytz==2024.1
 gunicorn==21.2.0
@@ -39,7 +39,7 @@ czifile==2019.7.2
 gitpython==3.1.11
 gdown==5.1.0
 pandas==2.2.1
-qt-wsi-registration==0.0.12
+qt-wsi-registration==0.0.13
 EXCAT-Sync>=0.0.38
 pyyaml>=6.0.1
 aicsimageio==4.11.0
