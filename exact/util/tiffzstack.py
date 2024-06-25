@@ -3,6 +3,7 @@ import tifffile
 import numpy as np 
 import zarr
 import xmltodict
+import ome_types
 
 from PIL import Image
 from dataclasses import dataclass, field
@@ -12,6 +13,7 @@ from zarr.hierarchy import Group
 from zarr.core import Array
 from util.enums import FrameType
 import openslide
+
 
 @dataclass
 class Properties:
@@ -79,18 +81,44 @@ class ThumbNail:
 
 
 @dataclass
-class PyramidalTIFF:
+class OMETiffSlide:
     filename: str
-    series: int
     data: Group = field(init=False, repr=False)
 
     def __post_init__(self):
         # TODO: validate filename
         # TODO: validate series
         self.data = zarr.open(
-            imread(self.filename, series=self.series, aszarr=True), 
+            imread(self.filename, aszarr=True), 
             mode='r'
             )
+        
+
+    @property
+    def properties(self) -> Dict[str, Union[str, float, int]]:
+        """Returns a list of properties that all OpenSlide objects have."""
+        metadata = ome_types.from_tiff(self.filename)
+        
+        try:
+            # we assume there is only a single image 
+            mppx = round(metadata.images[0].pixels.physical_size_x, ndigits=4)
+            mppy = round(metadata.images[0].pixels.physical_size_y, ndigits=4)
+        except (KeyError, ValueError):
+            mppx = 0
+            mppy = 0
+
+        try:
+            # there might be more than one objective attached to the instrument
+            #TODO: use image metadata if available to read correspondingn objective information
+            mag = max([o.nominal_magnification for o in metadata.instruments[0].objectives])
+        except (KeyError, ValueError):
+            mag = 20
+
+        return {openslide.PROPERTY_NAME_BACKGROUND_COLOR: '000000',
+                openslide.PROPERTY_NAME_MPP_X: str(mppx),
+                openslide.PROPERTY_NAME_MPP_Y: str(mppy),
+                openslide.PROPERTY_NAME_OBJECTIVE_POWER: mag,
+                openslide.PROPERTY_NAME_VENDOR: ''}
 
 
     @property
@@ -117,11 +145,17 @@ class PyramidalTIFF:
         down_factors = []
         reference_size = self.dimensions[0]
         for dim in self.level_dimensions:
-            factor = reference_size / dim[0]
+            factor = reference_size // dim[0]
             down_factors.append(factor)
         return down_factors
+    
 
+    def get_best_level_for_downsample(self,downsample) -> int:
+        return np.argmin(np.abs(np.asarray(self.level_downsamples)-downsample))
+    
 
+    def get_thumbnail(self, size) -> Image:
+        return self.read_region(location=(0,0),level=self.level_count-1, size=self.level_dimensions[-1]).resize(size)
 
 
     def read_region(
@@ -141,24 +175,21 @@ class PyramidalTIFF:
             Image: Pil.Image with the contents of the region.
         """
         # correct location for level
-        location = [round(x/self.level_downsamples[level]) for x in location]
+        location = [round(x / self.level_downsamples[level]) for x in location]
 
         # create transparancy
-        img = np.zeros((size[1],size[0],4), np.uint8)
-        img[:,:,3]=255
-        offset=[0,0]
-        if (location[1]<0):
+        img = np.zeros((size[1], size[0], 4), np.uint8)
+        img[:, :, 3] = 255
+        offset = [0, 0]
+        if (location[1] < 0):
             offset[0] = -location[1]
-            location = (location[0],0)
-        if (location[0]<0):
+            location = (location[0], 0)
+        if (location[0] < 0):
             offset[1] = -location[0]
-            location = (0,location[1])
+            location = (0, location[1])
         
         if level > self.level_count:
             raise ValueError(f'Invalid level.')
-        
-        if size[0] < 0 or size[1] < 0:
-            raise ValueError(f'Negative width {size[0]} or negative height {size[1]} not allowed.')
          
         x, y = location
         width, height = size 
@@ -171,9 +202,9 @@ class PyramidalTIFF:
 
 
 @dataclass
-class PyramidalZStack:
+class OMETiffZStack:
     filename: str
-    zstack: Dict[str, PyramidalTIFF] = field(init=False, repr=False)
+    zstack: Dict[str, OMETiffSlide] = field(init=False, repr=False)
     labelimage: LabelImage = field(init=False, repr=False)
     thumbnail: ThumbNail = field(init=False, repr=False)
 
@@ -212,7 +243,7 @@ class PyramidalZStack:
 
     @property
     def nFrames(self) -> int:
-        """ returns the number of frames (identical to number of z levels) """
+        """Returns the number of frames (identical to number of z levels)."""
         return len(self.zstack)
     
     @property
@@ -221,20 +252,18 @@ class PyramidalZStack:
 
     @property
     def frame_descriptors(self) -> list[str]:
-        """ returns a list of strings, used as descriptor for each frame
-        """
-
+        """Returns a list of strings, used as descriptor for each frame."""
         return ['z=%s %s' % (str(self.metadata[m]['PositionZ']), self.metadata[m]['PositionZUnit']) for m in self.metadata if 'PositionZ' in self.metadata[m]]
 
     @property
     def default_frame(self) -> int:
-        """ returns the default frame """
+        """Returns the default frame """
         try:
             zpos_vector = [float(self.metadata[m]['PositionZ']) for m in self.metadata if 'PositionZ' in self.metadata[m]]
         except:
             return 0
         
-        print(zpos_vector)
+        # print(zpos_vector)
         if 0 in zpos_vector:
             return zpos_vector.index(0)
         # default case: return 0
@@ -242,13 +271,8 @@ class PyramidalZStack:
     
     @property
     def properties(self) -> Dict[str, Union[str, float, int]]:
-        """ returns a list of properties that all OpenSlide objects have
-        """
-        return {openslide.PROPERTY_NAME_BACKGROUND_COLOR:  '000000',
-                openslide.PROPERTY_NAME_MPP_X: '0.12',
-                openslide.PROPERTY_NAME_MPP_Y: '0.12',
-                openslide.PROPERTY_NAME_OBJECTIVE_POWER:20,
-                openslide.PROPERTY_NAME_VENDOR: ''}
+        """Returns a list of properties that all OpenSlide objects have."""
+        return self.zstack[0].properties
 
     def _init_metadata(self) -> None:
         # TODO: add Vendor, Objective Power, Compression per level 
@@ -308,7 +332,7 @@ class PyramidalZStack:
                self.thumbnail = ThumbNail(self.filename, series=idx)
 
             else:
-               zstack[idx] = PyramidalTIFF(self.filename, series=idx)
+               zstack[idx] = OMETiffSlide(self.filename, series=idx)
 
 
         self.zstack = zstack
