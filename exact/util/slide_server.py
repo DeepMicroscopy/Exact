@@ -1,5 +1,6 @@
 from collections import OrderedDict
 from io import BytesIO
+from typing import Tuple
 import openslide
 from openslide import OpenSlide, OpenSlideError, open_slide
 from openslide.deepzoom import DeepZoomGenerator
@@ -22,7 +23,7 @@ import numpy as np
 from util.cellvizio import ReadableCellVizioMKTDataset
 from openslide import OpenSlideError
 import tifffile
-from util.tiffzstack import PyramidalZStack
+from util.tiffzstack import OMETiffSlide, OMETiffZStack
 
 from util.enums import FrameType
 
@@ -55,18 +56,53 @@ class zDeepZoomGenerator(DeepZoomGenerator):
             tile.info['icc_profile'] = profile
 
         return tile
-    
+
 class OpenSlideWrapper(openslide.OpenSlide):
     """
         Wraps an openslide.OpenSlide object. The rationale here is that OpenSlide.read_region does not support z Stacks / frames as arguments, hence we have to encapsulate it
 
     """
+
     @property 
     def nFrames(self):
-        return 1    
-        
+        return 1
+
+    @property
+    def frame_descriptors(self) -> list[str]:
+        """ returns a list of strings, used as descriptor for each frame
+        """
+        return ['']
+
+    @property
+    def frame_type(self):
+        return FrameType.UNDEFINED
+
     def read_region(self, location, level, size, frame=0):
         return openslide.OpenSlide.read_region(self, location, level, size)
+
+
+
+class OMETiffSlideWrapper(OMETiffSlide):
+    
+    @property 
+    def nFrames(self):
+        return 1
+
+    @property
+    def frame_descriptors(self) -> list[str]:
+        """ returns a list of strings, used as descriptor for each frame
+        """
+        return ['']
+
+    @property
+    def frame_type(self):
+        return FrameType.UNDEFINED
+    
+    def read_region(self, location, level, size, frame=0):
+        return super().read_region(location, level, size)
+
+
+
 
 class ImageSlideWrapper(openslide.ImageSlide):
     """
@@ -141,6 +177,9 @@ class ImageSlide3D(openslide.ImageSlide):
                     zip(image_topleft, location))
             tile.paste(crop, tile_offset)
         return tile  
+    
+
+
 
 vendor_handlers = {'aperio': OpenSlideWrapper,
                     'dicom' : OpenSlideWrapper,
@@ -155,29 +194,6 @@ vendor_handlers = {'aperio': OpenSlideWrapper,
                     'generic-tiff' : OpenSlideWrapper}
 
 
-class OpenSlideWrapper(openslide.OpenSlide):
-    """
-        Wraps an openslide.OpenSlide object. The rationale here is that OpenSlide.read_region does not support z Stacks / frames as arguments, hence we have to encapsulate it
-
-    """
-
-    @property 
-    def nFrames(self):
-        return 1
-
-    @property
-    def frame_descriptors(self) -> list[str]:
-        """ returns a list of strings, used as descriptor for each frame
-        """
-        return ['']
-
-    @property
-    def frame_type(self):
-        return FrameType.UNDEFINED
-
-    def read_region(self, location, level, size, frame=0):
-        return openslide.OpenSlide.read_region(self, location, level, size)
-
 
 class GenericTiffHandler:
     """
@@ -187,8 +203,12 @@ class GenericTiffHandler:
         
         # Check if it's an OME TIFF
         f = tifffile.TiffFile(file)
-        if f.ome_metadata and len(f.ome_metadata)>0:
-            return type('PyramidalZStack', (PyramidalZStack, openslide.OpenSlide), {})(file)
+        if f.ome_metadata:
+            if len(f.series) > 1:
+                # We assume Zstacks are stored as multiple series
+                return type('OMETiffZStack', (OMETiffZStack, openslide.OpenSlide), {})(file)
+            else:
+                return type('OMETiffSlide', (OMETiffSlideWrapper, openslide.OpenSlide), {})(file)
 
         # else let OpenSlide handle it for us.
         vendor = openslide.lowlevel.detect_vendor(file)
@@ -216,7 +236,7 @@ class FileType:
 
 class BigTiffFileType(FileType):
     magic_number = b'\x49\x49\x2b\x00'
-    extensions = ['tiff', 'tif', 'svs']
+    extensions = ['tiff', 'tif', 'svs', 'btf']
     handler = GenericTiffHandler
 
 class NormalTiffFileType(FileType):
