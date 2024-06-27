@@ -756,6 +756,11 @@ class ImageRegistration(models.Model):
         return M
 
 
+    @property
+    def scale_str(self): # get scale as string, used in UI
+        M = self.get_matrix_without_rotation
+        return '%.2f, %.2f' % (M[0][0],M[1][1])
+
     @cached_property
     def get_scale(self):
 

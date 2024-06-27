@@ -9,6 +9,7 @@
 <script type="text/javascript" src="{% static 'scripts/bootstrap.min.js' %}"></script>
 
 
+
 {% if "edit_set" in imageset_perms and not imageset.image_lock %}
 <!-- CSS to style the file input field as button and adjust the Bootstrap progress bars -->
 <link rel="stylesheet" href="{% static 'jQuery-File-Upload/css/jquery.fileupload.css' %}">
@@ -165,6 +166,9 @@
       <button class="nav-link" id="administration-tab" data-toggle="tab" data-target="#administration" type="button" role="tab" aria-controls="administration" aria-selected="false">Administration</button>
     </li>
     <li class="nav-item" role="presentation">
+        <button class="nav-link" id="registration-tab" data-toggle="tab" data-target="#registration" type="button" role="tab" aria-controls="registration" aria-selected="false">Registration</button>
+      </li>
+      <li class="nav-item" role="presentation">
         <button class="nav-link" id="processing-tab" data-toggle="tab" data-target="#processing" type="button" role="tab" aria-controls="processing" aria-selected="false">Processing</button>
       </li>
       <li class="nav-item" role="presentation">
@@ -186,7 +190,7 @@
                     {% if image.image_type != 1 %}
                         <div class="card imagecard">
                             <div class="card_container">
-                            <a href="{% url 'annotations:annotate' image.id %}{% if image.defaultFrame > 0%}?frame={{image.defaultFrame}}{% endif %}" class="image"><img class="card-img-top image" src="{{ api }}v1/images/images/{{image.id}}/thumbnail/"
+                                <a href="{% url 'annotations:annotate' image.id %}{% if image.defaultFrame > 0%}?frame={{image.defaultFrame}}{% endif %}" class="image"><img class="card-img-top image" src="{{ api }}v1/images/images/{{image.id}}/thumbnail/"
                                     alt="Thumbnail {{image.name}} not found!" data-imageid="{{ image.id }}"></a>
                             <a href="{% url 'images:download_api' image.id %}" download><img src="{% static 'images/download.svg' %}" class="image2"></a>
                         </div>
@@ -301,6 +305,113 @@
     </div>
 
         <!-- END: Images tab -->
+    </div>
+
+    <div class="tab-pane fade" id="registration" role="tabpanel" aria-labelledby="registration-tab">
+        <!-- Administration tab -->
+        <div class="row">
+            <!-- Images tab -->
+            <div class="col-md-10">
+                        <div class="card">
+            <div class="card-header">
+                <h3>{{imageset.name}} : Registration
+                    </h3>
+            </div>
+
+            
+
+            <div class="card-body parent container">
+                
+                <table class="table">
+                <tr><th>Source image</th><th>Target image, image set: <form method="GET" action="{% url 'images:view_imageset' imageset.id %}"><select size="1" name="target_imageset_id" onchange="submit()"></form>
+                    {% for iset in imagesets.all %}
+                        <option {% if iset.id == target_imageset.id %}selected{% endif %} value="{{iset.id}}"> {{iset.name}} </option>
+                    {% endfor %}
+                </select></form></th></tr>
+                <form method="POST">
+                    {% csrf_token %}
+
+                <tr><td>
+                    <div class="row">
+                        {% for image in imageset.images.all|dictsort:"name" %}
+                    {% if image.image_type != 1 %}
+                    <div class="col-sm-4 col-6 card imagecard">
+                        <div class="thumbnail">
+                            <input type="radio" id="img-{{image.id}}" name="registration-src" value="{{image.id}}">
+                            <label for="img-{{image.id}}">
+                                <img src="{{ api }}v1/images/images/{{image.id}}/thumbnail/" alt="{{image.name}}">
+                                {{image.name}}
+                            </label>
+                        </div>
+                    </div>
+        
+
+
+                        {% endif %}
+                    {% endfor %}
+                    </div>
+
+
+                </td>
+                <td>
+                    <div class="row">
+                    {% for image in target_imageset.images.all|dictsort:"name" %}
+                    {% if image.image_type != 1 %}
+                    <div class="col-sm-4 col-6 card imagecard">
+                        <div class="thumbnail">
+                            <input type="radio" id="id-{{image.id}}" name="registration-dst" value="{{image.id}}">
+                            <label for="id-{{image.id}}">
+                                <img src="{{ api }}v1/images/images/{{image.id}}/thumbnail/" alt="{{image.name}}">
+                                {{image.name}}
+                            </label>
+                        </div>
+                    </div>
+                    
+        
+
+
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                </td>
+                </tr>
+                </table>
+                <div>
+                <input class="btn btn-primary" type="submit" value="Register">
+                </div>
+
+                <div class="row" style="padding-top: 20px;">
+                    <table class="table">
+                        <tr><th>ID</th><th>Source</th><th>Target</th><th>Scale</th><th>Rotation</th><th>Error</th></tr>
+
+                    {% for reg in image_registration_src %}
+                    <tr>
+                        <td>{{reg.id}}</td>
+                        <td>{{reg.source_image.name}}</td>
+                        <td>{{reg.target_image.name}}</td>
+                        <td>{{reg.scale_str}}</td>
+                        <td>{{reg.rotation_angle|stringformat:".2f"}}</td>
+                        <td>{{reg.registration_error|stringformat:".2f"}}</td>
+                    </tr>
+                    {% endfor %}
+                    {% for reg in image_registration_dst %}
+                    <tr>
+                        <td>{{reg.id}}</td>
+                        <td>{{reg.source_image.name}}</td>
+                        <td>{{reg.target_image.name}}</td>
+                        <td>{{reg.scale_str}}</td>
+                        <td>{{reg.rotation_angle|stringformat:".2f"}}</td>
+                        <td>{{reg.registration_error|stringformat:".2f"}}</td>
+                    </tr>
+                    {% endfor %}
+                    </table>
+                </div></div>
+            </form>
+            </div>
+        </div>
+        </div>
+    </div>
     </div>
 
     <div class="tab-pane fade" id="processing" role="tabpanel" aria-labelledby="processing-tab">
@@ -790,6 +901,12 @@
 
   </script> 
 
+
 <script src="{% static 'jQuery-File-Upload/js/main_v2.js' %}"></script>
+<script>
+    {% if showRegTab %}
+        $('#myTab li:nth-child(3) button').tab('show') // Select third tab
+    {% endif %}
+</script>
 
 {% endblock bodyblock%}
