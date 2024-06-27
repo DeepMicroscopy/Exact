@@ -38,7 +38,7 @@ from exact.tagger_messages.forms import TeamMessageCreationForm
 from exact.administration.models import Product
 from exact.administration.serializers import ProductSerializer
 
-from .models import ImageSet, Image, SetTag
+from .models import ImageRegistration, ImageSet, Image, SetTag
 from .forms import LabelUploadForm, CopyImageSetForm
 from exact.annotations.models import Annotation, Export, ExportFormat, \
     AnnotationType, Verification, LogImageAction
@@ -703,6 +703,10 @@ def view_imageset(request, image_set_id):
     
     user_teams = Team.objects.filter(members=request.user)
 
+    image_sets = ImageSet.objects.filter(team__in=user_teams)
+
+
+
     imageset_edit_form = ImageSetEditForm(instance=imageset)
     imageset_edit_form.fields['main_annotation_type'].queryset = AnnotationType.objects\
         .filter(active=True, product__in=imageset.product_set.all()).order_by('product', 'sort_order')
@@ -717,11 +721,39 @@ def view_imageset(request, image_set_id):
         availablePlugins[i].alljobs = pgn
 
 
+    if ('registration-src' in request.POST) and ('registration-dst' in request.POST):
+        source_image = get_object_or_404(Image, id=int(request.POST.get('registration-src')))
+        target_image = get_object_or_404(Image, id=int(request.POST['registration-dst']))
+
+        image_registration = ImageRegistration.objects.filter(source_image=source_image, target_image=target_image).first()        
+
+        # register the two images
+        if image_registration is None:
+
+            image_registration = ImageRegistration(source_image=source_image, target_image=target_image)        
+        
+        image_registration.perform_registration() # use default parameters for now
+
+    image_registration_src = ImageRegistration.objects.filter(source_image_id__in=imageset.images.all())       
+    image_registration_trg = ImageRegistration.objects.filter(target_image_id__in=imageset.images.all())       
+
+
+    if ('target_imageset_id' in request.GET):
+        showRegTab=True
+        target_imageset = get_object_or_404(ImageSet, id=int(request.GET['target_imageset_id']))
+        
+
+    else:
+        showRegTab=False
+        target_imageset=imageset
+
     all_products = Product.objects.filter(team=imageset.team).order_by('name')
     template = 'images/imageset_v2.html' if hasattr(request.user,'ui') and hasattr(request.user.ui,'frontend') and request.user.ui.frontend==2 else 'images/imageset.html'
     return render(request, template, {
         'image_count': imageset.images.count(),
         'imageset': imageset,
+        'target_imageset' : target_imageset,
+        'imagesets' : image_sets,
         'availablePlugins': availablePlugins,
         'real_image_number': imageset.images.filter(~Q(image_type=Image.ImageSourceTypes.SERVER_GENERATED)).count(),
         'computer_generated_image_number' : imageset.images.filter(Q(image_type=Image.ImageSourceTypes.SERVER_GENERATED)).count(),
@@ -730,7 +762,10 @@ def view_imageset(request, image_set_id):
         'exports': exports,
         'api': request.build_absolute_uri('/api/'),
         'filtered': filtered,
+        'showRegTab' : showRegTab,
         'edit_form': imageset_edit_form,
+        'image_registration_src' : image_registration_src,
+        'image_registration_trg' : image_registration_trg,
         'imageset_perms': imageset.get_perms(request.user),
         'export_formats': ExportFormat.objects.filter(Q(public=True) | Q(team__in=user_teams)),
         'label_upload_form': LabelUploadForm(),
