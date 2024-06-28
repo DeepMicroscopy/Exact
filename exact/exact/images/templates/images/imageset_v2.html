@@ -379,6 +379,88 @@
                 </table>
                 <div>
                 <input class="btn btn-primary" type="submit" value="Register">
+                <button class="btn btn-secondary" type="button" data-toggle="collapse" data-target="#collapseOptions" aria-expanded="false" aria-controls="collapseOptions">
+                    Options &#9660;
+                  </button>
+                
+                <div class="collapse" id="collapseOptions">
+                    <div class="card card-body">
+                      <table><tr><td>
+                      maxFeatures:
+                    </td><td><select name="maxFeatures">
+                        <option value=256>256</option>
+                        <option value=512>512</option>
+                        <option value=1024 selected>1024</option>
+                        <option value=2048>2048</option>
+                        <option value=4096>4096</option>
+                    </select>
+                </td></tr>
+                <tr><td>thumbnail_size</td>
+                <td>
+                    <select name="thumbnail_size_1">
+                        <option value=512>512</option>
+                        <option value=1024 selected>1024</option>
+                        <option value=2048>2048</option>
+                        <option value=4096>4096</option>
+                        <option value=8192>8192</option>
+                    </select>  x 
+                    <select name="thumbnail_size_2">
+                        <option value=512>512</option>
+                        <option value=1024 selected>1024</option>
+                        <option value=2048>2048</option>
+                        <option value=4096>4096</option>
+                        <option value=8192>8192</option>
+                    </select>
+                </td></tr>
+                <tr><td>
+                    filter outliers:
+                  </td><td><select name="filter_outliner">
+                      <option value=0 selected>no</option>
+                      <option value=1>yes</option>
+                  </select>
+              </td></tr>                
+              <tr><td>
+                use_gray:
+              </td><td><select name="use_gray">
+                  <option value=0 selected>no</option>
+                  <option value=1>yes</option>
+              </select>
+          </td></tr>                
+          <tr><td>
+                target_depth:
+              </td><td><select name="target_depth">
+                  <option value=1>1</option>
+                  <option value=2>2</option>
+                  <option value=3>3</option>
+                  <option value=4 selected>4</option>
+                  <option value=5>5</option>
+                  <option value=6>6</option>
+                  <option value=7>7</option>
+                  <option value=8>8</option>
+              </select>
+          </td></tr>     
+          <tr><td>
+            point_extractor
+          </td><td>
+            <select name="point_extractor">
+                <option selected value="sift">SIFT</option>
+                <option value="orb">ORB</option>
+            </select>
+          </td></tr>           
+          <tr><td>
+            feature matching
+          </td><td>
+            <select name="flann">
+                <option selected value=1>FLANN</option>
+                <option value=0>brute force</option>
+            </select>
+          </td></tr>
+          <tr><td>scale</td>
+        <td><input type=text value='0.7' name="scale"></td></tr>           
+
+            </table>
+            </div>
+                </div>
                 </div>
 
                 <div class="row" style="padding-top: 20px;">
