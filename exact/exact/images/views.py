@@ -727,12 +727,25 @@ def view_imageset(request, image_set_id):
 
         image_registration = ImageRegistration.objects.filter(source_image=source_image, target_image=target_image).first()        
 
+        maxFeatures=int(request.POST['maxFeatures'])
+        thumbnail_size=(int(request.POST['thumbnail_size_1']),int(request.POST['thumbnail_size_2']))
+        filter_outliner=int(request.POST['filter_outliner'])
+        maxFeatures=int(request.POST['maxFeatures'])
+        use_gray=int(request.POST['use_gray'])
+        target_depth=int(request.POST['target_depth'])
+        point_extractor='orb' if (request.POST['point_extractor'] == 'orb') else 'sift'
+        flann=1 if (request.POST['flann']=='1') else 0
+        scale=float(request.POST['scale'])
+
+
         # register the two images
         if image_registration is None:
 
             image_registration = ImageRegistration(source_image=source_image, target_image=target_image)        
         
-        image_registration.perform_registration() # use default parameters for now
+        image_registration.perform_registration(maxFeatures=maxFeatures, thumbnail_size=thumbnail_size, filter_outliner=filter_outliner,
+                                                use_gray=use_gray, target_depth=target_depth, point_extractor=point_extractor, flann=flann,
+                                                scale=scale) # use default parameters for now
 
     image_registration_src = ImageRegistration.objects.filter(source_image_id__in=imageset.images.all())       
     image_registration_trg = ImageRegistration.objects.filter(target_image_id__in=imageset.images.all())       
