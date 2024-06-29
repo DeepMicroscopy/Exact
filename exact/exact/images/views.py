@@ -720,6 +720,16 @@ def view_imageset(request, image_set_id):
         pgn=PluginJob.objects.filter(image__in=imageset.images.all()).filter(plugin=plugin)
         availablePlugins[i].alljobs = pgn
 
+    showRegTab=False
+    if ('delete-registration' in request.POST):
+        print('delReg',request.POST['delete-registration'])
+        regid = int(request.POST['delete-registration'])
+        image_registration = ImageRegistration.objects.filter(id=regid).first()
+
+#        image_registration = get_object_or_404(ImageRegistration, int(request.POST['delete-registration']))
+        image_registration.delete()
+        # delete registration
+        showRegTab=True
 
     if ('registration-src' in request.POST) and ('registration-dst' in request.POST):
         source_image = get_object_or_404(Image, id=int(request.POST.get('registration-src')))
@@ -746,6 +756,7 @@ def view_imageset(request, image_set_id):
         image_registration.perform_registration(maxFeatures=maxFeatures, thumbnail_size=thumbnail_size, filter_outliner=filter_outliner,
                                                 use_gray=use_gray, target_depth=target_depth, point_extractor=point_extractor, flann=flann,
                                                 scale=scale) # use default parameters for now
+        showRegTab=True
 
     image_registration_src = ImageRegistration.objects.filter(source_image_id__in=imageset.images.all())       
     image_registration_trg = ImageRegistration.objects.filter(target_image_id__in=imageset.images.all())       
@@ -757,7 +768,7 @@ def view_imageset(request, image_set_id):
         
 
     else:
-        showRegTab=False
+        
         target_imageset=imageset
 
     all_products = Product.objects.filter(team=imageset.team).order_by('name')
