@@ -32,5 +32,7 @@ def base_data(request):
         'unread_message_count': unread_message_count,
         'processing_queue': processing_queue,
         'show_processing_panel' : show_processing_panel,
+        'mailing_list': settings.ADD_MAILING_LIST,
+        'mailing_list_url': settings.MAILING_LIST_URL,
         'show_datasets':show_datasets
     }

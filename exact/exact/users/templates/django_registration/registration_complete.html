@@ -10,7 +10,10 @@
                     <h1 class="panel-title">{% trans 'Registration' %}</h1>
                 </div>
                 <div class="panel-body">
-                    <p>An Email with the registration Link was successfully send</p>
+                    <p>Registration successful.</p>
+                    {% if mailing_list %}
+                    <p>If you want to be updated about maintenance times of EXACT, please register to the <a href="{{mailing_list_url}}" target="_blank">mailing list</a></p>
+                    {% endif %}
                     <p><a href="{% url 'login' %}">Login</a> </p>
                 </div>
             </div>

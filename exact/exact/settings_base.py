@@ -255,6 +255,9 @@ SHOW_ADVANCED_OPTIONS = True # advanced options such as stroke width, opacity, a
 
 PAGINATION_PROCESSING_QUEUE = 50 # length of processing queue for pagination
 
+ADD_MAILING_LIST = False # set to true if you want to add a mailing list
+MAILING_LIST_URL = '' # enter address for mailing list
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
