@@ -157,6 +157,9 @@ class ImageSlide3D(openslide.ImageSlide):
             raise OpenSlideError("Invalid level")
         if ['fail' for s in size if s < 0]:
             raise OpenSlideError("Size %s must be non-negative" % (size,))
+        # for non-pyramidal tiff files we can only read frame 0 
+        if frame >= self.numberOfLayers:
+            frame = self.numberOfLayers - 1 
         # Any corner of the requested region may be outside the bounds of
         # the image.  Create a transparent tile of the correct size and
         # paste the valid part of the region into the correct location.
