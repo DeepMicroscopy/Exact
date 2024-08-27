@@ -8,20 +8,27 @@ http://{{ site.domain }}{% url 'django_registration_activate' activation_key %}
 
 If you need help or upload rights, please contact the server administrator by answering to this e-mail. 
 
+If you want to be updated about maintenance times of EXACT, please register to the {{ mailing_list_url }}.
+
 First steps:
 Youtube: https://www.youtube.com/playlist?list=PLuA57h8TbJncBwIg_IJIP61EeAdYt4DSs
 
-GitHub: https://github.com/ChristianMarzahl/Exact
+GitHub: https://github.com/DeepMicroscopy/Exact
 
 Paper: 
-https://arxiv.org/abs/2004.14595
+https://doi.org/10.1038/s41598-021-83827-4
 
-@misc{marzahl2020exact,
-    title={EXACT: A collaboration toolset for algorithm-aided annotation of almost everything},
-    author={Christian Marzahl and Marc Aubreville and Christof A. Bertram and Jennifer Maier and Christian Bergler and Christine Kröger and Jörn Voigt and Robert Klopfleisch and Andreas Maier},
-    year={2020},
-    eprint={2004.14595},
-    archivePrefix={arXiv},
-    primaryClass={cs.HC}
+@article{marzahl2021exact,
+title={EXACT: a collaboration toolset for algorithm-aided annotation of images with annotation version control},
+author={Marzahl, Christian and Aubreville, Marc and Bertram, Christof A. and Maier, Jennifer and Bergler, Christian and Kr{\"o}ger, Christine and Voigt, J{\"o}rn and Breininger, Katharina and Klopfleisch, Robert and Maier, Andreas},
+journal={Scientific Reports},
+year={2021},
+month={Feb},
+day={23},
+volume={11},
+number={1},
+pages={4343},
+issn={2045-2322},
+doi={10.1038/s41598-021-83827-4},
+url={https://doi.org/10.1038/s41598-021-83827-4}
 }
-
