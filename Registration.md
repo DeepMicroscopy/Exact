@@ -28,7 +28,7 @@ A demonstration of what registration in EXACT looks like is available at the fol
 ## Tutorial
 
 1) Please upload the images you want to register. The images do not have to be in the same ImageSet folder. 
-2) Please open the Notebook: https://github.com/ChristianMarzahl/Exact/blob/master/doc/WSI-Registration.ipynb
+2) Please open the Notebook: https://github.com/DeepMicroscopy/Exact/blob/master/doc/WSI-Registration.ipynb
 3) The important line is "In [7]": 
 ```Python
 registration = image_registration_api.register_image(source_image=source_image.id, target_image=target_image.id,thumbnail_size=thumbnail_size)

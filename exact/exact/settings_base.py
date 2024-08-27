@@ -219,7 +219,7 @@ USE_L10N = True
 
 USE_TZ = False
 
-PROBLEMS_URL = 'https://github.com/ChristianMarzahl/exact/issues'
+PROBLEMS_URL = 'https://github.com/DeepMicroscopy/exact/issues'
 PROBLEMS_TEXT = ''
 
 LOGIN_URL = '/user/login/'
@@ -304,7 +304,7 @@ try:
 except:
     DJVERSION_VERSION = f"Branch: Master \n {datetime.now()}"
     
-#DJVERSION_GIT_REPO_PATH = "https://github.com/ChristianMarzahl/Exact"
+#DJVERSION_GIT_REPO_PATH = "https://github.com/DeepMicroscopy/Exact"
 
 # Sets the default expire time for new messages in days
 DEFAULT_EXPIRE_TIME = 7

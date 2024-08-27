@@ -51,12 +51,12 @@ url={https://doi.org/10.1038/s41598-021-83827-4}
 * upload of existing labels
 * WSI [viewer](https://openseadragon.github.io/) 
 * [Caching](redis/CACHING.md)
-* Registration [Registration.md](https://github.com/ChristianMarzahl/exact/blob/master/Registration.md)
+* Registration [Registration.md](https://github.com/DeepMicroscopy/exact/blob/master/Registration.md)
 
 
 ## Documentation
 
-Issues with the [notebooks](doc/README.md) on GitHub? Please use [NBViewer](https://nbviewer.jupyter.org/github/ChristianMarzahl/Exact/tree/master/doc/)
+Issues with the [notebooks](doc/README.md) on GitHub? Please use [NBViewer](https://nbviewer.jupyter.org/github/DeepMicroscopy/Exact/tree/master/doc/)
 
 
 |   Describtion   |  Video  | 
@@ -77,13 +77,13 @@ Issues with the [notebooks](doc/README.md) on GitHub? Please use [NBViewer](http
 | Explains how teams, products and annotation types are created (de) |  [![Datasets](https://img.youtube.com/vi/yr6h2OffThU/0.jpg)](https://www.youtube.com/watch?v=yr6h2OffThU)  |
 | Describes how to create, view and edit image sets and upload images. (en) |  [![Datasets](https://img.youtube.com/vi/VTBIyTs9lmk/0.jpg)](https://www.youtube.com/watch?v=VTBIyTs9lmk)  |
 | Describes basic viewer and plugin functions. (en) |  [![Datasets](https://img.youtube.com/vi/OJBE9JtsbIE/0.jpg)](https://www.youtube.com/watch?v=OJBE9JtsbIE)  |
-| Describes the image [registration](https://github.com/ChristianMarzahl/exact/blob/master/Registration.md) functionality |  [![Datasets](https://img.youtube.com/vi/hduXtr6EaMA/0.jpg)](https://www.youtube.com/watch?v=hduXtr6EaMA)  |
+| Describes the image [registration](https://github.com/DeepMicroscopy/exact/blob/master/Registration.md) functionality |  [![Datasets](https://img.youtube.com/vi/hduXtr6EaMA/0.jpg)](https://www.youtube.com/watch?v=hduXtr6EaMA)  |
 | Explains collaboratory annotation features (de) |  [![Datasets](https://img.youtube.com/vi/qsX7MoYhDEM/0.jpg)](https://www.youtube.com/watch?v=qsX7MoYhDEM)  |
 | Shows multiple types of datasets (de)  |  [![Datasets](https://img.youtube.com/vi/yr6h2OffThU/0.jpg)](https://www.youtube.com/watch?v=yr6h2OffThU)  |
 | Explains the screening plugin for WSI (de) |  [![Datasets](https://img.youtube.com/vi/w7GHTEP2AYo/0.jpg)](https://www.youtube.com/watch?v=w7GHTEP2AYo)  |
 | Syncronisation with the offline tool SlideRunner (en)  |  [![Datasets](https://img.youtube.com/vi/ehrfC04okyE/0.jpg)](https://www.youtube.com/watch?v=ehrfC04okyE)  |
 | Advanced polygon annotation operations (de)  |  [![Datasets](https://img.youtube.com/vi/xVn9ghDQz1A/0.jpg)](https://www.youtube.com/watch?v=xVn9ghDQz1A)  |
-| REST-API Example | ```pip install EXCAT-Sync``` <br> [Code](https://github.com/ChristianMarzahl/EXACT-Sync) <br> [Notebooks](https://nbviewer.jupyter.org/github/ChristianMarzahl/Exact/tree/master/doc/) <br> [Browsable-API](https://documenter.getpostman.com/view/11308910/TVYF6xZo)|
+| REST-API Example | ```pip install EXCAT-Sync``` <br> [Code](https://github.com/ChristianMarzahl/EXACT-Sync) <br> [Notebooks](https://nbviewer.jupyter.org/github/DeepMicroscopy/Exact/tree/master/doc/) <br> [Browsable-API](https://documenter.getpostman.com/view/11308910/TVYF6xZo)|
 
 
 ## Install
@@ -95,7 +95,7 @@ Install Docker
 Checkout the latest release:
 
 ```
-git clone https://github.com/ChristianMarzahl/Exact.git
+git clone https://github.com/DeepMicroscopy/Exact.git
 ```
 
 #### Production
@@ -188,7 +188,7 @@ https://libvips.github.io/libvips/
 Checkout the latest release:
 
 ```
-git clone https://github.com/ChristianMarzahl/Exact.git
+git clone https://github.com/DeepMicroscopy/Exact.git
 ```
 
 In our production Senty is used for error reporting (pip install raven).
@@ -342,7 +342,7 @@ python3 manage.py migrate
 ```
 
 for additional steps on some releases see instructions
-in [UPGRADE.md](https://github.com/ChristianMarzahl/exact/blob/master/UPGRADE.md)
+in [UPGRADE.md](https://github.com/DeepMicroscopy/exact/blob/master/UPGRADE.md)
 
 
 
