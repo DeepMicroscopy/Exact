@@ -332,7 +332,7 @@ class OMETiffZStack:
                self.thumbnail = ThumbNail(self.filename, series=idx)
 
             else:
-               zstack[idx] = OMETiffSlide(self.filename, series=idx)
+               zstack[idx] = OMETiffSlide(self.filename)
 
 
         self.zstack = zstack
