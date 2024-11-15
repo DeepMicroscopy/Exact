@@ -247,6 +247,8 @@ IMAGE_PATH = os.path.join(BASE_DIR, 'images')  # the absolute path to the folder
 MEDIA_ROOT= os.path.join(BASE_DIR, 'media')
 MEDIA_URL= "/media/"
 
+SHOW_AVAILABLE_SPACE = True # Show how much space is still available on main drive
+
 SHOW_DEMO_DATASETS = False
 
 SHOW_PROCESSING_PANEL = False
