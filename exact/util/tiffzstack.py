@@ -84,14 +84,17 @@ class ThumbNail:
 class OMETiffSlide:
     filename: str
     data: Group = field(init=False, repr=False)
-
+    series: str
+    
     def __post_init__(self):
         # TODO: validate filename
         # TODO: validate series
         self.data = zarr.open(
-            imread(self.filename, aszarr=True), 
+            imread(self.filename, aszarr=True, series=self.series), 
             mode='r'
             )
+    
+        
         
 
     @property
