@@ -16,6 +16,7 @@
 
 	{% endblock %}
 	<title>EXACT Label Server</title>
+
 </head>
 
 <body>
@@ -39,7 +40,17 @@
 
 		<div id="navbar" class="navbar-collapse collapse">
 	{% endif %}
-			<ul class="nav navbar-nav ml-auto">
+
+
+	{% if SHOW_AVAILABLE_SPACE %}
+	<div id="spaceNotifier" class="badge  {% if warn_memory %} bg-danger {% else %} bg-secondary {% endif %}ml-auto">
+		<div>Used: {{ used_tb }} TB</div>
+		<div>Free: {{ free_tb }} TB</div>
+	  </div>
+	{% endif %}
+
+
+	<ul class="nav navbar-nav ml-auto">
 				<li class="nav-item"><a href="{% url 'images:index' %}" class="nav-link">Home</a>
 				</li>
 				{% block navblock %}{% endblock %}
@@ -68,6 +79,8 @@
 				{% endif %}
 				
 
+
+				
 				<li class="nav-item dropdown">
 					<a href="#" class="dropdown-toggle nav-link" data-toggle="dropdown" role="button"
 						aria-haspopup="true" aria-expanded="false" id="administrationNavbarDropdown">
