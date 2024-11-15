@@ -160,6 +160,10 @@ class ImageSlide3D(openslide.ImageSlide):
         # Any corner of the requested region may be outside the bounds of
         # the image.  Create a transparent tile of the correct size and
         # paste the valid part of the region into the correct location.
+
+        if (frame>=self.numberOfLayers):
+            frame=self.numberOfLayers-1
+            
         image_topleft = [max(0, min(l, limit - 1))
                     for l, limit in zip(location, self._image.size)]
         image_bottomright = [max(0, min(l + s - 1, limit - 1))
@@ -321,7 +325,7 @@ def getSlideHandler(path):
                     try:
                         return  filehandler(path)        
                     except Exception as e:
-                        print('Unable to open file handler. :-()')
+                        print('Unable to open file handler. :-()', e)
                         pass
         
         # as last resort, try openSlide:
@@ -338,6 +342,11 @@ class SlideCache(object):
         self.cache_size = cache_size
         self._lock = Lock()
         self._cache = OrderedDict()
+    
+    def reset(self):
+        with self._lock:
+            self._cache = OrderedDict()
+
 
     def get(self, path):
         with self._lock:
@@ -361,7 +370,6 @@ class SlideCache(object):
                 if len(self._cache) == self.cache_size:
                     self._cache.popitem(last=False)
                 self._cache[path] = slide
-        print('Added to cache')
         return slide
 
 class SlideFile(object):
