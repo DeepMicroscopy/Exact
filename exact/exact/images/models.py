@@ -178,7 +178,7 @@ class Image(models.Model):
                                 Image=self,
                                 frame_id=frame_id,
                                 file_path=target_file,
-                                frame_type=FrameDescription.FrameType.TIMESERIES,
+                                frame_type=FrameType.TIMESERIES,
                                 description='%.2f s (%d)' % (float(frame_id-1)/float(reader.fps), frame_id)
                         )
 
@@ -253,7 +253,7 @@ class Image(models.Model):
                                 Image=self,
                                 frame_id=frame_id,
                                 file_path=target_file,
-                                frame_type=FrameDescription.FrameType.TIMESERIES,
+                                frame_type=FrameType.TIMESERIES,
                                 description='%.2f s (%d)' % ((float(frame_id-1)/cap.get(cv2.CAP_PROP_FPS)), frame_id)
                         )
 
@@ -307,7 +307,7 @@ class Image(models.Model):
                                         Image=self,
                                         frame_id=frame_id,
                                         file_path=target_file,
-                                        frame_type=FrameDescription.FrameType.ZSTACK,
+                                        frame_type=FrameType.ZSTACK,
                                 )
 
                                 # save first frame as default file for thumbnail etc.
