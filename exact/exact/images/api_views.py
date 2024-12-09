@@ -400,6 +400,9 @@ class ImageViewSet(viewsets.ModelViewSet):
                 os.remove(os.path.join(imageset.root_path(), zipname))
                 filenames =  [f.filename for f in zip_ref.filelist]
                 filenames.sort()
+                # remove mrxs dat files
+                if any(".mrxs" in f for f in filenames):
+                    filenames = [name for name in filenames if ".mrxs" in name]
                 duplicat_count = 0
                 for filename in filenames:
                     file_path = os.path.join(imageset.root_path(), filename)
@@ -416,10 +419,13 @@ class ImageViewSet(viewsets.ModelViewSet):
                                     fchecksum.update(buf)
                             fchecksum = fchecksum.digest()
 
+
+
                             # check if vms is in any images then just save the vms files
                             # else for each jpg a new image will be created in the databse
                             if any(".vms" in f for f in filenames) and ".vms" in filename:
                                 file_list[file_path] = fchecksum
+                            
                             elif(any(".vms" in f for f in filenames) == False):
                                 file_list[file_path] = fchecksum
                         except IsADirectoryError:
