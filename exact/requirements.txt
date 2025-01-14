@@ -46,3 +46,4 @@ pyyaml>=6.0.1
 aicsimageio==4.11.0
 Werkzeug==2.3.7
 h5py==3.10.0
+slideio==2.6.5
