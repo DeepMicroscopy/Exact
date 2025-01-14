@@ -24,7 +24,7 @@ from util.cellvizio import ReadableCellVizioMKTDataset
 from openslide import OpenSlideError
 import tifffile
 from util.tiffzstack import OMETiffSlide, OMETiffZStack
-
+from util.slideio import SlideIOSlide
 from util.enums import FrameType
 
 
@@ -250,7 +250,7 @@ class NormalTiffFileType(FileType):
 class OlympusVSIFileType(FileType):
     magic_number = b'\x49\x49\x2a\x00' 
     extensions = ['vsi']
-    handler = TiffHandler
+    handler = SlideIOSlide
 
 class JPEGJFIFFileType(FileType):
     magic_number = b'\xff\xd8\xff\xe0'
@@ -324,7 +324,7 @@ def getSlideHandler(path):
                     try:
                         return  filehandler(path)        
                     except Exception as e:
-                        print('Unable to open file handler. :-()')
+                        print('Unable to open file handler. :-( ',e)
                         pass
         
         # as last resort, try openSlide:

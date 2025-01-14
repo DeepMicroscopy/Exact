@@ -403,6 +403,8 @@ class ImageViewSet(viewsets.ModelViewSet):
                 # remove mrxs dat files
                 if any(".mrxs" in f for f in filenames):
                     filenames = [name for name in filenames if ".mrxs" in name]
+                if any(".vsi" in f for f in filenames):
+                    filenames = [name for name in filenames if ".vsi" in name]
                 duplicat_count = 0
                 for filename in filenames:
                     file_path = os.path.join(imageset.root_path(), filename)

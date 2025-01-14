@@ -244,6 +244,9 @@ def upload_image(request, imageset_id):
                 if any(".vms" in f for f in filenames):
                     filenames = [name for name in filenames if ".vms" in name]
                 
+                # Clean other files from list if any vsi files were in the zip
+                if any(".vsi" in f for f in filenames):
+                    filenames = [name for name in filenames if ".vsi" in name]
 
                 filenames.sort()
                 duplicat_count = 0
