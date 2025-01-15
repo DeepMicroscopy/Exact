@@ -89,7 +89,7 @@ class SlideIOSlide():
 
 
     def get_thumbnail(self, size):
-        return self.scene.read_block(rect=self.scene.rect, size=size)
+        return Image.fromarray(self.scene.read_block(rect=self.scene.rect, size=size))
 
 
     def read_region(self, location: tuple, level:int, size:tuple, frame:int=0):
