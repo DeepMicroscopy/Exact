@@ -281,7 +281,13 @@ class DicomFileType(FileType):
     magic_number = b'DICM'
     extensions = 'dcm'
     magic_number_offset=128
-    handler = OpenSlideWrapper
+    handler = SlideIOSlide
+
+class ZeissCZIFile(FileType):
+    magic_number = b'\x5a\x49\x53\x52'
+    extensions = 'czi'
+    magic_number_offset = 0
+    handler = SlideIOSlide
 
 class MKTFileType(FileType):
     magic_number = b'\x0a\x3c\x43\x53'
@@ -290,8 +296,7 @@ class MKTFileType(FileType):
 
 
 
-
-SupportedFileTypes = [MKTFileType, DicomFileType, MiraxFileType, PhilipsISyntaxFileType, PNGFileType, JPEGEXIFFileType, JPEGJFIFFileType, OlympusVSIFileType, NormalTiffFileType, BigTiffFileType]
+SupportedFileTypes = [MKTFileType, DicomFileType, MiraxFileType, PhilipsISyntaxFileType, PNGFileType, JPEGEXIFFileType, JPEGJFIFFileType, OlympusVSIFileType, NormalTiffFileType, BigTiffFileType, ZeissCZIFile]
 
 
 
