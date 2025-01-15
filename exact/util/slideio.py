@@ -37,6 +37,12 @@ class SlideIOSlide():
         self.levels = [1]
         self.mpp_x = self.scene.resolution[0]*1e6
         self.mpp_y  = self.scene.resolution[1]*1e6
+        self.mode = 'RGBA' # normally, it is RGB not BGR
+
+        # Zeiss is funny and thinks BGR is the proper way to store images ...
+        if (os.path.splitext(filename.upper())[-1] == '.CZI'):
+            self.mode = 'BGRA'
+        
     
         #print('Circular mask shape:',self.circMask.shape)
         self.properties = { openslide.PROPERTY_NAME_BACKGROUND_COLOR:  '000000',
@@ -89,7 +95,7 @@ class SlideIOSlide():
 
 
     def get_thumbnail(self, size):
-        return Image.fromarray(self.scene.read_block(rect=self.scene.rect, size=size))
+        return Image.fromarray(self.scene.read_block(rect=[0, 0, *self.scene.rect[2:]], size=size))
 
 
     def read_region(self, location: tuple, level:int, size:tuple, frame:int=0):
@@ -97,7 +103,7 @@ class SlideIOSlide():
         img = self.scene.read_block(rect=[*location, int(size[0]/ds), int(size[1]/ds)], size=size)
         img_4ch = np.zeros([size[1], size[0],4], dtype=np.uint8)
         img_4ch[:,:,3] = 255
-        img_4ch[:,:,0:3] = img
+        img_4ch[:,:,0:3] = img if self.mode=='RGBA' else img[:,:,::-1]
         return Image.fromarray(img_4ch)
 
     @property
