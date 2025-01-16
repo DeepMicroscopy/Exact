@@ -7,7 +7,7 @@
 
 confusable-homoglyphs==3.3.1
 drf-flex-fields==1.0.2
-Django==4.2.11
+Django==4.2.18
 django-appconf==1.0.5
 django-extensions==3.2.3
 django-filter==23.5
@@ -18,8 +18,9 @@ django-registration==3.4
 django-templated-mail==1.1.1
 django-widget-tweaks==1.5.0
 djangorestframework==3.14.0
+djangorestframework==3.15.2
 djangorestframework-simplejwt==5.3.1
-djoser==2.2.2
+djoser==2.3.0
 zarr==2.15.0
 xmltodict==0.13.0
 uritemplate==4.1.1
@@ -37,13 +38,13 @@ pyvips>=2.2.1
 pydicom>=2.4.4
 ptvsd>=4.3.2
 czifile==2019.7.2
-gitpython==3.1.11
+GitPython==3.1.41
 gdown==5.1.0
 pandas==2.2.1
 qt-wsi-registration==0.0.13
 EXCAT-Sync>=0.0.38
 pyyaml>=6.0.1
 aicsimageio==4.11.0
-Werkzeug==2.3.7
+Werkzeug==3.0.6
 h5py==3.10.0
 slideio==2.6.5
