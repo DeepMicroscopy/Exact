@@ -236,16 +236,16 @@ def upload_image(request, imageset_id):
                 filenames = [f.filename for f in zip_ref.filelist]
 
                 # remove mrxs dat files
-                if any(".mrxs" in f for f in filenames):
+                if any(".mrxs" in f.lower() for f in filenames):
                     filenames = [name for name in filenames if ".mrxs" in name]
                 # remove vms data files
                 # check if vms is in any images then just save the vms files
                 # else for each jpg a new image will be created in the databse
-                if any(".vms" in f for f in filenames):
+                if any(".vms" in f.lower() for f in filenames):
                     filenames = [name for name in filenames if ".vms" in name]
                 
                 # Clean other files from list if any vsi files were in the zip
-                if any(".vsi" in f for f in filenames):
+                if any(".vsi" in f.lower() for f in filenames):
                     filenames = [name for name in filenames if ".vsi" in name]
 
                 filenames.sort()
@@ -522,7 +522,7 @@ def view_image_tile(request, image_id, z_dimension, frame, level, tile_path):
     buffer = tiles_cache.get(cache_key)
     if buffer is not None:
         load_from_drive_time = timer() - start
-        logger.info(f"{load_from_drive_time:.4f};{request.path};C")
+        #logger.info(f"{load_from_drive_time:.4f};{request.path};C")
         return HttpResponse(buffer, content_type='image/%s' % format)
 
     image = get_object_or_404(Image, id=image_id)
@@ -542,7 +542,7 @@ def view_image_tile(request, image_id, z_dimension, frame, level, tile_path):
             
         load_from_drive_time = timer() - start
 
-        logger.info(f"{load_from_drive_time:.4f};{request.path};NC")
+        #logger.info(f"{load_from_drive_time:.4f};{request.path};NC")
 
         if hasattr(cache, "delete_pattern"):
             tiles_cache.set(cache_key, buffer, 7*24*60*60)
