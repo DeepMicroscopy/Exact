@@ -273,6 +273,7 @@ LOGGING = {
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
+            'level' : 'ERROR',
         },
         'file_info': {
             'level': 'INFO',
