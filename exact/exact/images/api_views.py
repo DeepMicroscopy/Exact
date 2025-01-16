@@ -135,11 +135,8 @@ class ImageViewSet(viewsets.ModelViewSet):
         format = results.group(3)
         cache_key = f"{image_id}/{z_dimension}/{frame}/{level}/{col}/{row}"
 
-        start = timer()
         buffer = tiles_cache.get(cache_key)
         if buffer is not None:
-            load_from_drive_time = timer() - start
-            logger.info(f"{load_from_drive_time:.4f};{request.path};C")
             return HttpResponse(buffer, content_type='image/%s' % format)
 
         image = get_object_or_404(models.Image, id=image_id)            
@@ -154,9 +151,6 @@ class ImageViewSet(viewsets.ModelViewSet):
             tile.save(buf, format, quality=90)
             buffer = buf.getvalue()
                 
-            load_from_drive_time = timer() - start
-
-            logger.info(f"{load_from_drive_time:.4f};{request.path}")
 
             if hasattr(cache, "delete_pattern"):
                 tiles_cache.set(cache_key, buffer, 7*24*60*60)
@@ -245,10 +239,8 @@ class ImageViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['GET'], name='Get Thumbnail for image PK')
     def thumbnail(self, request, pk=None):
 
-        start = timer()
         buffer = cache.get(f"{pk}_thumbnail")
         if buffer is not None:
-            logger.info(f"{timer() - start:.4f};{request.path};C")
             return HttpResponse(buffer, content_type='image/png')
 
         image = get_object_or_404(models.Image, id=pk)
@@ -268,7 +260,6 @@ class ImageViewSet(viewsets.ModelViewSet):
         if hasattr(cache, "delete_pattern"):
             cache.set(f"{pk}_thumbnail", buffer, None)
 
-        logger.info(f"{timer() - start:.4f};{request.path};")
         return HttpResponse(buffer, content_type='image/png')
 
     @action(detail=True, methods=['GET'], name='Get slide information from image PK')
