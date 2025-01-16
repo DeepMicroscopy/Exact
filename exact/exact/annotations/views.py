@@ -41,7 +41,7 @@ def export_auth(request, export_id):
 
 @login_required
 def annotate(request, image_id):
-    start = timer()
+    #start = timer()
     show_processing=request.user.has_perm('processing.use_server_side_plugins') & settings.SHOW_PROCESSING_PANEL
     selected_image = get_object_or_404(Image, id=image_id)
     imageset_perms = selected_image.image_set.get_perms(request.user)
@@ -104,7 +104,7 @@ def annotate(request, image_id):
             "USE_CDN_WSI": settings.USE_CDN_WSI
         })
         
-        logger.info(f"{timer() - start:.4f};Load annotation page")
+        # logger.info(f"{timer() - start:.4f};Load annotation page")
         return response
     else:
         return redirect(reverse('images:view_imageset', args=(selected_image.image_set.id,)))

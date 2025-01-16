@@ -369,7 +369,7 @@ class SlideCache(object):
                 if len(self._cache) == self.cache_size:
                     self._cache.popitem(last=False)
                 self._cache[path] = slide
-        print('Added to cache')
+#        print('Added to cache')
         return slide
 
 class SlideFile(object):
