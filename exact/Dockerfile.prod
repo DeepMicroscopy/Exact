@@ -4,18 +4,22 @@
 
 
 # pull official base image
-FROM ubuntu:22.04 as builder
+FROM ubuntu:24.04 AS builder
 
 # set work directory
 WORKDIR /usr/src/app
 
-RUN apt-get update && apt-get install -y python3-pip dos2unix\
+RUN apt-get update && apt-get install -y python3-pip python3-venv dos2unix\
     && rm -rf /var/lib/apt/lists/*
 
 
 # set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
+
+RUN python3 -m venv /opt/venv
+# Enable venv
+ENV PATH="/opt/venv/bin:$PATH"
 
 
 # lint
@@ -46,14 +50,15 @@ RUN chmod +x /usr/src/app/entrypoint.prod.sh
 #########
 
 
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 # create directory for the app user
 RUN mkdir -p /home/app
 
+RUN apt-get update && apt-get install adduser
 # create the app user
-RUN addgroup --system  app --gid 1001
-RUN adduser --system --group app 
+RUN /usr/sbin/addgroup --system  app --gid 1001
+RUN /usr/sbin/adduser --system --group app 
 
 # create the appropriate directories
 ENV HOME=/home/app
@@ -66,12 +71,16 @@ WORKDIR $APP_HOME
 
 ENV DEBIAN_FRONTEND="noninteractive" TZ="SystemV"
 # install dependencies
-RUN apt-get update && apt-get install -y python3-pip python3-openslide libvips libvips-dev python3-opencv  netcat \
+RUN apt-get update && apt-get install -y python3-pip python3-venv python3-openslide libvips libvips-dev python3-opencv  netcat-traditional \
     && rm -rf /var/lib/apt/lists/*
 
 
 COPY --from=builder /usr/src/app/wheels /wheels
 COPY --from=builder /usr/src/app/requirements.txt .
+RUN python3 -m venv /opt/venv
+# Enable venv
+ENV PATH="/opt/venv/bin:$PATH"
+
 RUN pip3 install --upgrade pip
 RUN pip3 install numpy==1.26.0
 RUN pip3 install --no-cache /wheels/*
