@@ -5,7 +5,7 @@ FROM ubuntu:24.04 AS builder
 WORKDIR /usr/src/exact
 
 ENV DEBIAN_FRONTEND="noninteractive" TZ="SystemV"
-RUN apt-get update && apt-get install -y python3-pip python3-venv dos2unix python3-openslide python3-opencv  libvips libvips-dev netcat\
+RUN apt-get update && apt-get install -y python3-pip python3-venv dos2unix python3-openslide python3-opencv  libvips libvips-dev netcat-traditional\
     && rm -rf /var/lib/apt/lists/*
 
 # set environment variables
