@@ -1,16 +1,20 @@
 # pull official base image
-FROM ubuntu:22.04 as builder
+FROM ubuntu:24.04 AS builder
 
 # set work directory
 WORKDIR /usr/src/exact
 
 ENV DEBIAN_FRONTEND="noninteractive" TZ="SystemV"
-RUN apt-get update && apt-get install -y python3-pip dos2unix python3-openslide python3-opencv  libvips libvips-dev netcat\
+RUN apt-get update && apt-get install -y python3-pip python3-venv dos2unix python3-openslide python3-opencv  libvips libvips-dev netcat\
     && rm -rf /var/lib/apt/lists/*
 
 # set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
+
+RUN python3 -m venv /opt/venv
+# Enable venv
+ENV PATH="/opt/venv/bin:$PATH"
 
 # install dependencies
 RUN pip3 install --upgrade pip
