@@ -367,10 +367,16 @@ class Image(models.Model):
             raise
 
     def __str__(self):
-        return u'Image: {0} (Image Set: {1}, Team: {2})'.format(self.name, self.image_set.name, self.image_set.team.name)
+        try:
+            return u'Image: {0} (Image Set: {1}, Team: {2})'.format(self.name, self.image_set.name, self.image_set.team.name)
+        except:
+            return u'Image: {0}'.format(self.name)
 
     def __repr__(self):
-        return u'Image: {0} (Image Set: {1}, Team: {2})'.format(self.name, self.image_set.name, self.image_set.team.name)
+        try:
+            return u'Image: {0} (Image Set: {1}, Team: {2})'.format(self.name, self.image_set.name, self.image_set.team.name)
+        except:
+            return u'Image: {0}'.format(self.name)
 
 # Image signals for del the cache
 @receiver([post_save, post_delete, m2m_changed], sender=Image)
