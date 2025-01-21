@@ -114,6 +114,10 @@ class ImageFilterSet(django_filters.FilterSet):
         return queryset
 
 
+class AuxiliaryFileViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.DjangoModelPermissions]
+    serializer_class = serializers.AuxiliaryFileSerializer
+
 
 class ImageViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
@@ -458,13 +462,22 @@ class ImageViewSet(viewsets.ModelViewSet):
                     path = Path(path)
                     name = path.name
 
-                    image = models.Image(
-                        name=name,
-                        image_set=imageset,
-                        checksum=fchecksum)
+                    if (Path(path).suffix.lower().endswith(".csv") or Path(path).suffix.lower().endswith(".txt") or 
+                        Path(path).suffix.lower().endswith(".json") or Path(path).suffix.lower().endswith(".sqlite")):
+                        # This is an auxiliary file, not an image. 
+                        newFile = models.AuxiliaryFile(image_set=imageset, name=name, filesize=os.path.getsize(path))
+                        images.append(newFile)
 
-                    image.save_file(path)
-                    images.append(image)
+                    else:
+
+
+                        image = models.Image(
+                            name=name,
+                            image_set=imageset,
+                            checksum=fchecksum)
+
+                        image.save_file(path)
+                        images.append(image)
 
                 except Exception as e:
                     errors.append(e.message)

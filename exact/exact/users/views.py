@@ -294,7 +294,6 @@ def user(request, user_id):
 
 
 
-    print('PW Matching: ',passwordmatching)
 
     return render(request, 'users/view_user.html', {
         'user': user,
