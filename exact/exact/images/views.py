@@ -29,7 +29,7 @@ from django.views.decorators.cache import cache_page
 from rest_framework.settings import api_settings
 
 from exact.images.api_views import ImageSetViewSet
-from exact.images.serializers import ImageSetSerializer, ImageSerializer, SetTagSerializer, serialize_imageset
+from exact.images.serializers import ImageSetSerializer, ImageSerializer, SetTagSerializer, serialize_imageset, AuxiliaryFileSerializer
 from exact.images.forms import ImageSetCreationForm, ImageSetCreationFormWT, ImageSetEditForm
 from exact.annotations.views import api_copy_annotation
 from exact.users.forms import TeamCreationForm
@@ -38,7 +38,7 @@ from exact.tagger_messages.forms import TeamMessageCreationForm
 from exact.administration.models import Product
 from exact.administration.serializers import ProductSerializer
 
-from .models import ImageRegistration, ImageSet, Image, SetTag
+from .models import ImageRegistration, ImageSet, Image, SetTag, AuxiliaryFile
 from .forms import LabelUploadForm, CopyImageSetForm
 from exact.annotations.models import Annotation, Export, ExportFormat, \
     AnnotationType, Verification, LogImageAction
@@ -313,12 +313,21 @@ def upload_image(request, imageset_id):
                     path = Path(path)
                     name = path.name
 
-                    image = Image(
-                        name=name,
-                        image_set=imageset,
-                        checksum=fchecksum)
+                    if (Path(path).suffix.lower().endswith(".csv") or Path(path).suffix.lower().endswith(".txt") or 
+                        Path(path).suffix.lower().endswith(".json") or Path(path).suffix.lower().endswith(".sqlite")):
+                        # This is an auxiliary file, not an image. 
 
-                    image.save_file(path)
+                        image = AuxiliaryFile(image_set=imageset, name=name, filesize=os.path.getsize(path), creator = request.user)
+                        image.save()
+                        type='auxfile'
+
+                    else:
+                        image = Image(
+                            name=name,
+                            image_set=imageset,
+                            checksum=fchecksum)
+                        type='image'
+                        image.save_file(path)
                 except Exception as e:
                     import sys
                     import traceback
@@ -360,11 +369,8 @@ def upload_image(request, imageset_id):
             if errormessage == '':
                 json_files.append({'name': f.name,
                                    'size': f.size,
+                                   'type': type,
                                    'id' : image.id,
-                                   # 'url': reverse('images_imageview', args=(image.id, )),
-                                   # 'thumbnailUrl': reverse('images_imageview', args=(image.id, )),
-                                   # 'deleteUrl': reverse('images_imagedeleteview', args=(image.id, )),
-                                   # 'deleteType': "DELETE",
                                    })
             else:
                 json_files.append({'name': f.name,
@@ -633,6 +639,26 @@ def download_image_api(request, image_id) -> Response:
 
         response['Content-Length'] = os.path.getsize(file_path)
         response['Content-Disposition'] = "attachment; filename={}".format(file_path.name)
+
+    return response
+
+@api_view(['GET'])
+def download_auxfile_api(request, auxfile_id) -> Response:
+    original_image = request.GET.get("original_image", None)
+    image = get_object_or_404(AuxiliaryFile, id=auxfile_id)
+    if not image.image_set.has_perm('read', request.user):
+        return Response({'message': 'you do not have the permission to access this imageset'
+        }, status=HTTP_403_FORBIDDEN)
+
+    file_path = Path(settings.IMAGE_PATH) / image.path()
+    if original_image is not None and 'True' == original_image:
+        file_path =  Path(image.original_path())
+    
+    
+    response = FileResponse(open(str(file_path), 'rb'), content_type='application/octet-stream')
+
+    response['Content-Length'] = os.path.getsize(file_path)
+    response['Content-Disposition'] = "attachment; filename={}".format(file_path.name)
 
     return response
 

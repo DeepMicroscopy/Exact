@@ -53,7 +53,11 @@
     {% endverbatim %}
     <img class="card-img-top image" src="{% static 'images/upload_failed.svg' %}">
     {% verbatim %}
-    {% } else { %}
+    {% } else if (file.type == "auxfile") { %}
+    {% endverbatim %}
+    <a><img class="card-img-top image" src="{% static 'images/aux_file.svg' %}"></a>
+    {% verbatim %}
+    {% } else  { %}
     {% endverbatim %}
     <a href="{% url 'annotations:annotate_without_parameters' %}{% verbatim %}{%=file.id%}/">
         <img class="card-img-top image" src="{% endverbatim %}{{ api }}{% verbatim %}v1/images/images/{%=file.id%}/thumbnail">
@@ -90,7 +94,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="renameModalLabel">Rename Item</h5>
+                <h5 class="modal-title" id="renameModalLabel">Edit Item</h5>
                 <button type="button" class="btn-close" data-dismiss="modal" aria-label="Close">X</button>
             </div>
             <div class="modal-body">
@@ -300,8 +304,27 @@
         </div>
         <p></p>          
         {% endfor %} 
-        </div>    
+         
         </div>
+
+        <br>
+        <div>
+        <div class="card">
+            <h4><img src="{% static "images/clipboard-data.svg" %}"> Auxiliary Files</h4>
+            <div class="card">
+                <ul>
+                {% for auxfile in imageset.auxiliary_files.all %}
+                <li>
+                    
+
+                    {{ auxfile.name  }} <a href="{% url 'images:download_auxfile' auxfile.id %}"><img src="{% static 'images/download.svg' %}"></a>
+                </li>
+                {% endfor %}
+            </div>
+
+        </div>   
+        </div>
+
     </div>
 
         <!-- END: Images tab -->
