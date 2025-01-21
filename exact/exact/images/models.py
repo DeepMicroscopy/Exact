@@ -571,7 +571,7 @@ class ImageSet(models.Model):
         return permission in self.get_perms(user)
 
     def __str__(self):
-        return u'Imageset: {0} (Team: {1})'.format(self.name, self.team.name)
+        return u'Imageset: {0} (Team: {1})'.format(self.name, self.team.name if self.team else 'unknown team')
 
 
 
