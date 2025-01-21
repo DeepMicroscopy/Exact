@@ -35,6 +35,28 @@ class ImageSerializer(FlexFieldsModelSerializer):
             "FrameDescriptions" : ('exact.images.serializers.FrameDescriptionSerializer', {'read_only': True, 'many':True}),
         }
 
+class AuxiliaryFileSerializer(FlexFieldsModelSerializer):
+    class Meta:
+        model = Image
+        fields = (
+            'id',
+            'name',
+            'filename',
+            'description',
+            'creator',
+            'associated_to_image',
+            'time',
+            'filesize',
+            'image_set',
+        )
+
+        expandable_fields = {
+            "image_set": ('exact.images.serializers.ImageSetSerializer', {'read_only': True}),
+            "associated_to_image": ('exact.images.serializers.ImageSerializer', {'read_only': True}),
+        }
+
+
+
 
 class SetTagSerializer(FlexFieldsModelSerializer):
     class Meta:

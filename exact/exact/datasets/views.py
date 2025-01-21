@@ -18,7 +18,7 @@ from exact.users.models import User, Team
 from exact.administration.models import Product
 from exact.annotations.models import Annotation, AnnotationType
 from exact.datasets.forms import DatasetForm, MITOS_WSI_CMCDatasetForm, CATCH_DatasetForm
-from exact.images.models import ImageSet, Image
+from exact.images.models import AuxiliaryFile, ImageSet, Image
 from exact.images.views import view_imageset
 
 

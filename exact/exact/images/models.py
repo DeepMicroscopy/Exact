@@ -367,10 +367,10 @@ class Image(models.Model):
             raise
 
     def __str__(self):
-        return u'Image: {0}'.format(self.name)
+        return u'Image: {0} (Image Set: {1}, Team: {2})'.format(self.name, self.image_set.name, self.image_set.team.name)
 
     def __repr__(self):
-        return u'Image: {0}'.format(self.name)
+        return u'Image: {0} (Image Set: {1}, Team: {2})'.format(self.name, self.image_set.name, self.image_set.team.name)
 
 # Image signals for del the cache
 @receiver([post_save, post_delete, m2m_changed], sender=Image)
@@ -379,6 +379,40 @@ def image_changed_handler(sender, instance, **kwargs):
     # delte cached imageset information used in JS
     if hasattr(cache, "delete_pattern"):
         cache.delete_pattern(f"*/api/v1/images/image_sets/{instance.image_set_id}/*")
+
+class AuxiliaryFile(models.Model):
+    name = models.CharField(max_length=256)
+    filesize = models.IntegerField()
+    location = models.CharField(max_length=256, null=True, blank=True)
+    description = models.TextField(max_length=1000, null=True, blank=True)
+    associated_to_image = models.ForeignKey(Image,
+                                            on_delete=models.SET_NULL,
+                                            null=True)
+    time = models.DateTimeField(auto_now_add=True)
+    image_set = models.ForeignKey(
+        'ImageSet', on_delete=models.CASCADE, related_name='auxiliary_files')
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL,
+                                default=None,
+                                on_delete=models.SET_NULL,
+                                null=True,
+                                blank=True)
+    
+
+    def path(self):
+        return os.path.join(self.image_set.root_path(), self.name)
+
+    def delete(self, *args, **kwargs):
+        #self.image_set.zip_state = ImageSet.ZipState.INVALID
+        #self.image_set.save(update_fields=('zip_state',))
+        file_path = Path(settings.IMAGE_PATH) / self.path()
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        super(AuxiliaryFile, self).delete(*args, **kwargs)
+
+    def __str__(self):
+        return '%s (ImageSet: %s, Team: %s) ' % (self.name, self.image_set.name, self.image_set.team.name)
+
+    
 
 class ImageSet(models.Model):
     class Meta:
@@ -537,7 +571,9 @@ class ImageSet(models.Model):
         return permission in self.get_perms(user)
 
     def __str__(self):
-        return u'Imageset: {0}'.format(self.name)
+        return u'Imageset: {0} (Team: {1})'.format(self.name, self.team.name)
+
+
 
     @property
     def prio_symbol(self):
