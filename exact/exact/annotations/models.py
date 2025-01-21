@@ -89,7 +89,7 @@ class Annotation(models.Model):
     meta_data = models.JSONField(null=True)
 
     def __str__(self):
-        return 'Annotation: {0}'.format(self.annotation_type.name)
+        return 'Annotation: {0} (image: {1}, image set: {2}, team: {3})'.format(self.annotation_type.name, self.image.name, self.image.image_set.name, self.image.image_set.team.name)
 
     @property
     def concealed(self):
