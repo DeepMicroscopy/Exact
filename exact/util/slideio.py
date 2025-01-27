@@ -66,28 +66,27 @@ class SlideIOSlide():
 
     @property 
     def nFrames(self):
-        return 0
+        return self.scene.num_z_slices
     
     @property
     def frame_descriptors(self) -> list[str]:
         """ returns a list of strings, used as descriptor for each frame
         """
-        return 0
+        return ['%.2f µ' % (self.scene.z_resolution*1E6*x) for x in range(self.scene.num_z_slices)]
 
     @property
-    def frame_descriptors(self) -> list[str]:
+    def default_frame(self):
         return 0
-
 
     @property 
     def nLayers(self):
-        return self.scene.num_z_slices
+        return 1
 
     @property
     def layer_descriptors(self) -> list[str]:
         """ returns a list of strings, used as descriptor for each layer
         """
-        return ['%.2f µ' % (self.scene.z_resolution*1E6*x) for x in range(self.scene.num_z_slices)]
+        return []
 
     @property
     def frame_type(self):
@@ -100,7 +99,7 @@ class SlideIOSlide():
 
     def read_region(self, location: tuple, level:int, size:tuple, frame:int=0):
         ds = self.scene.get_zoom_level_info(level).scale
-        img = self.scene.read_block(rect=[*location, int(size[0]/ds), int(size[1]/ds)], size=size)
+        img = self.scene.read_block(rect=[*location, int(size[0]/ds), int(size[1]/ds)], size=size, slices=(frame, frame+1))
         img_4ch = np.zeros([size[1], size[0],4], dtype=np.uint8)
         img_4ch[:,:,3] = 255
         img_4ch[:,:,0:3] = img if self.mode=='RGBA' else img[:,:,::-1]
