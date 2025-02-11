@@ -496,7 +496,7 @@ def view_image_navigator_overlay_tile(request, image_id, z_dimension, frame, lev
     file_path = os.path.join(settings.IMAGE_PATH, image.path())
     slide = image_cache.get(file_path)
 
-    tile = slide.get_tile(level, (col, row), frame=frame)
+    tile = slide.get_tile(level, (col, row), frame=min(frame, image.frames-1))
  
     # replace with databse call to imageset.product
     for product in image.image_set.product_set.all():
@@ -540,7 +540,7 @@ def view_image_tile(request, image_id, z_dimension, frame, level, tile_path):
     try:
         slide = image_cache.get(file_path)
 
-        tile = slide.get_tile(level, (col, row),frame=frame)
+        tile = slide.get_tile(level, (col, row),frame=min(frame, image.frames-1))
 
         buf = PILBytesIO()
         tile.save(buf, format, quality=90)
@@ -553,7 +553,8 @@ def view_image_tile(request, image_id, z_dimension, frame, level, tile_path):
         if hasattr(cache, "delete_pattern"):
             tiles_cache.set(cache_key, buffer, 7*24*60*60)
         return HttpResponse(buffer, content_type='image/%s' % format)
-    except:
+    except Exception as e:
+        print('Error: ',e)
         return HttpResponseBadRequest()
 
 
