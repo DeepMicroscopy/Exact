@@ -81,6 +81,14 @@ class OpenSlideWrapper(openslide.OpenSlide):
         return openslide.OpenSlide.read_region(self, location, level, size)
 
 
+    def __init__(self, slide_path):
+        super().__init__(slide_path)
+        self.slide_path = slide_path  # Store path for later reconstruction
+
+    def __reduce__(self):
+        # Define how to pickle the object
+        return (self.__class__, (self.slide_path,))
+
 
 class OMETiffSlideWrapper(OMETiffSlide):
     
@@ -101,6 +109,13 @@ class OMETiffSlideWrapper(OMETiffSlide):
     def read_region(self, location, level, size, frame=0):
         return super().read_region(location, level, size)
 
+    def __init__(self, slide_path):
+        super().__init__(slide_path)
+        self.slide_path = slide_path  # Store path for later reconstruction
+
+    def __reduce__(self):
+        # Define how to pickle the object
+        return (self.__class__, (self.slide_path,))
 
 
 
@@ -112,8 +127,19 @@ class ImageSlideWrapper(openslide.ImageSlide):
     def read_region(self, location, level, size, zLevel=0, frame=0):
         return openslide.ImageSlide.read_region(self, location, level, size)
 
+    def __init__(self, slide_path):
+        super().__init__(slide_path)
+        self.slide_path = slide_path  # Store path for later reconstruction
+
+    def __reduce__(self):
+        # Define how to pickle the object
+        return (self.__class__, (self.slide_path,))
 
 class ImageSlide3D(openslide.ImageSlide):
+
+    def __reduce__(self):
+        # Define how to pickle the object
+        return (self.__class__, (self.slide_path,))
 
     @property 
     def nFrames(self):
@@ -137,6 +163,8 @@ class ImageSlide3D(openslide.ImageSlide):
         """Open an image file.
 
         file can be a filename or a PIL.Image."""
+
+        self.slide_path = file
         openslide.ImageSlide.__init__(self, file)
 
         try:
@@ -202,6 +230,10 @@ class GenericTiffHandler:
     """
        A generic TIFF handler that uses OpenSlide whereever possible and needed but allows for the use of more sophisticated drop-ins
     """    
+    def __reduce__(self):
+        # Define how to pickle the object
+        return (self.__class__, (self.slide_path,))
+
     def __new__(self, file):
         
         # Check if it's an OME TIFF
@@ -223,7 +255,7 @@ class GenericTiffHandler:
 
 
 class TiffHandler(openslide.OpenSlide):
-    
+
     def __new__(self, file):
         vendor = openslide.lowlevel.detect_vendor(file)
         if vendor in vendor_handlers:
@@ -244,8 +276,13 @@ class BigTiffFileType(FileType):
 
 class NormalTiffFileType(FileType):
     magic_number = b'\x49\x49\x2a\x00' 
-    extensions = ['tiff', 'tif', 'ndpi']
+    extensions = ['tiff', 'tif']
     handler = TiffHandler
+
+class HamamatsuTiffFileType(FileType):
+    magic_number = b'\x49\x49\x2a\x00' 
+    extensions = ['ndpi']
+    handler = OpenSlideWrapper
 
 class OlympusVSIFileType(FileType):
     magic_number = b'\x49\x49\x2a\x00' 
@@ -312,7 +349,7 @@ def getSlideHandler(path):
         f = open(path,'rb')
         magic_number = {0: f.read(4)}
         candidates=[]
-        #print('Magic number:',[hex(x) for x in magic_number[0]])
+        print('Magic number:',[hex(x) for x in magic_number[0]])
         for ftype in SupportedFileTypes:
             mnum = magic_number
             if ftype.magic_number_offset not in magic_number:

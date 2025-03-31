@@ -86,6 +86,10 @@ class OMETiffSlide:
     data: Group = field(init=False, repr=False)
     series: str
     
+    def __reduce__(self):
+        # Define how to pickle the object
+        return (self.__class__, (self.filename,))
+
     def __post_init__(self):
         # TODO: validate filename
         # TODO: validate series
@@ -211,6 +215,9 @@ class OMETiffZStack:
     labelimage: LabelImage = field(init=False, repr=False)
     thumbnail: ThumbNail = field(init=False, repr=False)
 
+    def __reduce__(self):
+        # Define how to pickle the object
+        return (self.__class__, (self.filename,))
 
     def __post_init__(self):
         self.tif = TiffFile(self.filename)
