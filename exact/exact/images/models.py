@@ -833,15 +833,19 @@ class ImageRegistration(models.Model):
                 "filter_outliner": filter_outliner,
                 "debug": False,
                 "target_depth": target_depth,
-                "run_async": False,
+                "run_async": True,
+                "num_workers": 4,
                 "thumbnail_size": thumbnail_size
             }
+        
+        source_image = getSlideHandler(self.source_image.path())
+        target_image = getSlideHandler(self.target_image.path())
 
-        soure_path = self.source_image.path()
-        targert_path = self.target_image.path()
+        print('Registering: ',self.source_image.path(),'and',self.target_image.path())
 
-        qtree = registration.RegistrationQuadTree(source_slide_path=soure_path, target_slide_path=targert_path, **parameters)
+        qtree = registration.RegistrationQuadTree(source_slide=source_image, target_slide=target_image, **parameters)
         self.registration_error = qtree.mean_reg_error
+        print('Registration error: ', self.registration_error)
         self.runtime = qtree.run_time
         self.transformation_matrix = {"t_00": qtree.get_homography[0][0], "t_01": qtree.get_homography[0][1], "t_02": qtree.get_homography[0][2], 
                                       "t_10": qtree.get_homography[1][0], "t_11": qtree.get_homography[1][1], "t_12": qtree.get_homography[1][2], 

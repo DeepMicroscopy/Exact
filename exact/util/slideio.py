@@ -21,6 +21,9 @@ class SlideIOSlide():
     Returns:
         [type]: [description]
     """
+    def __reduce__(self):
+        # Define how to pickle the object
+        return (self.__class__, (self.fileName,))
 
     def __init__(self,filename):
         self.fileName = filename
