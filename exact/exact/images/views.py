@@ -635,6 +635,18 @@ def download_image_api(request, image_id) -> Response:
 
         response = HttpResponse(content.getvalue(), content_type='application/zip')
         response['Content-Disposition'] = "attachment; filename={}".format(file_path.name+'.zip')
+    elif file_path.suffix.upper() == '.VSI': # VSI files have to be zipped before as well, but using a different naming scheme
+        # strip the suffix and add underscores around the stem. This is weird, but thats how Olympus do it.
+        folder_path = (file_path.with_suffix('').with_stem('_'+file_path.stem+'_'))
+        content = BytesIO()
+
+        with zipfile.ZipFile(content, 'w') as f:
+                for filename in os.listdir(str(folder_path)):
+                    f.write(os.path.join(str(folder_path), filename), os.path.join(folder_path.parts[-1],filename))
+                f.write(str(file_path), file_path.parts[-1])
+
+        response = HttpResponse(content.getvalue(), content_type='application/zip')
+        response['Content-Disposition'] = "attachment; filename={}".format(file_path.name+'.zip')
     else:
         response = FileResponse(open(str(file_path), 'rb'), content_type='application/zip')
 
