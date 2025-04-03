@@ -10,7 +10,7 @@ from django.db.models.expressions import F
 from django.views.decorators.http import require_http_methods
 from django.urls import reverse
 from django.http import HttpResponseForbidden, HttpResponse, HttpResponseBadRequest, JsonResponse, \
-    FileResponse, HttpRequest
+    FileResponse, HttpRequest, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.response import TemplateResponse
 from django.utils.translation import gettext_lazy as _
@@ -86,6 +86,11 @@ try:
     tiles_cache = caches['tiles_cache']
 except:
     tiles_cache = cache
+
+
+def file_iterator(file_obj, chunk_size=8192):
+    while chunk := file_obj.read(chunk_size):
+        yield chunk
 
 @login_required
 def explore_imageset(request, *args, **kwargs):
@@ -633,20 +638,33 @@ def download_image_api(request, image_id) -> Response:
                     f.write(os.path.join(str(folder_path), filename), os.path.join(folder_path.parts[-1],filename))
                 f.write(str(file_path), file_path.parts[-1])
 
-        response = HttpResponse(content.getvalue(), content_type='application/zip')
+        content.seek(0)
+        response = StreamingHttpResponse(file_iterator(content), content_type='application/zip')
         response['Content-Disposition'] = "attachment; filename={}".format(file_path.name+'.zip')
     elif file_path.suffix.upper() == '.VSI': # VSI files have to be zipped before as well, but using a different naming scheme
         # strip the suffix and add underscores around the stem. This is weird, but thats how Olympus do it.
-        folder_path = (file_path.with_suffix('').with_stem('_'+file_path.stem+'_'))
+        folder_path = file_path.with_suffix('')
+        folder_path = folder_path.parent / f"_{folder_path.stem}_"
+
         content = BytesIO()
-
         with zipfile.ZipFile(content, 'w') as f:
-                for filename in os.listdir(str(folder_path)):
-                    f.write(os.path.join(str(folder_path), filename), os.path.join(folder_path.parts[-1],filename))
-                f.write(str(file_path), file_path.parts[-1])
+                for subfolder in folder_path.iterdir():
+                    subfolder_path = folder_path / subfolder.name
+                    archive_subfolder = Path(folder_path.parts[-1]) / subfolder.name
+                    f.write(subfolder_path, str(archive_subfolder))
 
-        response = HttpResponse(content.getvalue(), content_type='application/zip')
-        response['Content-Disposition'] = "attachment; filename={}".format(file_path.name+'.zip')
+                    # Check if subfolder_path is actually a directory before listing files
+                    if subfolder_path.is_dir():
+                        for file in subfolder_path.iterdir():
+                            archive_file_path = archive_subfolder / file.name
+                            f.write(file, str(archive_file_path))
+
+                # Ensure the original VSI file is included in the correct location
+                archive_vsi_path = Path(folder_path.parts[-1]) / file_path.name
+                f.write(file_path, str(archive_vsi_path))
+        content.seek(0)
+        response = StreamingHttpResponse(file_iterator(content), content_type='application/zip')
+        response['Content-Disposition'] = f'attachment; filename="{file_path.name}.zip"'
     else:
         response = FileResponse(open(str(file_path), 'rb'), content_type='application/zip')
 
