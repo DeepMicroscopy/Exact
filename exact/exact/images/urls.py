@@ -41,6 +41,7 @@ urlpatterns = [
     re_path(r'^imageset/(\d+)/delete/$', views.delete_imageset, name='delete_imageset'),
     re_path(r'^imageset/(\d+)/pin/$', views.toggle_pin_imageset, name='pin_imageset'),
     re_path(r'^imageset/(\d+)/edit/$', views.edit_imageset, name='edit_imageset'),
+    re_path(r'^image/manual_registration/(\d+)/(\d+)', views.manual_registration, name='annotate_manually'),
 
     re_path(r'^imageset/(\d+)/annotation_map/create/$', views.create_annotation_map, name='create_annotation_map'),
     re_path(r'^imageset/(\d+)/annotation_map/sync/$', views.sync_annotation_map, name='sync_annotation_map'),
