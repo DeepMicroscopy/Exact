@@ -16,6 +16,20 @@
 <script type="text/javascript" src="{% static 'annotations/js/bootstrap-slider.min.js' %}"></script>
 {% endblock additional_header_js %}
 {% block bodyblock %}
+{% if warn_existing %}
+<div style="width:80%" class="table-row card"> <h2>Warning: Registration already exists.</h2>
+<br>
+    Do you want to delete the current registration?
+    <br>
+    <form id="submit-form" method="POST" action="{% url 'images:annotate_manually' source target %}">
+        {% csrf_token %}
+        <input type="submit" class="btn-primary btn-danger" name="delete_current" value="Delete current registration">
+    </form>
+    <br>
+</div>
+
+
+{% else %}
 
 <div class="container-fluid" style="padding-top:0px;position:absolute;left:0px; top:60px;height: calc(100vh - 60px)">
     <div class="row justify-content-center" style="padding: 0px;height: calc(100vh - 60px); overflow-y:hidden">
@@ -85,19 +99,23 @@
                 {% if not offset %}
                 Find a matching point in the left and the right image.
                 Click on "proceed" for next point.
-                {% elif not step4 %}
+                {% elif step4 and not step5 and rotation %}
                 <h4><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle" viewBox="0 0 16 16">
                     <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
                     <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0"/>
                   </svg> Your registration is either not accurate or does include a rotation. </h4>
                   The current measured error is: {{ error }}<br>
                   You can now select a fourth point and click "Point 4 selected", or just store the registration with "Save registration".
+                {% elif step4 and not step5 %}
+                <h2>Registration seems fine </h2>
+                The current measured error is: {{ error }}<br>
+                You can now finish the registration or add more points.
                 {% endif %}
-                {% if step4 and not fourpoints_ok %}
+                {% if step5 and not fourpoints_ok %}
                       <h2>Registration done. </h2>
                       Your registration error is still pretty high, though.
                       The current measured error is: {{ error }}<br>
-                {% elif step4 and fourpoints_ok %}
+                {% elif step5 and fourpoints_ok %}
                 <h2>Registration seems fine </h2>
                 The current measured error is: {{ error }}<br>
                 {% endif %}
@@ -225,6 +243,7 @@
                 </div>
             </div>
         </div>
+        {% endif %}
 
 
         <div class="col-3 collapse" style="height: calc(100vh - 60px); overflow-y: auto" id="imagesetThumbnails">
