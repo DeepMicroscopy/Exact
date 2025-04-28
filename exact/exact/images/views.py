@@ -1,3 +1,4 @@
+import ast
 import logging
 from django.conf import settings
 from django.contrib import messages
@@ -791,9 +792,15 @@ def view_imageset(request, image_set_id):
         # delete registration
         showRegTab=True
 
+    if ('manual-registration' in request.POST):
+        source_image = get_object_or_404(Image, id=int(request.POST.get('registration-src')))
+        target_image = get_object_or_404(Image, id=int(request.POST.get('registration-dst')))
+
+        return redirect(reverse('images:annotate_manually', args=(source_image.id, target_image.id)))
+
     if ('registration-src' in request.POST) and ('registration-dst' in request.POST):
         source_image = get_object_or_404(Image, id=int(request.POST.get('registration-src')))
-        target_image = get_object_or_404(Image, id=int(request.POST['registration-dst']))
+        target_image = get_object_or_404(Image, id=int(request.POST.get('registration-dst')))
 
         image_registration = ImageRegistration.objects.filter(source_image=source_image, target_image=target_image).first()        
 
@@ -1207,6 +1214,201 @@ def sync_annotation_map(request, imageset_id):
         "Updates" : changed_annotations
     }, status=HTTP_201_CREATED)
 
+
+
+def parse_registration_points(registration_points_dict):
+    source_points = []
+    target_points = []
+
+    for _, point_text in registration_points_dict.items():
+        parts = dict(p.split(":") for p in point_text.split(","))
+        x1 = float(parts['x1'])
+        y1 = float(parts['y1'])
+        x2 = float(parts['x2'])
+        y2 = float(parts['y2'])
+        source_points.append([x1, y1])
+        target_points.append([x2, y2])
+
+    return np.array(source_points), np.array(target_points)
+
+def compute_scale_translation(source, target):
+    """
+    source: (2,2) array of source points
+    target: (2,2) array of target points
+    """
+    # vector between points
+    vec_src = source[1] - source[0]
+    vec_tgt = target[1] - target[0]
+
+    # compute the scaling factor
+    dist_src = np.linalg.norm(vec_src)
+    dist_tgt = np.linalg.norm(vec_tgt)
+
+    scale = dist_tgt / dist_src
+
+    # compute translation
+    t_vec = target[0] - scale * source[0]
+
+    return scale, t_vec
+
+def predict_with_scale_translation(point, scale, t_vec):
+    return scale * point + t_vec
+
+def compute_affine_transform(source, target):
+    # Solve affine transformation matrix: target = A * source + b
+    n = source.shape[0]
+    src_aug = np.hstack([source, np.ones((n, 1))])  # make (x, y, 1)
+    A, _, _, _ = np.linalg.lstsq(src_aug, target, rcond=None)
+    return A.T  # 2x3 matrix
+
+def predict_with_affine(point, affine_matrix):
+    augmented_point = np.append(point, 1)  # [x, y, 1]
+    return np.dot(affine_matrix, augmented_point)
+
+def extract_rotation_from_affine(affine_matrix):
+    """
+    Given a 2x3 affine matrix, extract the rotation angle in degrees.
+    """
+    a, b = affine_matrix[0, 0], affine_matrix[0, 1]
+    c, d = affine_matrix[1, 0], affine_matrix[1, 1]
+
+    # rotation in radians
+    theta_rad = np.arctan2(b, a)
+
+    # convert to degrees
+    theta_deg = np.degrees(theta_rad)
+
+    return theta_deg
+
+def build_affine_from_scale_translation(scale, t_vec):
+    """
+    Create a 2x3 affine matrix from scale and translation vector.
+    """
+    affine_matrix = np.array([
+        [scale, 0.0, t_vec[0]],
+        [0.0, scale, t_vec[1]]
+    ])
+    return affine_matrix
+@login_required
+def manual_registration(request, image_source, image_target):
+    print(image_source, image_target)
+    print(request.POST)
+    offset=''
+    error=0
+    fourpoints_ok=0
+    save_possible=False
+    affine_matrix=np.array([])
+    rotation=0
+    registration_points_raw = request.POST.get('registration_points', '{}')
+    print('regis raw:',registration_points_raw)
+        
+        # Safely parse the string into a Python dictionary
+    try:
+        registration_points = ast.literal_eval(registration_points_raw)
+    except Exception as e:
+        registration_points = {}
+        print("Failed to parse registration points:", e)
+        
+    if request.POST.get('step') and int(request.POST.get('step'))>0:
+        step=int(request.POST.get('step'))
+    else:
+        step=0
+    if (request.POST.get('source_x') and request.POST.get('source_y') and 
+       request.POST.get('target_x') and request.POST.get('target_y')):
+       tuple_registration = f'x1:{float(request.POST.get("source_x"))},y1:{float(request.POST.get("source_y"))},x2:{float(request.POST.get("target_x"))},y2:{float(request.POST.get("target_y"))}'
+       registration_points[step] = tuple_registration
+
+    if (request.POST.get('action','')=='store'):
+        affine_matrix = request.POST.get('affine_matrix', '[]')
+        image_source = get_object_or_404(Image, id=image_source)
+        image_target = get_object_or_404(Image, id=image_target)
+
+        affine_matrix=json.loads(affine_matrix)
+        M = np.array(affine_matrix)
+        print('Shape of M:',M.shape)
+        matrix_exactformat =  {
+            "t_00": M [0,0], 
+            "t_01": M [0,1],
+            "t_02": M [0,2], 
+
+            "t_10": M [1,0],  
+            "t_11": M [1,1],
+            "t_12": M [1,2],  
+
+            "t_20": 0,              
+            "t_21": 0,     
+            "t_22": 1, 
+        }        
+        reg = ImageRegistration(transformation_matrix=matrix_exactformat, source_image=image_target, target_image=image_source, registration_error=request.POST.get("est_error",0))
+        reg.save()
+
+        return redirect(reverse('images:view_imageset', args=(image_source.image_set.id,)))
+
+
+    # if 2 points or more are given, try a first registration
+    source_pts, target_pts = parse_registration_points(registration_points)
+
+    if len(source_pts) >= 2:
+        # Compute rigid transform
+        scale, t_vec = compute_scale_translation(source_pts[:2], target_pts[:2])
+        print(f"Scale: {scale}")
+        print(f"Translation vector: {t_vec}")
+
+    if len(source_pts) >= 3:
+            src_third = source_pts[2]
+            true_third = target_pts[2]
+            pred_third = predict_with_scale_translation(src_third, scale, t_vec)
+            affine_matrix = build_affine_from_scale_translation(scale=scale, t_vec=t_vec)
+            error = np.linalg.norm(pred_third - true_third)
+            print(f"Error at 3rd point: {error:.2f}")
+
+            threshold = 25.0  # you can tune this!
+            if error > threshold:
+                print("Scale+Translation not sufficient, switching to Affine transform...")
+                affine_matrix = compute_affine_transform(source_pts, target_pts)
+                print("Affine Transform Matrix:")
+                print(affine_matrix)
+                rotation=extract_rotation_from_affine(affine_matrix)   
+                rotation=f'rotation estimate: {rotation:.2f} °' 
+            offset=f'offset: {str(pred_third - true_third)} px'
+
+    if len(source_pts) >= 4:
+            affine_matrix = compute_affine_transform(source_pts, target_pts)
+            print("Affine Transform Matrix:")
+            print(affine_matrix)
+
+            # Now predict 4th point
+            src_fourth = source_pts[3]
+            true_fourth = target_pts[3]
+            pred_fourth = predict_with_affine(src_fourth, affine_matrix)
+
+            error = np.linalg.norm(pred_fourth - true_fourth)
+            print(f"Affine Error on 4th point: {error:.2f}")
+            fourpoints_ok=1
+
+            if error > threshold:
+                print("Warning: even affine error is high!")
+                fourpoints_ok=0
+
+    step=step+1
+    print('points:',registration_points)
+    return render(request, 'images/register_manually.html', {
+            'source': image_source,
+            'target': image_target,
+            'step':step,
+            'step1':step>0,
+            'step2':step>1,
+            'step3':step>2,
+            'step4':step>3,
+            'offset':offset,
+            'error':error,
+            'errornumstr':'%.2f' % error,
+            'save':save_possible,
+            'fourpoints_ok':fourpoints_ok,
+            'rotation': rotation,
+            'affine_matrix': json.dumps(affine_matrix.tolist()),
+            'registration_points' : registration_points,
+        })    
 
 @login_required
 def edit_imageset(request, imageset_id):
