@@ -1299,6 +1299,10 @@ def manual_registration(request, image_source, image_target):
     save_possible=False
     affine_matrix=np.array([])
     rotation=0
+    warn_existing=0
+    image_source_obj = get_object_or_404(Image, id=image_source)
+    image_target_obj = get_object_or_404(Image, id=image_target)
+
     registration_points_raw = request.POST.get('registration_points', '{}')
     print('regis raw:',registration_points_raw)
         
@@ -1313,6 +1317,15 @@ def manual_registration(request, image_source, image_target):
         step=int(request.POST.get('step'))
     else:
         step=0
+        existing=ImageRegistration.objects.filter(source_image=image_source_obj).filter(target_image=image_target_obj).first()
+        if existing:
+            if (request.POST.get('delete_current')):
+                warn_existing = 0
+                existing.delete()
+
+            else:
+                warn_existing = 1
+
     if (request.POST.get('source_x') and request.POST.get('source_y') and 
        request.POST.get('target_x') and request.POST.get('target_y')):
        tuple_registration = f'x1:{float(request.POST.get("source_x"))},y1:{float(request.POST.get("source_y"))},x2:{float(request.POST.get("target_x"))},y2:{float(request.POST.get("target_y"))}'
@@ -1320,8 +1333,6 @@ def manual_registration(request, image_source, image_target):
 
     if (request.POST.get('action','')=='store'):
         affine_matrix = request.POST.get('affine_matrix', '[]')
-        image_source = get_object_or_404(Image, id=image_source)
-        image_target = get_object_or_404(Image, id=image_target)
 
         affine_matrix=json.loads(affine_matrix)
         M = np.array(affine_matrix)
@@ -1339,10 +1350,10 @@ def manual_registration(request, image_source, image_target):
             "t_21": 0,     
             "t_22": 1, 
         }        
-        reg = ImageRegistration(transformation_matrix=matrix_exactformat, source_image=image_target, target_image=image_source, registration_error=request.POST.get("est_error",0))
+        reg = ImageRegistration(transformation_matrix=matrix_exactformat, source_image=image_target_obj, target_image=image_source_obj, registration_error=request.POST.get("est_error",0))
         reg.save()
 
-        return redirect(reverse('images:view_imageset', args=(image_source.image_set.id,)))
+        return redirect(reverse('images:view_imageset', args=(image_source_obj.image_set.id,)))
 
 
     # if 2 points or more are given, try a first registration
@@ -1391,6 +1402,7 @@ def manual_registration(request, image_source, image_target):
                 fourpoints_ok=0
 
     step=step+1
+
     print('points:',registration_points)
     return render(request, 'images/register_manually.html', {
             'source': image_source,
@@ -1400,6 +1412,8 @@ def manual_registration(request, image_source, image_target):
             'step2':step>1,
             'step3':step>2,
             'step4':step>3,
+            'step5':step>4,
+            'warn_existing':warn_existing,
             'offset':offset,
             'error':error,
             'errornumstr':'%.2f' % error,
