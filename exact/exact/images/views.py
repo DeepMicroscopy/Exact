@@ -1226,8 +1226,8 @@ def parse_registration_points(registration_points_dict):
         y1 = float(parts['y1'])
         x2 = float(parts['x2'])
         y2 = float(parts['y2'])
-        source_points.append([x1, y1])
-        target_points.append([x2, y2])
+        target_points.append([x1, y1])
+        source_points.append([x2, y2])
 
     return np.array(source_points), np.array(target_points)
 
@@ -1350,7 +1350,7 @@ def manual_registration(request, image_source, image_target):
             "t_21": 0,     
             "t_22": 1, 
         }        
-        reg = ImageRegistration(transformation_matrix=matrix_exactformat, source_image=image_target_obj, target_image=image_source_obj, registration_error=request.POST.get("est_error",0))
+        reg = ImageRegistration(transformation_matrix=matrix_exactformat, source_image=image_source_obj, target_image=image_target_obj, registration_error=request.POST.get("est_error",0))
         reg.save()
 
         return redirect(reverse('images:view_imageset', args=(image_source_obj.image_set.id,)))
