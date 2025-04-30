@@ -26,6 +26,7 @@ urlpatterns = [
     re_path(r'^api/image/verify/$', views.api_verify_image, name='verify_image'),
 
     re_path(r'^api/image/plugins/$', views.image_plugins, name='plugins'),
+    re_path(r'^image/centered_snapshot/(\d+)/(\d+)/(\d+)/(\d+)/(\d+)/', views.image_snapshots, name='centered_image_snapshot'),
 
 
     re_path(r'^api/image/navigator_overlay_status/$', views.navigator_overlay_status, name='navigator_overlay_status'),
@@ -42,6 +43,7 @@ urlpatterns = [
     re_path(r'^imageset/(\d+)/pin/$', views.toggle_pin_imageset, name='pin_imageset'),
     re_path(r'^imageset/(\d+)/edit/$', views.edit_imageset, name='edit_imageset'),
     re_path(r'^image/manual_registration/(\d+)/(\d+)', views.manual_registration, name='annotate_manually'),
+    re_path(r'^image/manual_registration_view/(\d+)/', views.manual_registration_view, name='view_manual_annotation'),
 
     re_path(r'^imageset/(\d+)/annotation_map/create/$', views.create_annotation_map, name='create_annotation_map'),
     re_path(r'^imageset/(\d+)/annotation_map/sync/$', views.sync_annotation_map, name='sync_annotation_map'),
