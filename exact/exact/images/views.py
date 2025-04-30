@@ -18,6 +18,8 @@ from django.utils.translation import gettext_lazy as _
 from django.core.cache import caches
 from json import JSONDecodeError
 from io import BytesIO
+from util.slide_server import getSlideHandler
+
 from exact.processing.models import Plugin, PluginJob, PluginResult
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import ParseError
@@ -1289,6 +1291,75 @@ def build_affine_from_scale_translation(scale, t_vec):
         [0.0, scale, t_vec[1]]
     ])
     return affine_matrix
+
+@login_required
+def image_snapshots(request, image_source, x_coord, y_coord, size_x,size_y):
+    image_source_obj = get_object_or_404(Image, id=image_source)
+#    source_image = getSlideHandler(image_source_obj.path())
+    slide = image_cache.get(image_source_obj.path())._osr
+
+    #tile = slide.get_tile(level, (col, row), frame=min(frame, image.frames-1))
+ 
+    size_x = int(size_x)
+    size_y = int(size_y)
+    x_coord = int(x_coord)
+    y_coord = int(y_coord)
+
+    if not image_source_obj.image_set.has_perm('read', request.user):
+        return HttpResponseForbidden()
+
+    tile = slide.read_region(location=(int(x_coord-size_x/2), int(y_coord-size_y/2)), level=0, size=(size_x, size_y))
+    
+    format='PNG'
+    buf = PILBytesIO()
+    tile.save(buf, format, quality=90)
+    buffer = buf.getvalue()
+
+    return HttpResponse(buffer, content_type='image/%s' % format)
+
+@login_required
+def manual_registration_view(request, registration_id):
+    registration = get_object_or_404(ImageRegistration, id=registration_id)
+    
+
+    if not registration or len(registration.registration_points)==0:
+        return HttpResponseBadRequest()
+    
+    if not registration.source_image.image_set.has_perm('read', request.user):
+        return HttpResponseForbidden()
+
+    if not registration.target_image.image_set.has_perm('read', request.user):
+        return HttpResponseForbidden()
+    
+    image_source = registration.source_image
+    image_target = registration.target_image
+    error = registration.registration_error
+
+    t = registration.transformation_matrix
+    affine_matrix = np.array([[t["t_00"], t["t_01"], t["t_02"]], 
+                        [t["t_10"], t["t_11"], t["t_12"]]])    
+    
+    source_pts, target_pts = parse_registration_points(json.loads(registration.registration_points))
+    print('Source points:',source_pts)
+    print('Target points:', target_pts)
+    print('Projected: ',[predict_with_affine(s,affine_matrix) for s in source_pts])
+
+    projected_points = [{'projected':[int(x) for x in predict_with_affine(s,affine_matrix)],
+                            'error' : np.linalg.norm(predict_with_affine(s,affine_matrix) - t),
+                            'source':[int(x) for x in s], 
+                            'target':[int(x) for x in t]} for s,t in zip(source_pts,target_pts)]
+
+    return render(request, 'images/registration_check.html', {
+            'source': image_source.id,
+            'target': image_target.id,
+            'viewonly': True,
+            'error':error,
+            'errornumstr':'%.2f' % error,
+            'projected_points':projected_points,
+            'affine_matrix': json.dumps(affine_matrix.tolist()),
+            'registration_points' : registration.registration_points,
+        }) 
+
 @login_required
 def manual_registration(request, image_source, image_target):
     print(image_source, image_target)
@@ -1350,7 +1421,7 @@ def manual_registration(request, image_source, image_target):
             "t_21": 0,     
             "t_22": 1, 
         }        
-        reg = ImageRegistration(transformation_matrix=matrix_exactformat, source_image=image_source_obj, target_image=image_target_obj, registration_error=request.POST.get("est_error",0))
+        reg = ImageRegistration(transformation_matrix=matrix_exactformat, source_image=image_source_obj, target_image=image_target_obj, registration_error=request.POST.get("est_error",0), registration_points=json.dumps(registration_points))
         reg.save()
 
         return redirect(reverse('images:view_imageset', args=(image_source_obj.image_set.id,)))
@@ -1383,6 +1454,7 @@ def manual_registration(request, image_source, image_target):
                 rotation=f'rotation estimate: {rotation:.2f} °' 
             offset=f'offset: {str(pred_third - true_third)} px'
 
+             
     if len(source_pts) >= 4:
             affine_matrix = compute_affine_transform(source_pts, target_pts)
             print("Affine Transform Matrix:")
@@ -1393,6 +1465,11 @@ def manual_registration(request, image_source, image_target):
             true_fourth = target_pts[3]
             pred_fourth = predict_with_affine(src_fourth, affine_matrix)
 
+            projected_points = [{'projected':[int(x) for x in predict_with_affine(s,affine_matrix)],
+                                 'error' : np.linalg.norm(predict_with_affine(s,affine_matrix) - t),
+                                 'source':[int(x) for x in s], 
+                                 'target':[int(x) for x in t]} for s,t in zip(source_pts,target_pts)]
+
             error = np.linalg.norm(pred_fourth - true_fourth)
             print(f"Affine Error on 4th point: {error:.2f}")
             fourpoints_ok=1
@@ -1401,6 +1478,22 @@ def manual_registration(request, image_source, image_target):
                 print("Warning: even affine error is high!")
                 fourpoints_ok=0
 
+    if len(source_pts) == 4:
+        return render(request, 'images/registration_check.html', {
+            'source': image_source,
+            'target': image_target,
+            'viewonly': False,
+            'warn_existing':warn_existing,
+            'offset':offset,
+            'error':error,
+            'errornumstr':'%.2f' % error,
+            'save':save_possible,
+            'fourpoints_ok':fourpoints_ok,
+            'projected_points':projected_points,
+            'rotation': rotation,
+            'affine_matrix': json.dumps(affine_matrix.tolist()),
+            'registration_points' : registration_points,
+        }) 
     step=step+1
 
     print('points:',registration_points)

@@ -1,0 +1,196 @@
+{% extends 'base/base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block additional_header_js %}
+<link rel="stylesheet" type="text/css" href="{% static 'annotations/css/bootstrap-slider.min.css' %}">
+
+<script async type="text/javascript" src="{% static 'annotations/js/opencv.js' %}"></script>
+
+<script type="text/javascript" src="{% static 'scripts/jquery-3.2.1.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'scripts/bootstrap.min.js' %}"></script>
+
+<script type="text/javascript" src="{% static 'annotations/js/openseadragon.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/openseadragon-guides.js' %}"></script>
+
+<script type="text/javascript" src="{% static 'annotations/js/bootstrap-slider.min.js' %}"></script>
+{% endblock additional_header_js %}
+{% block bodyblock %}
+
+<div class="container-fluid" style="padding-top:0px;position:absolute;left:0px; top:60px;height: calc(100vh - 60px)">
+    <div class="row justify-content-center" style="padding: 0px;height: calc(100vh - 60px); overflow-y:auto">
+        <div id="menu" style="width:20%">
+            <div class="card">
+                <div style="height:20px"></div>
+                <div style="text-align: center;">
+                <svg
+   width="66.187172mm"
+   height="17.414036mm"
+   viewBox="0 0 66.187172 17.414036"
+   version="1.1"
+   id="svg1"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1">
+    <marker
+       style="overflow:visible"
+       id="Triangle"
+       refX="0"
+       refY="0"
+       orient="auto-start-reverse"
+       markerWidth="0.5"
+       markerHeight="0.5"
+       viewBox="0 0 1 1"
+       preserveAspectRatio="xMidYMid"
+       markerUnits="userSpaceOnUse">
+      <path
+         transform="scale(0.5)"
+         style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+         d="M 5.77,0 -2.88,5 V -5 Z"
+         id="path135" />
+    </marker>
+  </defs>
+  <g
+     id="layer1"
+     transform="translate(-18.727871,-34.672932)">
+    <rect
+       style="fill:none;stroke:#1a1a1a;stroke-width:1;stroke-dasharray:none;stroke-dashoffset:2.7"
+       id="rect6"
+       width="18.289927"
+       height="16.414036"
+       x="19.227871"
+       y="35.172932" />
+    <rect
+       style="fill:none;stroke:#1a1a1a;stroke-width:1;stroke-dasharray:none;stroke-dashoffset:2.7"
+       id="rect7"
+       width="18.289927"
+       height="16.414036"
+       x="66.125114"
+       y="35.172932" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#Triangle)"
+       d="M 22.979651,41.269576 H 73.628677"
+       id="path7" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#Triangle)"
+       d="M 28.271318,46.561243 H 78.920344"
+       id="path8" />
+  </g>
+</svg></div>
+<div style="height:20px"></div>
+<h2>Manual registration: Check</h2>
+            </div>
+            <div class="card">
+                {% if not viewonly %}
+               <h4>Let's have a look at the current registration points.</h4>  
+
+               <input type="button" class="btn-primary btn-warning submit" name="store" value="Save registration" onclick="store()">
+               {% endif %}
+                
+                {% if registration_points %}
+                {% for key, point_text in registration_points.items %}
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+            
+                        <!-- Label for which point it is -->
+                        <div style="font-weight: bold;">{{ key|capfirst }}</div>
+            
+                        <!-- First point table -->
+                        <table style="border: 1px solid #ccc; border-radius: 4px; padding: 5px;">
+                            <tr><th>x₁</th><td id="{{ key }}-x1"></td></tr>
+                            <tr><th>y₁</th><td id="{{ key }}-y1"></td></tr>
+                        </table>
+            
+                        <!-- Arrow -->
+                        <div style="font-size: 2rem;">→</div>
+            
+                        <!-- Second point table -->
+                        <table style="border: 1px solid #ccc; border-radius: 4px; padding: 5px;">
+                            <tr><th>x₂</th><td id="{{ key }}-x2"></td></tr>
+                            <tr><th>y₂</th><td id="{{ key }}-y2"></td></tr>
+                        </table>
+            
+                    </div>
+            
+                    <!-- Pass point data into JS -->
+                    <script>
+                        (function() {
+                            const regPointText = "{{ point_text }}";
+            
+                            function parseRegistrationPoint(text) {
+                                const parts = text.split(',');
+                                let result = {};
+                                parts.forEach(p => {
+                                    let [key, value] = p.split(':');
+                                    result[key.trim()] = parseFloat(value.trim());
+                                });
+                                return result;
+                            }
+            
+                            const point = parseRegistrationPoint(regPointText);
+            
+                            document.getElementById('{{ key }}-x1').innerText = point.x1.toFixed(2);
+                            document.getElementById('{{ key }}-y1').innerText = point.y1.toFixed(2);
+                            document.getElementById('{{ key }}-x2').innerText = point.x2.toFixed(2);
+                            document.getElementById('{{ key }}-y2').innerText = point.y2.toFixed(2);
+                        })();
+                    </script>
+            
+                {% endfor %}
+            {% endif %}
+            </div>
+        </div>
+        <div style="width:70%" style="background-color:white">
+            {% for point in projected_points %}
+                    <div class="row" style="margin-left: 30px;">
+                        <div class="card" style="width: 18rem;">
+                            <div class="card-header">
+                            source: {{ point.source }}</div>
+                            <div class="card-body">
+                              <img src="{% url 'images:centered_image_snapshot' source point.source.0 point.source.1 256 256 %}">
+                            </div>
+                        </div>
+                        <div class="card" style="width: 18rem;">
+                            <div class="card-header">
+                            target: {{ point.target }}</div>
+                            <div class="card-body">
+                                <img src="{% url 'images:centered_image_snapshot' target point.target.0 point.target.1 256 256 %}">
+                            </div>
+                        </div>
+                        <div class="card" style="width: 18rem;">
+                            <div class="card-header {% if point.error < 20 %}bg-success{% endif %}" >
+                            projected: {{ point.projected }}</div>
+                            <div class="card-body {% if point.error < 20 %}bg-success{% endif %}">
+                                <img src="{% url 'images:centered_image_snapshot' target point.projected.0 point.projected.1 256 256 %}">
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+        </div>
+
+
+
+    </div>
+</div>
+<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+<form id="submit-form" method="POST" action="{% url 'images:annotate_manually' source target %}">
+    {% csrf_token %}
+    <input type="hidden" name="est_error" value="{{errornumstr}}">
+    <input type="hidden" name="action" id="action" value="getpoints">
+    <input type="hidden" name="step" value="{{step}}">
+    <input type="hidden" name="registration_points" value="{{ registration_points }}">
+    <input type="hidden" name="affine_matrix" value="{{affine_matrix}}">
+</form>
+
+<script>
+function store() {
+    // Submit the form normally
+    document.getElementById('action').value = 'store'
+    document.getElementById('submit-form').submit();
+}
+
+
+</script>
+
+
+{% endblock %}

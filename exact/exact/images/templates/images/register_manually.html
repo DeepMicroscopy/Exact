@@ -293,13 +293,17 @@
         id:              "openseadragon2",
         prefixUrl:       "{% static '' %}/images/",
         tileSources:     tilesource_target,
+        showNavigator:  true,
+        navigatorAutoFade:  false,        
     });
 
     let dragon2 = OpenSeadragon({
         id:              "openseadragon1",
         prefixUrl:       "{% static '' %}/images/",
         tileSources:     options.tileSources,
-    });
+        showNavigator:  true,
+        navigatorAutoFade:  false,
+        });
 
  
     function submit() {
