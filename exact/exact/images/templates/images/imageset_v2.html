@@ -348,7 +348,7 @@
                 
                 <table class="table">
                 <tr><th>Source image</th><th>Target image, image set: <form method="GET" action="{% url 'images:view_imageset' imageset.id %}"><select size="1" name="target_imageset_id" onchange="submit()"></form>
-                    {% for iset in imagesets.all %}
+                    {% for iset in imagesets.all|dictsort:"name" %}
                         <option {% if iset.id == target_imageset.id %}selected{% endif %} value="{{iset.id}}"> {{iset.name}} </option>
                     {% endfor %}
                 </select></form></th></tr>
