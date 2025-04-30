@@ -23,7 +23,7 @@
     <br>
     <form id="submit-form" method="POST" action="{% url 'images:annotate_manually' source target %}">
         {% csrf_token %}
-        <input type="submit" class="btn-primary btn-danger" name="delete_current" value="Delete current registration">
+        <input type="submit" class="btn-primary btn-danger" name="delete_current" value="Delete current registration and go ahead">
     </form>
     <br>
 </div>
