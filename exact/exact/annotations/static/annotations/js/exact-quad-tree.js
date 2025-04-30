@@ -93,7 +93,8 @@ class EXACTRegistrationHandler {
             };
     
             this.background_viewer =  OpenSeadragon(options);
-            
+   
+            document.getElementById('registrationField').textContent = 'Registered to: ' + this.registration_pair.source_image.name;
 
             this.background_viewer.addHandler("open", function (event) {
 
