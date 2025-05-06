@@ -20,7 +20,7 @@ django-widget-tweaks==1.5.0
 djangorestframework==3.15.2
 djangorestframework-simplejwt==5.3.1
 djoser==2.3.0
-zarr==2.15.0
+zarr==2.18.7
 xmltodict==0.13.0
 uritemplate==4.1.1
 fasteners==0.15
