@@ -154,14 +154,14 @@
                             <div class="card-header">
                             target: {{ point.target }}</div>
                             <div class="card-body">
-                                <img src="{% url 'images:centered_image_snapshot' target point.target.0 point.target.1 256 256 %}">
+                                <img src="{% url 'images:centered_image_snapshot' target point.target.0 point.target.1 256 256 %}" style="transform: rotate({{ rotation }}deg);">
                             </div>
                         </div>
                         <div class="card" style="width: 18rem;">
                             <div class="card-header {% if point.error < 20 %}bg-success{% endif %}" >
                             projected: {{ point.projected }}</div>
                             <div class="card-body {% if point.error < 20 %}bg-success{% endif %}">
-                                <img src="{% url 'images:centered_image_snapshot' target point.projected.0 point.projected.1 256 256 %}">
+                                <img src="{% url 'images:centered_image_snapshot' target point.projected.0 point.projected.1 256 256 %}" style="transform: rotate({{ rotation }}deg);">
                             </div>
                         </div>
                     </div>
