@@ -1343,6 +1343,7 @@ def manual_registration_view(request, registration_id):
     print('Source points:',source_pts)
     print('Target points:', target_pts)
     print('Projected: ',[predict_with_affine(s,affine_matrix) for s in source_pts])
+    print('Rotation: ', extract_rotation_from_affine(affine_matrix))
 
     projected_points = [{'projected':[int(x) for x in predict_with_affine(s,affine_matrix)],
                             'error' : np.linalg.norm(predict_with_affine(s,affine_matrix) - t),
@@ -1354,6 +1355,7 @@ def manual_registration_view(request, registration_id):
             'target': image_target.id,
             'viewonly': True,
             'error':error,
+            'rotation' : extract_rotation_from_affine(affine_matrix),
             'errornumstr':'%.2f' % error,
             'projected_points':projected_points,
             'affine_matrix': json.dumps(affine_matrix.tolist()),
@@ -1486,11 +1488,11 @@ def manual_registration(request, image_source, image_target):
             'warn_existing':warn_existing,
             'offset':offset,
             'error':error,
+            'rotation' : extract_rotation_from_affine(affine_matrix),
             'errornumstr':'%.2f' % error,
             'save':save_possible,
             'fourpoints_ok':fourpoints_ok,
             'projected_points':projected_points,
-            'rotation': rotation,
             'affine_matrix': json.dumps(affine_matrix.tolist()),
             'registration_points' : registration_points,
         }) 
