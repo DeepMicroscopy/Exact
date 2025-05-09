@@ -112,6 +112,7 @@ class EXACTRegistrationHandler {
         } else {
             if (this.background_viewer !== undefined) {
                 this.background_viewer.destroy();
+                document.getElementById('registrationField').textContent = '';
 
                 this.background_viewer = undefined;
             }       
