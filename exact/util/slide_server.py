@@ -90,7 +90,7 @@ class OpenSlideWrapper(openslide.OpenSlide):
         return (self.__class__, (self.slide_path,))
 
 
-class OMETiffSlideWrapper(OMETiffSlide):
+class OMETiffSlideWrapper(OMETiffSlide, openslide.OpenSlide):
     
     @property 
     def nFrames(self):
@@ -241,16 +241,16 @@ class GenericTiffHandler:
         if f.ome_metadata:
             if len(f.series) > 1:
                 # We assume Zstacks are stored as multiple series
-                return type('OMETiffZStack', (OMETiffZStack, openslide.OpenSlide), {})(file)
+                return OMETiffZStack(file)
             else:
-                return type('OMETiffSlide', (OMETiffSlideWrapper, openslide.OpenSlide), {})(file)
+                return OMETiffSlideWrapper(file)
 
         # else let OpenSlide handle it for us.
         vendor = openslide.lowlevel.detect_vendor(file)
         if vendor in vendor_handlers:
-            return type("GenericTiffHandler", (vendor_handlers[vendor],openslide.OpenSlide), {})(file)
+            return OpenSlideWrapper(file)
         else:
-            return type("GenericTiffHandler", (ImageSlide3D, openslide.ImageSlide), {})(file)
+            return ImageSlide3D(file)
             
 
 
@@ -259,9 +259,9 @@ class TiffHandler(openslide.OpenSlide):
     def __new__(self, file):
         vendor = openslide.lowlevel.detect_vendor(file)
         if vendor in vendor_handlers:
-            return type("GenericTiffHandler", (vendor_handlers[vendor],openslide.OpenSlide), {})(file)            
+            return GenericTiffHandler(file)            
         else:
-            return type("GenericTiffHandler", (ImageSlide3D, openslide.ImageSlide), {})(file)
+            return ImageSlide3D(file)
 
 class FileType:
     magic_number = b'\x00\x00\x00\x00' # primary critereon to identify file
