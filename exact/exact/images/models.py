@@ -738,6 +738,7 @@ class ImageRegistration(models.Model):
 
     transformation_matrix = models.JSONField(null=True)
     registration_error = models.FloatField(default=-1)
+    registration_points = models.JSONField(null=True)
     
     runtime = models.IntegerField(default=-1)
     file = models.FileField(upload_to=registration_directory_path, null=True)
