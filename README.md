@@ -1,5 +1,5 @@
 # Exact
-[![PyPI version fury.io](https://badge.fury.io/py/EXCAT-Sync.svg)](https://pypi.python.org/pypi/EXCAT-Sync/)
+[![PyPI version fury.io](https://badge.fury.io/py/EXACT-Sync.svg)](https://pypi.python.org/pypi/EXACT-Sync/)
 [![MIT license](https://img.shields.io/badge/License-MIT-blue.svg)](https://lbesson.mit-license.org/)
 
 
@@ -83,7 +83,7 @@ Issues with the [notebooks](doc/README.md) on GitHub? Please use [NBViewer](http
 | Explains the screening plugin for WSI (de) |  [![Datasets](https://img.youtube.com/vi/w7GHTEP2AYo/0.jpg)](https://www.youtube.com/watch?v=w7GHTEP2AYo)  |
 | Syncronisation with the offline tool SlideRunner (en)  |  [![Datasets](https://img.youtube.com/vi/ehrfC04okyE/0.jpg)](https://www.youtube.com/watch?v=ehrfC04okyE)  |
 | Advanced polygon annotation operations (de)  |  [![Datasets](https://img.youtube.com/vi/xVn9ghDQz1A/0.jpg)](https://www.youtube.com/watch?v=xVn9ghDQz1A)  |
-| REST-API Example | ```pip install EXCAT-Sync``` <br> [Code](https://github.com/ChristianMarzahl/EXACT-Sync) <br> [Notebooks](https://nbviewer.jupyter.org/github/DeepMicroscopy/Exact/tree/master/doc/) <br> [Browsable-API](https://documenter.getpostman.com/view/11308910/TVYF6xZo)|
+| REST-API Example | ```pip install EXACT-Sync``` <br> [Code](https://github.com/ChristianMarzahl/EXACT-Sync) <br> [Notebooks](https://nbviewer.jupyter.org/github/DeepMicroscopy/Exact/tree/master/doc/) <br> [Browsable-API](https://documenter.getpostman.com/view/11308910/TVYF6xZo)|
 
 
 ## Install
