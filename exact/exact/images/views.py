@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+import ast
+>>>>>>> 673dfaf818942d8dccdb0c5a80ef7555c7b57dc6
 import logging
 from django.conf import settings
 from django.contrib import messages
@@ -17,10 +21,23 @@ from django.utils.translation import gettext_lazy as _
 from django.core.cache import caches
 from json import JSONDecodeError
 from io import BytesIO
+<<<<<<< HEAD
 from exact.processing.models import Plugin, PluginJob, PluginResult
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import ParseError
 from rest_framework.response import Response
+=======
+from util.slide_server import getSlideHandler
+
+import pyvips
+
+from exact.processing.models import Plugin, PluginJob, PluginResult
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.exceptions import ParseError
+from rest_framework.response import Response
+from rest_framework.authentication import BasicAuthentication
+from rest_framework.permissions import IsAuthenticated
+>>>>>>> 673dfaf818942d8dccdb0c5a80ef7555c7b57dc6
 from rest_framework.status import HTTP_403_FORBIDDEN, HTTP_200_OK, \
     HTTP_201_CREATED, HTTP_202_ACCEPTED, HTTP_204_NO_CONTENT, HTTP_404_NOT_FOUND
 from PIL import Image as PIL_Image
@@ -791,9 +808,21 @@ def view_imageset(request, image_set_id):
         # delete registration
         showRegTab=True
 
+<<<<<<< HEAD
     if ('registration-src' in request.POST) and ('registration-dst' in request.POST):
         source_image = get_object_or_404(Image, id=int(request.POST.get('registration-src')))
         target_image = get_object_or_404(Image, id=int(request.POST['registration-dst']))
+=======
+    if ('manual-registration' in request.POST):
+        source_image = get_object_or_404(Image, id=int(request.POST.get('registration-src')))
+        target_image = get_object_or_404(Image, id=int(request.POST.get('registration-dst')))
+
+        return redirect(reverse('images:annotate_manually', args=(source_image.id, target_image.id)))
+
+    if ('registration-src' in request.POST) and ('registration-dst' in request.POST):
+        source_image = get_object_or_404(Image, id=int(request.POST.get('registration-src')))
+        target_image = get_object_or_404(Image, id=int(request.POST.get('registration-dst')))
+>>>>>>> 673dfaf818942d8dccdb0c5a80ef7555c7b57dc6
 
         image_registration = ImageRegistration.objects.filter(source_image=source_image, target_image=target_image).first()        
 
@@ -1208,6 +1237,311 @@ def sync_annotation_map(request, imageset_id):
     }, status=HTTP_201_CREATED)
 
 
+<<<<<<< HEAD
+=======
+
+def parse_registration_points(registration_points_dict):
+    source_points = []
+    target_points = []
+
+    for _, point_text in registration_points_dict.items():
+        parts = dict(p.split(":") for p in point_text.split(","))
+        x1 = float(parts['x1'])
+        y1 = float(parts['y1'])
+        x2 = float(parts['x2'])
+        y2 = float(parts['y2'])
+        target_points.append([x1, y1])
+        source_points.append([x2, y2])
+
+    return np.array(source_points), np.array(target_points)
+
+def compute_scale_translation(source, target):
+    """
+    source: (2,2) array of source points
+    target: (2,2) array of target points
+    """
+    # vector between points
+    vec_src = source[1] - source[0]
+    vec_tgt = target[1] - target[0]
+
+    # compute the scaling factor
+    dist_src = np.linalg.norm(vec_src)
+    dist_tgt = np.linalg.norm(vec_tgt)
+
+    scale = dist_tgt / dist_src
+
+    # compute translation
+    t_vec = target[0] - scale * source[0]
+
+    return scale, t_vec
+
+def predict_with_scale_translation(point, scale, t_vec):
+    return scale * point + t_vec
+
+def compute_affine_transform(source, target):
+    # Solve affine transformation matrix: target = A * source + b
+    n = source.shape[0]
+    src_aug = np.hstack([source, np.ones((n, 1))])  # make (x, y, 1)
+    A, _, _, _ = np.linalg.lstsq(src_aug, target, rcond=None)
+    return A.T  # 2x3 matrix
+
+def predict_with_affine(point, affine_matrix):
+    augmented_point = np.append(point, 1)  # [x, y, 1]
+    return np.dot(affine_matrix, augmented_point)
+
+def extract_rotation_from_affine(affine_matrix):
+    """
+    Given a 2x3 affine matrix, extract the rotation angle in degrees.
+    """
+    a, b = affine_matrix[0, 0], affine_matrix[0, 1]
+    c, d = affine_matrix[1, 0], affine_matrix[1, 1]
+
+    # rotation in radians
+    theta_rad = np.arctan2(b, a)
+
+    # convert to degrees
+    theta_deg = np.degrees(theta_rad)
+
+    return theta_deg
+
+def build_affine_from_scale_translation(scale, t_vec):
+    """
+    Create a 2x3 affine matrix from scale and translation vector.
+    """
+    affine_matrix = np.array([
+        [scale, 0.0, t_vec[0]],
+        [0.0, scale, t_vec[1]]
+    ])
+    return affine_matrix
+
+@login_required
+def image_snapshots(request, image_source, x_coord, y_coord, size_x,size_y):
+    image_source_obj = get_object_or_404(Image, id=image_source)
+#    source_image = getSlideHandler(image_source_obj.path())
+    slide = image_cache.get(image_source_obj.path())._osr
+
+    #tile = slide.get_tile(level, (col, row), frame=min(frame, image.frames-1))
+ 
+    size_x = int(size_x)
+    size_y = int(size_y)
+    x_coord = int(x_coord)
+    y_coord = int(y_coord)
+
+    if not image_source_obj.image_set.has_perm('read', request.user):
+        return HttpResponseForbidden()
+
+    tile = slide.read_region(location=(int(x_coord-size_x/2), int(y_coord-size_y/2)), level=0, size=(size_x, size_y))
+    
+    format='PNG'
+    buf = PILBytesIO()
+    tile.save(buf, format, quality=90)
+    buffer = buf.getvalue()
+
+    return HttpResponse(buffer, content_type='image/%s' % format)
+
+@login_required
+def manual_registration_view(request, registration_id):
+    registration = get_object_or_404(ImageRegistration, id=registration_id)
+    
+
+    if not registration or len(registration.registration_points)==0:
+        return HttpResponseBadRequest()
+    
+    if not registration.source_image.image_set.has_perm('read', request.user):
+        return HttpResponseForbidden()
+
+    if not registration.target_image.image_set.has_perm('read', request.user):
+        return HttpResponseForbidden()
+    
+    image_source = registration.source_image
+    image_target = registration.target_image
+    error = registration.registration_error
+
+    t = registration.transformation_matrix
+    affine_matrix = np.array([[t["t_00"], t["t_01"], t["t_02"]], 
+                        [t["t_10"], t["t_11"], t["t_12"]]])    
+    
+    source_pts, target_pts = parse_registration_points(json.loads(registration.registration_points))
+    print('Source points:',source_pts)
+    print('Target points:', target_pts)
+    print('Projected: ',[predict_with_affine(s,affine_matrix) for s in source_pts])
+    print('Rotation: ', extract_rotation_from_affine(affine_matrix))
+
+    projected_points = [{'projected':[int(x) for x in predict_with_affine(s,affine_matrix)],
+                            'error' : np.linalg.norm(predict_with_affine(s,affine_matrix) - t),
+                            'source':[int(x) for x in s], 
+                            'target':[int(x) for x in t]} for s,t in zip(source_pts,target_pts)]
+
+    return render(request, 'images/registration_check.html', {
+            'source': image_source.id,
+            'target': image_target.id,
+            'viewonly': True,
+            'error':error,
+            'rotation' : extract_rotation_from_affine(affine_matrix),
+            'errornumstr':'%.2f' % error,
+            'projected_points':projected_points,
+            'affine_matrix': json.dumps(affine_matrix.tolist()),
+            'registration_points' : registration.registration_points,
+        }) 
+
+@login_required
+def manual_registration(request, image_source, image_target):
+    print(image_source, image_target)
+    print(request.POST)
+    offset=''
+    error=0
+    fourpoints_ok=0
+    save_possible=False
+    affine_matrix=np.array([])
+    rotation=0
+    warn_existing=0
+    image_source_obj = get_object_or_404(Image, id=image_source)
+    image_target_obj = get_object_or_404(Image, id=image_target)
+
+    registration_points_raw = request.POST.get('registration_points', '{}')
+    print('regis raw:',registration_points_raw)
+        
+        # Safely parse the string into a Python dictionary
+    try:
+        registration_points = ast.literal_eval(registration_points_raw)
+    except Exception as e:
+        registration_points = {}
+        print("Failed to parse registration points:", e)
+        
+    if request.POST.get('step') and int(request.POST.get('step'))>0:
+        step=int(request.POST.get('step'))
+    else:
+        step=0
+        existing=ImageRegistration.objects.filter(source_image=image_source_obj).filter(target_image=image_target_obj).first()
+        if existing:
+            if (request.POST.get('delete_current')):
+                warn_existing = 0
+                existing.delete()
+
+            else:
+                warn_existing = 1
+
+    if (request.POST.get('source_x') and request.POST.get('source_y') and 
+       request.POST.get('target_x') and request.POST.get('target_y')):
+       tuple_registration = f'x1:{float(request.POST.get("source_x"))},y1:{float(request.POST.get("source_y"))},x2:{float(request.POST.get("target_x"))},y2:{float(request.POST.get("target_y"))}'
+       registration_points[step] = tuple_registration
+
+    if (request.POST.get('action','')=='store'):
+        affine_matrix = request.POST.get('affine_matrix', '[]')
+
+        affine_matrix=json.loads(affine_matrix)
+        M = np.array(affine_matrix)
+        print('Shape of M:',M.shape)
+        matrix_exactformat =  {
+            "t_00": M [0,0], 
+            "t_01": M [0,1],
+            "t_02": M [0,2], 
+
+            "t_10": M [1,0],  
+            "t_11": M [1,1],
+            "t_12": M [1,2],  
+
+            "t_20": 0,              
+            "t_21": 0,     
+            "t_22": 1, 
+        }        
+        reg = ImageRegistration(transformation_matrix=matrix_exactformat, source_image=image_source_obj, target_image=image_target_obj, registration_error=request.POST.get("est_error",0), registration_points=json.dumps(registration_points))
+        reg.save()
+
+        return redirect(reverse('images:view_imageset', args=(image_source_obj.image_set.id,)))
+
+
+    # if 2 points or more are given, try a first registration
+    source_pts, target_pts = parse_registration_points(registration_points)
+
+    if len(source_pts) >= 2:
+        # Compute rigid transform
+        scale, t_vec = compute_scale_translation(source_pts[:2], target_pts[:2])
+        print(f"Scale: {scale}")
+        print(f"Translation vector: {t_vec}")
+
+    if len(source_pts) >= 3:
+            src_third = source_pts[2]
+            true_third = target_pts[2]
+            pred_third = predict_with_scale_translation(src_third, scale, t_vec)
+            affine_matrix = build_affine_from_scale_translation(scale=scale, t_vec=t_vec)
+            error = np.linalg.norm(pred_third - true_third)
+            print(f"Error at 3rd point: {error:.2f}")
+
+            threshold = 25.0  # you can tune this!
+            if error > threshold:
+                print("Scale+Translation not sufficient, switching to Affine transform...")
+                affine_matrix = compute_affine_transform(source_pts, target_pts)
+                print("Affine Transform Matrix:")
+                print(affine_matrix)
+                rotation=extract_rotation_from_affine(affine_matrix)   
+                rotation=f'rotation estimate: {rotation:.2f} °' 
+            offset=f'offset: {str(pred_third - true_third)} px'
+
+             
+    if len(source_pts) >= 4:
+            affine_matrix = compute_affine_transform(source_pts, target_pts)
+            print("Affine Transform Matrix:")
+            print(affine_matrix)
+
+            # Now predict 4th point
+            src_fourth = source_pts[3]
+            true_fourth = target_pts[3]
+            pred_fourth = predict_with_affine(src_fourth, affine_matrix)
+
+            projected_points = [{'projected':[int(x) for x in predict_with_affine(s,affine_matrix)],
+                                 'error' : np.linalg.norm(predict_with_affine(s,affine_matrix) - t),
+                                 'source':[int(x) for x in s], 
+                                 'target':[int(x) for x in t]} for s,t in zip(source_pts,target_pts)]
+
+            error = np.linalg.norm(pred_fourth - true_fourth)
+            print(f"Affine Error on 4th point: {error:.2f}")
+            fourpoints_ok=1
+
+            if error > threshold:
+                print("Warning: even affine error is high!")
+                fourpoints_ok=0
+
+    if len(source_pts) == 4:
+        return render(request, 'images/registration_check.html', {
+            'source': image_source,
+            'target': image_target,
+            'viewonly': False,
+            'warn_existing':warn_existing,
+            'offset':offset,
+            'error':error,
+            'rotation' : extract_rotation_from_affine(affine_matrix),
+            'errornumstr':'%.2f' % error,
+            'save':save_possible,
+            'fourpoints_ok':fourpoints_ok,
+            'projected_points':projected_points,
+            'affine_matrix': json.dumps(affine_matrix.tolist()),
+            'registration_points' : registration_points,
+        }) 
+    step=step+1
+
+    print('points:',registration_points)
+    return render(request, 'images/register_manually.html', {
+            'source': image_source,
+            'target': image_target,
+            'step':step,
+            'step1':step>0,
+            'step2':step>1,
+            'step3':step>2,
+            'step4':step>3,
+            'step5':step>4,
+            'warn_existing':warn_existing,
+            'offset':offset,
+            'error':error,
+            'errornumstr':'%.2f' % error,
+            'save':save_possible,
+            'fourpoints_ok':fourpoints_ok,
+            'rotation': rotation,
+            'affine_matrix': json.dumps(affine_matrix.tolist()),
+            'registration_points' : registration_points,
+        })    
+
+>>>>>>> 673dfaf818942d8dccdb0c5a80ef7555c7b57dc6
 @login_required
 def edit_imageset(request, imageset_id):
     imageset = get_object_or_404(ImageSet, id=imageset_id)
@@ -1320,6 +1654,69 @@ def sanitize_filename(filename):
     
     return sanitized_name
 
+<<<<<<< HEAD
+=======
+@authentication_classes([BasicAuthentication])
+@permission_classes([IsAuthenticated])
+@api_view(['GET'])
+def crop_from_image(request, image_id,x,y,z, w,h, target_imageset_id):
+    image = get_object_or_404(Image, id=image_id)
+    imageset = get_object_or_404(ImageSet, id=target_imageset_id)
+
+
+    if 'edit_set' not in imageset.get_perms(request.user):
+         return HttpResponse(status=HTTP_403_FORBIDDEN)
+
+    if 'edit_set' not in image.image_set.get_perms(request.user):
+         return HttpResponse(status=HTTP_403_FORBIDDEN)
+
+
+    try:
+        x = int(x)
+        y = int(y)
+        z = int(z)
+        w = int(w)
+        h = int(h)
+    except:
+        return HttpResponse(status=HTTP_403_FORBIDDEN)
+
+    sl = getSlideHandler(image.path())
+    img = sl.read_region(location=(x,y), level=0, size=(w,h), frame=z)
+    vi = pyvips.Image.new_from_array(np.array(img))
+
+    path = Path(str(Path(image.path()).with_suffix('').name)+f'x{x}_y{y}_z{z}_w{w}_h{h}.tiff')
+
+    path = imageset.root_path() / path
+
+    vi.tiffsave(str(path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
+
+    fchecksum = hashlib.sha512()
+    with open(str(path), 'rb') as fil:
+        buf = fil.read(10000)
+        fchecksum.update(buf)
+    fchecksum = fchecksum.digest()
+
+    newimage = Image(
+        name=path.name,
+        filename=path.name,
+        width=w,
+        height=h,
+        mpp=image.mpp,
+        objectivePower=image.objectivePower,
+        image_set=imageset,
+        checksum=fchecksum)
+    
+    newimage.save()
+
+    return Response(ImageSerializer(newimage).data, status=HTTP_201_CREATED)
+#    image.save_file(file_path)
+
+
+
+
+
+
+>>>>>>> 673dfaf818942d8dccdb0c5a80ef7555c7b57dc6
 @login_required
 def rename_image(request, imageset_id):
     fileID = request.POST.get('fileID')

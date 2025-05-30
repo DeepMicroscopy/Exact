@@ -46,4 +46,8 @@ COPY . /usr/src/exact/
 #RUN cat /usr/src/exact/exact/settings.py
 
 # run entrypoint.sh
+<<<<<<< HEAD
 ENTRYPOINT ["/usr/src/exact/entrypoint.sh"]
+=======
+ENTRYPOINT ["/usr/src/exact/entrypoint.sh"]
+>>>>>>> 673dfaf818942d8dccdb0c5a80ef7555c7b57dc6
