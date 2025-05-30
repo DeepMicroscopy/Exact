@@ -20,6 +20,8 @@ from json import JSONDecodeError
 from io import BytesIO
 from util.slide_server import getSlideHandler
 
+import pyvips
+
 from exact.processing.models import Plugin, PluginJob, PluginResult
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import ParseError
@@ -1630,6 +1632,67 @@ def sanitize_filename(filename):
         sanitized_name = sanitized_name[:255]
     
     return sanitized_name
+
+@login_required
+@api_view(['GET'])
+def crop_from_image(request, image_id,x,y,z, w,h, target_imageset_id):
+    image = get_object_or_404(Image, id=image_id)
+    imageset = get_object_or_404(ImageSet, id=target_imageset_id)
+
+
+    if 'edit_set' not in imageset.get_perms(request.user):
+         return HttpResponse(status=HTTP_403_FORBIDDEN)
+
+    if 'edit_set' not in image.image_set.get_perms(request.user):
+         return HttpResponse(status=HTTP_403_FORBIDDEN)
+
+
+    try:
+        x = int(x)
+        y = int(y)
+        z = int(z)
+        w = int(w)
+        h = int(h)
+    except:
+        return HttpResponse(status=HTTP_403_FORBIDDEN)
+
+    sl = getSlideHandler(image.path())
+    img = sl.read_region(location=(x,y), level=0, size=(w,h), frame=z)
+    vi = pyvips.Image.new_from_array(np.array(img))
+
+    path = Path(str(Path(image.path()).with_suffix('').name)+f'x{x}_y{y}_z{z}_w{w}_h{h}.tiff')
+
+    path = imageset.root_path() / path
+
+    vi.tiffsave(str(path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
+
+    fchecksum = hashlib.sha512()
+    with open(str(path), 'rb') as fil:
+        buf = fil.read(10000)
+        fchecksum.update(buf)
+    fchecksum = fchecksum.digest()
+
+    newimage = Image(
+        name=path.name,
+        filename=path.name,
+        width=w,
+        height=h,
+        mpp=image.mpp,
+        objectivePower=image.objectivePower,
+        image_set=imageset,
+        checksum=fchecksum)
+    
+    newimage.save()
+
+    return Response({
+        "Image": ImageSerializer(newimage).data
+    }, status=HTTP_201_CREATED)
+#    image.save_file(file_path)
+
+
+
+
+
 
 @login_required
 def rename_image(request, imageset_id):

@@ -21,6 +21,7 @@ urlpatterns = [
     re_path(r'^image/setfree/(\d+)/$', views.set_free, name='setfree_imageset'),
     re_path(r'^image/upload/(\d+)/$', views.upload_image, name='upload_image'),
     re_path(r'^image/rename/(\d+)/$', views.rename_image, name='rename_image'),
+    re_path(r'^api/image/crop/(\d+)/(\d+)/(\d+)/(\d+)/(\d+)/(\d+)/(\d+)/$', views.crop_from_image, name='crop_from_image'),
     re_path(r'^image/(\d+)/(\d+)/(\d+)/tile/$', views.view_image, name='view_image'),
     re_path(r'^image/(\d+)/(\d+)/(\d+)/tile_files/(\d+)/(\d+_\d+.(?:png|jpeg))$', views.view_image_tile, name='view_image_tile'),
     re_path(r'^api/image/verify/$', views.api_verify_image, name='verify_image'),
