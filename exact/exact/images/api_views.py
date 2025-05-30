@@ -494,7 +494,7 @@ class ImageViewSet(viewsets.ModelViewSet):
     def destroy(self, request, pk=None):
         image = get_object_or_404(models.Image, id=pk)
         # remove image from file system
-        if Path(image.path()).exists(): os.remove(image.path())
+        if Path(image.path()).exists() and Path(image.path()).is_dir(): os.remove(image.path())
         if Path(image.original_path()).exists(): os.remove(image.original_path())
         # remove from tile cache
         if hasattr(cache, "delete_pattern"):
