@@ -38,7 +38,7 @@ url={https://doi.org/10.1038/s41598-021-83827-4}
 ## Features
 
 * Browsable REST-API  https://exact.cs.fau.de/api/v1/ and [docu](#REST-API)
-> * REST-API Client  https://github.com/ChristianMarzahl/EXACT-Sync 
+> * REST-API Client  https://github.com/DeepMicroscopy/EXACT-Sync 
 > * Dynamic [OpenAPI](https://swagger.io/docs/specification/about/) client generation with [Swagger](https://editor.swagger.io/) and [EXACT-API.yml](./exact/EXACT-API.yml)
 * Sync with the offline Tool [SlideRunner](https://github.com/maubreville/SlideRunner) 
 * team creation
