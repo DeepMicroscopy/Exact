@@ -23,9 +23,11 @@ from util.slide_server import getSlideHandler
 import pyvips
 
 from exact.processing.models import Plugin, PluginJob, PluginResult
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.exceptions import ParseError
 from rest_framework.response import Response
+from rest_framework.authentication import BasicAuthentication
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.status import HTTP_403_FORBIDDEN, HTTP_200_OK, \
     HTTP_201_CREATED, HTTP_202_ACCEPTED, HTTP_204_NO_CONTENT, HTTP_404_NOT_FOUND
 from PIL import Image as PIL_Image
@@ -1633,7 +1635,8 @@ def sanitize_filename(filename):
     
     return sanitized_name
 
-@login_required
+@authentication_classes([BasicAuthentication])
+@permission_classes([IsAuthenticated])
 @api_view(['GET'])
 def crop_from_image(request, image_id,x,y,z, w,h, target_imageset_id):
     image = get_object_or_404(Image, id=image_id)
@@ -1684,9 +1687,7 @@ def crop_from_image(request, image_id,x,y,z, w,h, target_imageset_id):
     
     newimage.save()
 
-    return Response({
-        "Image": ImageSerializer(newimage).data
-    }, status=HTTP_201_CREATED)
+    return Response(ImageSerializer(newimage).data, status=HTTP_201_CREATED)
 #    image.save_file(file_path)
 
 
