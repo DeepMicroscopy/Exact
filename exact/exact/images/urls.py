@@ -21,19 +21,13 @@ urlpatterns = [
     re_path(r'^image/setfree/(\d+)/$', views.set_free, name='setfree_imageset'),
     re_path(r'^image/upload/(\d+)/$', views.upload_image, name='upload_image'),
     re_path(r'^image/rename/(\d+)/$', views.rename_image, name='rename_image'),
-<<<<<<< HEAD
-=======
     re_path(r'^api/image/crop/(\d+)/(\d+)/(\d+)/(\d+)/(\d+)/(\d+)/(\d+)/$', views.crop_from_image, name='crop_from_image'),
->>>>>>> 673dfaf818942d8dccdb0c5a80ef7555c7b57dc6
     re_path(r'^image/(\d+)/(\d+)/(\d+)/tile/$', views.view_image, name='view_image'),
     re_path(r'^image/(\d+)/(\d+)/(\d+)/tile_files/(\d+)/(\d+_\d+.(?:png|jpeg))$', views.view_image_tile, name='view_image_tile'),
     re_path(r'^api/image/verify/$', views.api_verify_image, name='verify_image'),
 
     re_path(r'^api/image/plugins/$', views.image_plugins, name='plugins'),
-<<<<<<< HEAD
-=======
     re_path(r'^image/centered_snapshot/(\d+)/(\d+)/(\d+)/(\d+)/(\d+)/', views.image_snapshots, name='centered_image_snapshot'),
->>>>>>> 673dfaf818942d8dccdb0c5a80ef7555c7b57dc6
 
 
     re_path(r'^api/image/navigator_overlay_status/$', views.navigator_overlay_status, name='navigator_overlay_status'),
@@ -49,11 +43,8 @@ urlpatterns = [
     re_path(r'^imageset/(\d+)/delete/$', views.delete_imageset, name='delete_imageset'),
     re_path(r'^imageset/(\d+)/pin/$', views.toggle_pin_imageset, name='pin_imageset'),
     re_path(r'^imageset/(\d+)/edit/$', views.edit_imageset, name='edit_imageset'),
-<<<<<<< HEAD
-=======
     re_path(r'^image/manual_registration/(\d+)/(\d+)', views.manual_registration, name='annotate_manually'),
     re_path(r'^image/manual_registration_view/(\d+)/', views.manual_registration_view, name='view_manual_annotation'),
->>>>>>> 673dfaf818942d8dccdb0c5a80ef7555c7b57dc6
 
     re_path(r'^imageset/(\d+)/annotation_map/create/$', views.create_annotation_map, name='create_annotation_map'),
     re_path(r'^imageset/(\d+)/annotation_map/sync/$', views.sync_annotation_map, name='sync_annotation_map'),

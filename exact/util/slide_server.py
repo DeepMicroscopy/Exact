@@ -90,11 +90,7 @@ class OpenSlideWrapper(openslide.OpenSlide):
         return (self.__class__, (self.slide_path,))
 
 
-<<<<<<< HEAD
-class OMETiffSlideWrapper(OMETiffSlide):
-=======
 class OMETiffSlideWrapper(OMETiffSlide, openslide.OpenSlide):
->>>>>>> 673dfaf818942d8dccdb0c5a80ef7555c7b57dc6
     
     @property 
     def nFrames(self):
@@ -245,28 +241,16 @@ class GenericTiffHandler:
         if f.ome_metadata:
             if len(f.series) > 1:
                 # We assume Zstacks are stored as multiple series
-<<<<<<< HEAD
-                return type('OMETiffZStack', (OMETiffZStack, openslide.OpenSlide), {})(file)
-            else:
-                return type('OMETiffSlide', (OMETiffSlideWrapper, openslide.OpenSlide), {})(file)
-=======
                 return OMETiffZStack(file)
             else:
                 return OMETiffSlideWrapper(file)
->>>>>>> 673dfaf818942d8dccdb0c5a80ef7555c7b57dc6
 
         # else let OpenSlide handle it for us.
         vendor = openslide.lowlevel.detect_vendor(file)
         if vendor in vendor_handlers:
-<<<<<<< HEAD
-            return type("GenericTiffHandler", (vendor_handlers[vendor],openslide.OpenSlide), {})(file)
-        else:
-            return type("GenericTiffHandler", (ImageSlide3D, openslide.ImageSlide), {})(file)
-=======
             return OpenSlideWrapper(file)
         else:
             return ImageSlide3D(file)
->>>>>>> 673dfaf818942d8dccdb0c5a80ef7555c7b57dc6
             
 
 
@@ -275,15 +259,9 @@ class TiffHandler(openslide.OpenSlide):
     def __new__(self, file):
         vendor = openslide.lowlevel.detect_vendor(file)
         if vendor in vendor_handlers:
-<<<<<<< HEAD
-            return type("GenericTiffHandler", (vendor_handlers[vendor],openslide.OpenSlide), {})(file)            
-        else:
-            return type("GenericTiffHandler", (ImageSlide3D, openslide.ImageSlide), {})(file)
-=======
             return GenericTiffHandler(file)            
         else:
             return ImageSlide3D(file)
->>>>>>> 673dfaf818942d8dccdb0c5a80ef7555c7b57dc6
 
 class FileType:
     magic_number = b'\x00\x00\x00\x00' # primary critereon to identify file

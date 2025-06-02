@@ -209,11 +209,7 @@ class OMETiffSlide:
 
 
 @dataclass
-<<<<<<< HEAD
-class OMETiffZStack:
-=======
 class OMETiffZStack(openslide.OpenSlide):
->>>>>>> 673dfaf818942d8dccdb0c5a80ef7555c7b57dc6
     filename: str
     zstack: Dict[str, OMETiffSlide] = field(init=False, repr=False)
     labelimage: LabelImage = field(init=False, repr=False)

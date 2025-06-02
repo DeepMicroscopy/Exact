@@ -1,7 +1,4 @@
-<<<<<<< HEAD
-=======
 import ast
->>>>>>> 673dfaf818942d8dccdb0c5a80ef7555c7b57dc6
 import logging
 from django.conf import settings
 from django.contrib import messages
@@ -21,12 +18,6 @@ from django.utils.translation import gettext_lazy as _
 from django.core.cache import caches
 from json import JSONDecodeError
 from io import BytesIO
-<<<<<<< HEAD
-from exact.processing.models import Plugin, PluginJob, PluginResult
-from rest_framework.decorators import api_view
-from rest_framework.exceptions import ParseError
-from rest_framework.response import Response
-=======
 from util.slide_server import getSlideHandler
 
 import pyvips
@@ -37,7 +28,6 @@ from rest_framework.exceptions import ParseError
 from rest_framework.response import Response
 from rest_framework.authentication import BasicAuthentication
 from rest_framework.permissions import IsAuthenticated
->>>>>>> 673dfaf818942d8dccdb0c5a80ef7555c7b57dc6
 from rest_framework.status import HTTP_403_FORBIDDEN, HTTP_200_OK, \
     HTTP_201_CREATED, HTTP_202_ACCEPTED, HTTP_204_NO_CONTENT, HTTP_404_NOT_FOUND
 from PIL import Image as PIL_Image
@@ -808,11 +798,6 @@ def view_imageset(request, image_set_id):
         # delete registration
         showRegTab=True
 
-<<<<<<< HEAD
-    if ('registration-src' in request.POST) and ('registration-dst' in request.POST):
-        source_image = get_object_or_404(Image, id=int(request.POST.get('registration-src')))
-        target_image = get_object_or_404(Image, id=int(request.POST['registration-dst']))
-=======
     if ('manual-registration' in request.POST):
         source_image = get_object_or_404(Image, id=int(request.POST.get('registration-src')))
         target_image = get_object_or_404(Image, id=int(request.POST.get('registration-dst')))
@@ -822,7 +807,6 @@ def view_imageset(request, image_set_id):
     if ('registration-src' in request.POST) and ('registration-dst' in request.POST):
         source_image = get_object_or_404(Image, id=int(request.POST.get('registration-src')))
         target_image = get_object_or_404(Image, id=int(request.POST.get('registration-dst')))
->>>>>>> 673dfaf818942d8dccdb0c5a80ef7555c7b57dc6
 
         image_registration = ImageRegistration.objects.filter(source_image=source_image, target_image=target_image).first()        
 
@@ -1237,8 +1221,6 @@ def sync_annotation_map(request, imageset_id):
     }, status=HTTP_201_CREATED)
 
 
-<<<<<<< HEAD
-=======
 
 def parse_registration_points(registration_points_dict):
     source_points = []
@@ -1541,7 +1523,6 @@ def manual_registration(request, image_source, image_target):
             'registration_points' : registration_points,
         })    
 
->>>>>>> 673dfaf818942d8dccdb0c5a80ef7555c7b57dc6
 @login_required
 def edit_imageset(request, imageset_id):
     imageset = get_object_or_404(ImageSet, id=imageset_id)
@@ -1654,8 +1635,6 @@ def sanitize_filename(filename):
     
     return sanitized_name
 
-<<<<<<< HEAD
-=======
 @authentication_classes([BasicAuthentication])
 @permission_classes([IsAuthenticated])
 @api_view(['GET'])
@@ -1721,7 +1700,6 @@ def crop_from_image(request, image_id,x,y,z, w,h, target_imageset_id):
 
 
 
->>>>>>> 673dfaf818942d8dccdb0c5a80ef7555c7b57dc6
 @login_required
 def rename_image(request, imageset_id):
     fileID = request.POST.get('fileID')

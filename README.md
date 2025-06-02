@@ -1,9 +1,5 @@
 # Exact
-<<<<<<< HEAD
-[![PyPI version fury.io](https://badge.fury.io/py/EXCAT-Sync.svg)](https://pypi.python.org/pypi/EXCAT-Sync/)
-=======
 [![PyPI version fury.io](https://badge.fury.io/py/EXACT-Sync.svg)](https://pypi.python.org/pypi/EXACT-Sync/)
->>>>>>> 673dfaf818942d8dccdb0c5a80ef7555c7b57dc6
 [![MIT license](https://img.shields.io/badge/License-MIT-blue.svg)](https://lbesson.mit-license.org/)
 
 
@@ -42,11 +38,7 @@ url={https://doi.org/10.1038/s41598-021-83827-4}
 ## Features
 
 * Browsable REST-API  https://exact.cs.fau.de/api/v1/ and [docu](#REST-API)
-<<<<<<< HEAD
-> * REST-API Client  https://github.com/ChristianMarzahl/EXACT-Sync 
-=======
 > * REST-API Client  https://github.com/DeepMicroscopy/EXACT-Sync 
->>>>>>> 673dfaf818942d8dccdb0c5a80ef7555c7b57dc6
 > * Dynamic [OpenAPI](https://swagger.io/docs/specification/about/) client generation with [Swagger](https://editor.swagger.io/) and [EXACT-API.yml](./exact/EXACT-API.yml)
 * Sync with the offline Tool [SlideRunner](https://github.com/maubreville/SlideRunner) 
 * team creation
@@ -91,11 +83,7 @@ Issues with the [notebooks](doc/README.md) on GitHub? Please use [NBViewer](http
 | Explains the screening plugin for WSI (de) |  [![Datasets](https://img.youtube.com/vi/w7GHTEP2AYo/0.jpg)](https://www.youtube.com/watch?v=w7GHTEP2AYo)  |
 | Syncronisation with the offline tool SlideRunner (en)  |  [![Datasets](https://img.youtube.com/vi/ehrfC04okyE/0.jpg)](https://www.youtube.com/watch?v=ehrfC04okyE)  |
 | Advanced polygon annotation operations (de)  |  [![Datasets](https://img.youtube.com/vi/xVn9ghDQz1A/0.jpg)](https://www.youtube.com/watch?v=xVn9ghDQz1A)  |
-<<<<<<< HEAD
-| REST-API Example | ```pip install EXCAT-Sync``` <br> [Code](https://github.com/ChristianMarzahl/EXACT-Sync) <br> [Notebooks](https://nbviewer.jupyter.org/github/DeepMicroscopy/Exact/tree/master/doc/) <br> [Browsable-API](https://documenter.getpostman.com/view/11308910/TVYF6xZo)|
-=======
 | REST-API Example | ```pip install EXACT-Sync``` <br> [Code](https://github.com/ChristianMarzahl/EXACT-Sync) <br> [Notebooks](https://nbviewer.jupyter.org/github/DeepMicroscopy/Exact/tree/master/doc/) <br> [Browsable-API](https://documenter.getpostman.com/view/11308910/TVYF6xZo)|
->>>>>>> 673dfaf818942d8dccdb0c5a80ef7555c7b57dc6
 
 
 ## Install
