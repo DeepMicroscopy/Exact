@@ -348,11 +348,7 @@
                 
                 <table class="table">
                 <tr><th>Source image</th><th>Target image, image set: <form method="GET" action="{% url 'images:view_imageset' imageset.id %}"><select size="1" name="target_imageset_id" onchange="submit()"></form>
-<<<<<<< HEAD
-                    {% for iset in imagesets.all %}
-=======
                     {% for iset in imagesets.all|dictsort:"name" %}
->>>>>>> 673dfaf818942d8dccdb0c5a80ef7555c7b57dc6
                         <option {% if iset.id == target_imageset.id %}selected{% endif %} value="{{iset.id}}"> {{iset.name}} </option>
                     {% endfor %}
                 </select></form></th></tr>
@@ -407,11 +403,8 @@
                 </table>
                 <div>
                 <input class="btn btn-primary" type="submit" value="Register">
-<<<<<<< HEAD
-=======
                 <input class="btn btn-primary btn-warning" type="submit" name="manual-registration" value="Register manually">
 
->>>>>>> 673dfaf818942d8dccdb0c5a80ef7555c7b57dc6
                 <button class="btn btn-secondary" type="button" data-toggle="collapse" data-target="#collapseOptions" aria-expanded="false" aria-controls="collapseOptions">
                     Options &#9660;
                   </button>
@@ -458,13 +451,8 @@
                   <option value=0 selected>no</option>
                   <option value=1>yes</option>
               </select>
-<<<<<<< HEAD
-          </td></tr>                
-          <tr><td>
-=======
             </td></tr>                
              <tr><td>
->>>>>>> 673dfaf818942d8dccdb0c5a80ef7555c7b57dc6
                 target_depth:
               </td><td><select name="target_depth">
                   <option value=1>1</option>
@@ -503,11 +491,7 @@
 
                 <div class="row" style="padding-top: 20px;">
                     <table class="table">
-<<<<<<< HEAD
-                        <tr><th>ID</th><th>Source</th><th>Target</th><th>Scale</th><th>Rotation</th><th>Error</th><th></th></tr>
-=======
                         <tr><th>ID</th><th>Source</th><th>Target</th><th>Scale</th><th>Rotation</th><th>Error</th><th>Actions</th></tr>
->>>>>>> 673dfaf818942d8dccdb0c5a80ef7555c7b57dc6
 
                     {% for reg in image_registration_src %}
                     <tr>
@@ -523,8 +507,6 @@
                                 <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"></path>
                             </svg>
                           </button>
-<<<<<<< HEAD
-=======
                           {% if reg.registration_points|length > 0 %}
                           <a class="btn btn-secondary btn-success" href="{% url 'images:view_manual_annotation' reg.id %}">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye" viewBox="0 0 16 16">
@@ -539,7 +521,6 @@
                           </svg>
                           </a>
                           {% endif %}
->>>>>>> 673dfaf818942d8dccdb0c5a80ef7555c7b57dc6
                         </td>
                     </tr>
                     {% endfor %}
@@ -557,8 +538,6 @@
                                 <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"></path>
                             </svg>
                           </button>
-<<<<<<< HEAD
-=======
                           {% if reg.registration_points|length > 0 %}
                           <a class="btn btn-secondary btn-success" href="{% url 'images:view_manual_annotation' reg.id %}">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye" viewBox="0 0 16 16">
@@ -567,7 +546,6 @@
                               </svg>
                           </a>
                           {% endif %}
->>>>>>> 673dfaf818942d8dccdb0c5a80ef7555c7b57dc6
                         </td>
                     </tr>
                     {% endfor %}
