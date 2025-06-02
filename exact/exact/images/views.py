@@ -1688,8 +1688,13 @@ def crop_from_image(request, image_id,x,y,z, w,h, target_imageset_id):
 
     path = imageset.root_path() / path
 
-    vi.tiffsave(str(path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
+    if vi.bands == 4:
+        vi = vi[:3]  # drop alpha channel
 
+    res = 1000 / image.mpp
+
+#    print('MPP was:',image.mpp)
+    vi.tiffsave(str(path), tile=True, xres=res, yres=res, resunit='inch', compression='jpeg', Q=90, bigtiff=True, pyramid=True, tile_width=256, tile_height=256, properties=True)
     fchecksum = hashlib.sha512()
     with open(str(path), 'rb') as fil:
         buf = fil.read(10000)
