@@ -93,9 +93,6 @@ class EXACTRegistrationHandler {
             };
     
             this.background_viewer =  OpenSeadragon(options);
-<<<<<<< HEAD
-            
-=======
             let method=''
 
             if ((this.registration_pair.file) && (this.registration_pair.file.length>0))
@@ -104,7 +101,6 @@ class EXACTRegistrationHandler {
             }
    
             document.getElementById('registrationField').textContent = 'Registered to: ' + this.registration_pair.source_image.name+method;
->>>>>>> 673dfaf818942d8dccdb0c5a80ef7555c7b57dc6
 
             this.background_viewer.addHandler("open", function (event) {
 
@@ -116,10 +112,7 @@ class EXACTRegistrationHandler {
         } else {
             if (this.background_viewer !== undefined) {
                 this.background_viewer.destroy();
-<<<<<<< HEAD
-=======
                 document.getElementById('registrationField').textContent = '';
->>>>>>> 673dfaf818942d8dccdb0c5a80ef7555c7b57dc6
 
                 this.background_viewer = undefined;
             }       
