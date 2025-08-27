@@ -43,6 +43,7 @@
 <script type="text/javascript" src="{% static 'annotations/js/exact-quad-tree.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/exact-overlay-opacity.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/annotations.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/annotation_timer.js' %}"></script>
 
 <script type="text/javascript" src="{% static 'annotations/js/bootstrap-slider.min.js' %}"></script>
 {% endblock additional_annotation_js %}
@@ -835,7 +836,13 @@
                 <div style="display: table-row">
                     <div id="zoomSlider" style="width: 20vw; display: table-cell"></div>
                     <div style="width: 5vw; display: table-cell"></div>
-                    <div id="overlaySlider" style="width: 20vw; display: table-cell"></div>
+                    <div>
+                        <div class="annotation-timer" style="display: flex; margin-bottom: 15px;align-items: center;">
+                            <div class="timer" id="timer" style="width: 80px;">00:00:00</div>
+                            <button class="btn btn-outline-secondary" onclick="toggleTimer()" style="margin-left: 5px;">Start</button>
+                        </div>
+                        <div id="overlaySlider" style="width: 20vw; display: table-cell"></div>
+                    </div>
                     <div id="registrationField" style="width:18vw;text-align: right"></div>
                 </div>
             </div>
