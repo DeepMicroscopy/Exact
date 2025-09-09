@@ -1,6 +1,10 @@
 from django import forms
+from django.db.models import Q
 
 from exact.images.models import ImageSet
+
+from .models import Image
+
 
 
 class ImageSetCreationForm(forms.ModelForm):
@@ -59,3 +63,38 @@ class CopyImageSetForm(forms.Form):
 
     copy_annotations = forms.BooleanField(required=None)
 
+
+# Form to select images for copying
+class CopyImageSelectionForm(forms.Form):
+    """ A dynamic Django form to select individual images from multiple accessible ImageSets
+    for the purpose of copying them into another target ImageSet."""
+    copy_annotations = forms.BooleanField(required=False, label="Copy Annotations")
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop("user")
+        super().__init__(*args, **kwargs)
+
+        self.image_sets = ImageSet.objects.filter(
+            Q(team__in=user.team_set.all()) | Q(public=True)
+        ).prefetch_related("images")
+
+        self.image_fields = []
+        self.image_data = []
+        for imageset in self.image_sets:
+            field_name = f"imageset_{imageset.id}"
+            images = imageset.images.exclude(image_type=Image.ImageSourceTypes.SERVER_GENERATED)
+            field = forms.ModelMultipleChoiceField(
+                label=imageset.name,
+                queryset=imageset.images.all(),
+                required=False,
+                widget=forms.CheckboxSelectMultiple,
+            )
+            self.fields[field_name] = field
+            self.image_fields.append((imageset, self[field_name]))
+            
+            # Save raw image info for template use
+            self.image_data.append({
+                "imageset": imageset,
+                "field_name": field_name,
+                "images": images
+            })

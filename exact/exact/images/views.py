@@ -46,7 +46,7 @@ from exact.administration.models import Product
 from exact.administration.serializers import ProductSerializer
 
 from .models import ImageRegistration, ImageSet, Image, SetTag, AuxiliaryFile
-from .forms import LabelUploadForm, CopyImageSetForm
+from .forms import LabelUploadForm, CopyImageSetForm, CopyImageSelectionForm
 from exact.annotations.models import Annotation, Export, ExportFormat, \
     AnnotationType, Verification, LogImageAction
 from exact.tagger_messages.models import Message, TeamMessage, GlobalMessage
@@ -779,6 +779,7 @@ def view_imageset(request, image_set_id):
         .filter(active=True, product__in=imageset.product_set.all()).order_by('product', 'sort_order')
 
     copyImageSetForm = CopyImageSetForm()
+    copyImageSelectionForm = CopyImageSelectionForm(user=request.user)
     copyImageSetForm.fields['imagesets'].queryset = ImageSet.objects\
         .filter(Q(team__in=request.user.team_set.all())|Q(public=True))
 
@@ -867,6 +868,7 @@ def view_imageset(request, image_set_id):
         'export_formats': ExportFormat.objects.filter(Q(public=True) | Q(team__in=user_teams)),
         'label_upload_form': LabelUploadForm(),
         'copy_imagesets_form': copyImageSetForm,
+        'copy_imagesets_selection_form': copyImageSelectionForm,
         'upload_notice': settings.UPLOAD_NOTICE,
         'enable_zip_download': settings.ENABLE_ZIP_DOWNLOAD,
         'user': request.user
@@ -1745,14 +1747,9 @@ def rename_image(request, imageset_id):
     return redirect(reverse('images:view_imageset', args=(imageset_id,)))
 
 @login_required
-def copy_image(request, image_id, imageset_id):
+def copy_image(request, image_id, imageset_id, copy_annotations=False):
     image = get_object_or_404(Image, id=image_id)
     target_imageset = get_object_or_404(ImageSet, id=imageset_id)
-
-    try:
-        copy_annotations = 'copy_annotations' in request.POST.keys()
-    except (KeyError, TypeError, ValueError):
-        raise ParseError
 
     new_image = target_imageset.images.filter(name=image.name).first()
     if new_image is None:
@@ -1784,21 +1781,26 @@ def copy_image(request, image_id, imageset_id):
 @login_required
 def copy_images_to_imageset(request, imageset_id):
     target_imageset = get_object_or_404(ImageSet, id=imageset_id)
-    if not target_imageset.has_perm('edit_set', request.user):
-        messages.warning(request,
-                         _('You do not have permission to edit this imageset.'))
-        return redirect(reverse('images:view_imageset', args=(target_imageset.id,)))
+    if not target_imageset.has_perm("edit_set", request.user):
+        messages.warning(request, "You do not have permission to edit this imageset.")
+        return redirect(reverse("images:view_imageset", args=(target_imageset.id,)))
 
-    if request.method == 'POST':
-        ids = request.POST.getlist('imagesets')
+    if request.method == "POST":
+        form = CopyImageSelectionForm(request.POST, user=request.user)
 
-        for image in Image.objects.filter(image_set_id__in=ids)\
-                .exclude(image_type=Image.ImageSourceTypes.SERVER_GENERATED):
-            copy_image(request, image.id, imageset_id)
+        if form.is_valid():
+            copy_annotations = form.cleaned_data.get("copy_annotations", False)
 
+            for _, bound_field in form.image_fields:
+                selected_images = form.cleaned_data.get(bound_field.name, [])
 
-    return redirect(reverse('images:view_imageset', args=(imageset_id,)))
-
+                for image in selected_images:
+                    if image.image_type != Image.ImageSourceTypes.SERVER_GENERATED:
+                        copy_image(request, image.id, imageset_id, copy_annotations)
+            messages.success(request, "Selected images copied successfully.")
+        else:
+            messages.error(request, "Invalid image selection.")
+    return redirect(reverse("images:view_imageset", args=(imageset_id,)))
 
 
 @login_required
