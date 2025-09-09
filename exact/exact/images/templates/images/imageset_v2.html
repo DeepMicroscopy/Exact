@@ -935,9 +935,29 @@
 
             <div class="tab-pane fade" id="copyImages" role="tabpanel" aria-labelledby="copyImages-tab">
 
-                <form action="{% url 'images:copy_images_to_imageset' imageset.id %}" method="POST" enctype="multipart/form-data">
+                <form method="POST" action="{% url 'images:copy_images_to_imageset' imageset.id %}">
                     {% csrf_token %}
-                    {{ copy_imagesets_form }}<br>
+                    <div class="form-check mb-3">
+                        {{ copy_imagesets_selection_form.copy_annotations }}
+                        <label for="{{ copy_imagesets_selection_form.copy_annotations.id_for_label }}">
+                            {{ copy_imagesets_selection_form.copy_annotations.label }}
+                        </label>
+                    </div>
+                    {% for imageset, field in copy_imagesets_selection_form.image_fields %}
+                    <div class="card">
+                        <div class="card-header">
+                            {{ imageset.name }}
+                        </div>
+                        <div class="card-body">
+                            {% for widget in field %}
+                            <div class="form-check">
+                                {{ widget.tag }}
+                                <label class="form-check-label" for="{{ widget.id_for_label }}">{{ widget.choice_label }}</label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
                     <input type="submit" class="btn btn-primary" value="Copy imagesets">
                 </form>
 
