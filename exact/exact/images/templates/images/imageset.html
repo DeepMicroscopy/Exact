@@ -692,7 +692,7 @@
                                 <div class="tab-pane fade" id="copyImages" role="tabpanel" aria-labelledby="copyImages-tab">
                                     <form method="POST" action="{% url 'images:copy_images_to_imageset' imageset.id %}">
                                         {% csrf_token %}
-                                        <div class="form-check mb-3">
+                                        <div class="form-check mb-3 mt-4">
                                             {{ copy_imagesets_selection_form.copy_annotations }}
                                             <label for="{{ copy_imagesets_selection_form.copy_annotations.id_for_label }}">
                                                 {{ copy_imagesets_selection_form.copy_annotations.label }}
@@ -713,7 +713,7 @@
                                             </div>
                                         </div>
                                         {% endfor %}
-                                        <input type="submit" class="btn btn-primary" value="Copy imagesets">
+                                        <input type="submit" class="btn btn-primary mt-4" value="Copy imagesets">
                                     </form>
                                 </div>
 
@@ -784,29 +784,4 @@
     </div>
 </div>
 <span id="image_set_id" class="hidden">{{ imageset.id }}</span>
-<script>
-  document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('.select-all').forEach(function (selectAllCheckbox) {
-      const containerId = selectAllCheckbox.getAttribute('data-target');
-      const container = document.getElementById(containerId);
-
-      if (!container) return;
-
-      // Handle "Select All" toggle
-      selectAllCheckbox.addEventListener('change', function () {
-        const checkboxes = container.querySelectorAll('input[type="checkbox"]');
-        checkboxes.forEach(cb => cb.checked = selectAllCheckbox.checked);
-      });
-
-      // Update "Select All" if any box is unchecked
-      container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-        cb.addEventListener('change', function () {
-          const allChecked = [...container.querySelectorAll('input[type="checkbox"]')]
-            .every(box => box.checked);
-          selectAllCheckbox.checked = allChecked;
-        });
-      });
-    });
-  });
-</script>
 {% endblock bodyblock%}

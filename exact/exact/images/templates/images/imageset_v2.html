@@ -937,7 +937,7 @@
 
                 <form method="POST" action="{% url 'images:copy_images_to_imageset' imageset.id %}">
                     {% csrf_token %}
-                    <div class="form-check mb-3">
+                    <div class="form-check mb-3 mt-4">
                         {{ copy_imagesets_selection_form.copy_annotations }}
                         <label for="{{ copy_imagesets_selection_form.copy_annotations.id_for_label }}">
                             {{ copy_imagesets_selection_form.copy_annotations.label }}
@@ -958,7 +958,7 @@
                         </div>
                     </div>
                     {% endfor %}
-                    <input type="submit" class="btn btn-primary" value="Copy imagesets">
+                    <input type="submit" class="btn btn-primary mt-4" value="Copy imagesets">
                 </form>
 
 
