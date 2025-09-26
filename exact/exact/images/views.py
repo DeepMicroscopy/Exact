@@ -1716,6 +1716,13 @@ def rename_image(request, imageset_id):
 
 
     if 'edit_set' in imageset.get_perms(request.user):
+        # Check if an image with the new name already exists in the imageset
+        existing_image = Image.objects.filter(Q(name=newName)|Q(filename=newstem+filenameext), 
+                                            image_set=imageset).exclude(id=image.id).first()
+        if existing_image is not None:
+            # Image with this name already exists, redirect without changes
+            return redirect(reverse('images:view_imageset', args=(imageset_id,)))
+            
         if os.path.exists(os.path.join(imageset.root_path(),image.name)):
             os.rename(os.path.join(imageset.root_path(),image.name),
                     os.path.join(imageset.root_path(),newName))
