@@ -414,6 +414,7 @@ class EXACTViewer {
         // called when the image is loaded
         viewer.addHandler("open", function (event) {
             viewer.canvas.tabIndex = 1;
+            viewer.canvas.focus();
 
             event.userData.imageOpend();
 
