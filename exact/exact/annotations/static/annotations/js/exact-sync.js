@@ -564,7 +564,7 @@ class EXACTAnnotationSync {
         this.API_1_PLUGINRESULTS_ANNOTATIONS_URL = include_server_subdir('/api/v1/processing/pluginresultannotations/');
         this.API_1_PLUGINRESULTS_BITMAPS_URL = include_server_subdir('/api/v1/processing/pluginresultbitmaps/');
 
-        this.API_1_ANNOTATION_EXPAND = 'expand=user,last_editor,uploaded_media_files&';
+        this.API_1_ANNOTATION_EXPAND = 'expand=user,last_editor,uploaded_media_files,locked_by&';
         this.API_1_ANNOTATIONRESULT_EXPAND = '';
         this.API_1_BITMAPS_EXPAND = ''
         this.API_1_FILTERS = 'image=' + imageId + '&'
@@ -573,7 +573,7 @@ class EXACTAnnotationSync {
             this.API_1_FILTERS += "user=" + user_id + "&"
         }
 
-        this.API_1_ANNOTATION_FIELDS = 'fields=image,annotation_type,id,vector,generated,deleted,description,verified_by_user,uploaded_media_files,unique_identifier,remark,user.id,user.username,last_editor.id,last_editor.username,drawing_time,num_points&';
+        this.API_1_ANNOTATION_FIELDS = 'fields=image,annotation_type,id,vector,generated,deleted,description,verified_by_user,uploaded_media_files,unique_identifier,remark,user.id,user.username,last_editor.id,last_editor.username,drawing_time,num_points,locked,locked_by.id,locked_by.username&';
         this.API_1_PLUGINRESULTS_FIELDS = 'fields=image,annotation_type,id,vector,score,generated,plugin,description,unique_identifier,pluginresultentry&';
         this.initLoadAnnotations(annotationTypes, imageId)
         this.refreshAnnotationsFromServer = setInterval(this.refreshAnnotations(this), this.upDateFromServerInterval, this);
@@ -814,6 +814,69 @@ class EXACTAnnotationSync {
         }
     }
 
+    async toggleLockAnnotation(annotation, user_id) {
+        if (!annotation) annotation = this.getCurrentSelectedAnnotation();
+        
+        if (!annotation || annotation.id === -1) {
+            console.warn("Annotation not saved yet.");
+            return;
+        }
+        var locked = annotation.locked;
+        var locked_by = annotation.locked_by;        
+        if(locked && user_id !== locked_by?.id){
+            $.notify(`Only the owner can unlock this annotation`, {
+                position: "bottom center",
+                className: "error"
+            });
+            return;
+        }
+        
+        try {
+            const url = this.API_1_ANNOTATIONS_BASE_URL + `annotations/${annotation.id}/` +
+                "?" + this.API_1_ANNOTATION_EXPAND + this.API_1_ANNOTATION_FIELDS;
+
+            const data = {
+                locked: !locked,
+            };
+            const context = this;
+
+            $.ajax(url, {
+                type: 'PATCH',
+                headers: this.gHeaders,
+                dataType: 'json',
+                data: JSON.stringify(data),
+
+                success: function (anno, textStatus, jqXHR) {
+                    context.synchronisationNotifications("info", anno, "AnnotationLockedStatusChanged");
+                    context.viewer.raiseEvent('sync_TabAnnotationUpdated', { anno });
+
+                    // update local state
+                    annotation.locked = anno.locked;
+                    annotation.locked_by = anno.locked_by;                    
+                    context.annotations[anno.unique_identifier] = anno;
+                    context.viewer.raiseEvent('sync_UpdateStatistics', {});
+                },
+
+                error: function (request, status, error) {
+                    if (request.responseText !== undefined) {
+                        $.notify(request.responseText, {
+                            position: "bottom center",
+                            className: "error"
+                        });
+                    } else {
+                        $.notify(`Failed to toggle lock`, {
+                            position: "bottom center",
+                            className: "error"
+                        });
+                    }
+                }
+            });
+
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
     saveAnnotation(annotation) {
 
         var action = 'POST';
@@ -919,6 +982,15 @@ class EXACTAnnotationSync {
                 case "AnnotationVerified":
                     $.notify(`Annotation ${anno.id} is now verified`,
                         { position: "bottom center", className: className, autoHideDelay: 2000 });
+                    break;
+                case "AnnotationLockedStatusChanged":
+                    $.notify(
+
+                        `Successfully ${anno.locked ? 'locked' : 'unlocked'
+                        } the annotation ${anno.id}!`,
+
+                        { position: "bottom center", className: className, autoHideDelay: 2000 },
+                    );
                     break;
             }
         }

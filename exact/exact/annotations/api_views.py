@@ -86,9 +86,9 @@ class AnnotationViewSet(viewsets.ModelViewSet):
         user = self.request.user
         deleted = self.request.query_params.get('deleted')
         if deleted is not None:
-            return models.Annotation.objects.filter(image__image_set__team__in=user.team_set.all()).select_related('annotation_type', 'image', 'user', 'last_editor').filter(deleted=deleted).order_by('id')
+            return models.Annotation.objects.filter(image__image_set__team__in=user.team_set.all()).select_related('annotation_type', 'image', 'user', 'last_editor', 'locked_by').filter(deleted=deleted).order_by('id')
         else:
-            return  models.Annotation.objects.filter(image__image_set__team__in=user.team_set.all()).select_related('annotation_type', 'image', 'user', 'last_editor').order_by('id')
+            return  models.Annotation.objects.filter(image__image_set__team__in=user.team_set.all()).select_related('annotation_type', 'image', 'user', 'last_editor', 'locked_by').order_by('id')
 
 
     @action(methods=['get'], detail=False)
@@ -207,6 +207,15 @@ class AnnotationViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if "last_editor" not in request.data:
             request.data["last_editor"] = user.id
+            
+        if "locked" in request.data:
+
+            # If locking, assign the locker
+            if request.data["locked"]:
+                request.data["locked_by"] = user.id
+            else:
+                request.data["locked_by"] = None
+
         response = super().partial_update(request, *args, **kwargs)
         return response
 

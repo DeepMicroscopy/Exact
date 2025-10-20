@@ -91,7 +91,9 @@ class AnnotationSerializer(FlexFieldsModelSerializer):
             'annotationversion_set',
             'drawing_time',
             'num_points',
-            'inspection_time'
+            'inspection_time',
+            'locked',
+            'locked_by',
         )
 
         expandable_fields = {
@@ -101,6 +103,7 @@ class AnnotationSerializer(FlexFieldsModelSerializer):
             "image": (ImageSerializer, {'read_only': True}),
             "user": (UserSerializer, {'read_only': True}),
             "last_editor": (UserSerializer, {'read_only': True}),
+            "locked_by": (UserSerializer, {"read_only": True}),
         }
 
 class VerificationSerializer(FlexFieldsModelSerializer):
@@ -219,5 +222,11 @@ def serialize_annotation(anno: Annotation) -> Dict[str, Any]:
             'name': anno.user.username
         },
         'is_verified': Verification.objects.filter(annotation=anno, verified=True).exists(),
-        'meta_data': anno.meta_data
+        'meta_data': anno.meta_data,
+        'locked': anno.locked,
+        'locked_by': (
+            {'id': anno.locked_by.id, 'name': anno.locked_by.username}
+            if anno.locked_by is not None
+            else None
+        ),
     }

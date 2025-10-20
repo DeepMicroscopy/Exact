@@ -869,6 +869,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
     initViewerEventHandler(viewer, imageInformation) {
 
         super.initViewerEventHandler(viewer, imageInformation);
+        const userId = this.user_id;
 
         viewer.addHandler("team_ChangeCreatorAnnotationsVisibility", function (event) {
 
@@ -1124,6 +1125,13 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
                             if (selected_anno !== undefined) // catch an error that occours when the server is to slow
                             {
+                                // If the annotation is locked and the annotator is not the one who locked it
+                                // (meaning locked_by), then annotation can not be changed, otherwise it can
+                                if (selected_anno?.locked === true && selected_anno?.locked_by.id !== userId) {
+                                    $.notify("This annotation is locked and cannot be modified.", { position: "bottom center", className: "warn" });
+                                    tool.resetSelection();
+                                    return;
+                                }
                                 event.userData.setCurrentAnnotationType(selected_anno.annotation_type);
                             }
                         }
@@ -1163,6 +1171,36 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             let tool = event.userData.tool;
             let exact_sync = event.userData.exact_sync;
             var current_Action = []
+
+            // Abort actions containing locked annotation poly modification
+            const selection = tool.selection;
+            if (!selection || !selection.item) return;
+            const lockedAnnotations = [];
+            tool.group.children.forEach(el => {
+                const anno = exact_sync.annotations[el.name];
+                if (!anno) return;
+
+                const isLocked = anno.locked === true;
+                const isLockedByOther = isLocked && anno.locked_by?.id !== userId;
+
+                const intersects = selection.item.intersects(el);
+                const contains = selection.item.contains(el.firstSegment?.point);
+
+                if ((intersects || contains) && isLockedByOther) {
+                    lockedAnnotations.push(anno);
+                }
+            });
+
+            if (lockedAnnotations.length > 0) {
+                $.notify(`Cannot modify locked annotations owned by other users.`, {
+                    className: "error",
+                    position: "bottom center"
+                });
+
+                tool.resetSinglePolyOperation?.();
+                tool.resetMultiPolyOperation?.();
+                return;
+            }
 
             switch (event.name) {
                 case "NOT":
@@ -1580,6 +1618,15 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         // Register Annotation Buttons
         this.annotationButtons = [
             new OpenSeadragon.Button({
+                tooltip: 'Lock/Unlock Annotation',
+                name: "lock_annotation_button",
+                srcRest: this.viewer.prefixUrl + `lock_rest.png`,
+                srcGroup: this.viewer.prefixUrl + `lock_grouphover.png`,
+                srcHover: this.viewer.prefixUrl + `lock_hover.png`,
+                srcDown: this.viewer.prefixUrl + `lock_pressed.png`,
+                onClick: this.do_toggleLockAnnotation.bind(this),
+            }),
+            new OpenSeadragon.Button({
                 tooltip: 'Save (v)',
                 name: "save_button",
                 srcRest: this.viewer.prefixUrl + `save_rest.png`,
@@ -1925,7 +1972,45 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         }
     }
 
-    do_finishAnnotation(annotation){
+    do_toggleLockAnnotation(annotation) {
+        // If no annotation is passed, use the currently selected one
+        if (typeof annotation === "undefined" || annotation.hasOwnProperty('originalEvent')) {
+            annotation = this.getCurrentSelectedAnnotation();
+        }
+
+        if (!annotation) return;
+
+        const uuid = annotation.unique_identifier;
+        const item = this.tool.getItemFromUUID(uuid);
+        if (!item) return;
+
+        // Sync with backend
+        this.exact_sync.toggleLockAnnotation(annotation, this.user_id)
+        .then((responseAnno) => {
+            if(!responseAnno){
+                return;
+            }
+            annotation.locked = responseAnno.locked;
+            annotation.locked_by = responseAnno.locked_by;
+
+            const action = {
+                type: responseAnno.locked ? "Locked" : "Unlocked",
+                uuid: uuid,
+                annotation: annotation,
+                item: item.clone({ insert: false })
+            };
+            this.appendAction([action]);
+        })
+        .catch((error) => {
+            console.warn("Lock toggle failed:", error);
+            $.notify("Lock operation failed: " + error.message, {
+                position: "bottom center",
+                className: "error"
+            });
+        });
+    }
+
+    do_finishAnnotation(annotation) {
         // if annotation is undefined or an event use current selected one
         if (typeof annotation === "undefined" ||
             annotation.hasOwnProperty('originalEvent')) {
@@ -1935,8 +2020,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         if (typeof annotation !== "undefined") {
             
             annotation.vector = this.getAnnotationVector(annotation.unique_identifier);
-            if (annotation.annotation_type.vector_type == 5 && annotation.vector.x3 == undefined)
-            {
+            if (annotation.annotation_type.vector_type == 5 && annotation.vector.x3 == undefined) {
                 // dont create polygons with less then 3 points
                 this.deleteAnnotation(annotation)
             }

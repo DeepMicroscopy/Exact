@@ -91,6 +91,15 @@ class Annotation(models.Model):
     drawing_time = models.IntegerField(default=0)
     num_points = models.IntegerField(default=0)
     inspection_time = models.IntegerField(default=0)
+    
+    locked = models.BooleanField(default=False)
+    locked_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name='locked_by',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL
+    )
 
     def __str__(self):
         return 'Annotation: {0} (image: {1}, image set: {2}, team: {3})'.format(self.annotation_type.name, self.image.name, self.image.image_set.name, self.image.image_set.team.name)
