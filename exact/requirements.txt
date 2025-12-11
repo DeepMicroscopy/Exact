@@ -43,7 +43,7 @@ pandas==2.2.1
 qt-wsi-registration==0.0.14
 EXCAT-Sync>=0.0.38
 pyyaml>=6.0.1
-aicsimageio==4.11.0
 Werkzeug==3.0.6
 h5py==3.10.0
 slideio==2.7.1
+
