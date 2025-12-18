@@ -37,7 +37,7 @@ class SlideIOSlide():
         self.geometry_rows = [np.ceil(self.scene.get_zoom_level_info(k).size.height/self.scene.get_zoom_level_info(k).tile_size.height) for k in range(self.scene.num_zoom_levels)]
 
         self.imsize = self.scene.rect[2:4]
-        self.levels = [1]
+        self.levels = [x for x in range(self.scene.num_zoom_levels)]
         self.mpp_x = self.scene.resolution[0]*1e6
         self.mpp_y  = self.scene.resolution[1]*1e6
         self.mode = 'RGBA' # normally, it is RGB not BGR
