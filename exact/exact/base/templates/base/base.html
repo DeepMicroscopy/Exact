@@ -19,6 +19,9 @@
 	{% block additional_header_js %}
 	{% endblock %}
 
+	{% block head %}
+	{% endblock %}
+
 </head>
 
 <body>
@@ -141,6 +144,7 @@
 				properly without JavaScript
 			</div>
 		</noscript>
+		{% block content %}{% endblock %}
 		{% block bodyblock %}{% endblock %}
 	</div>
 	{% block additional_js %}

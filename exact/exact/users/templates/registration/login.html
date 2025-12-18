@@ -30,7 +30,10 @@
                             <p class="text-danger">{{ error }}</p>
                         {% endfor %}
                         <input type="hidden" name="next" value="{{ request.GET.next }}" />
-                        <input type="submit" class="btn btn-primary" name="login" value="Log in"/>
+                        <input type="hidden" name="passkeys" id="passkeys"/>
+                        <button class="btn btn-primary btn-block" type="submit">Login</button><br/>
+                        {%include 'passkeys.js' %}
+                        <button class="btn btn-block btn-dark" type="button" onclick="authn('loginForm')"> &nbsp;Login By Passkeys</button>
                     </form>
                     <div class="login-panel-footer">
                         <a href="{% url 'django_registration_register' %}">Register a new User</a> - <a href="{% url 'password_reset' %}">Password Reset</a>

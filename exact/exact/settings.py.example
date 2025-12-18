@@ -78,6 +78,13 @@ TOOLS_ENABLED = True
 TOOLS_PATH = os.path.join(BASE_DIR, 'tools')
 TOOL_UPLOAD_NOTICE = ''
 
+
+AUTHENTICATION_BACKENDS = ['passkeys.backend.PasskeyModelBackend'] # Change your authentication backend
+FIDO_SERVER_ID="localhost"      # Server rp id for FIDO2, it the full domain of your project
+FIDO_SERVER_NAME="EXACT"
+import passkeys
+KEY_ATTACHMENT = None 
+
 # Use ldap login
 #
 # import ldap

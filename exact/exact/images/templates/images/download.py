@@ -56,7 +56,7 @@ def download_imageset(current_imageset):
             'password': password,
             'csrfmiddlewaretoken': csrfmiddlewaretoken}
     loggedinpage = requests.post(
-        '{}user/login/'.format(BaseUrl),
+        '{}auth/login/'.format(BaseUrl),
         data=data,
         cookies=cookies,
         allow_redirects=False,

@@ -75,6 +75,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'djoser',
+    'passkeys',
     'rest_framework.authtoken',
     'django_filters',
     'widget_tweaks',
@@ -222,7 +223,7 @@ USE_TZ = False
 PROBLEMS_URL = 'https://github.com/DeepMicroscopy/exact/issues'
 PROBLEMS_TEXT = ''
 
-LOGIN_URL = '/user/login/'
+LOGIN_URL = '/auth/login/'
 LOGIN_REDIRECT_URL = '/images/'
 
 MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'

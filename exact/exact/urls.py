@@ -17,11 +17,13 @@ import logging
 from django.urls import re_path, include
 from django.urls import path
 from django.contrib import admin
+from .users import views as uviews
 from django.shortcuts import render
 from django.conf import settings
 from django.conf.urls.static import static
 from django_registration.backends.activation.views import RegistrationView
 
+from . import auth
 from .api import router, router_api
 from .users.forms import UserRegistrationForm
 from rest_framework.schemas import get_schema_view
@@ -58,7 +60,12 @@ urlpatterns = [
     path('api/v1/', include(router_api.urls)),
     path('api/v1/openapi', schema_view, name='openapi-schema'),
     #path('auth/', include('djoser.urls.authtoken')),
+    re_path(r'^passkeys/', include('passkeys.urls')),
+    re_path('^auth/login/$',auth.loginView,name="login"),
+    path('auth/logout',auth.logoutView,name="logout"),
+
 ] + static(settings.MEDIA_URL, document_root= settings.MEDIA_ROOT)
+
 
 if settings.DEBUG:
     try:
