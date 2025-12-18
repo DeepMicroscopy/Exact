@@ -33,7 +33,6 @@ from PIL import Image as PIL_Image
 from datetime import datetime
 from pathlib import Path
 import tifffile
-from aicsimageio import AICSImage, exceptions
 from tifffile import TiffFile, TiffFileError
 
 from exact.users.models import Team
