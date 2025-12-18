@@ -14,7 +14,7 @@
                         {% csrf_token %}
                         <div class="form-group">
                             <label for="login_username">{{ form.username.label }}</label>
-                            {% render_field form.username id='login_username' class+='form-control' %}
+                            {% render_field form.username id='login_username' class+='form-control' autocomplete='username webauthn' %}
                             {% for error in form.username.errors %}
                                 <p class="text-danger">{{ error }}</p>
                             {% endfor %}
@@ -43,3 +43,11 @@
         </div>
     </div>
 {% endblock bodyblock %}
+
+{% block extra_js %}
+<script>
+  window.onload = function () {
+    checkConditionalUI('loginForm');
+  };
+</script>
+{% endblock %}
