@@ -1,0 +1,25 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% load i18n %}
+{% load widget_tweaks %}
+{% block taggerimports %}
+
+<script type="text/javascript" src="{% static 'scripts/jquery-3.2.1.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'scripts/bootstrap.min.js' %}"></script>
+
+{% endblock taggerimports %}
+
+{% block head %}
+{{ block.super }}
+{% endblock %}
+{% block content %}
+{{ block.super }}
+<div class="container-fluid h-100">
+        <div class="row justify-content-center h-100">
+            <div class="col-8">
+                <div class="card">
+{% endblock content %}
+{% block bodyblock %}
+</div></div>
+</div></div>
+{% endblock bodyblock %}

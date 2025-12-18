@@ -1,6 +1,14 @@
 {% extends 'base/base.html' %}
+{% load static %}
 {% load i18n %}
 {% load widget_tweaks %}
+{% block taggerimports %}
+
+<script type="text/javascript" src="{% static 'scripts/jquery-3.2.1.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'scripts/bootstrap.min.js' %}"></script>
+
+{% endblock taggerimports %}
+
 {% block bodyblock %}
 
 <div class="card" style="text-align: left;">
@@ -57,6 +65,19 @@
             </tr>
 
         </table>
+      <div id="pk" class="alert alert-info" style="display: none">Your device supports passkeys, <a href="{%url 'passkeys:enroll'%}">Enroll</a> </div>
+
+
+      </div>
+        <script type="application/javascript">
+            function register_pk()
+            {
+                $('#pk').show();
+            }
+            {% include 'check_passkeys.js'%}
+            $(document).ready(check_passkey(true,register_pk))
+
+        </script>        
         <center>
         <input type="submit" value="{% trans 'Save' %}" class="btn btn-primary" />
     </center>
