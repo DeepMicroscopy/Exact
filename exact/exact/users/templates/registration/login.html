@@ -13,15 +13,15 @@
                     <form class="login" method="POST" action="{% url 'login' %}" id="loginForm">
                         {% csrf_token %}
                         <div class="form-group">
-                            <label for="login_username">{{ form.username.label }}</label>
-                            {% render_field form.username id='login_username' class+='form-control' autocomplete='username webauthn' %}
+                            <label for="inputUsername">{{ form.username.label }}</label>
+                            {% render_field form.username id='inputUsername' class+='form-control' autocomplete='username webauthn' %}
                             {% for error in form.username.errors %}
                                 <p class="text-danger">{{ error }}</p>
                             {% endfor %}
                         </div>
                         <div class="form-group">
-                            <label for="login_password">{{ form.password.label }}</label>
-                            {% render_field form.password id='login_password' class+='form-control' %}
+                            <label for="inputPassword">{{ form.password.label }}</label>
+                            {% render_field form.password id='inputPassword' class+='form-control' %}
                             {% for error in form.password.errors %}
                                 <p class="text-danger">{{ error }}</p>
                             {% endfor %}
