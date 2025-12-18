@@ -23,7 +23,14 @@ def loginView(request):
     else:
         form = LoginForm(None)
 
-    if request.method == "POST" and (form.is_valid() or len(request.POST.get('passkeys',''))>0):
+    if len(request.POST.get('passkeys',''))>0:
+        user=authenticate(request, username=request.POST["username"],password=request.POST["password"])
+        if user:
+            login(request, user)
+            return redirect(request.POST.get("next") or reverse("images:index"))
+        form.add_error(None, "Invalid username or password.")
+
+    if request.method == "POST" and form.is_valid():
         user = authenticate(
             request,
             username=form.cleaned_data["username"],
