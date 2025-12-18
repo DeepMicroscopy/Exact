@@ -10,7 +10,7 @@
                     <h1 class="panel-title">Login</h1>
                 </div>
                 <div class="panel-body">
-                    <form class="login" method="POST" action="{% url 'login' %}">
+                    <form class="login" method="POST" action="{% url 'login' %}" id="loginForm">
                         {% csrf_token %}
                         <div class="form-group">
                             <label for="login_username">{{ form.username.label }}</label>
@@ -38,6 +38,7 @@
                     <div class="login-panel-footer">
                         <a href="{% url 'django_registration_register' %}">Register a new User</a> - <a href="{% url 'password_reset' %}">Password Reset</a>
                     </div>
+                    
                 </div>
             </div>
         </div>
