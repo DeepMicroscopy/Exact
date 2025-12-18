@@ -8,6 +8,10 @@
 <script type="text/javascript" src="{% static 'scripts/bootstrap.min.js' %}"></script>
 
 {% endblock taggerimports %}
+{% block additional_js %}
+<script type="text/javascript" src="{% static 'scripts/notify.min.js' %}"></script>
+</script>
+{% endblock additional_js %}
 
 {% block head %}
 {{ block.super }}
