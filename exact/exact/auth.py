@@ -20,8 +20,10 @@ def loginView(request):
     if len(request.POST.get('passkeys',''))==0:
         form = LoginForm(request.POST or None)
         invalid = False
+    else:
+        form = LoginForm(None)
 
-    if request.method == "POST" and (form.is_valid() or len(request.POST.get('passkeys',''))):
+    if request.method == "POST" and (form.is_valid() or len(request.POST.get('passkeys',''))>0):
         user = authenticate(
             request,
             username=form.cleaned_data["username"],
