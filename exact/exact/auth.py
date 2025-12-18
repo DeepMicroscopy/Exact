@@ -17,10 +17,11 @@ class LoginForm(forms.Form):
     password = forms.CharField(widget=forms.PasswordInput)
 
 def loginView(request):
-    form = LoginForm(request.POST or None)
-    invalid = False
+    if len(request.POST.get('passkeys',''))==0:
+        form = LoginForm(request.POST or None)
+        invalid = False
 
-    if request.method == "POST" and form.is_valid():
+    if request.method == "POST" and (form.is_valid() or len(request.POST.get('passkeys',''))):
         user = authenticate(
             request,
             username=form.cleaned_data["username"],
