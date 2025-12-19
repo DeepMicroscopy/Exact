@@ -54,6 +54,12 @@ url={https://doi.org/10.1038/s41598-021-83827-4}
 * Registration [Registration.md](https://github.com/DeepMicroscopy/exact/blob/master/Registration.md)
 
 
+## Recent Changes and Updates 
+
+### 2025-12-19: Passkeys
+
+Since commit 8c6cc11e349806a50cbce71676647211b238b87a, EXACT can handle PassKeys (Windows Hello, Apple PassKeys, Fido-Keys), allowing for a more secure login without passwords. For this, we have a new section in the `settings.py` configuration file, please see [this readme](doc/Passkeys.md).
+
 ## Documentation
 
 Issues with the [notebooks](doc/README.md) on GitHub? Please use [NBViewer](https://nbviewer.jupyter.org/github/DeepMicroscopy/Exact/tree/master/doc/)
@@ -604,3 +610,6 @@ FIEDLER, Niklas, et al. [imagetagger: An Open Source Online Platform for Collabo
    organization={Springer}
 }
 ```
+
+
+
