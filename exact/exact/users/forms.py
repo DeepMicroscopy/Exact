@@ -1,7 +1,7 @@
 from django import forms
 from django_registration.forms import RegistrationForm
 
-from .models import Team, UI_User, User
+from .models import Team, UserPreferences, User
 
 
 class UserRegistrationForm(RegistrationForm):
@@ -26,7 +26,7 @@ class UserEditForm(forms.ModelForm):
 
 class UIUserEditForm(forms.ModelForm):
     class Meta:
-        model = UI_User
+        model = UserPreferences
         fields = [
             'frontend',
         ]

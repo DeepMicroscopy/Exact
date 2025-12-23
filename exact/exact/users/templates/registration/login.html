@@ -1,6 +1,9 @@
 {% extends 'base/base.html' %}
+{% load static %}
 {% load i18n %}
 {% load widget_tweaks %}
+
+
 
 {% block bodyblock %}
     <div class="row">
@@ -45,7 +48,10 @@
     </div>
 {% endblock bodyblock %}
 
-{% block extra_js %}
+{% block additional_js %}
+<script type="text/javascript" src="{% static 'scripts/jquery-3.2.1.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'scripts/bootstrap.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'scripts/notify.min.js' %}"></script>
 <script>
   window.onload = function () {
     checkConditionalUI('loginForm');

@@ -8,24 +8,56 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.functional import cached_property
 from django.dispatch import receiver
 from django.db.models.signals import post_save
+from django.utils import timezone
+
+# New: Use personal access tokens for API access
+
+class PersonalAccessToken(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="personal_tokens")
+
+    name = models.CharField(max_length=100)  # label shown in UI
+    prefix = models.CharField(max_length=16, db_index=True)  # helps lookup
+    token_hash = models.CharField(max_length=64, unique=True)  # sha256 hex length 64
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+
+    expires_at = models.DateTimeField(null=True, blank=True)
+    revoked_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["user", "revoked_at", "expires_at"])]
+
+    @property
+    def is_active(self):
+        if self.revoked_at is not None:
+            return False
+        if self.expires_at is not None and self.expires_at <= timezone.now():
+            return False
+        return True
 
 
 class User(AbstractUser):
     # points are updated by database triggers
     points = models.IntegerField(default=0)
 
-
-class UI_User(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="ui")
+class UserPreferences(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="prefs",
+    )
 
     class Frontends(models.IntegerChoices):
-            Default = 1
-            Lightroom = 2
+        DEFAULT = 1, "Default"
+        LIGHTROOM = 2, "Lightroom"
 
-    frontend = models.IntegerField(choices=Frontends.choices, default=1)
-
+    frontend = models.IntegerField(choices=Frontends.choices, default=Frontends.LIGHTROOM)
+    is_site_admin = models.BooleanField(default=False)
+    
     def __str__(self):
-        return 'UI properties of user '+str(self.user)
+        return f"Preferences of user {self.user_id}"
+    
 
 # Add new users to teams if the ADD_USER_TO_TEAM is set
 @receiver([post_save], sender=User)

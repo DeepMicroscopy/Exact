@@ -41,7 +41,7 @@ def base_data(request):
         'TOOLS_ENABLED': settings.TOOLS_ENABLED,
         'SHOW_AVAILABLE_SPACE' : settings.SHOW_AVAILABLE_SPACE,
         'my_teams': my_teams,
-        'frontend' : request.user.ui.frontend if hasattr(request.user,'ui') and hasattr(request.user.ui,'frontend') and request.user.ui.frontend else 1,
+        'frontend' : request.user.prefs.frontend if hasattr(request.user,'prefs') and hasattr(request.user.prefs,'frontend') and request.user.prefs.frontend else 1,
         'free_tb' : storage_memory_data['free_tb'],
         'used_tb' : storage_memory_data['used_tb'],
         'total_tb' : storage_memory_data['total_tb'],
