@@ -334,28 +334,31 @@ def user(request, user_id):
     form = UserEditForm(instance=user)
     if request.method == 'POST':
 
-        passwordmatching = request.POST['password1']==request.POST['password2']
+        passwordmatching = 'password1' in request.POST and 'password2' in request.POST and request.POST['password1']==request.POST['password2']
 
         if passwordmatching and len(request.POST['password1'])>0:
             user.set_password(request.POST['password1'])
             user.save()
+        
+        if 'password1' not in request.POST or 'password2' not in request.POST:
+            passwordmatching=True
 
-        if (user.is_superuser) and request.POST['frontend']:
+        if 'frontend' in request.POST and request.POST['frontend']:
             if not hasattr(user,'prefs'):
                 user.prefs = UserPreferences.objects.get_or_create(user=user)
             
             user.prefs.frontend = int(request.POST['frontend'])
             user.prefs.save()
 
-        if  request.POST['first_name']:
+        if  'first_name' in request.POST:
             user.first_name = str(request.POST['first_name'])
             user.save()
 
-        if  request.POST['last_name']:
+        if  'last_name' in request.POST:
             user.last_name = str(request.POST['last_name'])
             user.save()
 
-        if  request.POST['email']:
+        if  'email' in request.POST:
             user.email = str(request.POST['email'])
             user.save()
 
