@@ -345,7 +345,7 @@ def user(request, user_id):
 
         if 'frontend' in request.POST and request.POST['frontend']:
             if not hasattr(user,'prefs'):
-                user.prefs = UserPreferences.objects.get_or_create(user=user)
+                user.prefs, _ = UserPreferences.objects.get_or_create(user=user)
             
             user.prefs.frontend = int(request.POST['frontend'])
             user.prefs.save()
