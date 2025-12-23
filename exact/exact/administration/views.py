@@ -37,6 +37,8 @@ from exact.users.models import Team, TeamMembership
 from .permissions import site_admin_required
 from django.core.exceptions import ValidationError
 import json
+import secrets
+import string
 
 User = get_user_model()
 
@@ -157,6 +159,31 @@ def user_team_add_api(request, user_id: int):
     obj, created = TeamMembership.objects.get_or_create(user=u, team=team, defaults={"is_admin": False})
     return JsonResponse({"ok": True, "created": created})
 
+
+def _generate_password(length: int = 20) -> str:
+    # Strong, URL-safe-ish password with a wide charset.
+    alphabet = string.ascii_letters + string.digits + "!@#$%^&*()-_=+"
+    return "".join(secrets.choice(alphabet) for _ in range(length))
+
+@site_admin_required
+@require_POST
+def user_set_random_password_api(request, user_id: int):
+    u = get_object_or_404(User, pk=user_id)
+
+    if u.id == request.user.id:
+        return JsonResponse({"error": "You cannot set a random password for your own account."}, status=400)
+
+    if getattr(u, "is_superuser", False) and not getattr(request.user, "is_superuser", False):
+        return JsonResponse({"error": "Only superusers may change passwords for superusers."}, status=403)
+
+    new_pw = _generate_password(20)
+    u.set_password(new_pw)
+    u.save(update_fields=["password"])
+
+    # Optional: invalidate sessions by rotating a custom token, if you manage sessions explicitly.
+    # Django does not automatically log out all sessions on password change unless you implement it.
+
+    return JsonResponse({"ok": True, "password": new_pw})
 
 @site_admin_required
 @require_POST

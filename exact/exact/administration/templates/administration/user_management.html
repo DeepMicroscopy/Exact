@@ -169,7 +169,10 @@
                 <h5>Password reset</h5>
                 <p class="text-muted mb-2">Sends the standard Django password reset email to the user.</p>
                 <button class="btn btn-outline-primary" id="btn-send-reset" type="button">Send password reset email</button>
+                <button class="btn btn-outline-dark" id="btn-random-password" type="button">Set random password</button>
               </div>
+
+              <div id="random-password-box" class="alert alert-warning mt-3" style="display:none;"></div>
 
               <div class="mb-3">
                 <h5>Passkeys</h5>
@@ -524,6 +527,37 @@ function renderTeams(memberships) {
 $('#btn-delete-user').on('click', function() {
   if (!currentUserId) return;
   $('#deleteUserModal').modal('show');
+});
+
+$('#btn-random-password').on('click', function() {
+  if (!currentUserId) return;
+
+  if (!confirm("Set a new random password for this user? This will immediately replace their current password.")) {
+    return;
+  }
+
+  $.ajax({
+    url: "{% url 'administration:user_set_random_password_api' user_id=1 %}".replace('/1/set-random-password/', '/' + currentUserId + '/set-random-password/'),
+    method: "POST",
+    headers: { "X-CSRFToken": csrftoken },
+    success: function(resp) {
+      if (resp && resp.password) {
+        var msg = "New password (copy now; it will not be shown again): " + resp.password;
+        $('#random-password-box').text(msg).show();
+        $.notify("Random password set.", "success");
+      } else {
+        $.notify("Random password set.", "success");
+      }
+    },
+    error: function(xhr) {
+      var msg = "Action failed.";
+      try {
+        var data = xhr.responseJSON;
+        if (data && data.error) msg = data.error;
+      } catch(e) {}
+      $.notify(msg, "error");
+    }
+  });
 });
 
 $('#delete-confirm-input').on('input', function() {

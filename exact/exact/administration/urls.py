@@ -31,7 +31,8 @@ urlpatterns = [
     re_path(r'^users/api/(?P<user_id>\d+)/teams/add/$', views.user_team_add_api, name='user_team_add_api'),
     re_path(r'^users/api/(?P<user_id>\d+)/teams/(?P<team_id>\d+)/remove/$', views.user_team_remove_api, name='user_team_remove_api'),
     re_path(r'^users/api/(?P<user_id>\d+)/teams/(?P<team_id>\d+)/toggle-admin/$', views.user_team_toggle_admin_api, name='user_team_toggle_admin_api'),
-
+    re_path(r'^users/api/(?P<user_id>\d+)/set-random-password/$', views.user_set_random_password_api, name='user_set_random_password_api'),
+    
     re_path(r'^products/edit/(\d+)/$', views.edit_product, name='edit_product'),
     re_path(r'^plugins/list/$', views.plugins, name='plugins'),
     re_path(r'^storage/$', views.storage, name='storage'),
