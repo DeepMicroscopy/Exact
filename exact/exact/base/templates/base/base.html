@@ -98,6 +98,9 @@
 						<a class="dropdown-item" href="{% url 'administration:plugins' %}">Plugins</a>
 						{% endif %}
 						<a class="dropdown-item" href="{% url 'administration:storage' %}">Storage</a>
+						{% if request.user.is_superuser and request.user.is_staff %}
+						<a class="dropdown-item" href="{% url 'administration:user_management' %}">User Management</a>
+						{% endif %}
 					</div>
 				</li>
 				{% if my_teams %}

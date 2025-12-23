@@ -53,7 +53,8 @@ class UserPreferences(models.Model):
         LIGHTROOM = 2, "Lightroom"
 
     frontend = models.IntegerField(choices=Frontends.choices, default=Frontends.LIGHTROOM)
-
+    is_site_admin = models.BooleanField(default=False)
+    
     def __str__(self):
         return f"Preferences of user {self.user_id}"
     

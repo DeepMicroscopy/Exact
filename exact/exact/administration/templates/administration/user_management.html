@@ -1,0 +1,606 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block taggerimports %}
+<script type="text/javascript" src="{% static 'scripts/jquery-3.2.1.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'scripts/bootstrap.min.js' %}"></script>
+{% endblock taggerimports %}
+
+{% block additional_js %}
+<script type="text/javascript" src="{% static 'scripts/notify.min.js' %}"></script>
+{% endblock additional_js %}
+
+{% block bodyblock %}
+
+<div class="card" style="text-align:left;">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h3 class="mb-0">User management</h3>
+  </div>
+
+  <div class="card-body">
+    <div class="row">
+
+      <!-- Left pane: search + list -->
+      <div class="col-12 col-lg-4 mb-3 mb-lg-0">
+        <div class="mb-2">
+          <input id="user-q" class="form-control" placeholder="Search username, name, email">
+        </div>
+
+        <div class="form-row mb-3">
+          <div class="col-6">
+            <select id="filter-active" class="form-control">
+              <option value="">Active: any</option>
+              <option value="1">Active: yes</option>
+              <option value="0">Active: no</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <select id="filter-staff" class="form-control">
+              <option value="">Staff: any</option>
+              <option value="1">Staff: yes</option>
+              <option value="0">Staff: no</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="list-group" id="user-list" style="max-height: 70vh; overflow:auto;">
+          <div class="list-group-item text-muted">Loading users…</div>
+        </div>
+      </div>
+
+      <!-- Right pane: details -->
+      <div class="col-12 col-lg-8">
+        <div id="detail-empty" class="alert alert-info">
+          Select a user to view details.
+        </div>
+
+        <div id="detail-panel" style="display:none;">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+              <h4 class="mb-1" id="detail-title"></h4>
+              <div class="text-muted" id="detail-subtitle"></div>
+            </div>
+            <div class="text-right" style="gap:.5rem;">
+              <button class="btn btn-sm btn-outline-secondary" id="btn-refresh" type="button">Refresh</button>
+            </div>
+          </div>
+
+          <div class="nav nav-pills mb-3" id="detail-tabs" role="tablist" style="gap:.5rem;">
+            <a class="nav-link active" data-toggle="pill" href="#tab-personal" role="tab">Personal</a>
+            <a class="nav-link" data-toggle="pill" href="#tab-access" role="tab">Password / Access</a>
+            <a class="nav-link" data-toggle="pill" href="#tab-teams" role="tab">Teams</a>
+          </div>
+
+          <div class="tab-content">
+            <!-- Personal -->
+            <div class="tab-pane fade show active" id="tab-personal" role="tabpanel">
+            <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="mb-3">Edit user</h5>
+
+                <div class="form-row">
+                <div class="col-md-6 mb-2">
+                    <label>First name</label>
+                    <input class="form-control" id="edit-first-name">
+                </div>
+                <div class="col-md-6 mb-2">
+                    <label>Last name</label>
+                    <input class="form-control" id="edit-last-name">
+                </div>
+                </div>
+
+                <div class="form-row">
+                <div class="col-md-6 mb-2">
+                    <label>Email</label>
+                    <input class="form-control" id="edit-email" type="email">
+                </div>
+                <div class="col-md-6 mb-2">
+                    <label>Username</label>
+                    <input class="form-control" id="edit-username">
+                </div>
+                </div>
+
+                <div class="col-md-3">
+                    <label>Date joined:</label>
+                    <p id="f-date-joined"></p>
+                </div>
+
+                <div class="col-md-3">
+                    <label>Is active:</label>
+                    <p id="f-active"></p>
+                </div>
+
+                <div class="col-md-3">
+                    <label>Is staff:</label>
+                    <p id="f-staff"></p>
+                </div>
+
+                <div class="d-flex flex-wrap" style="gap:.5rem;">
+                <button class="btn btn-primary" id="btn-save-user" type="button">Save</button>
+              {% if user.prefs.is_site_admin %}
+                <button class="btn btn-outline-danger" id="btn-delete-user" type="button">Delete user…</button>
+              {% endif %}
+                <button class="btn btn-outline-danger" id="btn-toggle-active" type="button">Toggle active</button>
+                <button class="btn btn-outline-warning" id="btn-toggle-staff" type="button">Toggle staff</button>
+                </div>
+            </div>
+            </div>
+            </div>
+
+            <!-- Access -->
+            <div class="tab-pane fade" id="tab-access" role="tabpanel">
+              <div class="mb-3">
+                <h5>Password reset</h5>
+                <p class="text-muted mb-2">Sends the standard Django password reset email to the user.</p>
+                <button class="btn btn-outline-primary" id="btn-send-reset" type="button">Send password reset email</button>
+              </div>
+
+              <div class="mb-3">
+                <h5>Passkeys</h5>
+                <p class="text-muted mb-2"></p>
+                <p id="f-passkeys-used"></p>
+              </div>
+
+
+              <div class="mb-3">
+                <h5>Access tokens</h5>
+                <div class="table-responsive">
+                  <table class="table table-sm table-striped mb-0">
+                    <thead>
+                      <tr>
+                        <th>Name</th><th>Prefix</th><th>Created</th><th>Last used</th><th>Expires</th><th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody id="tokens-table">
+                      <tr><td colspan="6" class="text-muted">No data loaded.</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Teams -->
+            <div class="tab-pane fade" id="tab-teams" role="tabpanel">
+                <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="mb-3">Manage team memberships</h5>
+
+                    <div class="form-row align-items-end">
+                    <div class="col-12 col-md-8 mb-2 mb-md-0">
+                        <label>Add to team</label>
+                        <select class="form-control" id="team-picker"></select>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <button class="btn btn-secondary btn-block" id="btn-add-to-team" type="button">Add</button>
+                    </div>
+                    </div>
+                </div>
+                </div>
+
+                <div id="teams-list" class="list-group">
+                <div class="list-group-item text-muted">No data loaded.</div>
+                </div>
+
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="deleteUserModal" tabindex="-1" role="dialog" aria-labelledby="deleteUserModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteUserModalLabel">Delete user</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="alert alert-danger">
+          This will permanently delete the user and may remove related data (team memberships, tokens, etc.).
+        </div>
+        <p>Type the username to confirm:</p>
+        <input class="form-control" id="delete-confirm-input" placeholder="Username">
+        <small class="text-muted d-block mt-2">This action cannot be undone.</small>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger" id="btn-confirm-delete" disabled>Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="application/javascript">
+  function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      var cookies = document.cookie.split(';');
+      for (var i = 0; i < cookies.length; i++) {
+        var cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+  var csrftoken = getCookie('csrftoken');
+
+  var currentUserId = null;
+
+  function fmt(dt) {
+    if (!dt) return "";
+    try { return new Date(dt).toLocaleString(); } catch(e) { return dt; }
+  }
+
+  function urlFor(name, userId, teamId) {
+  // Adjust these base URLs if your namespace differs.
+  if (name === "detail")   return "{% url 'administration:user_detail_api' user_id=1 %}".replace('/1/detail/', '/' + userId + '/detail/');
+  if (name === "update")   return "{% url 'administration:user_update_api' user_id=1 %}".replace('/1/update/', '/' + userId + '/update/');
+  if (name === "delete")   return "{% url 'administration:user_delete_api' user_id=1 %}".replace('/1/delete/', '/' + userId + '/delete/');
+
+  if (name === "teamsList") return "{% url 'administration:team_list_api' %}";
+  if (name === "teamAdd")   return "{% url 'administration:user_team_add_api' user_id=1 %}".replace('/1/teams/add/', '/' + userId + '/teams/add/');
+  if (name === "teamRemove") return "{% url 'administration:user_team_remove_api' user_id=1 team_id=1 %}"
+                              .replace('/1/teams/1/remove/', '/' + userId + '/teams/' + teamId + '/remove/');
+  if (name === "teamToggleAdmin") return "{% url 'administration:user_team_toggle_admin_api' user_id=1 team_id=1 %}"
+                              .replace('/1/teams/1/toggle-admin/', '/' + userId + '/teams/' + teamId + '/toggle-admin/');
+  return null;
+}
+
+var allTeams = [];
+
+function loadTeamsCatalog() {
+  $.ajax({
+    url: urlFor("teamsList"),
+    method: "GET",
+    success: function(resp) {
+      allTeams = (resp && resp.results) ? resp.results : [];
+      var $sel = $("#team-picker");
+      $sel.empty();
+      if (allTeams.length === 0) {
+        $sel.append('<option value="">No teams</option>');
+        return;
+      }
+      allTeams.forEach(function(t) {
+        $sel.append('<option value="' + t.id + '">' + t.name + '</option>');
+      });
+    },
+    error: function() {
+      $.notify("Could not load teams.", "error");
+    }
+  });
+}
+
+  function loadUserList() {
+    var q = $('#user-q').val().trim();
+    var active = $('#filter-active').val();
+    var staff = $('#filter-staff').val();
+
+    $.ajax({
+      url: "{% url 'administration:user_list_api' %}",
+      method: "GET",
+      data: { q: q, active: active, staff: staff, limit: 100 },
+      success: function(resp) {
+        var $list = $('#user-list');
+        $list.empty();
+
+        var results = (resp && resp.results) ? resp.results : [];
+        if (results.length === 0) {
+          $list.append('<div class="list-group-item text-muted">No users found.</div>');
+          return;
+        }
+
+        results.forEach(function(u) {
+          var badge = u.is_active ? '' : ' <span class="badge badge-secondary">inactive</span>';
+          var staffBadge = u.is_staff ? ' <span class="badge badge-info">staff</span>' : '';
+          var item =
+            '<button type="button" class="list-group-item list-group-item-action user-row" data-id="' + u.id + '">' +
+              '<div class="d-flex justify-content-between">' +
+                '<div><strong>' + (u.display_name || u.username) + '</strong>' + badge + staffBadge + '</div>' +
+              '</div>' +
+              '<div class="text-muted" style="font-size: .9em;">' + (u.email || '') + '</div>' +
+            '</button>';
+          $list.append(item);
+        });
+      },
+      error: function() {
+        $('#user-list').html('<div class="list-group-item text-danger">Could not load users.</div>');
+      }
+    });
+  }
+
+  function renderTokens(tokens) {
+    var $tbody = $('#tokens-table');
+    $tbody.empty();
+
+    if (!tokens || tokens.length === 0) {
+      $tbody.append('<tr><td colspan="6" class="text-muted">No tokens.</td></tr>');
+      return;
+    }
+
+    tokens.forEach(function(t) {
+      var status = t.revoked_at ? 'Revoked' : 'Active';
+      $tbody.append(
+        '<tr>' +
+          '<td>' + (t.name || '') + '</td>' +
+          '<td><code>' + (t.prefix || '') + '</code></td>' +
+          '<td>' + fmt(t.created_at) + '</td>' +
+          '<td>' + fmt(t.last_used_at) + '</td>' +
+          '<td>' + fmt(t.expires_at) + '</td>' +
+          '<td>' + status + '</td>' +
+        '</tr>'
+      );
+    });
+  }
+
+function renderTeams(memberships) {
+  var $list = $('#teams-list');
+  $list.empty();
+
+  if (!memberships || memberships.length === 0) {
+    $list.append('<div class="list-group-item text-muted">No team memberships.</div>');
+    return;
+  }
+
+  memberships.forEach(function(m) {
+    var adminBadge = m.is_admin ? '<span class="badge badge-primary ml-2">Admin</span>' : '';
+    var toggleLabel = m.is_admin ? 'Revoke admin' : 'Make admin';
+
+    $list.append(
+      '<div class="list-group-item d-flex justify-content-between align-items-center flex-wrap" style="gap:.5rem;">' +
+        '<div>' + m.team_name + adminBadge + '</div>' +
+        '<div class="d-flex" style="gap:.5rem;">' +
+          '<button class="btn btn-sm btn-outline-primary team-toggle-admin" data-team-id="' + m.team_id + '">' + toggleLabel + '</button>' +
+          '<button class="btn btn-sm btn-outline-danger team-remove" data-team-id="' + m.team_id + '">Remove</button>' +
+        '</div>' +
+      '</div>'
+    );
+  });
+}
+
+  function loadUserDetail(userId) {
+    currentUserId = userId;
+
+    $.ajax({
+      url: "{% url 'administration:user_detail_api' user_id=1 %}".replace('/1/detail/', '/' + userId + '/detail/'),
+      method: "GET",
+      success: function(resp) {
+        var u = resp.user;
+
+        $('#detail-empty').hide();
+        $('#detail-panel').show();
+
+        $('#edit-first-name').val(u.first_name || "");
+        $('#edit-last-name').val(u.last_name || "");
+        $('#edit-email').val(u.email || "");
+        $('#edit-username').val(u.username || "");
+
+        // Prepare delete dialog
+        $('#delete-confirm-input').val("");
+        $('#btn-confirm-delete').prop("disabled", true);
+        $('#btn-confirm-delete').data("expected-username", u.username);
+
+        $('#detail-title').text((u.first_name || u.last_name) ? ((u.first_name || '') + ' ' + (u.last_name || '')).trim() : u.username);
+        $('#detail-subtitle').text(u.email || '');
+
+        $('#f-date-joined').text(fmt(u.date_joined));
+        $('#f-last-login').text(fmt(u.last_login));
+        $('#f-passkeys-used').text(resp.passkeys.used ? ('In use (last '+fmt(resp.passkeys.last_used)+')') : 'Not in use');
+        $('#f-active').text(u.is_active ? 'Yes' : 'No');
+        $('#f-staff').text(u.is_staff ? 'Yes' : 'No');
+
+        renderTokens(resp.tokens || []);
+        renderTeams(resp.memberships || []);
+      },
+      error: function() {
+        $.notify("Could not load user details.", "error");
+      }
+    });
+  }
+
+  function postAction(url, okMsg) {
+    $.ajax({
+      url: url,
+      method: "POST",
+      headers: { "X-CSRFToken": csrftoken },
+      success: function(resp) {
+        if (okMsg) $.notify(okMsg, "success");
+        if (currentUserId) {
+          loadUserDetail(currentUserId);
+          loadUserList();
+        }
+      },
+      error: function(xhr) {
+        var msg = "Action failed.";
+        try {
+          var data = xhr.responseJSON;
+          if (data && data.error) msg = data.error;
+        } catch(e) {}
+        $.notify(msg, "error");
+      }
+    });
+  }
+
+  // Events
+  $(document).on('click', '.user-row', function() {
+    var id = $(this).data('id');
+    loadUserDetail(id);
+  });
+
+  $('#btn-refresh').on('click', function() {
+    if (currentUserId) loadUserDetail(currentUserId);
+  });
+
+  $('#btn-save-user').on('click', function() {
+  if (!currentUserId) return;
+
+  var payload = {
+    first_name: $('#edit-first-name').val().trim(),
+    last_name: $('#edit-last-name').val().trim(),
+    email: $('#edit-email').val().trim(),
+    username: $('#edit-username').val().trim()
+  };
+
+  $.ajax({
+    url: urlFor("update", currentUserId),
+    method: "POST",
+    contentType: "application/json",
+    data: JSON.stringify(payload),
+    headers: { "X-CSRFToken": csrftoken },
+    success: function() {
+      $.notify("User updated.", "success");
+      loadUserDetail(currentUserId);
+      loadUserList();
+    },
+    error: function(xhr) {
+      var msg = "Update failed.";
+      try {
+        var data = xhr.responseJSON;
+        if (data && data.error) msg = (typeof data.error === "string") ? data.error : JSON.stringify(data.error);
+      } catch(e) {}
+      $.notify(msg, "error");
+    }
+  });
+});
+
+$('#btn-delete-user').on('click', function() {
+  if (!currentUserId) return;
+  $('#deleteUserModal').modal('show');
+});
+
+$('#delete-confirm-input').on('input', function() {
+  var expected = $('#btn-confirm-delete').data("expected-username") || "";
+  var typed = $(this).val().trim();
+  $('#btn-confirm-delete').prop("disabled", typed !== expected);
+});
+
+$('#btn-confirm-delete').on('click', function() {
+  if (!currentUserId) return;
+
+  $.ajax({
+    url: urlFor("delete", currentUserId),
+    method: "POST",
+    headers: { "X-CSRFToken": csrftoken },
+    success: function() {
+      $('#deleteUserModal').modal('hide');
+      $.notify("User deleted.", "success");
+      currentUserId = null;
+      $('#detail-panel').hide();
+      $('#detail-empty').show();
+      loadUserList();
+    },
+    error: function(xhr) {
+      var msg = "Delete failed.";
+      try {
+        var data = xhr.responseJSON;
+        if (data && data.error) msg = data.error;
+      } catch(e) {}
+      $.notify(msg, "error");
+    }
+  });
+});
+
+$('#btn-add-to-team').on('click', function() {
+  if (!currentUserId) return;
+  var teamId = $('#team-picker').val();
+  if (!teamId) return;
+
+  $.ajax({
+    url: urlFor("teamAdd", currentUserId),
+    method: "POST",
+    contentType: "application/json",
+    data: JSON.stringify({ team_id: parseInt(teamId, 10) }),
+    headers: { "X-CSRFToken": csrftoken },
+    success: function() {
+      $.notify("Added to team.", "success");
+      loadUserDetail(currentUserId);
+    },
+    error: function() {
+      $.notify("Could not add to team.", "error");
+    }
+  });
+});
+
+$(document).on('click', '.team-remove', function() {
+  if (!currentUserId) return;
+  var teamId = $(this).data('team-id');
+
+  $.ajax({
+    url: urlFor("teamRemove", currentUserId, teamId),
+    method: "POST",
+    headers: { "X-CSRFToken": csrftoken },
+    success: function() {
+      $.notify("Removed from team.", "success");
+      loadUserDetail(currentUserId);
+    },
+    error: function() {
+      $.notify("Could not remove from team.", "error");
+    }
+  });
+});
+
+$(document).on('click', '.team-toggle-admin', function() {
+  if (!currentUserId) return;
+  var teamId = $(this).data('team-id');
+
+  $.ajax({
+    url: urlFor("teamToggleAdmin", currentUserId, teamId),
+    method: "POST",
+    headers: { "X-CSRFToken": csrftoken },
+    success: function() {
+      $.notify("Team admin status updated.", "success");
+      loadUserDetail(currentUserId);
+    },
+    error: function() {
+      $.notify("Could not update admin status.", "error");
+    }
+  });
+});
+
+
+  $('#btn-toggle-active').on('click', function() {
+    if (!currentUserId) return;
+    var url = "{% url 'administration:user_toggle_active_api' user_id=1 %}".replace('/1/toggle-active/', '/' + currentUserId + '/toggle-active/');
+    postAction(url, "Updated active status.");
+  });
+
+  $('#btn-toggle-staff').on('click', function() {
+    if (!currentUserId) return;
+    var url = "{% url 'administration:user_toggle_staff_api' user_id=1 %}".replace('/1/toggle-staff/', '/' + currentUserId + '/toggle-staff/');
+    postAction(url, "Updated staff status.");
+  });
+
+  $('#btn-send-reset').on('click', function() {
+    if (!currentUserId) return;
+    var url = "{% url 'administration:user_send_password_reset_api' user_id=1 %}".replace('/1/send-password-reset/', '/' + currentUserId + '/send-password-reset/');
+    postAction(url, "Password reset email sent.");
+  });
+
+  var debounceTimer = null;
+  $('#user-q, #filter-active, #filter-staff').on('input change', function() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(loadUserList, 200);
+  });
+
+  // Initial load
+  $(document).ready(function() {
+    loadUserList();
+    loadTeamsCatalog();
+  });
+</script>
+
+
+
+{% endblock %}

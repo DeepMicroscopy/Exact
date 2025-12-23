@@ -17,16 +17,29 @@ from exact.administration.models import Product
 from exact.users.models import Team
 from exact.images.models import ImageSet
 from exact.administration.serializers import serialize_annotationType, ProductSerializer
+from passkeys.models import UserPasskey
 
+from django.views.decorators.http import require_GET, require_POST
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import ParseError
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_200_OK, \
     HTTP_403_FORBIDDEN
-from django.conf import settings
 import csv
 import os
 import shutil
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.contrib.auth.forms import PasswordResetForm
+from django.http import JsonResponse, HttpResponseBadRequest
+from django.shortcuts import render, get_object_or_404
+from exact.users.models import Team, TeamMembership
+from .permissions import site_admin_required
+from django.core.exceptions import ValidationError
+import json
+
+User = get_user_model()
+
 
 def logs(request):
 
@@ -68,6 +81,289 @@ def product(request, product_id):
         'teams': Team.objects.filter(members=request.user)
     })
 
+
+@site_admin_required
+@require_POST
+def user_update_api(request, user_id: int):
+    u = get_object_or_404(User, pk=user_id)
+
+    try:
+        payload = json.loads(request.body.decode("utf-8") or "{}")
+    except Exception:
+        return JsonResponse({"error": "Invalid JSON body."}, status=400)
+
+    if getattr(u, "is_superuser", False) and not getattr(request.user, "is_superuser", False):
+        return JsonResponse({"error": "Only superusers may modify superusers."}, status=403)
+
+    # Apply updates (restrict to allowed fields)
+    allowed = ["first_name", "last_name", "email", "username"]
+    for field in allowed:
+        if field in payload:
+            setattr(u, field, (payload[field] or "").strip())
+
+    # Basic validation – extend as needed
+    if "email" in payload and u.email and "@" not in u.email:
+        return JsonResponse({"error": "Invalid email address."}, status=400)
+
+    try:
+        u.full_clean(exclude=None)  # may be too strict depending on your User model; adjust if needed
+    except ValidationError as e:
+        return JsonResponse({"error": e.message_dict}, status=400)
+
+    u.save()
+    return JsonResponse({"ok": True})
+
+@site_admin_required
+@require_POST
+def user_delete_api(request, user_id: int):
+    u = get_object_or_404(User, pk=user_id)
+
+    if u.id == request.user.id:
+        return JsonResponse({"error": "You cannot delete your own account."}, status=400)
+
+    if getattr(u, "is_superuser", False) and not getattr(request.user, "is_superuser", False):
+        return JsonResponse({"error": "Only superusers may delete superusers."}, status=403)
+
+    u.delete()
+    return JsonResponse({"ok": True})
+
+@site_admin_required
+@require_GET
+def team_list_api(request):
+    from exact.users.models import Team  
+    teams = Team.objects.all().order_by("name")[:500]
+    return JsonResponse({
+        "results": [{"id": t.id, "name": t.name} for t in teams]
+    })
+
+
+@site_admin_required
+@require_POST
+def user_team_add_api(request, user_id: int):
+    from exact.users.models import TeamMembership, Team  # adjust path
+    u = get_object_or_404(User, pk=user_id)
+
+    try:
+        payload = json.loads(request.body.decode("utf-8") or "{}")
+    except Exception:
+        return JsonResponse({"error": "Invalid JSON body."}, status=400)
+
+    team_id = payload.get("team_id")
+    if not team_id:
+        return JsonResponse({"error": "team_id is required."}, status=400)
+
+    team = get_object_or_404(Team, pk=team_id)
+
+    obj, created = TeamMembership.objects.get_or_create(user=u, team=team, defaults={"is_admin": False})
+    return JsonResponse({"ok": True, "created": created})
+
+
+@site_admin_required
+@require_POST
+def user_team_remove_api(request, user_id: int, team_id: int):
+    from exact.users.models import TeamMembership  # adjust path
+    u = get_object_or_404(User, pk=user_id)
+
+    TeamMembership.objects.filter(user=u, team_id=team_id).delete()
+    return JsonResponse({"ok": True})
+
+
+@site_admin_required
+@require_POST
+def user_team_toggle_admin_api(request, user_id: int, team_id: int):
+    from exact.users.models import TeamMembership  # adjust path
+    u = get_object_or_404(User, pk=user_id)
+
+    m = TeamMembership.objects.filter(user=u, team_id=team_id).first()
+    if not m:
+        return JsonResponse({"error": "User is not a member of this team."}, status=400)
+
+    m.is_admin = not bool(m.is_admin)
+    m.save(update_fields=["is_admin"])
+    return JsonResponse({"ok": True, "is_admin": m.is_admin})
+
+
+@staff_member_required
+def user_management(request):
+    # Page shell; all data loaded via AJAX
+    return render(request, "administration/user_management.html", {'user':request.user})
+
+@staff_member_required
+@require_GET
+def user_list_api(request):
+    """
+    Returns a list of users with minimal fields for the left pane.
+    Query params:
+      q: search in username/email/first/last
+      active: '1' or '0' or ''
+      staff: '1' or '0' or ''
+      limit: int (default 50)
+    """
+    q = (request.GET.get("q") or "").strip()
+    active = (request.GET.get("active") or "").strip()
+    staff = (request.GET.get("staff") or "").strip()
+    limit = request.GET.get("limit") or "50"
+
+    try:
+        limit = max(1, min(int(limit), 200))
+    except ValueError:
+        limit = 50
+
+    qs = User.objects.all().order_by("username")
+
+    if q:
+        from django.db.models import Q
+        qs = qs.filter(
+            Q(username__icontains=q) |
+            Q(email__icontains=q) |
+            Q(first_name__icontains=q) |
+            Q(last_name__icontains=q)
+        )
+
+    if active in ("0", "1"):
+        qs = qs.filter(is_active=(active == "1"))
+
+    if staff in ("0", "1"):
+        qs = qs.filter(is_staff=(staff == "1"))
+
+    qs = qs[:limit]
+
+    data = []
+    for u in qs:
+        display_name = (f"{u.first_name} {u.last_name}".strip() or u.username)
+        data.append({
+            "id": u.id,
+            "username": u.username,
+            "display_name": display_name,
+            "email": u.email,
+            "is_active": u.is_active,
+            "is_staff": u.is_staff,
+        })
+
+    return JsonResponse({"results": data})
+
+
+@staff_member_required
+@require_GET
+def user_detail_api(request, user_id: int):
+    u = get_object_or_404(User, pk=user_id)
+
+    # Optional: user preferences (safe if it exists)
+    prefs = None
+    if hasattr(u, "preferences"):
+        prefs = u.preferences
+
+    # Optional: teams via TeamMembership if present in your project
+    memberships_data = []
+    try:
+        memberships = TeamMembership.objects.select_related("team").filter(user=u).order_by("team__name")
+        for m in memberships:
+            memberships_data.append({
+                "team_id": m.team_id,
+                "team_name": m.team.name,
+                "is_admin": bool(getattr(m, "is_admin", False)),
+            })
+    except Exception:
+        # If you don’t have that model yet, just omit memberships
+        memberships_data = []
+
+    # Optional: passkeys summary (depends on your passkeys app; keep it minimal)
+    passkeys_supported = True  # you can replace with real logic
+    passkeys_used = UserPasskey.objects.filter(user=u).count()>0
+
+    passkeys_last_used = UserPasskey.objects.filter(user=u).order_by('-last_used').first().isoformat() if passkeys_used else ''
+
+    tokens_data = []
+    try:
+        from exact.users.models import PersonalAccessToken  # adjust import to your token model location
+        tokens = PersonalAccessToken.objects.filter(user=u).order_by("-created_at")[:200]
+        for t in tokens:
+            tokens_data.append({
+                "id": t.id,
+                "name": t.name,
+                "prefix": t.prefix,
+                "created_at": t.created_at.isoformat() if t.created_at else None,
+                "last_used_at": t.last_used_at.isoformat() if t.last_used_at else None,
+                "expires_at": t.expires_at.isoformat() if t.expires_at else None,
+                "revoked_at": t.revoked_at.isoformat() if t.revoked_at else None,
+            })
+    except Exception as e:
+        print(e)
+        tokens_data = []
+
+    return JsonResponse({
+        "user": {
+            "id": u.id,
+            "username": u.username,
+            "first_name": u.first_name,
+            "last_name": u.last_name,
+            "email": u.email,
+            "is_active": u.is_active,
+            "is_staff": u.is_staff,
+            "is_superuser": getattr(u, "is_superuser", False),
+            "date_joined": u.date_joined.isoformat() if getattr(u, "date_joined", None) else None,
+            "last_login": u.last_login.isoformat() if getattr(u, "last_login", None) else None,
+        },
+        "preferences": {
+            "frontend": getattr(prefs, "frontend", None),
+        } if prefs else None,
+        "memberships": memberships_data,
+        "tokens": tokens_data,
+        "passkeys": {"supported": passkeys_supported,
+                     "used": passkeys_used,
+                     "last_used": passkeys_last_used},
+
+    })
+
+
+@staff_member_required
+@require_POST
+def user_toggle_active_api(request, user_id: int):
+    u = get_object_or_404(User, pk=user_id)
+    if u.id == request.user.id:
+        return JsonResponse({"error": "You cannot deactivate your own account."}, status=400)
+
+    u.is_active = not u.is_active
+    u.save(update_fields=["is_active"])
+    return JsonResponse({"ok": True, "is_active": u.is_active})
+
+
+@staff_member_required
+@require_POST
+def user_toggle_staff_api(request, user_id: int):
+    u = get_object_or_404(User, pk=user_id)
+    if u.id == request.user.id:
+        return JsonResponse({"error": "You cannot change your own staff status here."}, status=400)
+
+    # Optional: restrict to superusers only
+    if not getattr(request.user, "is_superuser", False):
+        return JsonResponse({"error": "Only superusers may change staff status."}, status=403)
+
+    u.is_staff = not u.is_staff
+    u.save(update_fields=["is_staff"])
+    return JsonResponse({"ok": True, "is_staff": u.is_staff})
+
+
+@staff_member_required
+@require_POST
+def user_send_password_reset_api(request, user_id: int):
+    u = get_object_or_404(User, pk=user_id)
+    if not u.email:
+        return JsonResponse({"error": "User has no email address on file."}, status=400)
+
+    form = PasswordResetForm(data={"email": u.email})
+    if not form.is_valid():
+        return JsonResponse({"error": "Invalid email."}, status=400)
+
+    # Uses Django’s built-in password reset email flow.
+    form.save(
+        request=request,
+        use_https=request.is_secure(),
+        from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
+        email_template_name="registration/password_reset_email.html",
+        subject_template_name="registration/password_reset_subject.txt",
+    )
+    return JsonResponse({"ok": True})
 
 
 def create_product(request):
