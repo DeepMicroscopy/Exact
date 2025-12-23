@@ -1,9 +1,13 @@
-from django.urls import include, re_path
+from django.urls import include, re_path, path
 
 from . import views
+
 from rest_framework.routers import DefaultRouter
 
 from .views import PersonalAccessTokenViewSet
+router = DefaultRouter()
+router.register(r"tokens", PersonalAccessTokenViewSet, basename="api-tokens")
+
 
 app_name = 'users'
 urlpatterns = [
@@ -20,7 +24,7 @@ urlpatterns = [
     re_path(r'^team/(\d+)/revoke_admin/(\d+)/$', views.revoke_team_admin, name='revoke_team_admin'),
     re_path(r'^user/(\d+)/$', views.user, name='user'),
     re_path(r'^user/explore/$', views.explore_user, name='explore_user'),
+
+    path("api/", include(router.urls)),
 ]
 
-router = DefaultRouter()
-router.register(r"api/user/tokens", PersonalAccessTokenViewSet, basename="api-tokens")

@@ -2,11 +2,10 @@
 {% load static %}
 {% load i18n %}
 {% load widget_tweaks %}
-{% block taggerimports %}
 
+{% block taggerimports %}
 <script type="text/javascript" src="{% static 'scripts/jquery-3.2.1.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'scripts/bootstrap.min.js' %}"></script>
-
 {% endblock taggerimports %}
 
 {% block additional_js %}
@@ -16,84 +15,367 @@
 
 {% block bodyblock %}
 
-<div class="card" style="text-align: left;">
-    <div class="card-header">
-        <h3>User profile ({{ user.username }})</h3>
-    </div>
-    
+<div class="card" style="text-align:left;">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h3 class="mb-0">User profile ({{ user.username }})</h3>
+  </div>
+
+  <div class="card-body">
+
     {% if not passwordmatching %}
-    <div class="alert alert-warning">Passwords mismatch</div>
-    
+      <div class="alert alert-warning">Passwords mismatch</div>
     {% endif %}
     {% if info %}
-    <div class="alert alert-info">{{info}}</div>
+      <div class="alert alert-info">{{ info }}</div>
     {% endif %}
 
-    <form class="login" method="POST" action="{% url 'users:user' user.id %}">
-        {% csrf_token %}
-        <table class="table table-striped">
-            <tr>
-                <td><label for="id_firstname">First Name</label></td>
-                <td><input type="text" id="id_firstname" name="first_name" value="{{user.first_name}}"></td>
-            </tr>
-            <tr>
-                <td><label for="id_lastname">Last Name</label></td>
-                <td><input type="text" id="id_lastname" name="last_name" value="{{user.last_name}}"></td>
-            </tr>
-            <tr>
-                <td><label for="id_email">Email <address></address></label></td>
-                <td><input type="text" id="id_email" name="email" value="{{user.email}}"></td>
-            </tr>
-            <tr>
-                <td><label for="id_password">New Password</label></td>
-                <td><input type="password" id="id_password" name="password1"></td>
-            </tr>
-            <tr>
-                <td><label for="id_password2">New Password (repeat)</label></td>
-                <td><input type="password" id="id_password2" name="password2"></td>
-            </tr>
-            <tr>
-                <td>
-                    <label for="id_frontend">User Interface</label>
-                </td>
-                <td>
-                    <select id="id_frontend" name="frontend" class="form-control">
-                                            
-                        <option value=1 {% if frontend == 1 %}selected {% endif %}
-                            class="bold">default</option>
-                    
-                        <option value=2 {% if frontend == 2 %}selected {% endif %}
-                            class="bold">Lightroom</option>
-                    
-                </select>
-                            </td>
-            </tr>
+    <div class="row">
+      <!-- Left navigation -->
+      <div class="col-12 col-md-4 col-lg-3 mb-3 mb-md-0">
+        <div class="nav flex-row flex-md-column nav-pills" id="profile-sections" role="tablist" aria-orientation="vertical" style="gap: .5rem;">
+          <a class="nav-link active" id="tab-personal-link" data-toggle="pill" href="#tab-personal" role="tab" aria-controls="tab-personal" aria-selected="true">
+            Personal information
+          </a>
+          <a class="nav-link" id="tab-access-link" data-toggle="pill" href="#tab-access" role="tab" aria-controls="tab-access" aria-selected="false">
+            Password / Access
+          </a>
+          <a class="nav-link" id="tab-teams-link" data-toggle="pill" href="#tab-teams" role="tab" aria-controls="tab-teams" aria-selected="false">
+            Teams
+          </a>
+        </div>
 
-        </table>
-      <div id="pk" class="alert alert-info" style="display: none">Your device supports passkeys, <a href="{%url 'passkeys:enroll'%}">Enroll</a> </div>
-
-
+        <hr class="d-none d-md-block" />
+        <small class="text-muted d-none d-md-block">
+          Select a section to edit your profile.
+        </small>
       </div>
-        <script type="application/javascript">
-            function register_pk()
-            {
-                $('#pk').show();
-            }
-            {% include 'check_passkeys.js'%}
-            $(document).ready(check_passkey(true,register_pk))
 
-        </script>        
-        <center>
-        <input type="submit" value="{% trans 'Save' %}" class="btn btn-primary" />
-    </center>
-    </form>
-        <hr>
-        <h4>Teams:</h4>
-        <ul>
-            {% for team in teams %}
-                <li><a href="{% url 'users:team' team.id %}">{{team.name}}</a></li>
-            {% endfor %}
-        </ul>
+      <!-- Right content -->
+      <div class="col-12 col-md-8 col-lg-9">
+        <div class="tab-content" id="profile-tabContent">
+
+          <!-- Personal information -->
+          <div class="tab-pane fade show active" id="tab-personal" role="tabpanel" aria-labelledby="tab-personal-link">
+            <h4 class="mb-3">Personal information</h4>
+
+            <form method="POST" action="{% url 'users:user' user.id %}">
+              {% csrf_token %}
+              <input type="hidden" name="form_name" value="personal" />
+
+              <div class="form-group">
+                <label for="id_firstname">First Name</label>
+                <input type="text" class="form-control" id="id_firstname" name="first_name" value="{{ user.first_name }}">
+              </div>
+
+              <div class="form-group">
+                <label for="id_lastname">Last Name</label>
+                <input type="text" class="form-control" id="id_lastname" name="last_name" value="{{ user.last_name }}">
+              </div>
+
+              <div class="form-group">
+                <label for="id_email">Email</label>
+                <input type="email" class="form-control" id="id_email" name="email" value="{{ user.email }}">
+              </div>
+
+              {# Institution (example). Replace with your real field, e.g. user.preferences.institution #}
+              <div class="form-group">
+                <label for="id_institution">Institution</label>
+                <input type="text" class="form-control" id="id_institution" name="institution"
+                       value="{{ user.preferences.institution|default_if_none:'' }}">
+              </div>
+
+              <div class="form-group">
+                <label>Date joined</label>
+                <input type="text" class="form-control" value="{{ user.date_joined }}" disabled>
+              </div>
+
+              <div class="form-group">
+                <label for="id_frontend">User Interface</label>
+                <select id="id_frontend" name="frontend" class="form-control">
+                  <option value="1" {% if frontend == 1 %}selected{% endif %}>Default</option>
+                  <option value="2" {% if frontend == 2 %}selected{% endif %}>Lightroom</option>
+                </select>
+              </div>
+
+              <button type="submit" class="btn btn-primary">{% trans 'Save changes' %}</button>
+            </form>
+          </div>
+
+
+          <!-- Password / Access -->
+          <div class="tab-pane fade" id="tab-access" role="tabpanel" aria-labelledby="tab-access-link">
+            <h4 class="mb-3">Password / Access</h4>
+
+            <div class="mb-4">
+              <h5>Password</h5>
+              <form method="POST" action="{% url 'users:user' user.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="form_name" value="password" />
+
+                <div class="form-group">
+                  <label for="id_password">New Password</label>
+                  <input type="password" class="form-control" id="id_password" name="password1">
+                </div>
+
+                <div class="form-group">
+                  <label for="id_password2">New Password (repeat)</label>
+                  <input type="password" class="form-control" id="id_password2" name="password2">
+                </div>
+
+                <button type="submit" class="btn btn-primary">{% trans 'Update password' %}</button>
+              </form>
+            </div>
+
+            <div class="mb-4">
+              <h5>Passkeys</h5>
+              <div id="pk" class="alert alert-info" style="display:none;">
+                Your device supports passkeys,
+                <a href="{% url 'passkeys:enroll' %}">Enroll</a>.
+              </div>
+            </div>
+
+            
+
+            <div class="mb-2">
+              <h5>Access tokens</h5>
+              <p class="text-muted">
+                Create tokens for API access. Tokens are shown only once after creation.
+              </p>
+
+              <div class="card">
+                <div class="card-body">
+                  <div class="table-responsive">
+                    <table class="table table-sm table-striped mb-0">
+                      <thead>
+                        <tr>
+                          <th>Name</th>
+                          <th>Prefix</th>
+                          <th>Created</th>
+                          <th>Last used</th>
+                          <th>Expires</th>
+                          <th>Status</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody id="token-table">
+                        <tr><td colspan="7" class="text-muted">Loading tokens…</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div id="token-created" class="alert alert-warning" style="display:none;"></div>
+
+                    <div class="form-row mb-3">
+                    <div class="col-12 col-md-5 mb-2 mb-md-0">
+                        <input type="text" class="form-control" id="token-name" placeholder="Token name (e.g., CI)">
+                    </div>
+
+                    <div class="col-12 col-md-4 mb-2 mb-md-0">
+                        <select class="form-control" id="token-expiry">
+                        <option value="1d">1 day</option>
+                        <option value="7d" selected>7 days</option>
+                        <option value="1m">1 month</option>
+                        <option value="6m">6 months</option>
+                        <option value="1y">1 year</option>
+                        <option value="never">Never</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-md-3">
+                        <button class="btn btn-primary btn-block" id="create-token-btn" type="button">Create token</button>
+                    </div>
+                    </div>
+
+
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Teams -->
+          <div class="tab-pane fade" id="tab-teams" role="tabpanel" aria-labelledby="tab-teams-link">
+            <h4 class="mb-3">Teams</h4>
+
+            {% if teams %}
+              <div class="list-group">
+                {% for membership in memberships %} 
+                <a class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" href="{% url 'users:team' membership.team.id %}"> 
+                    <span> {{ membership.team.name }} 
+                        {% if membership.is_admin %} 
+                        <span class="badge badge-primary ml-2">Admin</span> {% endif %} 
+                    </span>
+                <span class="text-muted">View</span> </a> 
+                {% endfor %}
+
+              </div>
+            {% else %}
+              <p class="text-muted">You are not a member of any team.</p>
+            {% endif %}
+          </div>
+
+        </div>
+      </div>
     </div>
+
+  </div>
 </div>
+
+<script type="application/javascript">
+function addMonths(date, months) {
+  // Handles month-length differences by clamping to last day if needed.
+  var d = new Date(date.getTime());
+  var day = d.getDate();
+
+  d.setMonth(d.getMonth() + months);
+
+  // If we rolled over to the next month, clamp to last day of previous month
+  if (d.getDate() < day) {
+    d.setDate(0);
+  }
+  return d;
+}
+
+function computeExpiresAt(selection) {
+  if (selection === "never") return null;
+
+  var now = new Date();
+
+  if (selection === "1d")  now.setDate(now.getDate() + 1);
+  if (selection === "7d")  now.setDate(now.getDate() + 7);
+  if (selection === "1m")  now = addMonths(now, 1);
+  if (selection === "6m")  now = addMonths(now, 6);
+  if (selection === "1y")  now = addMonths(now, 12);
+
+  // Send ISO 8601; DRF DateTimeField parses this reliably.
+  return now.toISOString();
+}
+
+  function register_pk() { $('#pk').show(); }
+  {% include 'check_passkeys.js' %}
+  $(document).ready(function() {
+    check_passkey(true, register_pk);
+  });
+
+  // ---------- Token management  ----------
+  // Assumes:
+  //   GET  /users/api/tokens/
+  //   POST /users/api/tokens/        body: { "name": "..." }
+  //   POST /users/api/tokens/<id>/revoke/
+  //
+  // And that SessionAuthentication is enabled (so browser session works).
+  function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      var cookies = document.cookie.split(';');
+      for (var i = 0; i < cookies.length; i++) {
+        var cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+  var csrftoken = getCookie('csrftoken');
+
+  function renderTokens(tokens) {
+    var $tbody = $('#token-table');
+    $tbody.empty();
+
+    if (!tokens || tokens.length === 0 || tokens.count === 0) {
+      $tbody.append('<tr><td colspan="7" class="text-muted">No tokens yet.</td></tr>');
+      return;
+    }
+
+    tokens.results.forEach(function(t) {
+      var status = t.revoked_at ? 'Revoked' : 'Active';
+      var revokeBtn = t.revoked_at
+        ? ''
+        : '<button class="btn btn-sm btn-outline-danger revoke-token" data-id="' + t.id + '">Revoke</button>';
+
+      $tbody.append(
+        '<tr>' +
+          '<td>' + (t.name || '') + '</td>' +
+          '<td><code>' + (t.prefix || '') + '</code></td>' +
+          '<td>' + (t.created_at || '') + '</td>' +
+          '<td>' + (t.last_used_at || '') + '</td>' +
+          '<td>' + (t.expires_at || '') + '</td>' +
+          '<td>' + status + '</td>' +
+          '<td class="text-right">' + revokeBtn + '</td>' +
+        '</tr>'
+      );
+    });
+  }
+
+  function loadTokens() {
+    $.ajax({
+      url: '/users/api/tokens/',
+      method: 'GET',
+      success: function(data) { renderTokens(data); },
+      error: function() {
+        $('#token-table').html('<tr><td colspan="7" class="text-danger">Could not load tokens.</td></tr>');
+      }
+    });
+  }
+
+  function showCreatedToken(token) {
+    var $box = $('#token-created');
+    $box.text('Copy this token now (it will not be shown again): ' + token);
+    $box.show();
+  }
+
+  // Load tokens when Access tab is opened (and also once on page load)
+  $('a[data-toggle="pill"][href="#tab-access"]').on('shown.bs.tab', function () {
+    loadTokens();
+  });
+  $(document).ready(function() {
+    loadTokens();
+  });
+
+  $('#create-token-btn').on('click', function() {
+  var name = $('#token-name').val().trim();
+  if (!name) {
+    $.notify("Please enter a token name.", "warn");
+    return;
+  }
+
+  var expirySelection = $('#token-expiry').val();
+  var expiresAt = computeExpiresAt(expirySelection);
+
+  $.ajax({
+    url: '/users/api/tokens/', // adjust to your real path
+    method: 'POST',
+    contentType: 'application/json',
+    data: JSON.stringify({
+      name: name,
+      expires_at: expiresAt  // null means “never”
+    }),
+    headers: { 'X-CSRFToken': csrftoken },
+    success: function(resp) {
+      $('#token-name').val('');
+      if (resp && resp.token) {
+        showCreatedToken(resp.token);
+      }
+      loadTokens();
+    },
+    error: function(xhr) {
+      $.notify("Token creation failed.", "error");
+    }
+  });
+});
+
+  $(document).on('click', '.revoke-token', function() {
+    var id = $(this).data('id');
+    $.ajax({
+      url: '/users/api/tokens/' + id + '/revoke/',
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrftoken },
+      success: function() { loadTokens(); },
+      error: function() { $.notify("Token revoke failed.", "error"); }
+    });
+  });
+</script>
+
 {% endblock %}

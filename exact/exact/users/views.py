@@ -31,6 +31,7 @@ from .serializers import (
 )
 from django.utils import timezone
 from rest_framework.decorators import action
+from exact.users.models import TeamMembership
 
 
 @login_required
@@ -322,7 +323,12 @@ def view_team(request, team_id):
 def user(request, user_id):
     user = get_object_or_404(User, id=user_id)
     teams = Team.objects.filter(members=user)
-
+    memberships = (
+        TeamMembership.objects
+        .select_related("team")
+        .filter(user=user)
+        .order_by("team__name")
+    )
     info = None
     passwordmatching=True
     form = UserEditForm(instance=user)
@@ -357,12 +363,11 @@ def user(request, user_id):
             info = 'Information updated.'
 
 
-
-
     return render(request, 'users/view_user.html', {
         'user': user,
         'frontend' : request.user.prefs.frontend if hasattr(request.user,'prefs') and hasattr(request.user.prefs,'frontend') and request.user.prefs.frontend else 1,
         'form': form,
+        'memberships' : memberships,
         'info': info,
         'passwordmatching' : passwordmatching,
         'teams': teams,
