@@ -9,6 +9,11 @@
 
 {% endblock taggerimports %}
 
+{% block additional_js %}
+<script type="text/javascript" src="{% static 'scripts/plugins_products.js' %}"></script>
+<script type="text/javascript" src="{% static 'scripts/notify.min.js' %}"></script>
+{% endblock additional_js %}
+
 {% block bodyblock %}
 
 <div class="card" style="text-align: left;">
