@@ -298,7 +298,7 @@ def user_detail_api(request, user_id: int):
     passkeys_supported = True  # you can replace with real logic
     passkeys_used = UserPasskey.objects.filter(user=u).count()>0
 
-    passkeys_last_used = UserPasskey.objects.filter(user=u).order_by('-last_used').first().isoformat() if passkeys_used else ''
+    passkeys_last_used = UserPasskey.objects.filter(user=u).order_by('-last_used').first().last_used.isoformat() if passkeys_used else ''
 
     tokens_data = []
     try:
