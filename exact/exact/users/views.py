@@ -19,8 +19,19 @@ from exact.administration.forms import ProductCreationForm
 from exact.administration.models import Product
 from exact.images.models import ImageSet
 from exact.users.forms import TeamCreationForm, UserEditForm
-from .models import Team, UI_User, User
+from .models import Team, UserPreferences, User
 from .serializers import TeamSerializer
+from rest_framework import viewsets, mixins, status
+from .tokens import generate_pat, hash_token
+from rest_framework.permissions import IsAuthenticated
+from .models import PersonalAccessToken
+from .serializers import (
+    PersonalAccessTokenListSerializer,
+    PersonalAccessTokenCreateSerializer,
+)
+from django.utils import timezone
+from rest_framework.decorators import action
+
 
 @login_required
 def create_team(request):
@@ -60,6 +71,58 @@ def revoke_team_admin(request, team_id, user_id):
 
     return redirect(reverse('users:team', args=(team.id,)))
 
+
+
+class PersonalAccessTokenViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    viewsets.GenericViewSet
+):
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return PersonalAccessToken.objects.filter(user=self.request.user).order_by("-created_at")
+
+    def get_serializer_class(self):
+        if self.action == "create":
+            return PersonalAccessTokenCreateSerializer
+        return PersonalAccessTokenListSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        token, prefix = generate_pat()
+        pat = PersonalAccessToken.objects.create(
+            user=request.user,
+            name=serializer.validated_data["name"],
+            prefix=prefix,
+            token_hash=hash_token(token),
+            expires_at=serializer.validated_data.get("expires_at"),
+        )
+
+        # Return the token ONCE
+        return Response(
+            {
+                "id": pat.id,
+                "name": pat.name,
+                "prefix": pat.prefix,
+                "created_at": pat.created_at,
+                "expires_at": pat.expires_at,
+                "token": token,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+    @action(detail=True, methods=["post"])
+    def revoke(self, request, pk=None):
+        pat = self.get_queryset().filter(pk=pk).first()
+        if not pat:
+            return Response(status=404)
+        if pat.revoked_at is None:
+            pat.revoked_at = timezone.now()
+            pat.save(update_fields=["revoked_at"])
+        return Response({"status": "revoked"})
 
 @login_required
 @require_POST
@@ -272,10 +335,11 @@ def user(request, user_id):
             user.save()
 
         if (user.is_superuser) and request.POST['frontend']:
-            if not hasattr(user,'ui'):
-                user.ui = UI_User(user=user)
-            user.ui.frontend = int(request.POST['frontend'])
-            user.ui.save()
+            if not hasattr(user,'prefs'):
+                user.prefs = UserPreferences.objects.get_or_create(user=user)
+            
+            user.prefs.frontend = int(request.POST['frontend'])
+            user.prefs.save()
 
         if  request.POST['first_name']:
             user.first_name = str(request.POST['first_name'])
@@ -297,7 +361,7 @@ def user(request, user_id):
 
     return render(request, 'users/view_user.html', {
         'user': user,
-        'frontend' : request.user.ui.frontend if hasattr(request.user,'ui') and hasattr(request.user.ui,'frontend') and request.user.ui.frontend else 1,
+        'frontend' : request.user.prefs.frontend if hasattr(request.user,'prefs') and hasattr(request.user.prefs,'frontend') and request.user.prefs.frontend else 1,
         'form': form,
         'info': info,
         'passwordmatching' : passwordmatching,

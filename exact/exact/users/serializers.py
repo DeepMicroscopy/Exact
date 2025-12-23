@@ -4,6 +4,19 @@ from rest_flex_fields import FlexFieldsModelSerializer
 from exact.users.models import Team, User, TeamMembership
 
 
+from rest_framework import serializers
+from .models import PersonalAccessToken
+
+class PersonalAccessTokenListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PersonalAccessToken
+        fields = ["id", "name", "prefix", "created_at", "last_used_at", "expires_at", "revoked_at"]
+
+class PersonalAccessTokenCreateSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=100)
+    expires_at = serializers.DateTimeField(required=False, allow_null=True)
+
+    
 class TeamSerializer(FlexFieldsModelSerializer):
     class Meta:
         model = Team

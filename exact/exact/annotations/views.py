@@ -83,7 +83,7 @@ def annotate(request, image_id):
             if hasattr(cache, "delete_pattern"):
                 cache.set(f"{selected_image.image_set.id}_contains_asthma", asthma, 5*60)
 
-        template = 'annotations/annotate_v2.html' if hasattr(request.user,'ui') and hasattr(request.user.ui,'frontend') and request.user.ui.frontend==2 else 'annotations/annotate.html'
+        template = 'annotations/annotate_v2.html' if hasattr(request.user,'prefs') and hasattr(request.user.prefs,'frontend') and request.user.prefs.frontend==2 else 'annotations/annotate.html'
 
         response = render(request, template, {
             'team': selected_image.image_set.team,

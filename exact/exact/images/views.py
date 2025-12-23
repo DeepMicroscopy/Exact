@@ -190,7 +190,7 @@ def index(request):
 
     last_image_action = LogImageAction.objects.filter(user=request.user).order_by('-time').first()
 
-    template = 'images/index_v2.html' if hasattr(request.user,'ui') and hasattr(request.user.ui,'frontend') and request.user.ui.frontend==2 else 'images/index.html'
+    template = 'images/index_v2.html' if hasattr(request.user,'prefs') and hasattr(request.user.prefs,'frontend') and request.user.prefs.frontend==2 else 'images/index.html'
 
     return TemplateResponse(request, template, {
         'last_image_action': last_image_action,
@@ -845,7 +845,7 @@ def view_imageset(request, image_set_id):
         target_imageset=imageset
 
     all_products = Product.objects.filter(team=imageset.team).order_by('name')
-    template = 'images/imageset_v2.html' if hasattr(request.user,'ui') and hasattr(request.user.ui,'frontend') and request.user.ui.frontend==2 else 'images/imageset.html'
+    template = 'images/imageset_v2.html' if hasattr(request.user,'prefs') and hasattr(request.user.prefs,'frontend') and request.user.prefs.frontend==2 else 'images/imageset.html'
     return render(request, template, {
         'image_count': imageset.images.count(),
         'imageset': imageset,
