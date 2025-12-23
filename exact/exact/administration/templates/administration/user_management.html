@@ -436,6 +436,8 @@ function renderTeams(memberships) {
         $('#f-date-joined').text(fmt(u.date_joined));
         $('#f-last-login').text(fmt(u.last_login));
 
+        $('#random-password-box').hide();
+
         $('#badge-active')
         .text('Active: ' + (u.is_active ? 'Yes' : 'No'))
         .removeClass('badge-success badge-secondary')
