@@ -35,6 +35,7 @@ from django.http import JsonResponse, HttpResponseBadRequest
 from django.shortcuts import render, get_object_or_404
 from exact.users.models import Team, TeamMembership
 from .permissions import site_admin_required
+from exact.users.models import UserPreferences
 from django.core.exceptions import ValidationError
 import json
 import secrets
@@ -84,7 +85,7 @@ def product(request, product_id):
     })
 
 
-@site_admin_required
+@staff_member_required
 @require_POST
 def user_update_api(request, user_id: int):
     u = get_object_or_404(User, pk=user_id)
@@ -102,6 +103,12 @@ def user_update_api(request, user_id: int):
     for field in allowed:
         if field in payload:
             setattr(u, field, (payload[field] or "").strip())
+
+    allowed_prefs = ["frontend"]
+    for field in allowed_prefs:
+        if field in payload:
+            setattr(u.prefs, field, (payload[field] or 1))
+            u.prefs.save()
 
     # Basic validation – extend as needed
     if "email" in payload and u.email and "@" not in u.email:
@@ -257,6 +264,11 @@ def user_list_api(request):
 
     data = []
     for u in qs:
+
+        if getattr(u, "prefs", None) is None:
+            # Create preferences object for user, if nonexistant
+            u.prefs, _ = UserPreferences.objects.get_or_create(user=u)
+
         display_name = (f"{u.first_name} {u.last_name}".strip() or u.username)
         data.append({
             "id": u.id,
@@ -265,6 +277,7 @@ def user_list_api(request):
             "email": u.email,
             "is_active": u.is_active,
             "is_staff": u.is_staff,
+            'is_site_admin' : u.prefs.is_site_admin,
         })
 
     return JsonResponse({"results": data})
@@ -328,6 +341,7 @@ def user_detail_api(request, user_id: int):
             "is_active": u.is_active,
             "is_staff": u.is_staff,
             "is_superuser": getattr(u, "is_superuser", False),
+            "prefs": {'frontend': u.prefs.frontend if getattr(u, "prefs", 0) else 0,},
             "date_joined": u.date_joined.isoformat() if getattr(u, "date_joined", None) else None,
             "last_login": u.last_login.isoformat() if getattr(u, "last_login", None) else None,
         },
@@ -349,6 +363,9 @@ def user_toggle_active_api(request, user_id: int):
     u = get_object_or_404(User, pk=user_id)
     if u.id == request.user.id:
         return JsonResponse({"error": "You cannot deactivate your own account."}, status=400)
+
+    if u.prefs.is_site_admin:
+        return JsonResponse({"error": "You cannot deactivate site admin accounts."}, status=400)
 
     u.is_active = not u.is_active
     u.save(update_fields=["is_active"])

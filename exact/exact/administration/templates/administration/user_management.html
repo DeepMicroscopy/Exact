@@ -69,7 +69,10 @@
           <div class="nav nav-pills mb-3" id="detail-tabs" role="tablist" style="gap:.5rem;">
             <a class="nav-link active" data-toggle="pill" href="#tab-personal" role="tab">Personal</a>
             <a class="nav-link" data-toggle="pill" href="#tab-access" role="tab">Password / Access</a>
+            {% if user.prefs.is_site_admin %}
             <a class="nav-link" data-toggle="pill" href="#tab-teams" role="tab">Teams</a>
+            {% endif %}
+            <a class="nav-link" data-toggle="pill" href="#tab-gui" role="tab">GUI</a>
           </div>
 
           <div class="tab-content">
@@ -148,13 +151,13 @@
       <button class="btn btn-outline-danger" id="btn-toggle-active" type="button">Toggle active</button>
       <button class="btn btn-outline-warning" id="btn-toggle-staff" type="button">Toggle staff</button>
 
-      {% if user.prefs.site_admin %}
+      {% if user.prefs.is_site_admin %}
         <button class="btn btn-danger" id="btn-delete-user" type="button">Delete user…</button>
       {% endif %}
     </div>
   </div>
 
-  {% if user.prefs.site_admin %}
+  {% if user.prefs.is_site_admin %}
     <small class="text-muted d-block mt-2">
       Deleting a user is irreversible and may remove memberships and tokens.
     </small>
@@ -199,6 +202,7 @@
             </div>
 
             <!-- Teams -->
+            {% if user.prefs.is_site_admin %}
             <div class="tab-pane fade" id="tab-teams" role="tabpanel">
                 <div class="card mb-3">
                 <div class="card-body">
@@ -221,7 +225,16 @@
                 </div>
 
             </div>
+            {% endif %}
+            <div class="tab-pane fade" id="tab-gui" role="tabpanel">
+                <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="mb-3">GUI Mode: 
+                        <select type=select id="f-ui-frontend"><option value=1>Default (bright)</option><option value=2>Lightroom (dark)</option></select></h5>
+                </div>
+                </div>
 
+            </div>
           </div>
         </div>
 
@@ -294,6 +307,7 @@
                               .replace('/1/teams/1/remove/', '/' + userId + '/teams/' + teamId + '/remove/');
   if (name === "teamToggleAdmin") return "{% url 'administration:user_team_toggle_admin_api' user_id=1 team_id=1 %}"
                               .replace('/1/teams/1/toggle-admin/', '/' + userId + '/teams/' + teamId + '/toggle-admin/');
+                            
   return null;
 }
 
@@ -343,10 +357,11 @@ function loadTeamsCatalog() {
         results.forEach(function(u) {
           var badge = u.is_active ? '' : ' <span class="badge badge-secondary">inactive</span>';
           var staffBadge = u.is_staff ? ' <span class="badge badge-info">staff</span>' : '';
+          var siteadminBadge = u.is_site_admin ? ' <span class="badge badge-success">site admin</span>' : '';
           var item =
             '<button type="button" class="list-group-item list-group-item-action user-row" data-id="' + u.id + '">' +
               '<div class="d-flex justify-content-between">' +
-                '<div><strong>' + (u.display_name || u.username) + '</strong>' + badge + staffBadge + '</div>' +
+                '<div><strong>' + (u.display_name || u.username) + '</strong>' + badge + staffBadge + siteadminBadge +  '</div>' +
               '</div>' +
               '<div class="text-muted" style="font-size: .9em;">' + (u.email || '') + '</div>' +
             '</button>';
@@ -435,6 +450,7 @@ function renderTeams(memberships) {
 
         $('#f-date-joined').text(fmt(u.date_joined));
         $('#f-last-login').text(fmt(u.last_login));
+        $('#f-ui-frontend').val(u.prefs.frontend);
 
         $('#random-password-box').hide();
 
@@ -633,6 +649,35 @@ $(document).on('click', '.team-remove', function() {
   });
 });
 
+$('#f-ui-frontend').on('change', function() {
+  if (!currentUserId) return;
+
+  var payload = {
+    frontend: $('#f-ui-frontend').val().trim(),
+  };
+
+  $.ajax({
+    url: urlFor("update", currentUserId),
+    method: "POST",
+    contentType: "application/json",
+    data: JSON.stringify(payload),
+    headers: { "X-CSRFToken": csrftoken },
+    success: function() {
+      $.notify("User updated.", "success");
+      loadUserDetail(currentUserId);
+      loadUserList();
+    },
+    error: function(xhr) {
+      var msg = "Update failed.";
+      try {
+        var data = xhr.responseJSON;
+        if (data && data.error) msg = (typeof data.error === "string") ? data.error : JSON.stringify(data.error);
+      } catch(e) {}
+      $.notify(msg, "error");
+    }
+  });
+});
+
 $(document).on('click', '.team-toggle-admin', function() {
   if (!currentUserId) return;
   var teamId = $(this).data('team-id');
@@ -679,7 +724,9 @@ $(document).on('click', '.team-toggle-admin', function() {
   // Initial load
   $(document).ready(function() {
     loadUserList();
+    {% if user.prefs.is_site_admin %}
     loadTeamsCatalog();
+    {% endif %}
   });
 </script>
 
