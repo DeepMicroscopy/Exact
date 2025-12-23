@@ -75,57 +75,92 @@
           <div class="tab-content">
             <!-- Personal -->
             <div class="tab-pane fade show active" id="tab-personal" role="tabpanel">
-            <div class="card mb-3">
-            <div class="card-body">
-                <h5 class="mb-3">Edit user</h5>
 
-                <div class="form-row">
-                <div class="col-md-6 mb-2">
-                    <label>First name</label>
-                    <input class="form-control" id="edit-first-name">
-                </div>
-                <div class="col-md-6 mb-2">
-                    <label>Last name</label>
-                    <input class="form-control" id="edit-last-name">
-                </div>
-                </div>
+<div class="card-body">
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h5 class="mb-1">Edit user</h5>
+      <small class="text-muted">Update user identity fields and account status.</small>
+    </div>
+  </div>
 
-                <div class="form-row">
-                <div class="col-md-6 mb-2">
-                    <label>Email</label>
-                    <input class="form-control" id="edit-email" type="email">
-                </div>
-                <div class="col-md-6 mb-2">
-                    <label>Username</label>
-                    <input class="form-control" id="edit-username">
-                </div>
-                </div>
+  <div class="row">
+    <!-- Editable fields -->
+    <div class="col-12 col-lg-8">
+      <div class="form-row">
+        <div class="form-group col-md-6">
+          <label for="edit-first-name">First name</label>
+          <input class="form-control" id="edit-first-name" autocomplete="given-name">
+        </div>
+        <div class="form-group col-md-6">
+          <label for="edit-last-name">Last name</label>
+          <input class="form-control" id="edit-last-name" autocomplete="family-name">
+        </div>
+      </div>
 
-                <div class="col-md-3">
-                    <label>Date joined:</label>
-                    <p id="f-date-joined"></p>
-                </div>
+      <div class="form-row">
+        <div class="form-group col-md-6">
+          <label for="edit-email">Email</label>
+          <input class="form-control" id="edit-email" type="email" autocomplete="email">
+        </div>
+        <div class="form-group col-md-6">
+          <label for="edit-username">Username</label>
+          <input class="form-control" id="edit-username" autocomplete="username">
+        </div>
+      </div>
+    </div>
 
-                <div class="col-md-3">
-                    <label>Is active:</label>
-                    <p id="f-active"></p>
-                </div>
+    <!-- Read-only status -->
+    <div class="col-12 col-lg-4">
+      <div class="border rounded p-3 bg-light">
+        <div class="mb-2">
+          <div class="text-muted" style="font-size:.85rem;">Date joined</div>
+          <div id="f-date-joined" class="font-weight-bold"></div>
+        </div>
 
-                <div class="col-md-3">
-                    <label>Is staff:</label>
-                    <p id="f-staff"></p>
-                </div>
+        <div class="mb-2">
+          <div class="text-muted" style="font-size:.85rem;">Account status</div>
+          <div>
+            <span id="badge-active" class="badge badge-pill badge-secondary">Active: ?</span>
+            <span id="badge-staff" class="badge badge-pill badge-secondary ml-1">Staff: ?</span>
+          </div>
+        </div>
 
-                <div class="d-flex flex-wrap" style="gap:.5rem;">
-                <button class="btn btn-primary" id="btn-save-user" type="button">Save</button>
-              {% if user.prefs.is_site_admin %}
-                <button class="btn btn-outline-danger" id="btn-delete-user" type="button">Delete user…</button>
-              {% endif %}
-                <button class="btn btn-outline-danger" id="btn-toggle-active" type="button">Toggle active</button>
-                <button class="btn btn-outline-warning" id="btn-toggle-staff" type="button">Toggle staff</button>
-                </div>
-            </div>
-            </div>
+        <div class="mb-0">
+          <div class="text-muted" style="font-size:.85rem;">Last login</div>
+          <div id="f-last-login" class="font-weight-bold"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="my-3">
+
+  <div class="d-flex flex-wrap justify-content-between align-items-center" style="gap:.75rem;">
+    <!-- Primary actions -->
+    <div class="d-flex flex-wrap" style="gap:.5rem;">
+      <button class="btn btn-primary" id="btn-save-user" type="button">Save changes</button>
+      <button class="btn btn-outline-secondary" id="btn-refresh" type="button">Refresh</button>
+    </div>
+
+    <!-- Status actions -->
+    <div class="d-flex flex-wrap" style="gap:.5rem;">
+      <button class="btn btn-outline-danger" id="btn-toggle-active" type="button">Toggle active</button>
+      <button class="btn btn-outline-warning" id="btn-toggle-staff" type="button">Toggle staff</button>
+
+      {% if user.prefs.site_admin %}
+        <button class="btn btn-danger" id="btn-delete-user" type="button">Delete user…</button>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if user.prefs.site_admin %}
+    <small class="text-muted d-block mt-2">
+      Deleting a user is irreversible and may remove memberships and tokens.
+    </small>
+  {% endif %}
+</div>
+
             </div>
 
             <!-- Access -->
@@ -397,6 +432,17 @@ function renderTeams(memberships) {
 
         $('#f-date-joined').text(fmt(u.date_joined));
         $('#f-last-login').text(fmt(u.last_login));
+
+        $('#badge-active')
+        .text('Active: ' + (u.is_active ? 'Yes' : 'No'))
+        .removeClass('badge-success badge-secondary')
+        .addClass(u.is_active ? 'badge-success' : 'badge-secondary');
+
+        $('#badge-staff')
+        .text('Staff: ' + (u.is_staff ? 'Yes' : 'No'))
+        .removeClass('badge-info badge-secondary')
+        .addClass(u.is_staff ? 'badge-info' : 'badge-secondary');
+
         $('#f-passkeys-used').text(resp.passkeys.used ? ('In use (last '+fmt(resp.passkeys.last_used)+')') : 'Not in use');
         $('#f-active').text(u.is_active ? 'Yes' : 'No');
         $('#f-staff').text(u.is_staff ? 'Yes' : 'No');
