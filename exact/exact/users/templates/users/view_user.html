@@ -77,13 +77,6 @@
                 <input type="email" class="form-control" id="id_email" name="email" value="{{ user.email }}">
               </div>
 
-              {# Institution (example). Replace with your real field, e.g. user.preferences.institution #}
-              <div class="form-group">
-                <label for="id_institution">Institution</label>
-                <input type="text" class="form-control" id="id_institution" name="institution"
-                       value="{{ user.preferences.institution|default_if_none:'' }}">
-              </div>
-
               <div class="form-group">
                 <label>Date joined</label>
                 <input type="text" class="form-control" value="{{ user.date_joined }}" disabled>
