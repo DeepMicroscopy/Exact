@@ -1502,6 +1502,16 @@ def manual_registration(request, image_source, image_target):
         }) 
     step=step+1
 
+    zpos1 = 1
+    zpos2 = 1
+    if (image_source_obj.frames>0):
+        zpos1=image_source_obj.defaultFrame+1
+    if (image_target_obj.frames>0):
+        zpos2=image_target_obj.defaultFrame+1
+
+    print('Zpos:',zpos1,zpos2)
+    
+
     print('points:',registration_points)
     return render(request, 'images/register_manually.html', {
             'source': image_source,
@@ -1512,6 +1522,8 @@ def manual_registration(request, image_source, image_target):
             'step3':step>2,
             'step4':step>3,
             'step5':step>4,
+            'zpos1':zpos1,
+            'zpos2':zpos2,
             'warn_existing':warn_existing,
             'offset':offset,
             'error':error,

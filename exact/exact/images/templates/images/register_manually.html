@@ -195,6 +195,7 @@
             </div>
              <!-- style="width: 25vw;" -->
              <div style="height: 85vh; position: relative; width: 100%;">
+                <div id="frameSlider1" style="width: 60vw;"></div>
                 <div id="openseadragon1" style="position: absolute; height: 100%; width: 100%;"></div>
             
                 <!-- Crosshair overlay -->
@@ -225,6 +226,7 @@
              <!-- style="width: 25vw;" -->
              <div style="height: 85vh; position: relative; width: 100%;">
                 <div id="openseadragon2" style="position: absolute; height: 100%; width: 100%;"></div>
+                <div id="frameSlider2" style="width: 60vw;"></div>
             
                 <!-- Crosshair overlay -->
                 <div id="crosshair" style="
@@ -286,9 +288,9 @@
     let server_url = window.location.origin + window.location.pathname.split("/images")[0];
     let imageId = {{ source }};
     let options = { };
-    options.tileSources = [server_url + `/images/image/${imageId}/1/1/tile/`];
+    options.tileSources = [server_url + `/images/image/${imageId}/1/{{zpos1}}/tile/`];
 
-    let tilesource_target = [server_url + `/images/image/{{target}}/1/1/tile/`];
+    let tilesource_target = [server_url + `/images/image/{{target}}/1/{{zpos2}}/tile/`];
     let dragon1 = OpenSeadragon({
         id:              "openseadragon2",
         prefixUrl:       "{% static '' %}/images/",
@@ -320,6 +322,7 @@
     document.getElementById('input_source_y').value = imageCenter1.y;
     document.getElementById('input_target_x').value = imageCenter2.x;
     document.getElementById('input_target_y').value = imageCenter2.y;
+
 
     // Submit the form normally
     document.getElementById('submit-form').submit();
