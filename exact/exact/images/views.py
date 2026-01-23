@@ -1312,7 +1312,10 @@ def image_snapshots(request, image_source, x_coord, y_coord, size_x,size_y):
     if not image_source_obj.image_set.has_perm('read', request.user):
         return HttpResponseForbidden()
 
-    tile = slide.read_region(location=(int(x_coord-size_x/2), int(y_coord-size_y/2)), level=0, size=(size_x, size_y))
+    if (slide.nFrames>0):
+        tile = slide.read_region(location=(int(x_coord-size_x/2), int(y_coord-size_y/2)), frame=image_source_obj.defaultFrame, level=0, size=(size_x, size_y))
+    else:
+        tile = slide.read_region(location=(int(x_coord-size_x/2), int(y_coord-size_y/2)), level=0, size=(size_x, size_y))
     
     format='PNG'
     buf = PILBytesIO()
