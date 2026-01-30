@@ -210,7 +210,125 @@ class ImageSlide3D(openslide.ImageSlide):
         return tile  
     
 
+import cv2
+import numpy as np
+from PIL import Image
+import openslide
+from openslide import OpenSlideError
 
+class MovieWrapperCV2(openslide.ImageSlide):
+    def __init__(self, file_path):
+        self.slide_path = file_path
+        
+        # Open video to get metadata
+        cap = cv2.VideoCapture(file_path)
+        if not cap.isOpened():
+            raise OpenSlideError(f"Could not open video file: {file_path}")
+        
+        # Read properties
+        self._width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        self._height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        self.numberOfLayers = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        self.fps = cap.get(cv2.CAP_PROP_FPS)
+        
+        # Clean up initial capture
+        cap.release()
+        
+        # Mimic OpenSlide properties
+        self._dimensions = (self._width, self._height)
+        
+    def __reduce__(self):
+        return (self.__class__, (self.slide_path,))
+
+    @property
+    def dimensions(self):
+        return self._dimensions
+
+    @property
+    def frame_descriptors(self) -> list[str]:
+        """ returns a list of strings, used as descriptor for each frame
+        """
+        return ['%.2f' % (x/self.fps) for x in range(self.nFrames)]
+
+    def get_thumbnail(self, size):
+        return self.read_region((0,0),0, self.dimensions).resize(size)
+
+    @property
+    def frame_type(self):
+        return FrameType.TIMESERIES
+
+    @property
+    def default_frame(self) -> list[str]:
+        return 0
+
+    @property 
+    def nFrames(self):
+        return self.numberOfLayers
+
+    def read_region(self, location, level, size, frame=0):
+        """
+        Reads a region from a specific video frame.
+        """
+        if level != 0:
+            raise OpenSlideError("Only level 0 is supported for video files.")
+        
+        if any(s < 0 for s in size):
+            raise OpenSlideError(f"Size {size} must be non-negative")
+
+        # Clamp frame index
+        frame = max(0, min(frame, self.numberOfLayers - 1))
+
+        # Re-open capture for the read (or use a pooled capture for performance)
+        cap = cv2.VideoCapture(self.slide_path)
+        cap.set(cv2.CAP_PROP_POS_FRAMES, frame)
+        success, img = cap.read()
+        cap.release()
+
+        if not success:
+            # Return a transparent tile if frame read fails
+            return Image.new("RGBA", size, (0, 0, 0, 0))
+
+        # Convert BGR (OpenCV) to RGBA (OpenSlide/PIL)
+        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGBA)
+        
+        # Calculate boundaries (handling out-of-bounds requests)
+        x, y = location
+        w, h = size
+        
+        # Create the transparent canvas
+        tile = Image.new("RGBA", size, (0, 0, 0, 0))
+        
+        # Calculate crop boundaries within the source image
+        img_h, img_w = img_rgb.shape[:2]
+        
+        # Source coordinates
+        src_x1 = max(0, min(x, img_w))
+        src_y1 = max(0, min(y, img_h))
+        src_x2 = max(0, min(x + w, img_w))
+        src_y2 = max(0, min(y + h, img_h))
+        
+        # Destination coordinates (where to paste on the tile)
+        dst_x1 = max(0, -x) if x < 0 else 0
+        dst_y1 = max(0, -y) if y < 0 else 0
+        
+        # Extract the crop using numpy slicing
+        crop_data = img_rgb[src_y1:src_y2, src_x1:src_x2]
+        
+        if crop_data.size > 0:
+            crop_img = Image.fromarray(crop_data)
+            tile.paste(crop_img, (dst_x1, dst_y1))
+            
+        return tile
+
+    # Boilerplate compatibility properties
+    @property
+    def level_dimensions(self):
+        return (self.dimensions,)
+
+    @property
+    def level_count(self):
+        return 1 
+    
 
 vendor_handlers = {'aperio': OpenSlideWrapper,
                     'dicom' : OpenSlideWrapper,
@@ -299,6 +417,11 @@ class JPEGEXIFFileType(FileType):
     extensions = ['jpg','jpeg']
     handler = ImageSlideWrapper
 
+class MP4MovieFileType(FileType):
+    extensions = ['mp4']
+    magic_number = b'\x66\x74\x79\x70'
+    magic_number_offset = 4
+    handler = MovieWrapperCV2
 
 class PNGFileType(FileType):
     magic_number = b'\x89\x50\x4e\x47'
@@ -333,7 +456,7 @@ class MKTFileType(FileType):
 
 
 
-SupportedFileTypes = [MKTFileType, DicomFileType, MiraxFileType, PhilipsISyntaxFileType, PNGFileType, JPEGEXIFFileType, JPEGJFIFFileType, OlympusVSIFileType, NormalTiffFileType, BigTiffFileType, ZeissCZIFile]
+SupportedFileTypes = [MKTFileType, MP4MovieFileType, DicomFileType, MiraxFileType, PhilipsISyntaxFileType, PNGFileType, JPEGEXIFFileType, JPEGJFIFFileType, OlympusVSIFileType, NormalTiffFileType, BigTiffFileType, ZeissCZIFile]
 
 
 
@@ -355,8 +478,10 @@ def getSlideHandler(path):
             if ftype.magic_number_offset not in magic_number:
                 f.seek(ftype.magic_number_offset)
                 magic_number[ftype.magic_number_offset] = f.read(4)
+                print('At offset: ',ftype.magic_number_offset,'it is', [hex(x) for x in magic_number[ftype.magic_number_offset]])
             if (magic_number[ftype.magic_number_offset]==ftype.magic_number):
                 candidates.append(ftype)
+                print('Match for file type:', ftype)
 
         if (len(candidates)>0):
             for ftype in candidates:
