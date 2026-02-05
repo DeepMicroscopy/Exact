@@ -52,27 +52,21 @@ class ReadableCellVizioMKTDataset():
         self.fi = fileinfo()
         self.fileHandle = open(filename, 'rb');
         self.fileHandle.seek(5) # we find the FPS at position 05
-        fFPSByte = self.fileHandle.read(4)
-        self.fps = struct.unpack('>f', fFPSByte)[0]
-
-
+        # fFPSByte = self.fileHandle.read(4)
+        # self.fps = struct.unpack('>f', fFPSByte)[0]
         self.fileHandle.seek(10) # we find the image size at position 10
         fSizeByte = self.fileHandle.read(4)
         self.fi.size = int.from_bytes(fSizeByte, byteorder='big', signed=True)
-        self.fi.nImages=1000
-
-        self.fi.width = 576
-        if ((self.fi.size/(2*self.fi.width))%2!=0):
-             self.fi.width=512
-             self.fi.height=int(self.fi.size/(2*self.fi.width))
-        else:
-             self.fi.height=int(self.fi.size/(2*self.fi.width))
-
         self.filestats = stat(self.fileName)
+        self.fi.nImages=1000
         self.fi.nImages = int((self.filestats.st_size-self.fi.offset) / (self.fi.size+self.fi.gapBetweenImages))
-
         self.numberOfFrames = self.fi.nImages
-
+        
+        meta = self.getMostRelevantMetaInfo()
+        self.fi.width = int(meta.get('width', 0))
+        self.fi.height = int(meta.get('height', 0))
+        self.fps = float(meta.get('framerate', 0))
+        
         self.geometry_imsize = [self.fi.height, self.fi.width]
         self.imsize = [self.fi.height, self.fi.width]
         self.geometry_tilesize = [(self.fi.height, self.fi.width)]
@@ -80,8 +74,13 @@ class ReadableCellVizioMKTDataset():
         self.geometry_columns = [1]
         self.levels = [1]
         self.channels = 1
-        self.mpp_x = 250/576 # approximate number for gastroflex, 250 ym field of view, 576 px
-        self.mpp_y  = 250/576
+        
+        self.fovx = float(meta.get('fovx', 250))
+        self.fovy = float(meta.get('fovy', 250))
+        print(f"fovx: {self.fovx}, fovy: {self.fovy}")
+        self.mpp_x = self.fovx/self.fi.width # approximate number for gastroflex, 250 ym field of view, 576 px
+        self.mpp_y  = self.fovy/self.fi.height
+
     
         # generate circular mask for this file
         self.circMask = circularMask(self.fi.width,self.fi.height, self.fi.width-2).mask
@@ -91,6 +90,44 @@ class ReadableCellVizioMKTDataset():
                            openslide.PROPERTY_NAME_MPP_Y: self.mpp_y,
                            openslide.PROPERTY_NAME_OBJECTIVE_POWER:20,
                            openslide.PROPERTY_NAME_VENDOR: 'MKT'}
+        
+        
+    def getMetaInfo(self):
+        # the meta information at the MKT file always starts with "00616C6C 6F776564 5F656761 696E5F65 6F666673 65745F70 61697273 3D" or allowed_egain_eoffset_pairs= in the hex code
+        self.fileHandle = open(self.fileName, 'rb');
+        # we need to read the whole file to find the meta information
+        fileContent = self.fileHandle.read()
+        # find start position with fileContent.find(b'allowed_egain_eoffset_pairs=') that searches for the byte sequence
+        metaStart = fileContent.rfind(b'allowed_egain_eoffset_pairs=')
+        metaEnd = fileContent.find(b'<CEND', metaStart)
+        metaInfo = fileContent[metaStart:metaEnd].decode('utf-8')
+        print(f"Meta information found: ")
+        print(metaInfo)
+        return metaInfo
+    
+    def getMostRelevantMetaInfo(self):
+        metaInfo = self.getMetaInfo()
+        relevantInfo = {} 
+
+        for line in metaInfo.split('\n'):
+            if "=" not in line:
+                continue
+            key, value = line.split('=')
+            if key == 'framerate':
+                relevantInfo['framerate'] = value
+                relevantInfo['duration_seconds'] = self.fi.nImages / float(relevantInfo['framerate'])
+            elif key == 'width':
+                relevantInfo['width'] = value
+            elif key == 'height':
+                relevantInfo['height'] = value
+            elif key == 'fovx':
+                relevantInfo['fovx'] = value
+            elif key == 'fovy':
+                relevantInfo['fovy'] = value
+            elif key == 'patient_id':
+                relevantInfo['patient_id'] = value
+        
+        return relevantInfo
 
     def _2_init__(self, filename):
 
@@ -137,7 +174,22 @@ class ReadableCellVizioMKTDataset():
 
        self.circMask = circularMask(self.fi.width,self.fi.height, self.fi.width-2).mask
 
+    @property
+    def meta_data(self) -> dict:
+        return self.getMostRelevantMetaInfo()
     
+    @property
+    def meta_data_dict(self) -> dict:
+        meta_data_dict = {
+                    'width': 'Image width (pixels)',
+                    'height': 'Image height (pixels)',
+                    'framerate': 'Frame rate (fps)',
+                    'duration_seconds': 'Duration (seconds)',
+                    'patient_id': 'Patient ID',
+                    'fovx': 'Field of view x (micrometers)',
+                    'fovy': 'Field of view y (micrometers)'
+                    }
+        return meta_data_dict
 
     @property
     def seriesInstanceUID(self) -> str:
