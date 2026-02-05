@@ -94,13 +94,13 @@ class ReadableCellVizioMKTDataset():
         
     def getMetaInfo(self):
         # the meta information at the MKT file always starts with "00616C6C 6F776564 5F656761 696E5F65 6F666673 65745F70 61697273 3D" or allowed_egain_eoffset_pairs= in the hex code
-        self.fileHandle = open(self.fileName, 'rb');
         # we need to read the whole file to find the meta information
-        fileContent = self.fileHandle.read()
-        # find start position with fileContent.find(b'allowed_egain_eoffset_pairs=') that searches for the byte sequence
-        metaStart = fileContent.rfind(b'allowed_egain_eoffset_pairs=')
-        metaEnd = fileContent.find(b'<CEND', metaStart)
-        metaInfo = fileContent[metaStart:metaEnd].decode('utf-8')
+        with open(self.fileName, 'rb') as f:
+            fileContent = f.read()
+            # find start position with fileContent.find(b'allowed_egain_eoffset_pairs=') that searches for the byte sequence
+            metaStart = fileContent.rfind(b'allowed_egain_eoffset_pairs=')
+            metaEnd = fileContent.find(b'<CEND', metaStart)
+            metaInfo = fileContent[metaStart:metaEnd].decode('utf-8')
         print(f"Meta information found: ")
         print(metaInfo)
         return metaInfo
