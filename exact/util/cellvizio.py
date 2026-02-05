@@ -52,8 +52,6 @@ class ReadableCellVizioMKTDataset():
         self.fi = fileinfo()
         self.fileHandle = open(filename, 'rb');
         self.fileHandle.seek(5) # we find the FPS at position 05
-        # fFPSByte = self.fileHandle.read(4)
-        # self.fps = struct.unpack('>f', fFPSByte)[0]
         self.fileHandle.seek(10) # we find the image size at position 10
         fSizeByte = self.fileHandle.read(4)
         self.fi.size = int.from_bytes(fSizeByte, byteorder='big', signed=True)
