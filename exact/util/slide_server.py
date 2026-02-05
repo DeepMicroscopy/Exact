@@ -56,7 +56,44 @@ class zDeepZoomGenerator(DeepZoomGenerator):
             tile.info['icc_profile'] = profile
 
         return tile
+    
+    @property
+    def dimensions(self):
+        if hasattr(self._osr,'dimensions'):
+            return self._osr.dimensions
+        else:
+            return [0]
+    
+    @property
+    def meta_data(self):
+        if hasattr(self._osr,'meta_data'):
+            return self._osr.meta_data
+        else:
+            return {}
 
+    @property
+    def meta_data_dict(self):
+        if hasattr(self._osr,'meta_data_dict'):
+            return self._osr.meta_data_dict
+        else:
+            return {}
+
+    @property 
+    def nFrames(self):
+        if hasattr(self._osr,'nFrames'):
+            return self._osr.nFrames
+        else:
+            return None
+
+    @property 
+    def frame_type(self):
+        if hasattr(self._osr,'frame_type'):
+            return self._osr.frame_type
+        else:
+            return None
+    
+        
+    
 class OpenSlideWrapper(openslide.OpenSlide):
     """
         Wraps an openslide.OpenSlide object. The rationale here is that OpenSlide.read_region does not support z Stacks / frames as arguments, hence we have to encapsulate it
@@ -523,8 +560,12 @@ class SlideCache(object):
             mpp_x = osr.properties[openslide.PROPERTY_NAME_MPP_X]
             mpp_y = osr.properties[openslide.PROPERTY_NAME_MPP_Y]
             slide.mpp = (float(mpp_x) + float(mpp_y)) / 2
+            slide.mpp_x = mpp_x
+            slide.mpp_y = mpp_y
         except (KeyError, ValueError):
             slide.mpp = 0
+            slide.mpp_x = 0
+            slide.mpp_y = 0
 
         with self._lock:
             if path not in self._cache:

@@ -428,6 +428,53 @@ def view_image(request, image_id, z_dimension:int=1, frame:int=1):
 
 @login_required
 @api_view(['GET'])
+def image_metadata(request, image_id) -> Response:
+    image = get_object_or_404(Image, pk=image_id)
+    if not image.image_set.has_perm('read', request.user):
+        return Response({
+            'detail': 'permission for reading this image set missing.',
+        }, status=HTTP_403_FORBIDDEN)
+    
+    meta_data = {}
+    # descriptions in plain english
+    meta_data_dict = {'level_count': 'Image levels',
+                      'image_size': 'Image size',
+                      'numberOfFrames': 'Number of frames',
+                      'frame_type': 'Frame type',
+                      'mpp_x': 'x Resolution (microns/px)',
+                      'mpp_y': 'y Resolution (microns/px)',
+                      }
+
+    try:
+        slideobj = image_cache.get(image.path())
+
+        meta_data['level_count'] = slideobj.level_count
+        meta_data['image_size'] = ' x '.join([str(x) for x in slideobj.dimensions])
+        meta_data['numberOfFrames'] = slideobj.nFrames
+        meta_data['mpp_x'] = slideobj.mpp_x
+        meta_data['mpp_y'] = slideobj.mpp_y
+
+        if (slideobj.nFrames>1):
+            meta_data['frame_type'] = slideobj.frame_type
+
+        meta_data.update(slideobj.meta_data)
+        meta_data_dict.update(slideobj.meta_data_dict)
+
+    except Exception as e:
+        logger.error(str(e))
+
+        return Response({
+            'detail': 'Unable to retrieve basic metadata.',
+        }, status=HTTP_403_FORBIDDEN)
+    
+    return Response({
+        'meta_data': meta_data,
+        'meta_data_dict': meta_data_dict,
+    }, status=HTTP_200_OK)
+
+
+@login_required
+@api_view(['GET'])
 def image_plugins(request) -> Response:
     try:
         result = json.loads(request.query_params.get('values'))

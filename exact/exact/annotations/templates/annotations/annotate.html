@@ -39,6 +39,7 @@
 <script type="text/javascript" src="{% static 'annotations/js/statistics-viewer.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/plugin-handler.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/show-annotation-properties.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/show-image-properties.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/exact-browser-sync.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/exact-quad-tree.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/exact-overlay-opacity.js' %}"></script>
@@ -176,6 +177,10 @@
                                     role="tab" aria-controls="home">Annotation</a>
                             </li>
 
+                            <li class="nav-item">
+                                <a class="nav-link" id="default_info_tab" data-toggle="tab" href="#nav-item_info"
+                                    role="tab" aria-controls="home">Info</a>
+                            </li>
                             {% if HasMediaFiles %}
 
                             <li class="nav-item">
@@ -299,7 +304,19 @@
                             </div>
 
                             {% endif %}
+                            <div class="tab-pane fade" id="nav-item_info">
+                                <div id="ImageInformation">
+                                    <table style="width: 100%; margin-top: 10px; text-align: center" id="image_info_table">
+                                        <tr>
+                                            <th></th>
+                                            <th></th>
+                                            <th>Remark</th>
+                                        </tr>
+                                </table>
+                                </div>
 
+                                
+                            </div>
                             <div class="tab-pane fade" id="nav-item_anno">
 
                                 <div id="AnnotationInformation">
