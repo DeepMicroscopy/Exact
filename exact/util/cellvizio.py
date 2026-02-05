@@ -184,7 +184,10 @@ class ReadableCellVizioMKTDataset():
 
     @property
     def meta_data(self) -> dict:
-        return self.getMostRelevantMetaInfo()
+        # Cache metadata to avoid repeated file I/O and parsing.
+        if not hasattr(self, "_meta_data_cache"):
+            self._meta_data_cache = self.getMostRelevantMetaInfo()
+        return self._meta_data_cache
     
     @property
     def meta_data_dict(self) -> dict:
