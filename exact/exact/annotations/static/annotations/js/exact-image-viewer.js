@@ -37,6 +37,7 @@ class EXACTViewer {
         this.filterImage = new OpenseadragonFilteringViewer(this.viewer);
         this.pluginHandler = new PluginHandler(this.imageId, gHeaders, this.viewer);
         this.screeningTool = new ScreeningTool(imageInformation, user_id, gHeaders, this.viewer);
+        this.imageProperties = new ShowImageProperties(this.viewer, this.imageId);
 
         console.log(`${this.constructor.name} loaded for id ${this.imageId}`);
 
@@ -841,7 +842,7 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         this.asthmaAnalysis = new AsthmaAnalysis(this.imageId, this.viewer, this.exact_sync);
 
         this.showAnnotationProperties = new ShowAnnotationProperties(this.viewer, this.exact_sync);
-
+        
         let team_id = parseInt($('#team_id').html());
         this.teamTool = new TeamTool(this.viewer, team_id);
         this.processingTool = new ProcessingTool(this.viewer, this.imageId);

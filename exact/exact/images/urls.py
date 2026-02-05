@@ -26,6 +26,7 @@ urlpatterns = [
     re_path(r'^image/(\d+)/(\d+)/(\d+)/tile_files/(\d+)/(\d+_\d+.(?:png|jpeg))$', views.view_image_tile, name='view_image_tile'),
     re_path(r'^api/image/verify/$', views.api_verify_image, name='verify_image'),
 
+    re_path(r'^api/image/metadata/(\d+)/$', views.image_metadata, name='metadata'),
     re_path(r'^api/image/plugins/$', views.image_plugins, name='plugins'),
     re_path(r'^image/centered_snapshot/(\d+)/(\d+)/(\d+)/(\d+)/(\d+)/', views.image_snapshots, name='centered_image_snapshot'),
 
