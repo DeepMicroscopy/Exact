@@ -113,8 +113,17 @@ class ReadableCellVizioMKTDataset():
                 continue
             key, value = line.split('=')
             if key == 'framerate':
-                relevantInfo['framerate'] = value
-                relevantInfo['duration_seconds'] = self.fi.nImages / float(relevantInfo['framerate'])
+                value_str = value.strip()
+                try:
+                    framerate = float(value_str)
+                except ValueError:
+                    print(f"Warning: invalid framerate value in metadata: {value_str!r}")
+                    continue
+                if framerate <= 0:
+                    print(f"Warning: non-positive framerate value in metadata: {framerate}")
+                    continue
+                relevantInfo['framerate'] = value_str
+                relevantInfo['duration_seconds'] = self.fi.nImages / framerate
             elif key == 'width':
                 relevantInfo['width'] = value
             elif key == 'height':
