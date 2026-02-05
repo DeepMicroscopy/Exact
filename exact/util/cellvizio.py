@@ -101,9 +101,8 @@ class ReadableCellVizioMKTDataset():
             metaStart = fileContent.rfind(b'allowed_egain_eoffset_pairs=')
             metaEnd = fileContent.find(b'<CEND', metaStart)
             metaInfo = fileContent[metaStart:metaEnd].decode('utf-8')
-        print(f"Meta information found: ")
-        print(metaInfo)
         return metaInfo
+    
     
     def getMostRelevantMetaInfo(self):
         metaInfo = self.getMetaInfo()
