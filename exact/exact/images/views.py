@@ -325,7 +325,9 @@ def upload_image(request, imageset_id):
                     path = Path(path)
                     name = path.name
 
-                    if (Path(path).suffix.lower().endswith(".csv") or Path(path).suffix.lower().endswith(".txt") or 
+                    if (Path(path).suffix.lower().endswith(".pdf") or Path(path).suffix.lower().endswith(".docx") or Path(path).suffix.lower().endswith(".xlsx") or 
+                        Path(path).suffix.lower().endswith(".doc") or Path(path).suffix.lower().endswith(".csv") or Path(path).suffix.lower().endswith(".txt") or 
+                        Path(path).suffix.lower().endswith(".xls") or Path(path).suffix.lower().endswith(".pptx") or Path(path).suffix.lower().endswith(".ppt") or  
                         Path(path).suffix.lower().endswith(".json") or Path(path).suffix.lower().endswith(".sqlite")):
                         # This is an auxiliary file, not an image. 
 
