@@ -16,7 +16,7 @@ except ImportError:
     from enums import FrameType
 
 
-class ReadableMP4Dataset(openslide.ImageSlide):
+class ReadableVideoDataset(openslide.ImageSlide):
     def __init__(self, filename, cache_size=32, max_cache_bytes=None):
         self.slide_path = filename
 
