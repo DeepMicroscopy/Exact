@@ -303,7 +303,7 @@ def upload_image(request, imageset_id):
                                         image_set=imageset).first()
                 print('Image:',image)
                 if image is None:
-
+                    os.makedirs(os.path.dirname(filename), exist_ok=True)
                     with open(filename, 'wb') as out:
                         for chunk in f.chunks():
                             out.write(chunk)

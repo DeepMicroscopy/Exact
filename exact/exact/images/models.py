@@ -27,7 +27,8 @@ import json
 from openslide import OpenSlide, open_slide
 from czifile import czi2tif
 from util.cellvizio import ReadableCellVizioMKTDataset # just until data access is pip installable
-
+# for video handling
+from util.video_handler import ReadableMP4Dataset
 from PIL import Image as PIL_Image
 
 from datetime import datetime
@@ -192,69 +193,83 @@ class Image(models.Model):
                     os.remove(str(path_temp))
                     self.filename = path.name
                 # Videos
-                elif Path(path).suffix.lower() in [".avi", ".mp4"]:
-                    dtype_to_format = {
-                                    'uint8': 'uchar',
-                                    'int8': 'char',
-                                    'uint16': 'ushort',
-                                    'int16': 'short',
-                                    'uint32': 'uint',
-                                    'int32': 'int',
-                                    'float32': 'float',
-                                    'float64': 'double',
-                                    'complex64': 'complex',
-                                    'complex128': 'dpcomplex',
-                                }
-
-                    folder_path = Path(self.image_set.root_path()) / path.stem
-                    os.makedirs(str(folder_path), exist_ok =True)
-                    os.chmod(str(folder_path), 0o777)
-                    self.save() # initially save
-
-                    cap = cv2.VideoCapture(str(Path(path)))
-                    frame_id = 0
-                    while cap.isOpened():
-                        ret, frame = cap.read()
-                        if not ret:
-                            # if video has just one frame copy file to top layer
-                            if frame_id == 1:
-                                copy_path = Path(path).with_suffix('.tiff')
-                                shutil.copyfile(str(target_file), str(copy_path))
-                                self.filename = copy_path.name
-                            break
-
-                        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                        height, width, bands = frame.shape
-                        linear = frame.reshape(width * height * bands)
-
-                        vi = pyvips.Image.new_from_memory(np.ascontiguousarray(linear.data), width, height, bands,
-                                                                        dtype_to_format[str(frame.dtype)])
-                        if dtype_to_format[str(frame.dtype)] not in ["uchar"]:
-                            vi = vi.scaleimage()
-
-                        height, width, channels = vi.height, vi.width, vi.bands
-                        self.channels = channels
-
-                        target_file = folder_path / "{}_{}_{}".format(1, frame_id + 1, path.name) #z-axis frame image
-                        vi.tiffsave(str(target_file), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
-
-                        # save first frame as default file for thumbnail etc.
-                        if frame_id == 0:
-                            self.filename = target_file.name
-
-                        # save FrameDescription object for each frame
+                elif Path(path).suffix.lower().endswith(".mp4"):
+                    reader = ReadableMP4Dataset(str(path))
+                    self.frames = reader.nFrames
+                    self.width, self.height = reader.dimensions
+                    self.channels = 3
+                    self.filename = path.name
+                    self.save()
+                    for frame_id in range(reader.nFrames):
                         FrameDescription.objects.create(
                                 Image=self,
                                 frame_id=frame_id,
-                                file_path=target_file,
+                                file_path=self.filename,
                                 frame_type=FrameType.TIMESERIES,
-                                description='%.2f s (%d)' % ((float(frame_id-1)/cap.get(cv2.CAP_PROP_FPS)), frame_id)
+                                description=reader.frame_descriptors[frame_id]
                         )
+                    # dtype_to_format = {
+                    #                 'uint8': 'uchar',
+                    #                 'int8': 'char',
+                    #                 'uint16': 'ushort',
+                    #                 'int16': 'short',
+                    #                 'uint32': 'uint',
+                    #                 'int32': 'int',
+                    #                 'float32': 'float',
+                    #                 'float64': 'double',
+                    #                 'complex64': 'complex',
+                    #                 'complex128': 'dpcomplex',
+                    #             }
+
+                    # folder_path = Path(self.image_set.root_path()) / path.stem
+                    # os.makedirs(str(folder_path), exist_ok =True)
+                    # os.chmod(str(folder_path), 0o777)
+                    # self.save() # initially save
+
+                    # cap = cv2.VideoCapture(str(Path(path)))
+                    # frame_id = 0
+                    # while cap.isOpened():
+                    #     ret, frame = cap.read()
+                    #     if not ret:
+                    #         # if video has just one frame copy file to top layer
+                    #         if frame_id == 1:
+                    #             copy_path = Path(path).with_suffix('.tiff')
+                    #             shutil.copyfile(str(target_file), str(copy_path))
+                    #             self.filename = copy_path.name
+                    #         break
+
+                    #     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    #     height, width, bands = frame.shape
+                    #     linear = frame.reshape(width * height * bands)
+
+                    #     vi = pyvips.Image.new_from_memory(np.ascontiguousarray(linear.data), width, height, bands,
+                    #                                                     dtype_to_format[str(frame.dtype)])
+                    #     if dtype_to_format[str(frame.dtype)] not in ["uchar"]:
+                    #         vi = vi.scaleimage()
+
+                    #     height, width, channels = vi.height, vi.width, vi.bands
+                    #     self.channels = channels
+
+                    #     target_file = folder_path / "{}_{}_{}".format(1, frame_id + 1, path.name) #z-axis frame image
+                    #     vi.tiffsave(str(target_file), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
+
+                    #     # save first frame as default file for thumbnail etc.
+                    #     if frame_id == 0:
+                    #         self.filename = target_file.name
+
+                    #     # save FrameDescription object for each frame
+                    #     FrameDescription.objects.create(
+                    #             Image=self,
+                    #             frame_id=frame_id,
+                    #             file_path=target_file,
+                    #             frame_type=FrameType.TIMESERIES,
+                    #             description='%.2f s (%d)' % ((float(frame_id-1)/cap.get(cv2.CAP_PROP_FPS)), frame_id)
+                    #     )
 
 
-                        frame_id += 1
+                    #     frame_id += 1
                                     
-                    self.frames = frame_id
+                    # self.frames = frame_id
 
                     
                 # check if file is philips iSyntax
