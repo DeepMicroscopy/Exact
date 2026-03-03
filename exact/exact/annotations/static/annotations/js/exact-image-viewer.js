@@ -2196,7 +2196,7 @@ class EXACTViewerLocalAnnotationsFrames extends EXACTViewerLocalAnnotations {
         this.playInterval = null;
         this.playbackFps = 5; // by default 5 fps
         
-        this.playPauseButtion = new OpenSeadragon.Button({
+        this.playPauseButton = new OpenSeadragon.Button({
             tooltip: 'Play/Pause video (Space)',
             name: "PlayPause",
             srcRest: this.viewer.prefixUrl + 'play-circle-fill.svg',
@@ -2550,10 +2550,10 @@ class EXACTViewerGlobalAnnotationsFrame extends EXACTViewer {
     startPlayback() {
         this.isPlaying = true;
         let prefix = this.viewer.prefixUrl;
-        this.playPauseButton.imgRest.src = prefix + 'pause-cirle-fill.svg';
-        this.playPauseButton.imgGroup.src = prefix + 'pause-cirle-fill.svg';
-        this.playPauseButton.imgHover.src = prefix + 'pause-cirle-fill.svg';
-        this.playPauseButton.imgDown.src = prefix + 'pause-cirle-fill.svg';
+        this.playPauseButton.imgRest.src = prefix + 'pause-circle-fill.svg';
+        this.playPauseButton.imgGroup.src = prefix + 'pause-circle-fill.svg';
+        this.playPauseButton.imgHover.src = prefix + 'pause-circle-fill.svg';
+        this.playPauseButton.imgDown.src = prefix + 'pause-circle-fill.svg';
 
         this.playInterval = setInterval(() => {
             let currentPage = this.viewer.currentPage();
@@ -2569,10 +2569,10 @@ class EXACTViewerGlobalAnnotationsFrame extends EXACTViewer {
         this.isPlaying = false;
         if (this.playPauseButton) {
             let prefix = this.viewer.prefixUrl;
-            this.playPauseButton.imgRest.src = prefix + 'play-cirle-fill.svg';
-            this.playPauseButton.imgGroup.src = prefix + 'play-cirle-fill.svg';
-            this.playPauseButton.imgHover.src = prefix + 'play-cirle-fill.svg';
-            this.playPauseButton.imgDown.src = prefix + 'play-cirle-fill.svg';
+            this.playPauseButton.imgRest.src = prefix + 'play-circle-fill.svg';
+            this.playPauseButton.imgGroup.src = prefix + 'play-circle-fill.svg';
+            this.playPauseButton.imgHover.src = prefix + 'play-circle-fill.svg';
+            this.playPauseButton.imgDown.src = prefix + 'play-circle-fill.svg';
         }
         if (this.playInterval) {
             clearInterval(this.playInterval);
