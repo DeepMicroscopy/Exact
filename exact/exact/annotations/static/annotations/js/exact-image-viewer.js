@@ -25,7 +25,6 @@ class EXACTViewer {
         this.options = options;
         this.showNavigator = true;
         this.frame = 1;
-    
         this.viewer = this.createViewer(options);
         this.exact_registration_sync = undefined; 
         this.browser_sync = undefined; 
@@ -2136,6 +2135,13 @@ class EXACTViewerLocalAnnotationsFrames extends EXACTViewerLocalAnnotations {
                     this.viewer.goToPage(this.frame - 2);
                 }
                 break;
+            case 35: //Space - play/pause
+                if (!event.shiftKey) {
+                    event.preventDefault();
+                    this.togglePlayback();
+                }
+                break;
+
         }
     }
 
@@ -2184,6 +2190,25 @@ class EXACTViewerLocalAnnotationsFrames extends EXACTViewerLocalAnnotations {
         this.annotationButtons.push(loadPrevAnnotaionsButton);
         this.viewer.addControl(loadPrevAnnotaionsButton.element, { anchor: OpenSeadragon.ControlAnchor.ABSOLUTE, top: this.y_button_start, left: 5 });
         this.y_button_start += 45;
+
+        // play and pause buttons
+        this.isPlaying = false;
+        this.playInterval = null;
+        this.playbackFps = 5; // by default 5 fps
+        
+        this.playPauseButtion = new OpenSeadragon.Button({
+            tooltip: 'Play/Pause video (Space)',
+            name: "PlayPause",
+            srcRest: this.viewer.prefixUrl + 'play-circle-fill.svg',
+            srcGroup: this.viewer.prefixUrl + 'play-circle-fill.svg',
+            srcHover: this.viewer.prefixUrl + 'play-circle-fill.svg',
+            srcDown: this.viewer.prefixUrl + 'play-circle-fill.svg',
+            onClick: this.togglePlayback.bind(this),
+        });
+        
+        this.annotationButtons.push(this.playPauseButton);
+        this.viewer.addControl(this.playPauseButton.element, { anchor: OpenSeadragon.ControlAnchor.ABSOLUTE, top: this.y_button_start, left: 5 });
+        this.y_button_start += 45;
     }
 
     copyAnnotationsFromFrame(event) {
@@ -2214,6 +2239,48 @@ class EXACTViewerLocalAnnotationsFrames extends EXACTViewerLocalAnnotations {
             }
         }
     }
+    // video display
+    togglePlayback() {
+        if (this.isPlaying) {
+            this.stopPlayback();
+        } else {
+            this.startPlayback();
+        }
+    }
+
+    startPlayback() {
+        this.isPlaying = true;
+        let prefix = this.viewer.prefixUrl;
+        this.playPauseButton.imgRest.src = prefix + 'pause-circle-fill.svg';
+        this.playPauseButton.imgGroup.src = prefix + 'pause-circle-fill.svg';
+        this.playPauseButton.imgHover.src = prefix + 'pause-circle-fill.svg';
+        this.playPauseButton.imgDown.src = prefix + 'pause-circle-fill.svg';
+
+        this.playInterval = setInterval(() => {
+            let currentPage = this.viewer.currentPage();
+            if (currentPage < this.frames - 1) {
+                this.viewer.goToPage(currentPage + 1);
+            } else {
+                this.stopPlayback();
+            }
+        }, 1000 / this.playbackFps);
+    }
+
+    stopPlayback() {
+        this.isPlaying = false;
+        if (this.playPauseButton) {
+            let prefix = this.viewer.prefixUrl;
+            this.playPauseButton.imgRest.src = prefix + 'play-circle-fill.svg';
+            this.playPauseButton.imgGroup.src = prefix + 'play-circle-fill.svg';
+            this.playPauseButton.imgHover.src = prefix + 'play-circle-fill.svg';
+            this.playPauseButton.imgDown.src = prefix + 'play-circle-fill.svg';
+        }
+        if (this.playInterval) {
+            clearInterval(this.playInterval);
+            this.playInterval = null;
+        }
+    }
+    
 
     newPageLoaded(frame_id) {
 
@@ -2263,6 +2330,11 @@ class EXACTViewerLocalAnnotationsFrames extends EXACTViewerLocalAnnotations {
         vector.frame = this.frame;
         return vector;
     }
+
+    destroy() {
+        this.stopPlayback();
+        super.destroy();
+    }
 }
 
 
@@ -2294,6 +2366,23 @@ class EXACTViewerGlobalAnnotationsFrame extends EXACTViewer {
         if (frame > 1) {
             this.viewer.goToPage(frame - 1);
         }
+
+        // play/pause buttons
+        this.isPlaying = false;
+        this.playInterval = null;
+        this.playbackFps = 5;
+        this.playPauseButton = new OpenSeadragon.Button({
+            tooltip: 'Play/Pause video (Space)',
+            name: "PlayPause",
+            srcRest: this.viewer.prefixUrl + 'play-circle-fill.svg',
+            srcGroup: this.viewer.prefixUrl + 'play-circle-fill.svg',
+            srcHover: this.viewer.prefixUrl + 'play-circle-fill.svg',
+            srcDown: this.viewer.prefixUrl + 'play-circle-fill.svg',
+            onClick: this.togglePlayback.bind(this),
+        });
+
+        this.viewer.addControl(this.playPauseButton.element, { anchor: OpenSeadragon.ControlAnchor.ABSOLUTE, top: 5, left: 5 });
+
     }
 
     handleKeyUp(event) {
@@ -2364,6 +2453,12 @@ class EXACTViewerGlobalAnnotationsFrame extends EXACTViewer {
                 }
                 break;
             case 57: //9
+            case 32: // Space-play/pause
+                if (!event.shiftKey) {
+                    event.preventDefault();
+                    this.togglePlayback();
+                }
+                break;
             case 105: //9
                 if (event.shiftKey) {
                     this.changeGlobalAnnotationTypeByKey(9);
@@ -2443,11 +2538,54 @@ class EXACTViewerGlobalAnnotationsFrame extends EXACTViewer {
         $("#GlobalAnnotation_" + annotation_type.id).prop("checked", value);
     }
 
+    // video displaying
+    togglePlayback() {
+        if (this.isPlaying) {
+            this.stopPlayback();
+        } else {
+            this.startPlayback();
+        }
+    }
+
+    startPlayback() {
+        this.isPlaying = true;
+        let prefix = this.viewer.prefixUrl;
+        this.playPauseButton.imgRest.src = prefix + 'pause-cirle-fill.svg';
+        this.playPauseButton.imgGroup.src = prefix + 'pause-cirle-fill.svg';
+        this.playPauseButton.imgHover.src = prefix + 'pause-cirle-fill.svg';
+        this.playPauseButton.imgDown.src = prefix + 'pause-cirle-fill.svg';
+
+        this.playInterval = setInterval(() => {
+            let currentPage = this.viewer.currentPage();
+            if (currentPage < this.frames - 1) {
+                this.viewer.goToPage(currentPage + 1);
+            } else {
+                this.stopPlayback();
+            }
+        }, 1000 / this.playbackFps);
+    }
+
+    stopPlayback() {
+        this.isPlaying = false;
+        if (this.playPauseButton) {
+            let prefix = this.viewer.prefixUrl;
+            this.playPauseButton.imgRest.src = prefix + 'play-cirle-fill.svg';
+            this.playPauseButton.imgGroup.src = prefix + 'play-cirle-fill.svg';
+            this.playPauseButton.imgHover.src = prefix + 'play-cirle-fill.svg';
+            this.playPauseButton.imgDown.src = prefix + 'play-cirle-fill.svg';
+        }
+        if (this.playInterval) {
+            clearInterval(this.playInterval);
+            this.playInterval = null;
+        }
+    }
+
     createSyncModules(annotationTypes, imageId, headers, viewer, user_id, collaboration_type, frames) {
         return new EXACTGlobalFrameAnnotationSync(annotationTypes, imageId, headers, viewer, user_id, collaboration_type, frames)
     }
 
     destroy() {
+        this.stopPlayback();
 
         // unregister UI events
         for (let annotation_type of Object.values(this.exact_sync.annotationTypes)) {
