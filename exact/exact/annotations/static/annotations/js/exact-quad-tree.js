@@ -129,18 +129,27 @@ class EXACTRegistrationHandler {
 
             let bounds = this.viewer.viewport.getBounds(true);
             let imageRect = this.viewer.viewport.viewportToImageRectangle(bounds);
-    
-            let [xmin_trans, ymin_trans] = this.transformAffineInv(imageRect.x, imageRect.y);
-    
+
+            // Transform all 4 corners of the current viewport into the overlay image space,
+            // then take the axis-aligned bounding box.  This is correct for any rotation or
+            // scale and avoids relying on OpenSeadragon's Rect.degrees handling, which
+            // behaves asymmetrically for +90° vs -90° viewer rotations.
+            let corners = [
+                this.transformAffineInv(imageRect.x,                  imageRect.y),
+                this.transformAffineInv(imageRect.x + imageRect.width, imageRect.y),
+                this.transformAffineInv(imageRect.x,                  imageRect.y + imageRect.height),
+                this.transformAffineInv(imageRect.x + imageRect.width, imageRect.y + imageRect.height),
+            ];
+            let xs = corners.map(c => c[0]);
+            let ys = corners.map(c => c[1]);
+            let x_min = Math.min(...xs), x_max = Math.max(...xs);
+            let y_min = Math.min(...ys), y_max = Math.max(...ys);
+
             this.background_viewer.viewport.setRotation(this.rotation_angle);
 
-            const vpRect = this.background_viewer.viewport.imageToViewportRectangle(new OpenSeadragon.Rect(
-                xmin_trans,
-                ymin_trans, 
-                imageRect.width * this.inv_mpp_x_scale,  
-                imageRect.height * this.inv_mpp_y_scale,  
-                -this.rotation_angle
-            ));
+            const vpRect = this.background_viewer.viewport.imageToViewportRectangle(
+                new OpenSeadragon.Rect(x_min, y_min, x_max - x_min, y_max - y_min)
+            );
 
             this.background_viewer.viewport.fitBoundsWithConstraints(vpRect);
         }
