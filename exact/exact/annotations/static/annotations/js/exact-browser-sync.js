@@ -31,6 +31,14 @@ class EXACTBrowserSync {
             event.userData.requestAllOpenImages();
         }, this);
 
+        viewer.addHandler("sync_NoRegistrationsFound", function (event) {
+
+            // Clear any stale registration UI left over from a previous image
+            $('#registration_selector').find('option:not([value=""])').remove();
+            $('#registration_selector').hide();
+            document.getElementById('registrationField').textContent = '';
+        }, this);
+
 
         viewer.addHandler("sync_TabAnnotationCreated", function (event) {
 
@@ -124,9 +132,9 @@ class EXACTBrowserSync {
             } else{
                 $("#open_registration_image_visibility").hide();
                 this.registration = undefined;
-                return 
+                return
             }
-            
+
         }
 
         this.openTabImageInformations[registration_pair.source_image.id] = registration_pair.source_image;
@@ -139,24 +147,45 @@ class EXACTBrowserSync {
         }
 
         this.registration = new EXACTRegistrationHandler(this.viewer, registration_pair, this);
+
+        // Keep the status-bar selector in sync
+        $("#registration_selector").val($("select#sync_browser_image").val());
     }
 
     initUiEvents() {
 
-        $('#search_browserimages_btn').click(this.requestAllOpenImages.bind(this)); 
+        $('#search_browserimages_btn').click(this.requestAllOpenImages.bind(this));
+
+        // Status-bar registration selector: mirrors sync_browser_image
+        $("#registration_selector").on("change", function() {
+            $("#sync_browser_image").val($(this).val()).trigger("change");
+        });
     }
 
     requestAllOpenImages() {
 
         // set all registration pairs at UI
         $('#sync_browser_image').empty();
+        $('#registration_selector').find('option:not([value=""])').remove();
         let image_list =  $('#sync_browser_image');
+        let reg_selector = $('#registration_selector');
 
         for (let registration_pair of Object.values(this.exact_registration_sync.registeredImagePairs)) {
             image_list.append(`<option style="background-color: green"
                                         data-image_id=${registration_pair.source_image.id}>
                                     ${registration_pair.source_image.name}
                                 </option>`);
+            reg_selector.append(`<option value="${registration_pair.source_image.name}"
+                                          data-image_id="${registration_pair.source_image.id}">
+                                     ${registration_pair.source_image.name}
+                                 </option>`);
+        }
+
+        // show the selector only when there are multiple registrations to choose from
+        if (Object.keys(this.exact_registration_sync.registeredImagePairs).length > 1) {
+            $('#registration_selector').show();
+        } else {
+            $('#registration_selector').hide();
         }
 
         // set all segmentation pairs at UI
@@ -171,7 +200,7 @@ class EXACTBrowserSync {
 
             var name1 = this.source_image.name.split('.').slice(0, -1).join('.');
             var name2 = imageName.split('.').slice(0, -1).join('.');
-        
+
             if (name1 === name2 && this.source_image.name !== imageName) {
                 image_list.append(`<option style="background-color: blue"
                                         data-image_id=${imageId}>
@@ -208,10 +237,10 @@ class EXACTBrowserSync {
 
     setImageInformation(event) {
 
-        if (!(event.data.imageInformation.id in this.openTabImageInformations) 
+        if (!(event.data.imageInformation.id in this.openTabImageInformations)
                 && !(event.data.imageInformation.name in this.exact_registration_sync.registeredImagePairs)) {
             this.openTabImageInformations[event.data.imageInformation.id] = event.data.imageInformation;
-        
+
             let image_list =  $('#sync_browser_image');
             image_list.append(`<option data-image_id=${event.data.imageInformation.id}>${event.data.imageInformation.name}</option>`);
 

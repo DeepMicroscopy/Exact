@@ -50,25 +50,71 @@ class EXACTRegistrationSync {
 
     }
 
-    loadRegistrationInformation(url,context) {
+    loadRegistrationInformation(url, context) {
 
-        $.ajax(this.API_1_REGISTRATION_BASE_URL + url 
+        $.ajax(this.API_1_REGISTRATION_BASE_URL + url
             +'&fields=id,transformation_matrix,file,rotation_angle,inv_matrix,get_scale,get_inv_scale,source_image.name,source_image.id,target_image.name,target_image.id,source_image.image_set.show_registration'
             +'&expand=target_image,source_image,source_image.image_set', {
             type: 'GET',
-            headers: this.gHeaders,
+            headers: context.gHeaders,
             dataType: 'json',
-            success: function (registrations, textStatus, jqXHR) {
+            success: function (registrations) {
 
                 for (let registration of registrations.results) {
-
                     context.registeredImagePairs[registration.source_image.name] = registration;
                 }
 
-                if (registrations.results.length > 0) {
-                    let reg = registrations.results[0]
-                    context.viewer.raiseEvent('sync_RegistrationLoaded', { reg });
-                }
+                // Also load registrations where the current image is the source,
+                // and present them as flipped pairs so the overlay works in both directions.
+                $.ajax(context.API_1_REGISTRATION_BASE_URL
+                    + '?source_image=' + context.imageInformation.id
+                    + '&fields=id,transformation_matrix,file,inv_matrix,get_scale,get_inv_scale,source_image.name,source_image.id,target_image.name,target_image.id,target_image.image_set.show_registration'
+                    + '&expand=target_image,source_image,target_image.image_set', {
+                    type: 'GET',
+                    headers: context.gHeaders,
+                    dataType: 'json',
+                    success: function (inverseRegistrations) {
+
+                        for (let reg of inverseRegistrations.results) {
+                            // Only add if not already covered by a forward registration
+                            if (reg.target_image.name in context.registeredImagePairs) continue;
+
+                            const inv = reg.inv_matrix;
+                            context.registeredImagePairs[reg.target_image.name] = {
+                                id: reg.id,
+                                source_image: reg.target_image,   // carries image_set.show_registration
+                                target_image: reg.source_image,
+                                transformation_matrix: reg.inv_matrix,
+                                inv_matrix: reg.transformation_matrix,
+                                get_scale: reg.get_inv_scale,
+                                get_inv_scale: reg.get_scale,
+                                rotation_angle: -Math.atan2(inv.t_01, inv.t_00) * 180 / Math.PI,
+                                file: null,
+                            };
+                        }
+
+                        if (Object.keys(context.registeredImagePairs).length > 0) {
+                            let reg = Object.values(context.registeredImagePairs)[0];
+                            context.viewer.raiseEvent('sync_RegistrationLoaded', { reg });
+                        } else {
+                            context.viewer.raiseEvent('sync_NoRegistrationsFound', {});
+                        }
+                    },
+                    error: function (request, status, error) {
+                        // Still raise the event if forward registrations were found
+                        if (Object.keys(context.registeredImagePairs).length > 0) {
+                            let reg = Object.values(context.registeredImagePairs)[0];
+                            context.viewer.raiseEvent('sync_RegistrationLoaded', { reg });
+                        } else {
+                            context.viewer.raiseEvent('sync_NoRegistrationsFound', {});
+                        }
+                        if (request.responseText !== undefined) {
+                            $.notify(request.responseText, { position: "bottom center", className: "error" });
+                        } else {
+                            $.notify(`Server ERR_CONNECTION_TIMED_OUT`, { position: "bottom center", className: "error" });
+                        }
+                    }
+                });
             },
             error: function (request, status, error) {
                 if (request.responseText !== undefined) {

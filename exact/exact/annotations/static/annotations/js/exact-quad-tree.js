@@ -100,7 +100,10 @@ class EXACTRegistrationHandler {
              method=' (qt)';   
             }
    
-            document.getElementById('registrationField').textContent = 'Registered to: ' + this.registration_pair.source_image.name+method;
+            if ($('#registration_selector').is(':hidden')) {
+                document.getElementById('registrationField').textContent = 'Registered to: ' + this.registration_pair.source_image.name + method;
+            }
+            $("#registration_selector").val(this.registration_pair.source_image.name);
 
             this.background_viewer.addHandler("open", function (event) {
 

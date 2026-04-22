@@ -830,7 +830,7 @@ class ImageRegistration(models.Model):
                                         "t_22": self.transformation_matrix["t_22"], 
                                     }
 
-        new_registration = ImageRegistration.objects.create(source_image=self.target_image, target_image=self.source_image, 
+        new_registration = ImageRegistration.objects.create(source_image=self.target_image, target_image=self.source_image,
                                             registration_error=self.registration_error, runtime=self.runtime, transformation_matrix=new_transformation_matrix)
 
         new_registration.save()
