@@ -21,6 +21,7 @@ import openslide
 from PIL import Image
 import numpy as np
 from util.cellvizio import ReadableCellVizioMKTDataset
+from util.video_handler import ReadableVideoDataset
 from openslide import OpenSlideError
 import tifffile
 from util.tiffzstack import OMETiffSlide, OMETiffZStack
@@ -454,12 +455,6 @@ class JPEGEXIFFileType(FileType):
     extensions = ['jpg','jpeg']
     handler = ImageSlideWrapper
 
-class MP4MovieFileType(FileType):
-    extensions = ['mp4']
-    magic_number = b'\x66\x74\x79\x70'
-    magic_number_offset = 4
-    handler = MovieWrapperCV2
-
 class PNGFileType(FileType):
     magic_number = b'\x89\x50\x4e\x47'
     extensions = ['png']
@@ -491,9 +486,19 @@ class MKTFileType(FileType):
     extensions = 'mkt'
     handler = ReadableCellVizioMKTDataset
 
+class VideoMP4FileType(FileType):
+    magic_number = b'\x66\x74\x79\x70'
+    extensions = ['mp4']
+    magic_number_offset = 4
+    handler = ReadableVideoDataset
 
+class VideoAVIFileType(FileType):
+    magic_number = b'\x52\x49\x46\x46'  # RIFF
+    magic_number_offset = 0
+    extensions = ['avi']
+    handler = ReadableVideoDataset
 
-SupportedFileTypes = [MKTFileType, MP4MovieFileType, DicomFileType, MiraxFileType, PhilipsISyntaxFileType, PNGFileType, JPEGEXIFFileType, JPEGJFIFFileType, OlympusVSIFileType, NormalTiffFileType, BigTiffFileType, ZeissCZIFile]
+SupportedFileTypes = [MKTFileType, VideoMP4FileType, VideoAVIFileType, DicomFileType, MiraxFileType, PhilipsISyntaxFileType, PNGFileType, JPEGEXIFFileType, JPEGJFIFFileType, OlympusVSIFileType, NormalTiffFileType, BigTiffFileType, ZeissCZIFile]
 
 
 
