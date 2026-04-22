@@ -609,6 +609,18 @@ class EXACTViewer {
         });
         viewer.buttons.buttons.push(showNavigationButton);
         viewer.buttons.element.appendChild(showNavigationButton.element);
+
+        let screenshotButton = new OpenSeadragon.Button({
+            tooltip: 'Download screenshot of current view',
+            name: "Screenshot",
+            srcRest: viewer.prefixUrl + `screenshot.svg`,
+            srcGroup: viewer.prefixUrl + `screenshot.svg`,
+            srcHover: viewer.prefixUrl + `screenshot_hover.svg`,
+            srcDown: viewer.prefixUrl + `screenshot.svg`,
+            onClick: this.takeScreenshot.bind(this),
+        });
+        viewer.buttons.buttons.push(screenshotButton);
+        viewer.buttons.element.appendChild(screenshotButton.element);
     }
 
     handleKeyUp(event) {
@@ -663,6 +675,33 @@ class EXACTViewer {
             this.viewer.navigator.element.style.display = "inline-block";
             this.viewer.scalebarInstance.divElt.style.display = "inline-block";
         }
+    }
+
+    takeScreenshot() {
+        const osdCanvas = this.viewer.drawer.canvas;
+        const overlayCanvas = document.getElementById('osd-overlaycanvas');
+
+        const width = osdCanvas.width;
+        const height = osdCanvas.height;
+
+        const composite = document.createElement('canvas');
+        composite.width = width;
+        composite.height = height;
+        const ctx = composite.getContext('2d');
+
+        ctx.drawImage(osdCanvas, 0, 0);
+        if (overlayCanvas) {
+            ctx.drawImage(overlayCanvas, 0, 0);
+        }
+
+        const imageName = (this.imageInformation && this.imageInformation.name)
+            ? this.imageInformation.name.replace(/\.[^.]+$/, '')
+            : 'screenshot';
+
+        const link = document.createElement('a');
+        link.download = imageName + '_screenshot.png';
+        link.href = composite.toDataURL('image/png');
+        link.click();
     }
 
     finishAnnotation() {
