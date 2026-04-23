@@ -103,6 +103,16 @@ class EXACTRegistrationHandler {
                 document.getElementById('registrationField').textContent = 'Registered to: ' + this.registration_pair.source_image.name + method;
             }
             $("#registration_selector").val(this.registration_pair.source_image.name);
+            var self = this;
+            this.viewer.addHandler('animation', function() {
+            if (self.background_viewer.canvas) {
+            self.background_viewer.canvas.hidden=true;
+            }
+            });
+            this.viewer.addHandler('animation-finish', function() {
+            if (self.background_viewer.canvas) {
+            self.background_viewer.canvas.hidden=false;
+            }});
 
             this.background_viewer.addHandler("open", function (event) {
 
@@ -121,6 +131,8 @@ class EXACTRegistrationHandler {
         }
 
     }
+
+
 
     syncViewBackgroundForeground () {
 
