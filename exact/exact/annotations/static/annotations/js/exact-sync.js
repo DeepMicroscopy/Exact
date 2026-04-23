@@ -53,7 +53,7 @@ class EXACTRegistrationSync {
     loadRegistrationInformation(url, context) {
 
         $.ajax(this.API_1_REGISTRATION_BASE_URL + url
-            +'&fields=id,transformation_matrix,file,rotation_angle,inv_matrix,get_scale,get_inv_scale,source_image.name,source_image.id,target_image.name,target_image.id,source_image.image_set.show_registration'
+            +'&fields=id,transformation_matrix,file,rotation_angle,inv_matrix,get_scale,get_inv_scale,source_image.name,source_image.id,target_image.name,target_image.id'
             +'&expand=target_image,source_image,source_image.image_set', {
             type: 'GET',
             headers: context.gHeaders,
@@ -68,7 +68,7 @@ class EXACTRegistrationSync {
                 // and present them as flipped pairs so the overlay works in both directions.
                 $.ajax(context.API_1_REGISTRATION_BASE_URL
                     + '?source_image=' + context.imageInformation.id
-                    + '&fields=id,transformation_matrix,file,inv_matrix,get_scale,get_inv_scale,source_image.name,source_image.id,target_image.name,target_image.id,target_image.image_set.show_registration'
+                    + '&fields=id,transformation_matrix,file,inv_matrix,get_scale,get_inv_scale,source_image.name,source_image.id,target_image.name,target_image.id'
                     + '&expand=target_image,source_image,target_image.image_set', {
                     type: 'GET',
                     headers: context.gHeaders,
@@ -82,7 +82,7 @@ class EXACTRegistrationSync {
                             const inv = reg.inv_matrix;
                             context.registeredImagePairs[reg.target_image.name] = {
                                 id: reg.id,
-                                source_image: reg.target_image,   // carries image_set.show_registration
+                                source_image: reg.target_image,  
                                 target_image: reg.source_image,
                                 transformation_matrix: reg.inv_matrix,
                                 inv_matrix: reg.transformation_matrix,

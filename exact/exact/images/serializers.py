@@ -154,7 +154,6 @@ class ImageSetSerializer(FlexFieldsModelSerializer):
             'team',
             'creator',
             'collaboration_type',
-            'show_registration'
         )
 
         expandable_fields = {

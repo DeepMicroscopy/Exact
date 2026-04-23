@@ -11,7 +11,6 @@ class ImageSetCreationForm(forms.ModelForm):
             'location',
             'public',
             'public_collaboration',
-            'show_registration'
         ]
 
 
@@ -24,7 +23,6 @@ class ImageSetCreationFormWT(forms.ModelForm):
             'public',
             'public_collaboration',
             'team',
-            'show_registration'
         ]
 
 
@@ -41,7 +39,6 @@ class ImageSetEditForm(forms.ModelForm):
             'priority',
             'collaboration_type',
             'main_annotation_type',
-            'show_registration'
         ]
 
 

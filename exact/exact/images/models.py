@@ -437,7 +437,6 @@ class ImageSet(models.Model):
     pinned_by = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='pinned_sets')
     zip_state = models.IntegerField(choices=ZIP_STATES, default=ZipState.INVALID)
     collaboration_type = models.IntegerField(choices=COLLABORATION_TYPES, default=CollaborationTypes.COLLABORATIVE)
-    show_registration = models.BooleanField(default=False)
 
 
     def root_path(self):

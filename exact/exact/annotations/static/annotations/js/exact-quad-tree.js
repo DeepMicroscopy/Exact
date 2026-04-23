@@ -6,7 +6,6 @@ class EXACTRegistrationHandler {
         this.browser_sync = browser_sync;
         this.viewer = viewer;
         this.background_viewer = undefined;
-        this.show_registration = ("image_set" in registration_pair.source_image) ? registration_pair.source_image.image_set.show_registration : false;
 
         // Check if the OpenCv js is loaded
         this.check_opencv = undefined;
@@ -54,7 +53,7 @@ class EXACTRegistrationHandler {
             this.updateHomographyUI();
 
             // Load current registration 
-            if  (this.show_registration && $("#OverlayRegImage-enabled").prop("checked") == false) {
+            if  ($("#OverlayRegImage-enabled").prop("checked") == false) {
                 $("#OverlayRegImage-enabled").prop("checked", true);
 
                 this.enableOverlayRegImageSlider();
