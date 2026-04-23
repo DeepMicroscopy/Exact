@@ -150,7 +150,7 @@ class EXACTRegistrationHandler {
                 new OpenSeadragon.Rect(x_min, y_min, x_max - x_min, y_max - y_min)
             );
 
-            this.background_viewer.viewport.fitBoundsWithConstraints(vpRect);
+            this.background_viewer.viewport.fitBoundsWithConstraints(vpRect, true);
         }
     }
 
