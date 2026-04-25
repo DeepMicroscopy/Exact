@@ -880,8 +880,10 @@ def view_imageset(request, image_set_id):
                                                 scale=scale) # use default parameters for now
         showRegTab=True
 
-    image_registration_src = ImageRegistration.objects.filter(source_image_id__in=imageset.images.all())       
-    image_registration_trg = ImageRegistration.objects.filter(target_image_id__in=imageset.images.all())       
+    image_registration_src = ImageRegistration.objects.filter(source_image_id__in=imageset.images.all())  
+    src_ids = image_registration_src.values_list('pk', flat=True)
+         
+    image_registration_trg = ImageRegistration.objects.filter(target_image_id__in=imageset.images.all()).exclude(pk__in=src_ids)     
 
 
     if ('target_imageset_id' in request.GET):

@@ -193,11 +193,11 @@
                     {% for image in imageset.images.all|dictsort:"name" %}
                     {% if image.image_type != 1 %}
                         <div class="card imagecard">
-                            <div class="card_container">
-                                <a href="{% url 'annotations:annotate' image.id %}{% if image.defaultFrame > 0%}?frame={{image.defaultFrame}}{% endif %}" class="image"><img class="card-img-top image" src="{{ api }}v1/images/images/{{image.id}}/thumbnail/"
-                                    alt="Thumbnail {{image.name}} not found!" data-imageid="{{ image.id }}"></a>
+                            <div class="card_container"><center>
+                                <a href="{% url 'annotations:annotate' image.id %}{% if image.defaultFrame > 0%}?frame={{image.defaultFrame}}{% endif %}" class="image"><div class="img-wrapper"><img class="card-img-top image" src="{{ api }}v1/images/images/{{image.id}}/thumbnail/"
+                                    alt="Thumbnail {{image.name}} not found!" data-imageid="{{ image.id }}"></div></a>
                             <a href="{% url 'images:download_api' image.id %}" download><img src="{% static 'images/download.svg' %}" class="image2"></a>
-                        </div>
+                        </center></div>
 
                             <div class="card-body">
                                 <h5 class="card-title">
@@ -363,8 +363,8 @@
                         <div class="thumbnail">
                             <input type="radio" id="img-{{image.id}}" name="registration-src" value="{{image.id}}">
                             <label for="img-{{image.id}}">
-                                <img src="{{ api }}v1/images/images/{{image.id}}/thumbnail/" alt="{{image.name}}">
-                                {{image.name}}
+                                <img src="{{ api }}v1/images/images/{{image.id}}/thumbnail/" alt="{{image.name}}"><br>
+                                <div style="width:180px">{{image.name}}</div>
                             </label>
                         </div>
                     </div>
@@ -386,7 +386,7 @@
                             <input type="radio" id="id-{{image.id}}" name="registration-dst" value="{{image.id}}">
                             <label for="id-{{image.id}}">
                                 <img src="{{ api }}v1/images/images/{{image.id}}/thumbnail/" alt="{{image.name}}">
-                                {{image.name}}
+                                <div style="width:180px">{{image.name}}</div>
                             </label>
                         </div>
                     </div>
@@ -524,7 +524,7 @@
                         </td>
                     </tr>
                     {% endfor %}
-                    {% for reg in image_registration_dst %}
+                    {% for reg in image_registration_trg %}
                     <tr>
                         <td>{{reg.id}}</td>
                         <td>{{reg.source_image.name}}</td>
