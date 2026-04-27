@@ -105,14 +105,8 @@ class EXACTRegistrationHandler {
             $("#registration_selector").val(this.registration_pair.source_image.name);
             var self = this;
             this.viewer.addHandler('animation', function() {
-            if (self.background_viewer.canvas) {
-            self.background_viewer.canvas.hidden=true;
-            }
+            self.syncViewBackgroundForeground();
             });
-            this.viewer.addHandler('animation-finish', function() {
-            if (self.background_viewer.canvas) {
-            self.background_viewer.canvas.hidden=false;
-            }});
 
             this.background_viewer.addHandler("open", function (event) {
 
