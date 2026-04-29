@@ -437,7 +437,6 @@ class ImageSet(models.Model):
     pinned_by = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='pinned_sets')
     zip_state = models.IntegerField(choices=ZIP_STATES, default=ZipState.INVALID)
     collaboration_type = models.IntegerField(choices=COLLABORATION_TYPES, default=CollaborationTypes.COLLABORATIVE)
-    show_registration = models.BooleanField(default=False)
 
 
     def root_path(self):
@@ -830,7 +829,7 @@ class ImageRegistration(models.Model):
                                         "t_22": self.transformation_matrix["t_22"], 
                                     }
 
-        new_registration = ImageRegistration.objects.create(source_image=self.target_image, target_image=self.source_image, 
+        new_registration = ImageRegistration.objects.create(source_image=self.target_image, target_image=self.source_image,
                                             registration_error=self.registration_error, runtime=self.runtime, transformation_matrix=new_transformation_matrix)
 
         new_registration.save()

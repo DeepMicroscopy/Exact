@@ -576,16 +576,6 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                <label for="show-registration">{{ edit_form.show_registration.label }}
-                                                    <span class="fa fa-question-sign" data-toggle="tooltip" data-placement="right" title="If true load the registered image."></span>
-                                                </label>
-                                            </td>
-                                            <td>
-                                                {% render_field edit_form.show_registration class+='form-control' %}
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
                                                 {% if "delete_set" in imageset_perms %}
                                                     <a class="btn btn-danger" href="{% url 'images:delete_imageset' imageset.id %}">Delete Set</a>
                                                 {% endif %}

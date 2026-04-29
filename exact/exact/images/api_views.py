@@ -337,13 +337,13 @@ class ImageViewSet(viewsets.ModelViewSet):
         source_image = get_object_or_404(models.Image, id=pk)
         target_image = get_object_or_404(models.Image, id=int(request.data.get("target_image", 0)))
 
-        image_registration = models.ImageRegistration.objects.filter(source_image=source_image, target_image=target_image).first()        
+        image_registration = models.ImageRegistration.objects.filter(source_image=source_image, target_image=target_image).first()
 
         # register the two images
-        return_status = HTTP_202_ACCEPTED    
+        return_status = HTTP_202_ACCEPTED
         if image_registration is None:
 
-            image_registration = models.ImageRegistration(source_image=source_image, target_image=target_image)        
+            image_registration = models.ImageRegistration(source_image=source_image, target_image=target_image)
             return_status = HTTP_201_CREATED
         
         image_registration.perform_registration(**request.data)

@@ -59,17 +59,17 @@
                                         <div class="card-body">
                                             <div class="row">
                                                 {% for imageset in team.image_sets.all|dictsort:"name" %}                    
-                                                    <div class="card imagecard">
+                                                    <div class="card imagecard"><center>
                                                         {% for image in imageset.images.all|slice:":1" %}
                                                             <a href="{% url 'images:view_imageset' imageset.id%}">
-                                                                <img class="card-img-top" src="/api/v1/images/images/{{image.id}}/thumbnail/"
-                                                                    alt="Thumbnail {{image.name}} not found!" data-imageid="{{ image.id }}">
+                                                                <div class="img-wrapper"><center><img class="card-img-top" src="/api/v1/images/images/{{image.id}}/thumbnail/"
+                                                                    alt="Thumbnail {{image.name}} not found!" data-imageid="{{ image.id }}"></center></div>
                                                             </a>
                                                         {% endfor %}
                                                         {% if imageset.images.count == 0 %}
-                                                        <a href="{% url 'images:view_imageset' imageset.id%}">
-                                                            <img class="card-img-top" src="{% static 'images/empty_imageset.svg' %}" alt="Create new imageset">
-                                                            </a>
+                                                        <a href="{% url 'images:view_imageset' imageset.id%}"><center>
+                                                            <div class="img-wrapper"><img class="card-img-top" src="{% static 'images/empty_imageset.svg' %}" alt="Create new imageset"></div>
+                                                            </center></a>
                                                         {% endif %}
                                                         <div class="card-body">
                                                             <h5 class="card-title">
@@ -80,10 +80,10 @@
                                                         </div>
                                                     </div>
                                                 {% endfor %} 
-                                                <div class="card imagecard">
-                                                            <a href="#" id="newImagesetButton-{{team.id}}">
+                                                <div class="card imagecard"><center>
+                                                            <a href="#" id="newImagesetButton-{{team.id}}"><div class="img-wrapper">
                                                             <img class="card-img-top" src="{% static 'images/new_imageset.svg' %}" alt="Create new imageset">
-                                                        </a>
+                                                        </div></a>
                                                     <div class="card-body" id="newImageSetBody-{{team.id}}">
                                                         <h5 class="card-title" >
                                                                 New imageset

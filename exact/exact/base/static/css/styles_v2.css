@@ -270,10 +270,19 @@ body {
   color: #EEE;
 }
 
+.img-wrapper {
+  height: 148px;
+  width: 200px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #ffffff; /* Optional: adds a background if image doesn't fill the box */
+}
+
 .card-img-top {
-  width: 128px;
-  padding-top: 20px;
-  height: 148px;  
+  height: 100%;       /* Forces image to fit height */
+  width: 100%;        /* Forces image to fit width */
+  object-fit: contain; /* Keeps the whole image visible, no cropping */
 }
 
 .card-body-extend {
