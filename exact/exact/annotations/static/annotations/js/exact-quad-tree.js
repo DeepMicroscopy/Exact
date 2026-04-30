@@ -150,7 +150,9 @@ class EXACTRegistrationHandler {
             let x_min = Math.min(...xs), x_max = Math.max(...xs);
             let y_min = Math.min(...ys), y_max = Math.max(...ys);
 
-            this.background_viewer.viewport.setRotation(this.rotation_angle);
+            if (this.background_viewer.drawer) {
+                this.background_viewer.viewport.setRotation(this.rotation_angle);
+            }
 
             const vpRect = this.background_viewer.viewport.imageToViewportRectangle(
                 new OpenSeadragon.Rect(x_min, y_min, x_max - x_min, y_max - y_min)
