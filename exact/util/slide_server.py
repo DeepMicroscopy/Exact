@@ -26,6 +26,7 @@ from openslide import OpenSlideError
 import tifffile
 from util.tiffzstack import OMETiffSlide, OMETiffZStack
 from util.slideio import SlideIOSlide
+from util.nifti import NIfTISlide
 from util.enums import FrameType
 
 
@@ -498,7 +499,35 @@ class VideoAVIFileType(FileType):
     extensions = ['avi']
     handler = ReadableVideoDataset
 
-SupportedFileTypes = [MKTFileType, VideoMP4FileType, VideoAVIFileType, DicomFileType, MiraxFileType, PhilipsISyntaxFileType, PNGFileType, JPEGEXIFFileType, JPEGJFIFFileType, OlympusVSIFileType, NormalTiffFileType, BigTiffFileType, ZeissCZIFile]
+# NIfTI-1 single-file (.nii): magic 'n+1\0' at byte offset 344
+class NIfTI1FileType(FileType):
+    magic_number = b'n+1\x00'
+    magic_number_offset = 344
+    extensions = ['nii']
+    handler = NIfTISlide
+
+# NIfTI-2 single-file (.nii): magic 'n+2\0' at byte offset 4
+class NIfTI2FileType(FileType):
+    magic_number = b'n+2\x00'
+    magic_number_offset = 4
+    extensions = ['nii']
+    handler = NIfTISlide
+
+# Gzip-compressed NIfTI (.nii.gz) — nibabel handles both NIfTI-1 and -2 transparently.
+# Two variants cover the most common gzip flag bytes (with/without FNAME flag).
+class NIfTIGZFNameFileType(FileType):
+    magic_number = b'\x1f\x8b\x08\x08'  # gzip with FNAME flag
+    magic_number_offset = 0
+    extensions = ['gz']
+    handler = NIfTISlide
+
+class NIfTIGZNoFlagFileType(FileType):
+    magic_number = b'\x1f\x8b\x08\x00'  # gzip without flags
+    magic_number_offset = 0
+    extensions = ['gz']
+    handler = NIfTISlide
+
+SupportedFileTypes = [MKTFileType, VideoMP4FileType, VideoAVIFileType, DicomFileType, MiraxFileType, PhilipsISyntaxFileType, PNGFileType, JPEGEXIFFileType, JPEGJFIFFileType, OlympusVSIFileType, NormalTiffFileType, BigTiffFileType, ZeissCZIFile, NIfTI1FileType, NIfTI2FileType, NIfTIGZFNameFileType, NIfTIGZNoFlagFileType]
 
 
 
