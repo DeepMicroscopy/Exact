@@ -57,6 +57,7 @@ class NIfTISlide:
         flat = self._data.ravel()
         step = max(1, len(flat) // 100_000)
         sample = flat[::step].astype(np.float32)
+        sample = sample[sample>sample.min()] # ignore absolute minimum
         self._wmin = float(np.percentile(sample, 1))
         self._wmax = float(np.percentile(sample, 99))
         if self._wmax <= self._wmin:
