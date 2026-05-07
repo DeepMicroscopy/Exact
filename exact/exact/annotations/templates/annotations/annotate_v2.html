@@ -883,7 +883,16 @@
                 <div class="seadragon-viewer" id="openseadragon1" style="position: absolute; height: 85vh; width: 98%">
                 </div>
             </div>
-            <div id="frameSlider" style="width: 60vw;"></div>
+            <div style="display:flex; align-items:center; gap:8px; margin-top:4px;">
+                <div id="frameSlider" style="width: 60vw;"></div>
+                <div id="planeSelector" style="display:none; margin-left:12px;">
+                    <div class="btn-group btn-group-sm" role="group" aria-label="MPR plane">
+                        <button type="button" class="btn btn-outline-secondary active" id="planeBtn_0">Axial</button>
+                        <button type="button" class="btn btn-outline-secondary" id="planeBtn_1">Coronal</button>
+                        <button type="button" class="btn btn-outline-secondary" id="planeBtn_2">Sagittal</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="col-3 collapse" style="height: calc(100vh - 60px); overflow-y: auto" id="imagesetThumbnails">

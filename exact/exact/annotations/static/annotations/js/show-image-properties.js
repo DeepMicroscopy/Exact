@@ -30,10 +30,16 @@ class ShowImageProperties{
 
                 let table = ""
                 for (let [key,value] of Object.entries(data.meta_data)) {
+                    if (key === 'planes') continue;
                     table += "<tr><td>"+data.meta_data_dict[key]+"</td><td>"+value+'</td></tr>'
                 }
                 $("#image_info_table").html(table)
-//                window.dispatchEvent(new CustomEvent("sync_ProcessingJobListLoaded", {"detail": context}));
+
+                if (data.meta_data.planes) {
+                    window.dispatchEvent(new CustomEvent("exactMPRPlanesAvailable", {
+                        detail: { imageId: imageId, planes: data.meta_data.planes }
+                    }));
+                }
             },
             error: function (request, status, error) {
                 if (request.responseText !== undefined) {

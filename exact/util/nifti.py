@@ -4,7 +4,7 @@ from typing import Dict, List, Tuple
 import numpy as np
 from PIL import Image
 
-from util.enums import FrameType
+from util.enums import FrameType, PlaneType
 import openslide
 
 
@@ -12,8 +12,15 @@ import openslide
 class NIfTISlide:
     """OpenSlide-compatible reader for NIfTI (.nii, .nii.gz) volumetric images.
 
-    Each z-slice is presented as a Z-stack frame. Intensity is auto-windowed
-    using the 1st–99th percentile of a sparse sample for display.
+    Supports axial, coronal, and sagittal reformats via the `plane` parameter
+    on read_region / dimensions_for_plane / nframes_for_plane.
+
+    Data is always reoriented to RAS+ at load time so that:
+      axis 0 (X) increases Right,  axis 1 (Y) increases Anterior,
+      axis 2 (Z) increases Superior.
+
+    Display uses radiological convention (Anterior / Superior at top,
+    patient Right on the left of the image) to match 3D Slicer's defaults.
     """
 
     filename: str
@@ -50,7 +57,7 @@ class NIfTISlide:
             # Flatten extra dimensions (time, channels, …) into z
             raw = raw.reshape(raw.shape[0], raw.shape[1], -1)
 
-        self._data = raw  # shape: (X, Y, Z)
+        self._data = raw  # shape: (X, Y, Z) in RAS+
 
         # Derive voxel sizes from the affine rather than header.get_zooms().
         # get_zooms() reads pixdim from the raw NIfTI header struct, which
@@ -58,41 +65,67 @@ class NIfTISlide:
         # as_closest_canonical permutes the axes.  The affine is always
         # recomputed correctly by nibabel during reorientation.
         vox_sizes = np.sqrt((img.affine[:3, :3] ** 2).sum(axis=0))
-        sx = float(vox_sizes[0]) if vox_sizes[0] > 0 else 1.0
-        sy = float(vox_sizes[1]) if vox_sizes[1] > 0 else 1.0
-        sz = float(vox_sizes[2]) if len(vox_sizes) > 2 and vox_sizes[2] > 0 else 1.0
+        self._sx = float(vox_sizes[0]) if vox_sizes[0] > 0 else 1.0  # mm, X = Right
+        self._sy = float(vox_sizes[1]) if vox_sizes[1] > 0 else 1.0  # mm, Y = Anterior
+        self._sz = float(vox_sizes[2]) if len(vox_sizes) > 2 and vox_sizes[2] > 0 else 1.0  # mm, Z = Superior
 
-        # NIfTI voxel sizes are in mm; EXACT expects µm for mpp
-        self._mppx = sx * 1000.0
-        self._mppy = sy * 1000.0
-        self._mppz = sz  # mm, used in frame labels
+        # NIfTI voxel sizes are in mm; EXACT expects µm for mpp (axial plane)
+        self._mppx = self._sx * 1000.0
+        self._mppy = self._sy * 1000.0
 
-        # Physical in-plane pixel dimensions after voxel aspect ratio correction.
-        # Normalise to the finest in-plane voxel so neither axis loses detail:
-        # the coarser axis is upsampled to match the finer one in physical space.
-        ref = min(sx, sy)
-        nx, ny = int(self._data.shape[0]), int(self._data.shape[1])
-        self._px_width = max(1, round(nx * sx / ref))
-        self._px_height = max(1, round(ny * sy / ref))
+        nx, ny, nz = self._data.shape
+        # Physical pixel dimensions for each reformat plane after aspect-ratio correction.
+        # The finest in-plane voxel is the reference so neither axis loses detail.
+        self._ax_dims  = self._plane_px_dims(self._sx, self._sy, nx, ny)  # axial   XY
+        self._cor_dims = self._plane_px_dims(self._sx, self._sz, nx, nz)  # coronal XZ
+        self._sag_dims = self._plane_px_dims(self._sy, self._sz, ny, nz)  # sagittal YZ
 
         # Compute robust display window from a sparse sample to avoid a full scan
         flat = self._data.ravel()
         step = max(1, len(flat) // 100_000)
         sample = flat[::step].astype(np.float32)
-        sample = sample[sample>sample.min()] # ignore absolute minimum
+        sample = sample[sample > sample.min()]  # ignore absolute minimum (air/background)
         self._wmin = float(np.percentile(sample, 1))
         self._wmax = float(np.percentile(sample, 99))
         if self._wmax <= self._wmin:
             self._wmax = self._wmin + 1.0
 
     # ------------------------------------------------------------------
-    # OpenSlide-compatible interface
+    # Plane helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _plane_px_dims(s1: float, s2: float, n1: int, n2: int) -> Tuple[int, int]:
+        """Return physical (width, height) in pixels for a plane with spacings s1, s2 mm."""
+        ref = min(s1, s2)
+        return (max(1, round(n1 * s1 / ref)), max(1, round(n2 * s2 / ref)))
+
+    def dimensions_for_plane(self, plane: int = PlaneType.AXIAL) -> Tuple[int, int]:
+        """Physical (width, height) in pixels for the given plane."""
+        return (self._ax_dims, self._cor_dims, self._sag_dims)[plane]
+
+    def nframes_for_plane(self, plane: int = PlaneType.AXIAL) -> int:
+        """Number of slices available along the normal axis of the given plane."""
+        nx, ny, nz = self._data.shape
+        return (nz, ny, nx)[plane]
+
+    def frame_descriptors_for_plane(self, plane: int = PlaneType.AXIAL) -> List[str]:
+        """Human-readable position label for each frame of the given plane."""
+        nx, ny, nz = self._data.shape
+        if plane == PlaneType.CORONAL:
+            return ['y=%.2f mm' % (i * self._sy) for i in range(ny)]
+        if plane == PlaneType.SAGITTAL:
+            return ['x=%.2f mm' % (i * self._sx) for i in range(nx)]
+        return ['z=%.2f mm' % (i * self._sz) for i in range(nz)]
+
+    # ------------------------------------------------------------------
+    # OpenSlide-compatible interface  (defaults to axial plane)
     # ------------------------------------------------------------------
 
     @property
     def dimensions(self) -> Tuple[int, int]:
-        """(width, height) of one axial slice in physical pixels."""
-        return (self._px_width, self._px_height)
+        """(width, height) of the axial plane in physical pixels."""
+        return self._ax_dims
 
     @property
     def level_count(self) -> int:
@@ -100,7 +133,7 @@ class NIfTISlide:
 
     @property
     def level_dimensions(self) -> List[Tuple[int, int]]:
-        return [(self._px_width, self._px_height)]
+        return [self._ax_dims]
 
     @property
     def level_downsamples(self) -> List[float]:
@@ -120,7 +153,7 @@ class NIfTISlide:
         }
 
     # ------------------------------------------------------------------
-    # Z-stack / frame interface
+    # Z-stack / frame interface  (defaults to axial plane)
     # ------------------------------------------------------------------
 
     @property
@@ -133,44 +166,61 @@ class NIfTISlide:
 
     @property
     def frame_descriptors(self) -> List[str]:
-        return ['z=%.2f mm' % (i * self._mppz) for i in range(self.nFrames)]
+        return self.frame_descriptors_for_plane(PlaneType.AXIAL)
 
     @property
     def default_frame(self) -> int:
-        return self.nFrames // 2
+        return self._data.shape[2] // 2
 
     # ------------------------------------------------------------------
-    # Region reading
+    # Rendering
     # ------------------------------------------------------------------
 
-    def _render_slice(self, z_idx: int) -> np.ndarray:
-        """Return a uint8 RGBA array (height, width, 4) for slice z_idx.
+    def _render_plane(self, frame: int, plane: int = PlaneType.AXIAL) -> np.ndarray:
+        """Return a uint8 RGBA array at the physical pixel size for the given plane.
 
-        The output dimensions match self.dimensions (physical pixels), with
-        voxel aspect ratio already applied.
+        Radiological convention is applied in all three planes:
+          axial    – Anterior at top,  patient Right on left
+          coronal  – Superior at top,  patient Right on left
+          sagittal – Superior at top,  Posterior on left (view from patient's left)
         """
-        z_idx = max(0, min(z_idx, self.nFrames - 1))
-        # _data shape is (X, Y, Z); transpose the XY plane to (Y, X) = (height, width).
-        # Then apply radiological convention: flip rows so Anterior is at the top,
-        # flip columns so patient Right is on the left — matching 3D Slicer's default.
-        slc = self._data[:, :, z_idx].astype(np.float32).T
-        slc = slc[::-1, ::-1]
+        nx, ny, nz = self._data.shape
+
+        if plane == PlaneType.CORONAL:
+            y = max(0, min(frame, ny - 1))
+            # data[:, y, :] → (nx, nz); .T → (nz, nx) = (height, width)
+            slc = self._data[:, y, :].astype(np.float32).T
+            slc = slc[::-1, ::-1]   # Superior at top, Right on left
+            pw, ph = self._cor_dims
+
+        elif plane == PlaneType.SAGITTAL:
+            x = max(0, min(frame, nx - 1))
+            # data[x, :, :] → (ny, nz); .T → (nz, ny) = (height, width)
+            slc = self._data[x, :, :].astype(np.float32).T
+            slc = slc[::-1, ::-1]   # Superior at top, Anterior on left (view from patient's right)
+            pw, ph = self._sag_dims
+
+        else:  # AXIAL
+            z = max(0, min(frame, nz - 1))
+            # data[:, :, z] → (nx, ny); .T → (ny, nx) = (height, width)
+            slc = self._data[:, :, z].astype(np.float32).T
+            slc = slc[::-1, ::-1]   # Anterior at top, Right on left
+            pw, ph = self._ax_dims
+
         slc = np.clip(
             (slc - self._wmin) / (self._wmax - self._wmin) * 255.0,
             0, 255,
         ).astype(np.uint8)
         rgba = np.stack([slc, slc, slc, np.full_like(slc, 255)], axis=-1)
-        # Resize to physical pixel dimensions when voxels are not isotropic.
-        if rgba.shape[1] != self._px_width or rgba.shape[0] != self._px_height:
+
+        if rgba.shape[1] != pw or rgba.shape[0] != ph:
             rgba = np.array(
-                Image.fromarray(rgba, 'RGBA').resize(
-                    (self._px_width, self._px_height), Image.LANCZOS
-                )
+                Image.fromarray(rgba, 'RGBA').resize((pw, ph), Image.LANCZOS)
             )
         return rgba
 
     def get_thumbnail(self, size: Tuple[int, int]) -> Image.Image:
-        rgba = self._render_slice(self.default_frame)
+        rgba = self._render_plane(self.default_frame, PlaneType.AXIAL)
         return Image.fromarray(rgba, 'RGBA').resize(size, Image.LANCZOS)
 
     def read_region(
@@ -179,10 +229,11 @@ class NIfTISlide:
         level: int,
         size: Tuple[int, int],
         frame: int = 0,
+        plane: int = PlaneType.AXIAL,
     ) -> Image.Image:
         x, y = location
         width, height = size
-        rgba_full = self._render_slice(frame)
+        rgba_full = self._render_plane(frame, plane)
         img_h, img_w = rgba_full.shape[:2]
 
         canvas = np.zeros((height, width, 4), dtype=np.uint8)

@@ -45,6 +45,11 @@ class EXACTViewer {
         this.heatmapInvToggle = false;
         this.heatmapToggle = false;
 
+        this.currentPlane = 0;
+        this.mprPlanes = null;
+        this._mprHandler = this.onMPRPlanesAvailable.bind(this);
+        window.addEventListener('exactMPRPlanesAvailable', this._mprHandler);
+
         $(document).keyup(this.handleKeyUp.bind(this));
     }
 
@@ -708,7 +713,66 @@ class EXACTViewer {
         return;
     }
 
+    onMPRPlanesAvailable(event) {
+        if (parseInt(event.detail.imageId) !== this.imageId) return;
+        this.mprPlanes = event.detail.planes;
+        $('#planeSelector').show();
+        const planeNames = ['axial', 'coronal', 'sagittal'];
+        planeNames.forEach((name, idx) => {
+            $(`#planeBtn_${idx}`)
+                .off('click.mpr')
+                .on('click.mpr', () => this.switchPlane(idx));
+        });
+        this.updatePlaneButtons();
+    }
+
+    updatePlaneButtons() {
+        ['axial', 'coronal', 'sagittal'].forEach((_, idx) => {
+            $(`#planeBtn_${idx}`).toggleClass('active', idx === this.currentPlane);
+        });
+    }
+
+    switchPlane(plane) {
+        if (!this.mprPlanes || plane === this.currentPlane) return;
+        this.currentPlane = plane;
+        this.updatePlaneButtons();
+
+        const planeNames = ['axial', 'coronal', 'sagittal'];
+        const planeInfo = this.mprPlanes[planeNames[plane]];
+        if (!planeInfo) return;
+
+        const nFrames = planeInfo.nFrames;
+        const zDim = plane + 1;
+
+        const tileSources = [];
+        for (let f = 0; f < nFrames; f++) {
+            tileSources.push(`${this.server_url}/images/image/${this.imageId}/${zDim}/${f + 1}/tile/`);
+        }
+
+        // Rebuild the frame slider for the new plane's frame count so the
+        // range and value are correct before viewer.open() fires its page event.
+        if (this.frameSlider !== undefined) {
+            this.frameSlider.destroy();
+            this.frameSlider = undefined;
+        }
+        if (nFrames > 1) {
+            this.frameSlider = new Slider("#frameSlider", {
+                ticks_snap_bounds: 1,
+                value: 1,
+                min: 0,
+                tooltip: 'always',
+                max: nFrames - 1
+            });
+            this.frameSlider.on('change', this.onFrameSliderChanged.bind(this));
+        }
+
+        this.viewer.open(tileSources);
+    }
+
     destroy() {
+        window.removeEventListener('exactMPRPlanesAvailable', this._mprHandler);
+        $('#planeSelector').hide();
+
         if (this.gZoomSlider !== undefined) {
             this.gZoomSlider.destroy();
         }

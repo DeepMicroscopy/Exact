@@ -27,20 +27,25 @@ import tifffile
 from util.tiffzstack import OMETiffSlide, OMETiffZStack
 from util.slideio import SlideIOSlide
 from util.nifti import NIfTISlide
-from util.enums import FrameType
+from util.enums import FrameType, PlaneType
 
 
 class zDeepZoomGenerator(DeepZoomGenerator):
-    def get_tile(self, level, address, frame=0):
+    def get_tile(self, level, address, frame=0, plane=PlaneType.AXIAL):
         """Return an RGB PIL.Image for a tile.
 
         level:     the Deep Zoom level.
-        address:   the address of the tile within the level as a (col, row)
-                   tuple."""
+        address:   the address of the tile within the level as a (col, row) tuple.
+        frame:     slice index within the chosen plane.
+        plane:     PlaneType constant (AXIAL=0, CORONAL=1, SAGITTAL=2).
+        """
 
-        # Read tile
+        # Read tile — pass plane only to handlers that declare MPR support
         args, z_size = self._get_tile_info(level, address)
-        tile = self._osr.read_region(*args, frame=frame)
+        if hasattr(self._osr, 'dimensions_for_plane'):
+            tile = self._osr.read_region(*args, frame=frame, plane=plane)
+        else:
+            tile = self._osr.read_region(*args, frame=frame)
         profile = tile.info.get('icc_profile')
 
         # Apply on solid background
@@ -58,41 +63,54 @@ class zDeepZoomGenerator(DeepZoomGenerator):
             tile.info['icc_profile'] = profile
 
         return tile
-    
+
     @property
     def dimensions(self):
-        if hasattr(self._osr,'dimensions'):
+        if hasattr(self._osr, 'dimensions'):
             return self._osr.dimensions
-        else:
-            return [0]
-    
+        return [0]
+
+    def dimensions_for_plane(self, plane: int = PlaneType.AXIAL):
+        """Return (width, height) for the given plane, if the handler supports it."""
+        if hasattr(self._osr, 'dimensions_for_plane'):
+            return self._osr.dimensions_for_plane(plane)
+        return self.dimensions
+
+    def nframes_for_plane(self, plane: int = PlaneType.AXIAL):
+        """Return the number of frames for the given plane, if the handler supports it."""
+        if hasattr(self._osr, 'nframes_for_plane'):
+            return self._osr.nframes_for_plane(plane)
+        return self.nFrames
+
+    def frame_descriptors_for_plane(self, plane: int = PlaneType.AXIAL):
+        """Return frame descriptor strings for the given plane, if the handler supports it."""
+        if hasattr(self._osr, 'frame_descriptors_for_plane'):
+            return self._osr.frame_descriptors_for_plane(plane)
+        return getattr(self._osr, 'frame_descriptors', [])
+
     @property
     def meta_data(self):
-        if hasattr(self._osr,'meta_data'):
+        if hasattr(self._osr, 'meta_data'):
             return self._osr.meta_data
-        else:
-            return {}
+        return {}
 
     @property
     def meta_data_dict(self):
-        if hasattr(self._osr,'meta_data_dict'):
+        if hasattr(self._osr, 'meta_data_dict'):
             return self._osr.meta_data_dict
-        else:
-            return {}
+        return {}
 
-    @property 
+    @property
     def nFrames(self):
-        if hasattr(self._osr,'nFrames'):
+        if hasattr(self._osr, 'nFrames'):
             return self._osr.nFrames
-        else:
-            return None
+        return None
 
-    @property 
+    @property
     def frame_type(self):
-        if hasattr(self._osr,'frame_type'):
+        if hasattr(self._osr, 'frame_type'):
             return self._osr.frame_type
-        else:
-            return None
+        return None
     
         
     
@@ -130,8 +148,8 @@ class OpenSlideWrapper(openslide.OpenSlide):
 
 
 class OMETiffSlideWrapper(OMETiffSlide, openslide.OpenSlide):
-    
-    @property 
+
+    @property
     def nFrames(self):
         return 1
 
@@ -144,7 +162,7 @@ class OMETiffSlideWrapper(OMETiffSlide, openslide.OpenSlide):
     @property
     def frame_type(self):
         return FrameType.UNDEFINED
-    
+
     def read_region(self, location, level, size, frame=0):
         return super().read_region(location, level, size)
 
@@ -574,22 +592,97 @@ def getSlideHandler(path):
         return None
                     
 
+class PlaneSlideAdapter:
+    """Presents a single MPR plane of a volumetric handler to DeepZoomGenerator.
+
+    DeepZoomGenerator sees the plane's physical dimensions and tile grid.
+    read_region transparently injects the stored plane so callers need not know
+    about it — the plane is fully encapsulated here.
+    """
+
+    def __init__(self, slide, plane: int):
+        self._slide = slide
+        self._plane = plane
+
+    @property
+    def dimensions(self):
+        return self._slide.dimensions_for_plane(self._plane)
+
+    @property
+    def level_count(self):
+        return 1
+
+    @property
+    def level_dimensions(self):
+        return [self._slide.dimensions_for_plane(self._plane)]
+
+    @property
+    def level_downsamples(self):
+        return [1.0]
+
+    def get_best_level_for_downsample(self, _downsample):
+        return 0
+
+    @property
+    def nFrames(self):
+        return self._slide.nframes_for_plane(self._plane)
+
+    @property
+    def frame_descriptors(self):
+        if hasattr(self._slide, 'frame_descriptors_for_plane'):
+            return self._slide.frame_descriptors_for_plane(self._plane)
+        return []
+
+    @property
+    def frame_type(self):
+        return self._slide.frame_type
+
+    @property
+    def properties(self):
+        return self._slide.properties
+
+    def read_region(self, location, level, size, frame=0):
+        return self._slide.read_region(location, level, size, frame=frame, plane=self._plane)
+
+    def get_thumbnail(self, size):
+        return self._slide.get_thumbnail(size)
+
+
 class SlideCache(object):
     def __init__(self, cache_size):
         self.cache_size = cache_size
         self._lock = Lock()
-        self._cache = OrderedDict()
+        self._cache = OrderedDict()  # (path, plane) → zDeepZoomGenerator
+        self._osr_cache = {}         # path → raw handler, shared across all planes
 
-    def get(self, path):
+    def _get_osr(self, path):
+        """Return the raw slide handler, loading it once and caching it per path."""
         with self._lock:
-            if path in self._cache:
-                # Move to end of LRU
-                slide = self._cache.pop(path)
-                self._cache[path] = slide
+            if path in self._osr_cache:
+                return self._osr_cache[path]
+        osr = getSlideHandler(path)
+        with self._lock:
+            self._osr_cache[path] = osr
+        return osr
+
+    def get(self, path, plane=PlaneType.AXIAL):
+        cache_key = (path, plane)
+        with self._lock:
+            if cache_key in self._cache:
+                slide = self._cache.pop(cache_key)
+                self._cache[cache_key] = slide
                 return slide
 
-        osr = getSlideHandler(path)
-        slide = zDeepZoomGenerator(osr)
+        osr = self._get_osr(path)
+
+        # For non-axial planes on volumetric handlers, wrap the handler so
+        # DeepZoomGenerator sees the plane's dimensions and tile grid.
+        if plane != PlaneType.AXIAL and hasattr(osr, 'dimensions_for_plane'):
+            osr_for_dz = PlaneSlideAdapter(osr, plane)
+        else:
+            osr_for_dz = osr
+
+        slide = zDeepZoomGenerator(osr_for_dz)
         try:
             mpp_x = osr.properties[openslide.PROPERTY_NAME_MPP_X]
             mpp_y = osr.properties[openslide.PROPERTY_NAME_MPP_Y]
@@ -602,11 +695,10 @@ class SlideCache(object):
             slide.mpp_y = 0
 
         with self._lock:
-            if path not in self._cache:
+            if cache_key not in self._cache:
                 if len(self._cache) == self.cache_size:
                     self._cache.popitem(last=False)
-                self._cache[path] = slide
-#        print('Added to cache')
+                self._cache[cache_key] = slide
         return slide
 
 class SlideFile(object):

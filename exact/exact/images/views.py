@@ -415,13 +415,23 @@ def view_image(request, image_id, z_dimension:int=1, frame:int=1):
     if not image.image_set.has_perm('read', request.user):
         return HttpResponseForbidden()
 
+    # For single-file volumetric images (NIfTI etc.), z_dimension encodes the
+    # MPR plane: 1=axial, 2=coronal, 3=sagittal. Multi-file z-stacks keep
+    # z_dimension as a file-level selector and always use plane 0.
+    if image.depth == 1:
+        plane = max(0, z_dimension - 1)
+        effective_z = 1
+    else:
+        plane = 0
+        effective_z = z_dimension
+
     cache_key = f"{image_id}_{z_dimension}_{frame}_get_dzi"
     value = cache.get(cache_key)
     if value is not None:
         return HttpResponse(value, content_type='application/xml')
-    
-    file_path = os.path.join(settings.IMAGE_PATH, image.path(z_dimension, frame))
-    slide = image_cache.get(file_path)
+
+    file_path = os.path.join(settings.IMAGE_PATH, image.path(effective_z, frame))
+    slide = image_cache.get(file_path, plane=plane)
     value = slide.get_dzi("jpeg")
 
     if hasattr(cache, "delete_pattern"):
@@ -458,6 +468,21 @@ def image_metadata(request, image_id) -> Response:
 
         if (slideobj.nFrames>1):
             meta_data['frame_type'] = slideobj.frame_type
+
+        if hasattr(slideobj, 'dimensions_for_plane') and slideobj.dimensions_for_plane(0) is not None:
+            plane_names = ['axial', 'coronal', 'sagittal']
+            planes = {}
+            for p, name in enumerate(plane_names):
+                dims = slideobj.dimensions_for_plane(p)
+                if dims is not None:
+                    planes[name] = {
+                        'plane': p,
+                        'dimensions': list(dims),
+                        'nFrames': slideobj.nframes_for_plane(p),
+                    }
+            if planes:
+                meta_data['planes'] = planes
+                meta_data_dict['planes'] = 'MPR planes'
 
         meta_data.update(slideobj.meta_data)
         meta_data_dict.update(slideobj.meta_data_dict)
@@ -595,13 +620,21 @@ def view_image_tile(request, image_id, z_dimension, frame, level, tile_path):
     image = get_object_or_404(Image, id=image_id)
     if not image.image_set.has_perm('read', request.user):
         return HttpResponseForbidden()
-        
-    file_path = os.path.join(settings.IMAGE_PATH, image.path(z_dimension, frame))
+
+    if image.depth == 1:
+        plane = max(0, z_dimension - 1)
+        effective_z = 1
+    else:
+        plane = 0
+        effective_z = z_dimension
+
+    file_path = os.path.join(settings.IMAGE_PATH, image.path(effective_z, frame))
 
     try:
-        slide = image_cache.get(file_path)
+        slide = image_cache.get(file_path, plane=plane)
 
-        tile = slide.get_tile(level, (col, row),frame=min(frame, image.frames-1))
+        n_frames = slide.nFrames if slide.nFrames is not None else image.frames
+        tile = slide.get_tile(level, (col, row), frame=min(frame, n_frames - 1), plane=plane)
 
         buf = PILBytesIO()
         tile.save(buf, format, quality=90)
