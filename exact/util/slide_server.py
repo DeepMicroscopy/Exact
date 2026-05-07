@@ -71,16 +71,16 @@ class zDeepZoomGenerator(DeepZoomGenerator):
         return [0]
 
     def dimensions_for_plane(self, plane: int = PlaneType.AXIAL):
-        """Return (width, height) for the given plane, if the handler supports it."""
+        """Return (width, height) for the given plane, or None if the handler is not MPR-capable."""
         if hasattr(self._osr, 'dimensions_for_plane'):
             return self._osr.dimensions_for_plane(plane)
-        return self.dimensions
+        return None
 
     def nframes_for_plane(self, plane: int = PlaneType.AXIAL):
-        """Return the number of frames for the given plane, if the handler supports it."""
+        """Return the number of frames for the given plane, or None if the handler is not MPR-capable."""
         if hasattr(self._osr, 'nframes_for_plane'):
             return self._osr.nframes_for_plane(plane)
-        return self.nFrames
+        return None
 
     def frame_descriptors_for_plane(self, plane: int = PlaneType.AXIAL):
         """Return frame descriptor strings for the given plane, if the handler supports it."""
