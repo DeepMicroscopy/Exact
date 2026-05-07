@@ -101,7 +101,7 @@
                             </span>
                         </div>
                         
-                        <div id="image_list" style="overflow:scroll; height:40vh" data-static-file="{% static '' %}" 
+                        <div id="image_list" style="overflow:scroll; height:40vh; margin-left: 1em; text-align:left" data-static-file="{% static '' %}"
                                                 data-static_cdn={{USE_CDN_WSI}}
                                                 data-image_set_name="{{ selected_image.image_set.name }}">
                             {% for set_image in set_images %}
@@ -883,7 +883,7 @@
                 <div class="seadragon-viewer" id="openseadragon1" style="position: absolute; height: 85vh; width: 98%">
                 </div>
             </div>
-            <div style="display:flex; align-items:center; gap:8px; margin-top:4px;">
+            <div id="frameSliderDiv" style="display:flex; align-items:center; gap:8px; margin-top:4px;">
                 <div id="frameSlider" style="width: 60vw;"></div>
                 <div id="planeSelector" style="display:none; margin-left:12px;">
                     <div class="btn-group btn-group-sm" role="group" aria-label="MPR plane">
