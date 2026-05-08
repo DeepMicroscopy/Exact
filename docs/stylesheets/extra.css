@@ -23,6 +23,12 @@
   border-radius: 0 0 4px 4px;
 }
 
+.hero img {
+  height: 52px;
+  width: auto;
+  margin-bottom: 1rem;
+}
+
 .hero p {
   font-size: 1.2rem;
   opacity: 0.9;
@@ -32,9 +38,11 @@
   color: white;
 }
 
-.hero img {
+.hero p img {
   margin: 0 4px;
   vertical-align: middle;
+  height: auto;
+  width: auto;
 }
 
 /* ── Feature cards on home page ─────────────────────────────────────────── */

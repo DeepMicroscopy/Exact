@@ -6,6 +6,8 @@ hide:
 
 <div class="hero" markdown>
 
+![EXACT](assets/logo.svg)
+
 **Collaborative annotation of images at any scale —**
 whole slide histopathology, MRI volumes, z-stacks, and more.
 
