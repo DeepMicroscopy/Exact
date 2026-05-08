@@ -17,47 +17,47 @@ whole slide histopathology, MRI volumes, z-stacks, and more.
 
 <div class="grid cards" markdown>
 
--   :material-rocket-launch-outline: **Quick Start**
+-   🚀 **Quick Start**
 
     ---
     Get EXACT running with Docker in minutes.
 
-    [:octicons-arrow-right-24: Installation](getting-started/installation.md)
+    [→ Installation](getting-started/installation.md)
 
--   :material-draw: **Annotation Workflow**
+-   ✏️ **Annotation Workflow**
 
     ---
     Draw, verify, and export annotations on images of any size.
 
-    [:octicons-arrow-right-24: Workflow guide](user-guide/annotation-workflow.md)
+    [→ Workflow guide](user-guide/annotation-workflow.md)
 
--   :material-image-multiple-outline: **Image Formats**
+-   🖼️ **Image Formats**
 
     ---
     WSI, z-stacks, NIfTI MPR, CZI, iSyntax — and extensible for more.
 
-    [:octicons-arrow-right-24: Supported formats](user-guide/image-formats.md)
+    [→ Supported formats](user-guide/image-formats.md)
 
--   :material-api: **REST API**
+-   📡 **REST API**
 
     ---
     Full OpenAPI reference and Python client examples.
 
-    [:octicons-arrow-right-24: API reference](api/index.md)
+    [→ API reference](api/index.md)
 
--   :material-puzzle-outline: **Plugin System**
+-   🧩 **Plugin System**
 
     ---
     Connect your trained models to EXACT via EXACT-Sync.
 
-    [:octicons-arrow-right-24: Plugin guide](developer-guide/plugins.md)
+    [→ Plugin guide](developer-guide/plugins.md)
 
--   :material-source-branch: **Developer Guide**
+-   🔧 **Developer Guide**
 
     ---
     Architecture, custom image formats, frontend internals.
 
-    [:octicons-arrow-right-24: Architecture](developer-guide/architecture.md)
+    [→ Architecture](developer-guide/architecture.md)
 
 </div>
 
