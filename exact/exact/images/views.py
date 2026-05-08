@@ -483,6 +483,8 @@ def image_metadata(request, image_id) -> Response:
             if planes:
                 meta_data['planes'] = planes
                 meta_data_dict['planes'] = 'MPR planes'
+            meta_data['mpp_z'] = getattr(slideobj, 'mpp_z', 0)
+            meta_data_dict['mpp_z'] = 'z Resolution (microns/px)'
 
         meta_data.update(slideobj.meta_data)
         meta_data_dict.update(slideobj.meta_data_dict)

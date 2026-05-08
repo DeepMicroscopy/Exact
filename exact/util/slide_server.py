@@ -693,6 +693,7 @@ class SlideCache(object):
             slide.mpp = 0
             slide.mpp_x = 0
             slide.mpp_y = 0
+        slide.mpp_z = osr.properties.get('openslide.mpp-z', 0)
 
         with self._lock:
             if cache_key not in self._cache:

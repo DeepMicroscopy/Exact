@@ -37,7 +37,13 @@ class ShowImageProperties{
 
                 if (data.meta_data.planes) {
                     window.dispatchEvent(new CustomEvent("exactMPRPlanesAvailable", {
-                        detail: { imageId: imageId, planes: data.meta_data.planes }
+                        detail: {
+                            imageId: imageId,
+                            planes: data.meta_data.planes,
+                            mpp_x: data.meta_data.mpp_x,
+                            mpp_y: data.meta_data.mpp_y,
+                            mpp_z: data.meta_data.mpp_z || 0
+                        }
                     }));
                 }
             },

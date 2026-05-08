@@ -148,6 +148,7 @@ class NIfTISlide:
             openslide.PROPERTY_NAME_BACKGROUND_COLOR: '000000',
             openslide.PROPERTY_NAME_MPP_X: str(self._mppx),
             openslide.PROPERTY_NAME_MPP_Y: str(self._mppy),
+            'openslide.mpp-z': str(self._sz * 1000.0),  # µm, z-axis spacing
             openslide.PROPERTY_NAME_OBJECTIVE_POWER: '1',
             openslide.PROPERTY_NAME_VENDOR: 'NIfTI',
         }

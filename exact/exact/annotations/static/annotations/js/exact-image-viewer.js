@@ -720,6 +720,11 @@ class EXACTViewer {
     onMPRPlanesAvailable(event) {
         if (parseInt(event.detail.imageId) !== this.imageId) return;
         this.mprPlanes = event.detail.planes;
+        this.mprSpacing = {
+            x: parseFloat(event.detail.mpp_x) / 1000 || 0,  // µm → mm
+            y: parseFloat(event.detail.mpp_y) / 1000 || 0,
+            z: parseFloat(event.detail.mpp_z) / 1000 || 0,
+        };
         $('#planeSelector').show();
         const planeNames = ['axial', 'coronal', 'sagittal'];
         planeNames.forEach((name, idx) => {
@@ -986,8 +991,10 @@ class EXACTViewer {
 
     _updateMPRInfo() {
         const { x, y, z } = this.mprPos;
+        const s = this.mprSpacing;
+        const fmt = (v, sp) => sp > 0 ? `${v}&nbsp;(${(v * sp).toFixed(1)}&nbsp;mm)` : `${v}`;
         $('#mpr_info').html(
-            `<span>x&nbsp;=&nbsp;${x}</span><span>y&nbsp;=&nbsp;${y}</span><span>z&nbsp;=&nbsp;${z}</span>`
+            `<span>x&nbsp;=&nbsp;${fmt(x, s?.x)}</span><span>y&nbsp;=&nbsp;${fmt(y, s?.y)}</span><span>z&nbsp;=&nbsp;${fmt(z, s?.z)}</span>`
         );
     }
 
