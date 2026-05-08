@@ -28,6 +28,11 @@ class ScreeningTool {
                 this.viewer.raiseEvent('viewCoordinates', { coordinates });
 
                 break;
+            case 192: // ^ key
+                var coordinates = this.moveUp();
+                this.startScreeningMode(event)
+
+                break;
             case 87: //w up tile
                 var coordinates = this.moveUp();
                 this.viewer.raiseEvent('viewCoordinates', { coordinates });
