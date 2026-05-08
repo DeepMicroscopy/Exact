@@ -1,0 +1,58 @@
+/* ── EXACT brand colors ─────────────────────────────────────────────────── */
+:root {
+  --md-primary-fg-color:        #005a9b;
+  --md-primary-fg-color--light: #1478c8;
+  --md-primary-fg-color--dark:  #00407a;
+  --md-accent-fg-color:         #0090d4;
+}
+
+/* ── Header logo: let the wide SVG breathe ──────────────────────────────── */
+.md-header__button.md-logo img,
+.md-header__button.md-logo svg {
+  height: 28px;
+  width: auto;
+}
+
+/* ── Home page hero ─────────────────────────────────────────────────────── */
+.hero {
+  padding: 4rem 1rem 3rem;
+  text-align: center;
+  background: linear-gradient(160deg, #005a9b 0%, #003d6b 100%);
+  color: white;
+  margin: -0.8rem -0.8rem 2rem;
+  border-radius: 0 0 4px 4px;
+}
+
+.hero p {
+  font-size: 1.2rem;
+  opacity: 0.9;
+  max-width: 640px;
+  margin: 0 auto 1.5rem;
+  line-height: 1.6;
+  color: white;
+}
+
+.hero img {
+  margin: 0 4px;
+  vertical-align: middle;
+}
+
+/* ── Feature cards on home page ─────────────────────────────────────────── */
+.md-typeset .grid.cards > ul > li {
+  border-left: 3px solid var(--md-primary-fg-color);
+}
+
+/* ── Slightly tighter nav sidebar ──────────────────────────────────────── */
+.md-nav__item {
+  padding: 0;
+}
+
+/* ── Code blocks: slightly softer ──────────────────────────────────────── */
+.md-typeset pre > code {
+  font-size: 0.82rem;
+}
+
+/* ── Table: zebra stripe ────────────────────────────────────────────────── */
+.md-typeset table:not([class]) tr:nth-child(even) {
+  background-color: rgba(0, 90, 155, 0.05);
+}
