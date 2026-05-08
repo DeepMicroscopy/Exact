@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db import connection
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, Q, Sum, Subquery, OuterRef
 from django.db.models.expressions import F
 from django.views.decorators.http import require_http_methods
 from django.urls import reverse
@@ -200,6 +200,34 @@ def index(request):
         'user_has_admin_teams': user_admin_teams.exists(),
         'userteams': userteams,
     })
+
+
+@login_required
+def team_imagesets_api(request, team_id):
+    """Return JSON list of imagesets for a team with first-image ID and count.
+
+    Used by the index page to lazy-load team tab content via AJAX.
+    """
+    get_object_or_404(Team, id=team_id, members=request.user)
+    first_image_sq = Image.objects.filter(
+        image_set=OuterRef('pk')
+    ).order_by('id').values('id')[:1]
+    imagesets = (
+        ImageSet.objects.filter(team_id=team_id)
+        .annotate(image_count_agg=Count('images'), first_image_id=Subquery(first_image_sq))
+        .order_by('name')
+    )
+    result = [
+        {
+            'id': iset.id,
+            'name': iset.name,
+            'image_count': iset.image_count,  # uses the model @property which reads image_count_agg
+            'first_image_id': iset.first_image_id,
+            'priority': iset.priority,
+        }
+        for iset in imagesets
+    ]
+    return JsonResponse(result, safe=False)
 
 
 @api_view(['POST'])

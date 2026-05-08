@@ -14,7 +14,7 @@
                                 <div class="col-sm-3">
                                     <div class="card">
                                         <a href="{% url 'annotations:annotate' last_image_action.image.id %}">
-                                            <img class="card-img-top" src="/api/v1/images/images/{{last_image_action.image.id}}/thumbnail/"
+                                            <img class="card-img-top" loading="lazy" src="/api/v1/images/images/{{last_image_action.image.id}}/thumbnail/"
                                                 alt="Thumbnail {{image.name}} not found!" data-imageid="{{ last_image_action.image.id }}">
                                         </a>
                                         <div class="card-body">
@@ -22,19 +22,19 @@
                                                 <a href="{% url 'images:view_imageset' last_image_action.image.image_set.id%}">
                                                     {{ last_image_action.image.image_set.name }} ({{ last_image_action.image.image_set.image_count }} images) {{ last_image_action.image.image_set.prio_symbol | safe }}
                                                 </a>
-                                            </h5>                
+                                            </h5>
                                         </div>
                                     </div>
                                 </div>
                             {% endif %}
                             <div class="col-sm">
                                 <div class="card-columns">
-                                    {% for imageset in user.pinned_sets.all|dictsort:"name" %}                    
+                                    {% for imageset in user.pinned_sets.all|dictsort:"name" %}
                                         <div class="card">
                                             {% for image in imageset.images.all|slice:":1" %}
                                                 {% if image.id is not None %}
                                                     <a href="{% url 'annotations:annotate' image.id %}">
-                                                        <img class="card-img-top" src="/api/v1/images/images/{{image.id}}/thumbnail/"
+                                                        <img class="card-img-top" loading="lazy" src="/api/v1/images/images/{{image.id}}/thumbnail/"
                                                             alt="Thumbnail {{image.name}} not found!" data-imageid="{{ image.id }}">
                                                     </a>
                                                 {% endif %}
@@ -44,46 +44,22 @@
                                                     <a href="{% url 'images:view_imageset' imageset.id%}">
                                                         {{ imageset.name }} ({{ imageset.image_count }} images) {{ imageset.prio_symbol | safe }}
                                                     </a>
-                                                </h5>                
+                                                </h5>
                                             </div>
                                         </div>
-                                    {% endfor %} 
+                                    {% endfor %}
                                 </div>
                             </div>
                         </div>
-
-
-                        <div class="card-columns">
-                            {% for imageset in team.image_sets.all|dictsort:"name" %}                    
-                                <div class="card">
-                                    {% for image in imageset.images.all|slice:":1" %}
-                                        <a href="{% url 'annotations:annotate' image.id %}">
-                                            <img class="card-img-top" src="/api/v1/images/images/{{image.id}}/thumbnail/"
-                                                alt="Thumbnail {{image.name}} not found!" data-imageid="{{ image.id }}">
-                                        </a>
-                                    {% endfor %}
-                                    <div class="card-body">
-                                        <h5 class="card-title">
-                                            <a href="{% url 'images:view_imageset' imageset.id%}">
-                                                {{ imageset.name }} ({{ imageset.image_count }} images) {{ imageset.prio_symbol | safe }}
-                                            </a>
-                                        </h5>                
-                                    </div>
-                                </div>
-                            {% endfor %} 
-                        </div>    
-                    </div> 
+                    </div>
                 </div>
 
             <div class="card">
                 <div class="card-header">
-                    <h3>
-                        Datasets
-                    </h3>
+                    <h3>Datasets</h3>
                 </div>
                 <div class="card-body">
                     <div class="row">
-
                         <div class="col-sm-3">
                             <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist" aria-orientation="vertical">
                                 {% for team in userteams %}
@@ -99,9 +75,9 @@
                             <div class="tab-content" id="v-pills-tabContent">
                                 {% for team in userteams %}
                                 {% if forloop.first %}
-                                <div class="tab-pane fade show active" id="v-pills-{{team.id}}" role="tabpanel" aria-labelledby="v-pills-{{team.id}}-tab">
+                                <div class="tab-pane fade show active" id="v-pills-{{team.id}}" role="tabpanel" aria-labelledby="v-pills-{{team.id}}-tab" data-team-id="{{team.id}}">
                                 {% else %}
-                                <div class="tab-pane fade" id="v-pills-{{team.id}}" role="tabpanel" aria-labelledby="v-pills-{{team.id}}-tab">
+                                <div class="tab-pane fade" id="v-pills-{{team.id}}" role="tabpanel" aria-labelledby="v-pills-{{team.id}}-tab" data-team-id="{{team.id}}">
                                 {% endif %}
                                     <div class="card">
                                         <div class="card-header">
@@ -110,32 +86,15 @@
                                             </h5>
                                         </div>
                                         <div class="card-body">
-                                            <div class="card-columns">
-                                                {% for imageset in team.image_sets.all|dictsort:"name" %}                    
-                                                    <div class="card">
-                                                        {% for image in imageset.images.all|slice:":1" %}
-                                                            <a href="{% url 'annotations:annotate' image.id %}">
-                                                                <img class="card-img-top" src="/api/v1/images/images/{{image.id}}/thumbnail/"
-                                                                    alt="Thumbnail {{image.name}} not found!" data-imageid="{{ image.id }}">
-                                                            </a>
-                                                        {% endfor %}
-                                                        <div class="card-body">
-                                                            <h5 class="card-title">
-                                                                <a href="{% url 'images:view_imageset' imageset.id%}">
-                                                                    {{ imageset.name }} ({{ imageset.image_count }} images) {{ imageset.prio_symbol | safe }}
-                                                                </a>
-                                                            </h5>                
-                                                        </div>
-                                                    </div>
-                                                {% endfor %} 
-                                            </div>    
-                                        </div> 
-                                    </div> 
+                                            <div class="card-columns imageset-container" id="imagesets-{{team.id}}">
+                                                <div class="imageset-loading" style="padding:20px;color:#888;">Loading…</div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                                 {% endfor %}
                             </div>
                         </div>
-
                     </div>
                 </div>
             </div>
@@ -201,4 +160,61 @@
         </div>
       </div>
 </div>
+
+<script>
+    var STATIC_ROOT = '{% static "" %}';
+    var VIEW_IMAGESET_URL = '{% url "images:view_imageset" 0 %}'.replace('/0/', '/');
+    var TEAM_IMAGESETS_URL = '/images/api/team/';
+
+    var loadedTeams = new Set();
+
+    function prioSymbol(priority) {
+        if (priority === -1)
+            return '<span class="glyphicon glyphicon-download"></span>';
+        if (priority === 1)
+            return '<span class="glyphicon glyphicon-exclamation-sign"></span>';
+        return '';
+    }
+
+    function renderImagesets(imagesets) {
+        var html = '';
+        imagesets.forEach(function(iset) {
+            html += '<div class="card">';
+            if (iset.first_image_id) {
+                html += '<a href="' + VIEW_IMAGESET_URL + iset.id + '/">' +
+                        '<img class="card-img-top" loading="lazy" ' +
+                        'src="/api/v1/images/images/' + iset.first_image_id + '/thumbnail/" ' +
+                        'alt="Thumbnail not found!"></a>';
+            }
+            html += '<div class="card-body"><h5 class="card-title">' +
+                    '<a href="' + VIEW_IMAGESET_URL + iset.id + '/">' +
+                    iset.name + ' (' + iset.image_count + ' images) ' + prioSymbol(iset.priority) +
+                    '</a></h5></div></div>';
+        });
+        return html;
+    }
+
+    function loadTeamImagesets(teamId) {
+        if (loadedTeams.has(teamId)) return;
+        loadedTeams.add(teamId);
+        var container = document.getElementById('imagesets-' + teamId);
+        $.getJSON(TEAM_IMAGESETS_URL + teamId + '/imagesets/', function(data) {
+            container.innerHTML = renderImagesets(data);
+        }).fail(function() {
+            container.innerHTML = '<div style="padding:12px;color:#c00;">Failed to load imagesets.</div>';
+        });
+    }
+
+    $(document).ready(function() {
+        var activePane = $('.tab-pane.active[data-team-id]');
+        if (activePane.length) {
+            loadTeamImagesets(activePane.data('team-id'));
+        }
+        $(document).on('click', '[data-toggle="pill"]', function() {
+            var target = $(this).attr('href');
+            var teamId = $(target).data('team-id');
+            if (teamId) loadTeamImagesets(teamId);
+        });
+    });
+</script>
 {% endblock %}
