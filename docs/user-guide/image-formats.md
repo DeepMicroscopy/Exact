@@ -87,6 +87,18 @@ The display window (min/max brightness) is computed automatically from a sparse 
 
 ---
 
+## CellVizio MKT
+
+CellVizio `.mkt` files are produced by Mauna Kea Technologies' confocal laser endomicroscopy (CLE) systems. Each file contains a sequence of grayscale frames acquired in real time during a procedure.
+
+EXACT reads MKT files natively (no external library required beyond pydicom). Key characteristics:
+
+- **Frames** — each MKT file is exposed as a z-stack; the frame slider steps through the individual video frames
+- **Circular field of view** — CellVizio images have a circular aperture; EXACT applies the corresponding circular mask when rendering tiles
+- **Grayscale** — images are single-channel; EXACT renders them as grayscale RGBA tiles
+
+---
+
 ## CZI (Carl Zeiss Image)
 
 CZI files are read via `czifile` and may contain multiple scenes, channels, and z-slices. EXACT extracts the z-dimension as frames.
