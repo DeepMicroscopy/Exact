@@ -6,18 +6,12 @@ hide:
 
 <div class="hero" markdown>
 
-# EXACT
+**Collaborative annotation of images at any scale —**
+whole slide histopathology, MRI volumes, z-stacks, and more.
 
-**EXpert Algorithm Collaboration Tool**
-
-Collaborative annotation of images at any scale — whole slide histopathology,
-MRI volumes, z-stacks, and more.
-
-<span class="badges" markdown>
 [![MIT license](https://img.shields.io/badge/License-MIT-blue.svg)](https://lbesson.mit-license.org/)
 [![PyPI](https://badge.fury.io/py/EXACT-Sync.svg)](https://pypi.python.org/pypi/EXACT-Sync/)
 [![Paper](https://img.shields.io/badge/Scientific_Reports-2021-green)](https://doi.org/10.1038/s41598-021-83827-4)
-</span>
 
 </div>
 
