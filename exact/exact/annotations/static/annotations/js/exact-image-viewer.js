@@ -47,6 +47,10 @@ class EXACTViewer {
 
         this.currentPlane = 0;
         this.mprPlanes = null;
+        this.mprActive = false;
+        this.mprViewers = {};   // planeIdx → { osd, canvas, nFrames, dims }
+        this.mprPos = { x: 0, y: 0, z: 0 };
+        this.mprShape = { nx: 1, ny: 1, nz: 1 };
         this._mprHandler = this.onMPRPlanesAvailable.bind(this);
         window.addEventListener('exactMPRPlanesAvailable', this._mprHandler);
 
@@ -721,15 +725,19 @@ class EXACTViewer {
         planeNames.forEach((name, idx) => {
             $(`#planeBtn_${idx}`)
                 .off('click.mpr')
-                .on('click.mpr', () => this.switchPlane(idx));
+                .on('click.mpr', () => { if (this.mprActive) this.exit3AxisMode(); this.switchPlane(idx); });
         });
+        $('#planeBtn_3d')
+            .off('click.mpr')
+            .on('click.mpr', () => this.toggle3AxisMode());
         this.updatePlaneButtons();
     }
 
     updatePlaneButtons() {
         ['axial', 'coronal', 'sagittal'].forEach((_, idx) => {
-            $(`#planeBtn_${idx}`).toggleClass('active', idx === this.currentPlane);
+            $(`#planeBtn_${idx}`).toggleClass('active', !this.mprActive && idx === this.currentPlane);
         });
+        $('#planeBtn_3d').toggleClass('active', this.mprActive);
     }
 
     switchPlane(plane) {
@@ -769,8 +777,225 @@ class EXACTViewer {
         this.viewer.open(tileSources);
     }
 
+    // ── 3-Axis MPR ────────────────────────────────────────────────────────────
+
+    toggle3AxisMode() {
+        if (this.mprActive) this.exit3AxisMode();
+        else this.enter3AxisMode();
+    }
+
+    enter3AxisMode() {
+        if (!this.mprPlanes) return;
+        this.mprActive = true;
+
+        const planes = this.mprPlanes;
+        const nx = planes.sagittal.nFrames;
+        const ny = planes.coronal.nFrames;
+        const nz = planes.axial.nFrames;
+        this.mprShape = { nx, ny, nz };
+        this.mprPos = {
+            x: Math.floor((nx - 1) / 2),
+            y: Math.floor((ny - 1) / 2),
+            z: Math.floor((nz - 1) / 2),
+        };
+
+        $('#openseadragon1').hide();
+        $('#openseadragon_background').hide();
+        if (this.frameSlider !== undefined) $(this.frameSlider.sliderElem).hide();
+        // Remove display:none that was set in CSS and switch to grid
+        const layout = document.getElementById('mprLayout');
+        layout.style.display = 'grid';
+
+        this.updatePlaneButtons();
+
+        [0, 1, 2].forEach(p => {
+            const planeInfo = planes[['axial', 'coronal', 'sagittal'][p]];
+            this._createMPRSubViewer(`osd_mpr_${p}`, p, planeInfo);
+        });
+    }
+
+    exit3AxisMode() {
+        this.mprActive = false;
+
+        [0, 1, 2].forEach(p => {
+            if (this.mprViewers[p]) {
+                this.mprViewers[p].osd.destroy();
+                delete this.mprViewers[p];
+            }
+        });
+
+        document.getElementById('mprLayout').style.display = 'none';
+        $('#openseadragon1').show();
+        $('#openseadragon_background').show();
+        if (this.frameSlider !== undefined) $(this.frameSlider.sliderElem).show();
+        this.updatePlaneButtons();
+    }
+
+    _buildMPRTileSources(planeIdx, nFrames) {
+        const zDim = planeIdx + 1;
+        const sources = [];
+        for (let f = 0; f < nFrames; f++) {
+            sources.push(`${this.server_url}/images/image/${this.imageId}/${zDim}/${f + 1}/tile/`);
+        }
+        return sources;
+    }
+
+    _createMPRSubViewer(containerId, planeIdx, planeInfo) {
+        const nFrames = planeInfo.nFrames;
+        const tileSources = this._buildMPRTileSources(planeIdx, nFrames);
+
+        const osd = OpenSeadragon({
+            id: containerId,
+            tileSources: tileSources,
+            sequenceMode: true,
+            prefixUrl: $('#image_list').data('static-file') + 'images/',
+            showNavigator: false,
+            showNavigationControl: false,
+            animationTime: 0,
+            blendTime: 0,
+            constrainDuringPan: true,
+            maxZoomPixelRatio: 8,
+            minZoomLevel: 0.1,
+            zoomPerScroll: 1.1,
+            timeout: 120000,
+            showFullPageControl: false,
+            preserveViewport: false,
+        });
+
+        // Canvas overlay for crosshairs
+        const container = document.getElementById(containerId);
+        const canvas = document.createElement('canvas');
+        canvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:100;';
+        container.appendChild(canvas);
+
+        this.mprViewers[planeIdx] = { osd, canvas, nFrames, dims: planeInfo.dimensions };
+
+        // Navigate to initial position after first open
+        const initFrame = planeIdx === 0 ? this.mprPos.z
+                        : planeIdx === 1 ? this.mprPos.y
+                        : this.mprPos.x;
+        osd.addOnceHandler('open', () => {
+            if (initFrame > 0) osd.goToPage(initFrame);
+            this._drawMPRCrosshair(planeIdx);
+        });
+
+        osd.addHandler('update-viewport', () => {
+            this._drawMPRCrosshair(planeIdx);
+        });
+
+        osd.addHandler('page', (event) => {
+            this.onMPRSubViewerPageChanged(planeIdx, event.page);
+        });
+
+        osd.addHandler('canvas-click', (event) => {
+            if (!event.quick) return;   // ignore drag-end
+            event.preventDefaultAction = true;
+            this.onMPRSubViewerClick(planeIdx, event);
+        });
+    }
+
+    onMPRSubViewerPageChanged(planeIdx, pageIdx) {
+        if (planeIdx === 0) this.mprPos.z = pageIdx;
+        else if (planeIdx === 1) this.mprPos.y = pageIdx;
+        else this.mprPos.x = pageIdx;
+        this._updateMPRInfo();
+        this.redrawAllCrosshairs();
+    }
+
+    onMPRSubViewerClick(planeIdx, event) {
+        const { osd, dims } = this.mprViewers[planeIdx];
+        const imgPt = osd.viewport.viewerElementToImageCoordinates(event.position);
+        const imgW = dims[0], imgH = dims[1];
+        const { nx, ny, nz } = this.mprShape;
+
+        const colFrac = Math.max(0, Math.min(1, imgPt.x / imgW));
+        const rowFrac = Math.max(0, Math.min(1, imgPt.y / imgH));
+
+        if (planeIdx === 0) {       // axial → update x, y; navigate coronal & sagittal
+            this.mprPos.x = Math.round((1 - colFrac) * (nx - 1));
+            this.mprPos.y = Math.round((1 - rowFrac) * (ny - 1));
+            this.mprViewers[1]?.osd.goToPage(this.mprPos.y);
+            this.mprViewers[2]?.osd.goToPage(this.mprPos.x);
+        } else if (planeIdx === 1) { // coronal → update x, z; navigate axial & sagittal
+            this.mprPos.x = Math.round((1 - colFrac) * (nx - 1));
+            this.mprPos.z = Math.round((1 - rowFrac) * (nz - 1));
+            this.mprViewers[0]?.osd.goToPage(this.mprPos.z);
+            this.mprViewers[2]?.osd.goToPage(this.mprPos.x);
+        } else {                    // sagittal → update y, z; navigate axial & coronal
+            this.mprPos.y = Math.round((1 - colFrac) * (ny - 1));
+            this.mprPos.z = Math.round((1 - rowFrac) * (nz - 1));
+            this.mprViewers[0]?.osd.goToPage(this.mprPos.z);
+            this.mprViewers[1]?.osd.goToPage(this.mprPos.y);
+        }
+        this._updateMPRInfo();
+        this.redrawAllCrosshairs();
+    }
+
+    redrawAllCrosshairs() {
+        [0, 1, 2].forEach(p => { if (this.mprViewers[p]) this._drawMPRCrosshair(p); });
+    }
+
+    _drawMPRCrosshair(planeIdx) {
+        const { osd, canvas } = this.mprViewers[planeIdx];
+        const container = osd.element;
+
+        // Sync canvas pixel size to container
+        if (canvas.width !== container.offsetWidth)  canvas.width  = container.offsetWidth;
+        if (canvas.height !== container.offsetHeight) canvas.height = container.offsetHeight;
+
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const item = osd.world.getItemAt(0);
+        if (!item) return;
+
+        const { nx, ny, nz } = this.mprShape;
+        const { x: x0, y: y0, z: z0 } = this.mprPos;
+
+        // Crosshair fractions — all planes use [::-1,::-1] so coord → (dim-1-coord)/(dim-1)
+        let colFrac, rowFrac;
+        if (planeIdx === 0) {        // axial XY: col=x, row=y
+            colFrac = nx > 1 ? (nx - 1 - x0) / (nx - 1) : 0.5;
+            rowFrac = ny > 1 ? (ny - 1 - y0) / (ny - 1) : 0.5;
+        } else if (planeIdx === 1) { // coronal XZ: col=x, row=z
+            colFrac = nx > 1 ? (nx - 1 - x0) / (nx - 1) : 0.5;
+            rowFrac = nz > 1 ? (nz - 1 - z0) / (nz - 1) : 0.5;
+        } else {                     // sagittal YZ: col=y, row=z
+            colFrac = ny > 1 ? (ny - 1 - y0) / (ny - 1) : 0.5;
+            rowFrac = nz > 1 ? (nz - 1 - z0) / (nz - 1) : 0.5;
+        }
+
+        const imgSize = item.getContentSize();
+        const hPt = osd.viewport.imageToViewerElementCoordinates(
+            new OpenSeadragon.Point(colFrac * imgSize.x, 0));
+        const vPt = osd.viewport.imageToViewerElementCoordinates(
+            new OpenSeadragon.Point(0, rowFrac * imgSize.y));
+
+        ctx.strokeStyle = 'rgba(255, 220, 0, 0.8)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([5, 4]);
+
+        ctx.beginPath(); ctx.moveTo(hPt.x, 0);            ctx.lineTo(hPt.x, canvas.height); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0,     vPt.y);         ctx.lineTo(canvas.width, vPt.y);  ctx.stroke();
+
+        ctx.setLineDash([]);
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillStyle = 'rgba(255, 220, 0, 0.9)';
+        ctx.fillText(['Axial', 'Coronal', 'Sagittal'][planeIdx], 6, 16);
+    }
+
+    _updateMPRInfo() {
+        const { x, y, z } = this.mprPos;
+        $('#mpr_info').html(
+            `<span>x&nbsp;=&nbsp;${x}</span><span>y&nbsp;=&nbsp;${y}</span><span>z&nbsp;=&nbsp;${z}</span>`
+        );
+    }
+
+    // ── end 3-Axis MPR ────────────────────────────────────────────────────────
+
     destroy() {
         window.removeEventListener('exactMPRPlanesAvailable', this._mprHandler);
+        if (this.mprActive) this.exit3AxisMode();
         $('#planeSelector').hide();
 
         if (this.gZoomSlider !== undefined) {
