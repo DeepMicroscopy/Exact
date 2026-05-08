@@ -2,7 +2,7 @@
 
 ## Docker (recommended)
 
-Docker is the fastest and most reliable way to run EXACT. It bundles Django, PostgreSQL, Redis, and Nginx into a single `docker-compose` command.
+Docker is the fastest and most reliable way to run EXACT. It bundles Django, PostgreSQL, Redis, and Nginx into a single `docker compose` command.
 
 ### Prerequisites
 
@@ -34,8 +34,8 @@ Edit `env.prod` and `env.prod.db` to set your database password, secret key, and
 The development stack uses Django's built-in server on port 8000 with live reload:
 
 ```bash
-docker-compose -f docker-compose.yml up -d --build
-docker-compose logs -f
+docker compose -f docker compose.yml up -d --build
+docker compose logs -f
 ```
 
 Navigate to **http://localhost:8000/**
@@ -47,10 +47,10 @@ Default credentials: `exact` / `exact`
 The production stack adds Gunicorn + Nginx:
 
 ```bash
-docker-compose -f docker-compose.prod.yml up -d --build
-docker-compose -f docker-compose.prod.yml exec web python3 manage.py migrate --noinput
-docker-compose -f docker-compose.prod.yml exec web python3 manage.py createsuperuser
-docker-compose -f docker-compose.prod.yml exec web python3 manage.py collectstatic --no-input --clear
+docker compose -f docker compose.prod.yml up -d --build
+docker compose -f docker compose.prod.yml exec web python3 manage.py migrate --noinput
+docker compose -f docker compose.prod.yml exec web python3 manage.py createsuperuser
+docker compose -f docker compose.prod.yml exec web python3 manage.py collectstatic --no-input --clear
 ```
 
 Navigate to **http://localhost:1337/**
@@ -60,10 +60,10 @@ Navigate to **http://localhost:1337/**
 To deploy on AWS with RDS:
 
 ```bash
-docker-compose -f docker-compose.prod.aws-db.yml up -d --build
-docker-compose -f docker-compose.prod.aws-db.yml exec web python3 manage.py migrate --noinput
-docker-compose -f docker-compose.prod.aws-db.yml exec web python3 manage.py createsuperuser
-docker-compose -f docker-compose.prod.aws-db.yml exec web python3 manage.py collectstatic --no-input --clear
+docker compose -f docker compose.prod.aws-db.yml up -d --build
+docker compose -f docker compose.prod.aws-db.yml exec web python3 manage.py migrate --noinput
+docker compose -f docker compose.prod.aws-db.yml exec web python3 manage.py createsuperuser
+docker compose -f docker compose.prod.aws-db.yml exec web python3 manage.py collectstatic --no-input --clear
 ```
 
 ---

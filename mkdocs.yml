@@ -1,26 +1,31 @@
-site_name: EXACT Documentation
+site_name: ' '
+site_description: EXpert Algorithm Collaboration Tool — collaborative image annotation platform
 site_url: https://deepmicroscopy.github.io/Exact/
 repo_url: https://github.com/DeepMicroscopy/Exact
 repo_name: DeepMicroscopy/Exact
 edit_uri: edit/master/docs/
+copyright: Copyright &copy; 2021–2026 DeepMicroscopy · MIT License
 
 theme:
   name: material
+  logo: assets/logo.svg
+  favicon: assets/icon.svg
   palette:
     - scheme: default
-      primary: blue
-      accent: blue
+      primary: custom
+      accent: custom
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
     - scheme: slate
-      primary: blue
-      accent: blue
+      primary: custom
+      accent: custom
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
   features:
     - navigation.tabs
+    - navigation.tabs.sticky
     - navigation.sections
     - navigation.top
     - navigation.instant
@@ -28,6 +33,25 @@ theme:
     - search.share
     - content.code.copy
     - content.tabs.link
+    - toc.follow
+  font:
+    text: Inter
+    code: JetBrains Mono
+
+extra_css:
+  - stylesheets/extra.css
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/DeepMicroscopy/Exact
+      name: EXACT on GitHub
+    - icon: fontawesome/solid/newspaper
+      link: https://doi.org/10.1038/s41598-021-83827-4
+      name: Scientific Reports paper
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/EXACT-Sync/
+      name: EXACT-Sync on PyPI
 
 plugins:
   - search
