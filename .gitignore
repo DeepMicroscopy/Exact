@@ -92,3 +92,7 @@ env.prod
 env.prod.db
 env.prod.aws-db
 *.aws-db
+
+# MkDocs generated files
+site/
+docs/api/openapi.yml

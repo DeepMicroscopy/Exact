@@ -1,0 +1,69 @@
+site_name: EXACT Documentation
+site_url: https://deepmicroscopy.github.io/Exact/
+repo_url: https://github.com/DeepMicroscopy/Exact
+repo_name: DeepMicroscopy/Exact
+edit_uri: edit/master/docs/
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.instant
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.tabs.link
+
+plugins:
+  - search
+  - swagger-ui-tag
+
+hooks:
+  - docs/hooks.py
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.details
+  - pymdownx.inlinehilite
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: getting-started/installation.md
+    - Quick Start: getting-started/quickstart.md
+  - User Guide:
+    - Core Concepts: user-guide/concepts.md
+    - Annotation Workflow: user-guide/annotation-workflow.md
+    - Image Formats: user-guide/image-formats.md
+    - Keyboard Shortcuts: user-guide/keyboard-shortcuts.md
+  - Developer Guide:
+    - Architecture: developer-guide/architecture.md
+    - Adding Image Formats: developer-guide/adding-image-formats.md
+    - Plugin System: developer-guide/plugins.md
+    - Frontend: developer-guide/frontend.md
+  - API Reference: api/index.md
