@@ -862,13 +862,29 @@
                 </div>
             </div>
              <!-- style="width: 25vw;" -->
-            <div style="height: 85vh;">
+            <div style="height: 85vh; position: relative;">
                 <div class="seadragon-viewer" id="openseadragon_background"  style="position: absolute; height: 85vh; width: 100%">
                 </div>
                 <div class="seadragon-viewer" id="openseadragon1" style="position: absolute; height: 85vh; width: 100%">
                 </div>
+                <div id="mprLayout" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:1px; background:#333;">
+                    <div id="osd_mpr_0" style="position:relative; overflow:hidden; background:#000;"></div>
+                    <div id="osd_mpr_1" style="position:relative; overflow:hidden; background:#000;"></div>
+                    <div id="osd_mpr_2" style="position:relative; overflow:hidden; background:#000;"></div>
+                    <div id="mpr_info" style="background:#111; color:#aaa; padding:6px; font-size:11px; display:flex; align-items:center; gap:16px;"></div>
+                </div>
             </div>
-            <div id="frameSlider" style="width: 35vw;"></div>
+            <div style="display:flex; align-items:center; gap:8px; margin-top:4px;">
+                <div id="frameSlider" style="width: 35vw;"></div>
+                <div id="planeSelector" style="display:none; margin-left:auto;">
+                    <div class="btn-group btn-group-sm" role="group" aria-label="MPR plane">
+                        <button type="button" class="btn btn-outline-secondary active" id="planeBtn_0">Axial</button>
+                        <button type="button" class="btn btn-outline-secondary" id="planeBtn_1">Coronal</button>
+                        <button type="button" class="btn btn-outline-secondary" id="planeBtn_2">Sagittal</button>
+                        <button type="button" class="btn btn-outline-secondary" id="planeBtn_3d">&#x229E; 3-Axis</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="col-3 collapse" style="max-height: 90vh; overflow-y: auto" id="imagesetThumbnails">
