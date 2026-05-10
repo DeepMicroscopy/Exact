@@ -1,6 +1,7 @@
-{% extends 'base/base.html' %} {% load static %} {% load widget_tweaks %} {% block additional_annotation_js %}
+{% extends 'base/base.html' %} {% load static %} {% load widget_tweaks %} {% block taggerimports %}
+<script type="text/javascript" src="{% static 'scripts/jquery-3.2.1.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/openseadragon.min.js' %}"></script>
-{% endblock additional_annotation_js %} {% block bodyblock %}
+{% endblock taggerimports %} {% block bodyblock %}
 <div class="container-fluid h-100">
     <div class="row justify-content-center h-100">
         <div class="col-8">
@@ -162,7 +163,6 @@
 </div>
 
 <script>
-    var STATIC_ROOT = '{% static "" %}';
     var VIEW_IMAGESET_URL = '{% url "images:view_imageset" 0 %}'.replace('/0/', '/');
     var TEAM_IMAGESETS_URL = '/images/api/team/';
 
@@ -197,11 +197,11 @@
     function loadTeamImagesets(teamId) {
         if (loadedTeams.has(teamId)) return;
         loadedTeams.add(teamId);
-        var container = document.getElementById('imagesets-' + teamId);
+        var container = $('#imagesets-' + teamId);
         $.getJSON(TEAM_IMAGESETS_URL + teamId + '/imagesets/', function(data) {
-            container.innerHTML = renderImagesets(data);
+            container.html(renderImagesets(data));
         }).fail(function() {
-            container.innerHTML = '<div style="padding:12px;color:#c00;">Failed to load imagesets.</div>';
+            container.html('<div style="padding:12px;color:#c00;">Failed to load imagesets.</div>');
         });
     }
 
