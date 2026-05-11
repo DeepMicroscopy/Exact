@@ -812,11 +812,19 @@
                 }
             } catch (e) { console.error('Could not get/create annotation', e); return; }
 
+            // Re-read current frame after async fetch — user may have navigated.
+            const actualFrame = typeof viewer.currentPage === 'function'
+                ? viewer.currentPage() : frame;
             layer = new SegmentationLayer(
-                viewer, annotationId, imageWidth, imageHeight, color, frame);
+                viewer, annotationId, imageWidth, imageHeight, color, actualFrame);
             window.segmentationLayers.set(annotationTypeId, layer);
         } else {
-            if (layer.frame !== frame) layer.setFrame(frame);
+            // For existing layers the 'page' event keeps frame in sync; only
+            // force a reset if the viewer frame genuinely differs (e.g. layer was
+            // created on a different image navigation).
+            const currentFrame = typeof viewer.currentPage === 'function'
+                ? viewer.currentPage() : frame;
+            if (layer.frame !== currentFrame) layer.setFrame(currentFrame);
         }
 
         segmentationUI.activateType(annotationTypeId);

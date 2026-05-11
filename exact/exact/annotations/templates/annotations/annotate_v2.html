@@ -47,6 +47,7 @@
 <script type="text/javascript" src="{% static 'annotations/js/exact-overlay-opacity.js' %}"></script>
 
 <script type="text/javascript" src="{% static 'annotations/js/bootstrap-slider.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/segmentationTool.js' %}"></script>
 {% endblock additional_annotation_js %}
 {% block bodyblock %}
 
@@ -236,43 +237,41 @@
 
                             {% if annotation_types %}
                             <div class="tab-pane fade show active" id="home">
-                                <table style="width: 100%; text-align: center"
-                                    class="table table-striped table-bordered table-sm">
+                                <table style="width: 100%"
+                                    class="table table-sm table-hover mb-0" id="statistics_table">
+                                    <thead class="thead-light">
                                     <tr>
+                                        <th style="width:6px"></th>
                                         <th>Label</th>
-                                        <th>Key</th>
-                                        <th>
-                                            <label data-toggle="tooltip" data-placement="right"
-                                                title="( Number of annotations / Number of validated annotations )">
-                                                Count
-
-                                            </label>
-                                        </th>
-                                        <th>Color</th>
-                                        <th>Example</th>
+                                        <th class="text-center" style="width:32px" title="Keyboard shortcut">Key</th>
+                                        <th class="text-center" style="width:50px" title="Annotation count / verified count">Count</th>
+                                        <th class="text-center" style="width:32px">Vis</th>
                                     </tr>
-
+                                    </thead>
+                                    <tbody>
                                     {% for annotation_type in annotation_types %}
-                                    <tr>
+                                    <tr class="stats-row" style="cursor:pointer"
+                                        data-annotation_type_id="{{ annotation_type.id }}"
+                                        data-vector_type="{{ annotation_type.vector_type }}"
+                                        data-color="{{ annotation_type.color_code }}"
+                                        data-key="{{ forloop.counter }}">
+                                        <td style="padding:0; width:6px; background-color:{{ annotation_type.color_code }}"></td>
                                         <td id="annotation_type_id_button_{{ annotation_type.id }}"
-                                            data-annotation_type_id={{ annotation_type.id }}>
+                                            style="font-size:0.85rem">
                                             {{ annotation_type.name }}
+                                            {% if annotation_type.vector_type == 8 %}
+                                            <span class="badge badge-secondary" style="font-size:0.7rem">seg</span>
+                                            {% endif %}
                                         </td>
-                                        <td>{{ forloop.counter }}</td>
-                                        <td id="{{ annotation_type.name }}_{{ annotation_type.id }}">
-                                            {{ annotation_type.node_count }}</td>
-                                        <td style="background-color: {{ annotation_type.color_code }}">
+                                        <td class="text-center text-muted" style="font-size:0.8rem">{{ forloop.counter }}</td>
+                                        <td class="text-center" id="count_{{ annotation_type.id }}" style="font-size:0.8rem">–</td>
+                                        <td class="text-center">
                                             <input type="checkbox" id="DrawCheckBox_{{ annotation_type.id }}"
-                                                data-annotation_type_id={{ annotation_type.id }} checked>
-                                        </td>
-                                        <td>
-                                            <a href="{{ annotation_type.image_file}}">
-                                                <img src="{{ annotation_type.image_file}}"
-                                                    style="widows: 50px; height: 50px">
-                                            </a>
+                                                data-annotation_type_id="{{ annotation_type.id }}" checked>
                                         </td>
                                     </tr>
                                     {% endfor %}
+                                    </tbody>
                                 </table>
                             </div>
                             {% endif %}
@@ -882,6 +881,69 @@
                 </div>
                 <div class="seadragon-viewer" id="openseadragon1" style="position: absolute; height: 85vh; width: 98%">
                 </div>
+
+                <!-- Segmentation tool palette – shown only when a seg type is active -->
+                <div id="seg-palette" style="display:none; position:absolute; top:8px; right:12px; z-index:20;
+                     background:rgba(30,30,30,0.92); border-radius:6px; padding:10px 12px;
+                     flex-direction:column; gap:8px; min-width:140px; color:#ddd; font-size:0.82rem;
+                     box-shadow: 0 2px 8px rgba(0,0,0,0.5);">
+
+                    <div style="font-weight:600; font-size:0.8rem; color:#aaa; text-transform:uppercase; letter-spacing:.05em">
+                        Segmentation
+                    </div>
+
+                    <!-- Tool buttons: active = filled (btn-secondary), inactive = outline -->
+                    <div class="btn-group btn-group-sm w-100" role="group">
+                        <button class="btn btn-outline-light seg-tool-btn" data-tool="pencil"
+                            title="Pencil (draw)">✏</button>
+                        <button class="btn btn-outline-light seg-tool-btn" data-tool="wand"
+                            title="Magic wand (fill similar region)">✦</button>
+                        <button class="btn btn-outline-light seg-tool-btn" data-tool="fill"
+                            title="Flood fill">▣</button>
+                        <button class="btn btn-outline-light seg-tool-btn" data-tool="eraser"
+                            title="Eraser">○</button>
+                        <button class="btn btn-outline-light seg-tool-btn" data-tool="pan"
+                            title="Pan / navigate">✋</button>
+                    </div>
+
+                    <!-- Brush shape -->
+                    <div>
+                        <div style="color:#999; margin-bottom:3px">Shape</div>
+                        <div class="btn-group btn-group-sm w-100" role="group">
+                            <button class="btn btn-outline-secondary seg-shape-btn active" data-shape="circle"
+                                title="Circle brush">&#x25CF;</button>
+                            <button class="btn btn-outline-secondary seg-shape-btn" data-shape="square"
+                                title="Square brush">&#x25A0;</button>
+                        </div>
+                    </div>
+
+                    <!-- Brush size -->
+                    <div>
+                        <div style="color:#999; margin-bottom:2px">
+                            Size: <span id="seg-brush-size-val">20</span> px
+                        </div>
+                        <input id="seg-brush-size" type="range" class="custom-range"
+                            min="1" max="200" step="1" value="20" style="width:100%">
+                    </div>
+
+                    <!-- Tolerance (wand/fill only) -->
+                    <div id="seg-tolerance-row">
+                        <div style="color:#999; margin-bottom:2px">
+                            Tolerance: <span id="seg-tolerance-val">20</span>
+                        </div>
+                        <input id="seg-tolerance" type="range" class="custom-range"
+                            min="0" max="255" step="1" value="20" style="width:100%">
+                    </div>
+
+                    <!-- Overlay opacity -->
+                    <div>
+                        <div style="color:#999; margin-bottom:2px">
+                            Opacity: <span id="seg-opacity-val">55%</span>
+                        </div>
+                        <input id="seg-opacity" type="range" class="custom-range"
+                            min="0" max="100" step="1" value="55" style="width:100%">
+                    </div>
+                </div>
                 <div id="mprLayout" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:1px; background:#333;">
                     <div id="osd_mpr_0" style="position:relative; overflow:hidden; background:#000;"></div>
                     <div id="osd_mpr_1" style="position:relative; overflow:hidden; background:#000;"></div>
@@ -923,5 +985,130 @@
         </div>
     </div>
 </div>
+
+<script>
+(function () {
+    // ── Statistics table – click to select active annotation type ────────
+    // Data about the current image passed from Django context
+    var IMAGE_ID     = parseInt(document.getElementById('image_id').textContent.trim());
+    var IMAGE_WIDTH  = {{ selected_image.width }};
+    var IMAGE_HEIGHT = {{ selected_image.height }};
+
+    // Keep track of the currently active row
+    var activeRow = null;
+
+    function selectAnnotationType(row) {
+        // Update visual active state
+        if (activeRow) activeRow.classList.remove('table-active');
+        row.classList.add('table-active');
+        activeRow = row;
+
+        var typeId     = parseInt(row.dataset.annotation_type_id);
+        var vectorType = parseInt(row.dataset.vector_type);
+        var color      = row.dataset.color;
+        var key        = parseInt(row.dataset.key);
+
+        // Always keep the hidden select in sync (used elsewhere in the page JS)
+        var select = document.getElementById('annotation_type_id');
+        if (select) select.value = typeId;
+
+        if (vectorType === 8) {
+            // Segmentation type: activate the canvas painting layer.
+            // Do NOT trigger change on the dropdown — that would activate Paper.js
+            // drawing mode which conflicts with the segmentation canvas.
+            var osdViewer = window.exactOSDViewer;
+            var frame = (osdViewer && typeof osdViewer.currentPage === 'function')
+                ? osdViewer.currentPage() : 0;
+            window.activateSegmentationLayer(typeId, color, IMAGE_ID, IMAGE_WIDTH, IMAGE_HEIGHT, frame);
+        } else {
+            // Vector annotation type: deactivate segmentation, then fire the
+            // dropdown change so Paper.js switches to this type's drawing mode.
+            if (window.deactivateSegmentationLayer) window.deactivateSegmentationLayer();
+            if (select) $(select).trigger('change');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // Wire Statistics table rows
+        document.querySelectorAll('#statistics_table .stats-row').forEach(function (row) {
+            row.addEventListener('click', function (e) {
+                // Don't trigger when clicking the visibility checkbox
+                if (e.target.type === 'checkbox') return;
+                selectAnnotationType(row);
+            });
+        });
+
+        // Auto-select first row once the OSD viewer is ready (viewer is created async)
+        var firstRow = document.querySelector('#statistics_table .stats-row');
+        if (firstRow) {
+            if (window.exactOSDViewer) {
+                selectAnnotationType(firstRow);
+            } else {
+                window.addEventListener('exactViewerReady', function onReady() {
+                    window.removeEventListener('exactViewerReady', onReady);
+                    selectAnnotationType(firstRow);
+                });
+            }
+        }
+
+        // Load annotation counts for each type asynchronously
+        document.querySelectorAll('#statistics_table .stats-row').forEach(function (row) {
+            var typeId = row.dataset.annotation_type_id;
+            fetch('/api/v1/annotations/annotations/?annotation_type=' + typeId +
+                  '&image=' + IMAGE_ID + '&deleted=False&page_size=1&format=json',
+                  { credentials: 'same-origin' })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    var el = document.getElementById('count_' + typeId);
+                    if (el) el.textContent = d.count !== undefined ? d.count : '?';
+                })
+                .catch(function () {});
+        });
+
+        // Visibility checkboxes: toggle segmentation layer display canvas
+        document.querySelectorAll('#statistics_table .stats-row').forEach(function (row) {
+            var typeId     = parseInt(row.dataset.annotation_type_id);
+            var vectorType = parseInt(row.dataset.vector_type);
+            if (vectorType !== 8) return;
+            var cb = document.getElementById('DrawCheckBox_' + typeId);
+            if (!cb) return;
+            cb.addEventListener('change', function (e) {
+                e.stopPropagation(); // don't trigger row selection
+                var layer = window.segmentationLayers && window.segmentationLayers.get(typeId);
+                if (layer) layer.setVisible(cb.checked);
+            });
+        });
+
+        // Show/hide tolerance row based on active tool
+        document.querySelectorAll('.seg-tool-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var tolRow = document.getElementById('seg-tolerance-row');
+                if (tolRow) {
+                    tolRow.style.display = (btn.dataset.tool === 'wand' || btn.dataset.tool === 'fill')
+                        ? 'block' : 'none';
+                }
+            });
+        });
+        // Hide tolerance by default (pencil is active)
+        var tolRow = document.getElementById('seg-tolerance-row');
+        if (tolRow) tolRow.style.display = 'none';
+
+        // Keyboard shortcuts: number keys 1–9 activate the corresponding stats-row
+        document.addEventListener('keydown', function (e) {
+            // Ignore when typing in an input/textarea
+            if (e.target.nodeName === 'INPUT' || e.target.nodeName === 'TEXTAREA') return;
+            // Ignore modifier combos (allow plain digits only)
+            if (e.ctrlKey || e.altKey || e.metaKey) return;
+            var digit = e.key && e.key >= '1' && e.key <= '9' ? parseInt(e.key) : 0;
+            if (!digit) return;
+            var row = document.querySelector('#statistics_table .stats-row[data-key="' + digit + '"]');
+            if (row) {
+                e.preventDefault();
+                selectAnnotationType(row);
+            }
+        });
+    });
+})();
+</script>
 
 {% endblock %}
