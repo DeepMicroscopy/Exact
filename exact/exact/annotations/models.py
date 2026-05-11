@@ -453,6 +453,7 @@ class AnnotationType(models.Model):
         POLYGON = 5
         FIXED_SIZE_BOUNDING_BOX = 6
         GLOBAL = 7 #Annotations without a shape that are valid for the whole image
+        SEGMENTATION = 8  # Pixel-level mask stored as compressed tiles
 
     name = models.CharField(max_length=50)
     active = models.BooleanField(default=True)
@@ -494,6 +495,8 @@ class AnnotationType(models.Model):
             return 'Multi Line'
         if vector_type is AnnotationType.VECTOR_TYPE.FIXED_SIZE_BOUNDING_BOX:
             return 'Fixed Size Bounding Box'
+        if vector_type is AnnotationType.VECTOR_TYPE.SEGMENTATION:
+            return 'Segmentation'
 
     def validate_vector(self, vector: Union[dict, None]) -> bool:
         """
@@ -525,6 +528,8 @@ class AnnotationType(models.Model):
             return self._validate_bounding_box(vector)
         if self.vector_type == AnnotationType.VECTOR_TYPE.GLOBAL:
             return self._validate_bounding_box(vector)
+        if self.vector_type == AnnotationType.VECTOR_TYPE.SEGMENTATION:
+            return True  # tile metadata; pixel data lives in SegmentationTile
 
         # No valid vector type given.
         return False
@@ -693,3 +698,30 @@ class AnnotationMediaFile(models.Model):
 
     def __str__(self):
         return self.name + ": " + str(self.file)
+
+
+class SegmentationTile(models.Model):
+    """Stores a single compressed PNG tile of a pixel-level segmentation mask.
+
+    Tiles are addressed by (annotation, level, tile_x, tile_y, frame) and
+    stored as 8-bit palette-mode PNG where each pixel value is a class label
+    (0 = background/transparent). Missing tiles are implicitly empty, giving
+    sparse storage that scales to gigapixel WSIs.
+    """
+
+    class Meta:
+        unique_together = ('annotation', 'level', 'tile_x', 'tile_y', 'frame')
+        indexes = [
+            models.Index(fields=['annotation', 'level', 'frame']),
+        ]
+
+    annotation = models.ForeignKey(
+        Annotation, on_delete=models.CASCADE, related_name='segmentation_tiles')
+    level    = models.IntegerField()   # 0 = full resolution, higher = more zoomed-out
+    tile_x   = models.IntegerField()   # column index in the tile grid at this level
+    tile_y   = models.IntegerField()   # row index
+    frame    = models.IntegerField(default=0)  # z-slice / time index for volumetric images
+    data     = models.BinaryField()    # PNG-encoded palette image (class label per pixel)
+
+    def __str__(self):
+        return f'SegmentationTile ann={self.annotation_id} lv={self.level} ({self.tile_x},{self.tile_y}) frame={self.frame}'

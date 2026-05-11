@@ -27,8 +27,10 @@ class EXACTViewer {
         this.frame = 1;
     
         this.viewer = this.createViewer(options);
-        this.exact_registration_sync = undefined; 
-        this.browser_sync = undefined; 
+        window.exactOSDViewer = this.viewer;  // expose for segmentationTool
+        window.dispatchEvent(new CustomEvent('exactViewerReady', { detail: this.viewer }));
+        this.exact_registration_sync = undefined;
+        this.browser_sync = undefined;
 
         this.exact_image_sync = new EXACTImageSync(this.imageId, this.gHeaders, this.viewer);
         this.initViewerEventHandler(this.viewer, imageInformation);

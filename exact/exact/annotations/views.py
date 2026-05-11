@@ -1,4 +1,5 @@
 import datetime
+import io
 import time
 import pytz
 from timeit import default_timer as timer
@@ -24,7 +25,7 @@ from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_2
 from exact.administration.models import Product
 from exact.annotations.forms import ExportFormatCreationForm, ExportFormatEditForm, AnnotationMediafileForm
 from exact.annotations.models import Annotation, AnnotationType, Export, \
-    Verification, ExportFormat, LogImageAction, AnnotationMediaFile
+    Verification, ExportFormat, LogImageAction, AnnotationMediaFile, SegmentationTile
 from exact.annotations.serializers import AnnotationSerializer, AnnotationTypeSerializer, \
     AnnotationSerializerFast, serialize_annotation, AnnotationMediaFileSerializer
 from exact.images.models import Image, ImageSet
@@ -888,6 +889,7 @@ def load_set_annotations(request) -> Response:
 def load_annotation_types(request) -> Response:
 
     annotation_types = None
+    imageset = None
     if 'imageset_id' in request.query_params:
         imageset_id = int(request.query_params['imageset_id'])
         imageset = get_object_or_404(ImageSet, pk=imageset_id)
@@ -897,7 +899,7 @@ def load_annotation_types(request) -> Response:
     else:
         annotation_types = AnnotationType.objects.filter(active=True).order_by('sort_order')
 
-    if not imageset.has_perm('read', request.user):
+    if imageset is not None and not imageset.has_perm('read', request.user):
         return Response({
             'detail': 'permission for reading this image set missing.',
         }, status=HTTP_403_FORBIDDEN)
@@ -1154,3 +1156,100 @@ def api_blurred_concealed_annotation(request) -> Response:
     return Response({
         'detail': 'you updated the last annotation',
     }, status=HTTP_200_OK)
+
+
+# ---------------------------------------------------------------------------
+# Segmentation tile endpoints
+# ---------------------------------------------------------------------------
+
+def _get_segmentation_annotation(annotation_id, user, require_edit=False):
+    """Return annotation if it exists, is a segmentation type, and user has access."""
+    annotation = get_object_or_404(Annotation, pk=annotation_id)
+    if annotation.annotation_type.vector_type != AnnotationType.VECTOR_TYPE.SEGMENTATION:
+        return None, HttpResponse('Annotation is not a segmentation type.', status=400)
+    perm = 'edit_annotation' if require_edit else 'read'
+    if not annotation.image.image_set.has_perm(perm, user):
+        return None, HttpResponseForbidden()
+    return annotation, None
+
+
+@login_required
+def segmentation_tile(request, annotation_id, level, tile_x, tile_y):
+    """GET  → return tile PNG (204 if tile does not exist yet)
+       PUT  → merge incoming PNG onto stored tile and save
+       DELETE → remove tile
+    """
+    frame = int(request.GET.get('frame', 0))
+
+    if request.method == 'GET':
+        _, err = _get_segmentation_annotation(annotation_id, request.user)
+        if err:
+            return err
+        try:
+            tile = SegmentationTile.objects.get(
+                annotation_id=annotation_id,
+                level=level, tile_x=tile_x, tile_y=tile_y, frame=frame,
+            )
+        except SegmentationTile.DoesNotExist:
+            return HttpResponse(status=204)
+        return HttpResponse(bytes(tile.data), content_type='image/png')
+
+    elif request.method == 'PUT':
+        from PIL import Image as PILImage
+        import numpy as np
+
+        _, err = _get_segmentation_annotation(
+            annotation_id, request.user, require_edit=True)
+        if err:
+            return err
+
+        incoming_bytes = request.body
+        if not incoming_bytes:
+            return HttpResponse('Empty body.', status=400)
+
+        try:
+            incoming_img = PILImage.open(io.BytesIO(incoming_bytes)).convert('RGB')
+        except Exception:
+            return HttpResponse('Could not decode PNG.', status=400)
+
+        incoming = np.array(incoming_img, dtype=np.uint8)
+
+        try:
+            existing_tile = SegmentationTile.objects.get(
+                annotation_id=annotation_id,
+                level=level, tile_x=tile_x, tile_y=tile_y, frame=frame,
+            )
+        except SegmentationTile.DoesNotExist:
+            existing_tile = None
+
+        # Threshold red channel at 127 → clean 0/255 binary mask (L-mode PNG).
+        # Converting via RGB avoids PIL's RGBA→L alpha-composite-on-white behaviour
+        # which would corrupt transparent (unlabeled) pixels.
+        mask = (incoming[:, :, 0] > 127).astype(np.uint8) * 255
+        buf = io.BytesIO()
+        PILImage.fromarray(mask, mode='L').save(buf, format='PNG')
+        png_bytes = buf.getvalue()
+
+        if existing_tile is not None:
+            existing_tile.data = png_bytes
+            existing_tile.save()
+        else:
+            SegmentationTile.objects.create(
+                annotation_id=annotation_id,
+                level=level, tile_x=tile_x, tile_y=tile_y, frame=frame,
+                data=png_bytes,
+            )
+        return HttpResponse(status=204)
+
+    elif request.method == 'DELETE':
+        _, err = _get_segmentation_annotation(
+            annotation_id, request.user, require_edit=True)
+        if err:
+            return err
+        SegmentationTile.objects.filter(
+            annotation_id=annotation_id,
+            level=level, tile_x=tile_x, tile_y=tile_y, frame=frame,
+        ).delete()
+        return HttpResponse(status=204)
+
+    return HttpResponse(status=405)
