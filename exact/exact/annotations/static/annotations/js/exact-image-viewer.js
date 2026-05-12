@@ -48,6 +48,7 @@ class EXACTViewer {
         this.heatmapToggle = false;
 
         this.currentPlane = 0;
+        window.exactCurrentPlane = 0;
         this.mprPlanes = null;
         this.mprActive = false;
         this.mprViewers = {};   // planeIdx → { osd, canvas, nFrames, dims }
@@ -780,6 +781,11 @@ class EXACTViewer {
             });
             this.frameSlider.on('change', this.onFrameSliderChanged.bind(this));
         }
+
+        // Expose current plane globally and notify segmentation tool before
+        // opening the new tile sources, so layers can be torn down cleanly.
+        window.exactCurrentPlane = plane;
+        window.dispatchEvent(new CustomEvent('exactPlaneChanged', { detail: { plane } }));
 
         this.viewer.open(tileSources);
     }

@@ -28,13 +28,14 @@
     // ── SegmentationLayer ────────────────────────────────────────────────
 
     class SegmentationLayer {
-        constructor(viewer, annotationId, imageWidth, imageHeight, color, frame) {
+        constructor(viewer, annotationId, imageWidth, imageHeight, color, frame, plane) {
             this.viewer       = viewer;
             this.annotationId = annotationId;
             this.imageWidth   = imageWidth;
             this.imageHeight  = imageHeight;
             this.color        = hexToRgb(color);
             this.frame        = frame || 0;
+            this.plane        = plane || 0;  // 0=axial, 1=coronal, 2=sagittal
             this.opacity      = 0.55;
             this.editable     = false;
 
@@ -225,7 +226,7 @@
             this.tileCache.set(k, null);
             try {
                 const r = await fetch(
-                    `/annotations/api/segmentation/${this.annotationId}/tiles/0/${tx}/${ty}/?frame=${this.frame}`,
+                    `/annotations/api/segmentation/${this.annotationId}/tiles/${this.plane}/${tx}/${ty}/?frame=${this.frame}`,
                     { credentials: 'same-origin' });
                 if (r.status === 204) {
                     this.tileCache.set(k, new Uint8Array(TILE_SIZE * TILE_SIZE));
@@ -576,7 +577,7 @@
                 const labels   = this.tileCache.get(k);
                 if (!labels) return;
                 const blob = await this._encodePNG(labels);
-                const url  = `/annotations/api/segmentation/${this.annotationId}/tiles/0/${tx}/${ty}/?frame=${this.frame}`;
+                const url  = `/annotations/api/segmentation/${this.annotationId}/tiles/${this.plane}/${tx}/${ty}/?frame=${this.frame}`;
                 await fetch(url, {
                     method: 'PUT', credentials: 'same-origin',
                     headers: {'Content-Type':'image/png','X-CSRFToken':csrf},
@@ -770,6 +771,21 @@
         _activeViewer = window.exactOSDViewer;
     });
 
+    // When the MPR plane switches the image dimensions and tile space change.
+    // Destroy layers for the old plane; the template re-activates the current type.
+    window.addEventListener('exactPlaneChanged', () => {
+        window.destroyAllSegmentationLayers();
+        // Re-activate whatever annotation type row is currently selected.
+        const activeRow = document.querySelector('#statistics_table .stats-row.table-active');
+        if (activeRow && typeof window.selectAnnotationType === 'function') {
+            // Give OSD a moment to open the new tile source before reading dimensions.
+            const viewer = window.exactOSDViewer;
+            if (viewer) {
+                viewer.addOnceHandler('open', () => window.selectAnnotationType(activeRow));
+            }
+        }
+    });
+
     window.activateSegmentationLayer = async function (
         annotationTypeId, color, imageId, imageWidth, imageHeight, frame
     ) {
@@ -787,10 +803,22 @@
         }
         _activeViewer = viewer;
 
+        // Current plane (0=axial, 1=coronal, 2=sagittal).
+        const plane = window.exactCurrentPlane || 0;
+
+        // Get live image dimensions from OSD tile source — correct for the current
+        // plane even if the template's IMAGE_WIDTH/HEIGHT are axial-only.
+        const item = viewer.world.getItemAt(0);
+        const actualWidth  = item ? Math.round(item.source.dimensions.x) : imageWidth;
+        const actualHeight = item ? Math.round(item.source.dimensions.y) : imageHeight;
+
+        // Layers are keyed by annotationTypeId only — one layer per type at a time.
+        // Plane switches call destroyAllSegmentationLayers first, so there is never
+        // a stale layer from another plane in the map.
         let layer = window.segmentationLayers.get(annotationTypeId);
 
         if (!layer) {
-            // Find or create annotation on server
+            // Find or create annotation on server (one per annotation_type per image).
             let annotationId = null;
             try {
                 const r = await fetch(
@@ -805,7 +833,7 @@
                         headers: {'Content-Type':'application/json','X-CSRFToken':getCsrf()},
                         body: JSON.stringify({
                             image: imageId, annotation_type: annotationTypeId,
-                            vector: {tile_size: TILE_SIZE, width: imageWidth, height: imageHeight},
+                            vector: {tile_size: TILE_SIZE, width: actualWidth, height: actualHeight},
                         }),
                     });
                     annotationId = (await cr.json()).id;
@@ -816,12 +844,11 @@
             const actualFrame = typeof viewer.currentPage === 'function'
                 ? viewer.currentPage() : frame;
             layer = new SegmentationLayer(
-                viewer, annotationId, imageWidth, imageHeight, color, actualFrame);
+                viewer, annotationId, actualWidth, actualHeight, color, actualFrame, plane);
             window.segmentationLayers.set(annotationTypeId, layer);
         } else {
             // For existing layers the 'page' event keeps frame in sync; only
-            // force a reset if the viewer frame genuinely differs (e.g. layer was
-            // created on a different image navigation).
+            // force a reset if the viewer frame genuinely differs.
             const currentFrame = typeof viewer.currentPage === 'function'
                 ? viewer.currentPage() : frame;
             if (layer.frame !== currentFrame) layer.setFrame(currentFrame);

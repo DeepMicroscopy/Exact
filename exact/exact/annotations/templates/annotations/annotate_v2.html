@@ -997,7 +997,7 @@
     // Keep track of the currently active row
     var activeRow = null;
 
-    function selectAnnotationType(row) {
+    window.selectAnnotationType = function selectAnnotationType(row) {
         // Update visual active state
         if (activeRow) activeRow.classList.remove('table-active');
         row.classList.add('table-active');
