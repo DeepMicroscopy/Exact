@@ -44,6 +44,10 @@ class ReadableVideoDataset(openslide.ImageSlide):
     def __reduce__(self):
         return (self.__class__, (self.slide_path,))
     
+    @property
+    def _file_arg(self):
+        return self.slide_path
+    
     def close(self):
         with self._cap_lock:
             if self._cap is not None:
