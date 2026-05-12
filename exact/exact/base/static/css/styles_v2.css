@@ -316,8 +316,12 @@ button.nav-link {
 .card_container:hover a .image {
   opacity: 0.8;
 }
-.card_container:hover a .image2 {
+.card_container:hover a.image2 {
   opacity: 1.0;
+}
+.image2:hover {
+  background: #0b5ed7;
+  color: #fff;
 }
 
 .card_container {
@@ -332,11 +336,19 @@ button.nav-link {
 
 .image2 {
   position: relative;
-  opacity: 0.0;
-  top: -40px;
-  transition: .5s ease;
-  left: -30px;
+  opacity: 0;
+  top: -36px;
+  transition: opacity .3s ease;
   backface-visibility: hidden;
+  display: inline-block;
+  background: #0d6efd;
+  color: #fff;
+  border-radius: 20px;
+  padding: 4px 14px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  text-decoration: none;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.45);
 }
 
 .image {
