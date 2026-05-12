@@ -116,6 +116,12 @@
 					</div>
 				</li>
 				{% endif %}
+				{% if request.user.is_staff and request.user.prefs.is_site_admin %}
+				<li class="nav-item" style="display:flex;align-items:center;padding:0 8px" title="Active users in the last 15 min (admin view)">
+					<span id="active-users-dot" style="width:10px;height:10px;border-radius:50%;background:#6c757d;display:inline-block;margin-right:5px;transition:background .4s"></span>
+					<span id="active-users-label" style="color:#ccc;font-size:0.8rem;cursor:default">–</span>
+				</li>
+				{% endif %}
 				<li class="dropdown nav-item">
 					<a href="#" class="dropdown-toggle nav-link" data-toggle="dropdown" role="button"
 						aria-haspopup="true" aria-expanded="false" id="usernameNavbarDropdown">
@@ -156,6 +162,38 @@
 	<script type="text/javascript" src="{% static 'scripts/bootstrap.min.js' %}"></script>
 
 	{% endblock additional_js %}
+{% if request.user.is_staff or request.user.prefs.is_site_admin %}
+<script>
+(function () {
+    var dot   = document.getElementById('active-users-dot');
+    var label = document.getElementById('active-users-label');
+    if (!dot) return;
+
+    function update() {
+        fetch('/api/active-users/', {credentials: 'same-origin'})
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (d) {
+                if (!d) return;
+                var n = d.active_users;
+                // Traffic-light colour: green ≤2, yellow ≤9, red ≥10
+                var color = n <= 2 ? '#28a745' : n <= 9 ? '#ffc107' : '#dc3545';
+                dot.style.background = color;
+                label.textContent = n + ' active';
+                label.title = n + ' user' + (n !== 1 ? 's' : '') +
+                              ' active in the last ' + d.window_minutes + ' min';
+                dot.title = label.title;
+            })
+            .catch(function () {
+                dot.style.background = '#6c757d';
+                label.textContent = '?';
+            });
+    }
+
+    update();
+    setInterval(update, 60000);   // refresh every minute
+})();
+</script>
+{% endif %}
 </body>
 
 </html>
