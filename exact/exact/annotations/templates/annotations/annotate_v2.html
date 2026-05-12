@@ -895,13 +895,13 @@
                     <!-- Tool buttons: active = filled (btn-secondary), inactive = outline -->
                     <div class="btn-group btn-group-sm w-100" role="group">
                         <button class="btn btn-outline-light seg-tool-btn" data-tool="pencil"
-                            title="Pencil (draw)">✏</button>
+                            title="Pencil (draw)">🖊</button>
                         <button class="btn btn-outline-light seg-tool-btn" data-tool="wand"
-                            title="Magic wand (fill similar region)">✦</button>
+                            title="Magic wand – Ctrl/Cmd: erase mode">🪄</button>
                         <button class="btn btn-outline-light seg-tool-btn" data-tool="fill"
-                            title="Flood fill">▣</button>
+                            title="Flood fill by color similarity">🪣</button>
                         <button class="btn btn-outline-light seg-tool-btn" data-tool="eraser"
-                            title="Eraser">○</button>
+                            title="Eraser">🧽</button>
                         <button class="btn btn-outline-light seg-tool-btn" data-tool="pan"
                             title="Pan / navigate">✋</button>
                     </div>
@@ -942,6 +942,17 @@
                         </div>
                         <input id="seg-opacity" type="range" class="custom-range"
                             min="0" max="100" step="1" value="55" style="width:100%">
+                    </div>
+
+                    <!-- Slice copy (shown only for volumetric images) -->
+                    <div id="seg-slice-copy" style="display:none">
+                        <div style="color:#999; margin-bottom:3px">Copy slice</div>
+                        <div class="btn-group btn-group-sm w-100" role="group">
+                            <button class="btn btn-outline-light" id="seg-copy-prev"
+                                title="Copy segmentation to previous slice">◀ Prev</button>
+                            <button class="btn btn-outline-light" id="seg-copy-next"
+                                title="Copy segmentation to next slice">Next ▶</button>
+                        </div>
                     </div>
                 </div>
                 <div id="mprLayout" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:1px; background:#333;">
@@ -1092,6 +1103,33 @@
         // Hide tolerance by default (pencil is active)
         var tolRow = document.getElementById('seg-tolerance-row');
         if (tolRow) tolRow.style.display = 'none';
+
+        // Slice-copy buttons: show for volumetric images, wire to active layer
+        function updateSliceCopyVisibility() {
+            var viewer = window.exactOSDViewer;
+            var isVolumetric = viewer && viewer.tileSources && viewer.tileSources.length > 1;
+            var row = document.getElementById('seg-slice-copy');
+            if (row) row.style.display = isVolumetric ? 'block' : 'none';
+        }
+        window.addEventListener('exactViewerReady', updateSliceCopyVisibility);
+        window.addEventListener('exactPlaneChanged', updateSliceCopyVisibility);
+        updateSliceCopyVisibility();
+
+        function getActiveSegLayer() {
+            var activeRow = document.querySelector('#statistics_table .stats-row.table-active');
+            if (!activeRow) return null;
+            var typeId = parseInt(activeRow.dataset.annotation_type_id);
+            return window.segmentationLayers && window.segmentationLayers.get(typeId);
+        }
+
+        document.getElementById('seg-copy-prev').addEventListener('click', function () {
+            var layer = getActiveSegLayer();
+            if (layer) layer.copyToAdjacentFrame(-1);
+        });
+        document.getElementById('seg-copy-next').addEventListener('click', function () {
+            var layer = getActiveSegLayer();
+            if (layer) layer.copyToAdjacentFrame(1);
+        });
 
         // Keyboard shortcuts: number keys 1–9 activate the corresponding stats-row
         document.addEventListener('keydown', function (e) {

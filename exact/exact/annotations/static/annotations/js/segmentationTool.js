@@ -131,10 +131,87 @@
             this.viewer.addHandler('page',             this._onPage);
         }
 
+        // ── Cursors ──────────────────────────────────────────────────────
+
+        static _makeSvgCursor(svgBody, hx, hy) {
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28">${svgBody}</svg>`;
+            return `url("data:image/svg+xml,${encodeURIComponent(svg)}") ${hx} ${hy}, crosshair`;
+        }
+
+        static get CURSORS() {
+            if (!SegmentationLayer._cursors) {
+                const mk = SegmentationLayer._makeSvgCursor.bind(SegmentationLayer);
+                // Fill: paint bucket shape
+                const bucket = `<g fill="white" stroke="black" stroke-width="1">
+                    <rect x="8" y="3" width="10" height="9" rx="1"/>
+                    <polygon points="5,12 23,12 20,22 8,22"/>
+                    <rect x="2" y="8" width="6" height="3" rx="1"/>
+                </g>`;
+                // Wand add: wand line with + badge
+                const wandAdd = `<line x1="3" y1="25" x2="18" y2="10" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                    <circle cx="20" cy="8" r="7" fill="#2a2" stroke="black" stroke-width="1"/>
+                    <text x="20" y="12" font-size="10" fill="white" text-anchor="middle" font-family="sans-serif" font-weight="bold">+</text>`;
+                // Wand remove: wand line with − badge
+                const wandRem = `<line x1="3" y1="25" x2="18" y2="10" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                    <circle cx="20" cy="8" r="7" fill="#c33" stroke="black" stroke-width="1"/>
+                    <text x="20" y="12" font-size="10" fill="white" text-anchor="middle" font-family="sans-serif" font-weight="bold">−</text>`;
+
+                SegmentationLayer._cursors = {
+                    pencil:     'crosshair',
+                    eraser:     'cell',
+                    pan:        'grab',
+                    fill:       mk(bucket, 8, 22),
+                    wand:       mk(wandAdd, 3, 25),
+                    wand_erase: mk(wandRem, 3, 25),
+                };
+            }
+            return SegmentationLayer._cursors;
+        }
+
+        _wandCursor() {
+            return this._wandEraseMode
+                ? SegmentationLayer.CURSORS.wand_erase
+                : SegmentationLayer.CURSORS.wand;
+        }
+
+        _applyToolCursor() {
+            const C = SegmentationLayer.CURSORS;
+            if (this.activeTool === 'wand') {
+                this.drawCanvas.style.cursor = this._wandCursor();
+            } else {
+                this.drawCanvas.style.cursor = C[this.activeTool] || 'crosshair';
+            }
+        }
+
         // ── Draw canvas events ───────────────────────────────────────────
 
         _bindDrawEvents() {
             const c = this.drawCanvas;
+
+            // Track Ctrl/Cmd for wand erase mode
+            this._wandEraseMode = false;
+            this._onModifierDown = (e) => {
+                if (e.target.nodeName === 'INPUT' || e.target.nodeName === 'TEXTAREA') return;
+                if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+                    e.preventDefault();
+                    this.undo();
+                    return;
+                }
+                const wasErase = this._wandEraseMode;
+                this._wandEraseMode = e.ctrlKey || e.metaKey;
+                if (this._wandEraseMode !== wasErase && this.activeTool === 'wand') {
+                    this._applyToolCursor();
+                }
+            };
+            this._onModifierUp = (e) => {
+                const wasErase = this._wandEraseMode;
+                this._wandEraseMode = e.ctrlKey || e.metaKey;
+                if (this._wandEraseMode !== wasErase && this.activeTool === 'wand') {
+                    this._applyToolCursor();
+                }
+            };
+            document.addEventListener('keydown', this._onModifierDown);
+            document.addEventListener('keyup',   this._onModifierUp);
 
             c.addEventListener('mousedown', (e) => {
                 if (e.button !== 0) return;
@@ -145,7 +222,7 @@
 
                 if (this.activeTool === 'wand') {
                     this._preStrokeSnap = this._snapshotTileCache();
-                    this._magicWand(ix, iy);
+                    this._magicWand(ix, iy, this._wandEraseMode);
                     this._commitUndo();
                     this._uploadDirtyTiles();
                 } else if (this.activeTool === 'fill') {
@@ -183,15 +260,6 @@
                 this._commitUndo();
                 this._uploadDirtyTiles();
             });
-
-            this._onKeyDown = (e) => {
-                if (e.target.nodeName === 'INPUT' || e.target.nodeName === 'TEXTAREA') return;
-                if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-                    e.preventDefault();
-                    this.undo();
-                }
-            };
-            document.addEventListener('keydown', this._onKeyDown);
         }
 
         // ── Coordinates ──────────────────────────────────────────────────
@@ -475,8 +543,8 @@
             this._rerenderDirty();
         }
 
-        _magicWand(startX, startY) {
-            this._imageColorBFS(startX, startY, /* skipLabeled */ false);
+        _magicWand(startX, startY, eraseMode) {
+            this._imageColorBFS(startX, startY, /* skipLabeled */ false, eraseMode);
             this._rerenderDirty();
         }
 
@@ -485,7 +553,7 @@
         // color distance from the seed is within this.tolerance.
         // skipLabeled=true → skip pixels already painted with any label.
 
-        _imageColorBFS(startX, startY, skipLabeled) {
+        _imageColorBFS(startX, startY, skipLabeled, eraseMode) {
             const dc = this.viewer.drawer.canvas;
             if (!dc) { console.warn('Seg: OSD canvas not available'); return; }
 
@@ -556,7 +624,7 @@
                     Math.abs(col[1] - refG) > tol ||
                     Math.abs(col[2] - refB) > tol) continue;
 
-                this._setPixel(cx, cy, this.activeClass);
+                this._setPixel(cx, cy, eraseMode ? 0 : this.activeClass);
                 filled++;
 
                 if (cx > 0   && !see(cx-1, cy)) { mark(cx-1, cy); queue.push(cx-1, cy); }
@@ -566,7 +634,28 @@
             }
         }
 
-        // ── Upload ────────────────────────────────────────────────────────
+        // ── Upload / slice copy ───────────────────────────────────────────
+
+        async copyToAdjacentFrame(delta) {
+            const targetFrame = this.frame + delta;
+            if (targetFrame < 0) return;
+            const csrf = getCsrf();
+            const uploads = [];
+            this.tileCache.forEach((labels, k) => {
+                if (!labels) return;
+                const [tx, ty] = k.split('_').map(Number);
+                uploads.push(
+                    this._encodePNG(labels).then(blob =>
+                        fetch(`/annotations/api/segmentation/${this.annotationId}/tiles/${this.plane}/${tx}/${ty}/?frame=${targetFrame}`, {
+                            method: 'PUT', credentials: 'same-origin',
+                            headers: {'Content-Type':'image/png','X-CSRFToken':csrf},
+                            body: blob,
+                        })
+                    )
+                );
+            });
+            await Promise.all(uploads);
+        }
 
         async _uploadDirtyTiles() {
             const keys = Array.from(this.dirtyTiles);
@@ -609,7 +698,7 @@
         setTool(tool) {
             this.activeTool = tool;
             this.drawCanvas.style.display = (tool && this.editable) ? 'block' : 'none';
-            this.drawCanvas.style.cursor  = tool==='eraser' ? 'cell' : 'crosshair';
+            this._applyToolCursor();
         }
 
         setEditable(editable) {
@@ -658,7 +747,8 @@
             this.viewer.removeHandler('animation-finish', this._onUpdate);
             this.viewer.removeHandler('resize',           this._onResize);
             this.viewer.removeHandler('page',             this._onPage);
-            if (this._onKeyDown) document.removeEventListener('keydown', this._onKeyDown);
+            if (this._onModifierDown) document.removeEventListener('keydown', this._onModifierDown);
+            if (this._onModifierUp)   document.removeEventListener('keyup',   this._onModifierUp);
             this.displayCanvas.remove();
             this.drawCanvas.remove();
         }
