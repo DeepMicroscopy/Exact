@@ -27,6 +27,7 @@ class EXACTViewer {
         this.frame = 1;
     
         this.viewer = this.createViewer(options);
+        if (this._framedSetup) this._installFramedMode(this._framedSetup);
         window.exactOSDViewer = this.viewer;  // expose for segmentationTool
         window.exactImageId   = this.imageId; // expose for segmentationTool (updated on image switch)
         window.dispatchEvent(new CustomEvent('exactViewerReady', { detail: this.viewer }));
@@ -102,28 +103,16 @@ class EXACTViewer {
             }            
         }
         if (imageInformation['depth'] > 1 || imageInformation['frames'] > 1) {
-            let tileSources = []
-            // first iterrate time points
-            for (const frame of Array(imageInformation['frames']).keys()) {
-                // for each frame iterrate z dimension
-                for (const z of Array(imageInformation['depth']).keys()) {
-                    // image_id/z/frame/
-                    let path = server_url + `/images/image/${imageId}/${z + 1}/${frame + 1}/tile/`
-                    tileSources.push(path);
-                }
-            }
-            options.tileSources = tileSources;
-            options.sequenceMode = true;
-            if ((imageInformation["FrameDescriptions"].length==0) || ((imageInformation["FrameDescriptions"][0]["frame_type"]>0)))
-            {
-               options.showReferenceStrip = true;
-            }
+            // Single tile source for scalable frame navigation (supports 70k+ frames)
+            options.tileSources = [server_url + `/images/image/${imageId}/1/1/tile/`];
+            options.sequenceMode = false;
+            options.showReferenceStrip = false;
             options.preserveViewport = true;
-
-            // show referenceStrip at the side 
-            if (imageInformation['depth'] > 1) {
-                options.referenceStripScroll = 'vertical';
-            }
+            options._framedSetup = {
+                depth: imageInformation['depth'],
+                frames: imageInformation['frames'],
+                initialFrame: frame,
+            };
         }
 
         if (annotationTypes !== undefined && Object.keys(annotationTypes).length > 0) {
@@ -175,6 +164,10 @@ class EXACTViewer {
     }
 
     createViewer(options) {
+        // Extract framed-mode setup before passing to OSD (OSD doesn't know about it)
+        const framedSetup = options._framedSetup;
+        delete options._framedSetup;
+        if (framedSetup) this._framedSetup = framedSetup;
 
         const default_options = {
             id: "openseadragon1",
@@ -750,6 +743,62 @@ class EXACTViewer {
         $('#planeBtn_3d').toggleClass('active', this.mprActive);
     }
 
+    _installFramedMode({ depth, frames, initialFrame }) {
+        let _frame = initialFrame || 1;
+        let _item = null;
+        const _self = this;
+
+        // Patch viewer immediately so subclass constructor goToPage calls land correctly
+        this.viewer.goToPage = function(page) {
+            _frame = page + 1;
+            if (_item) {
+                _item.source._framedFrame = _frame;
+                _item.tilesMatrix = {};   // force new Tile objects with updated URLs
+                _item.reset();
+            }
+            this.raiseEvent('page', { page });
+            return this;
+        };
+        this.viewer.currentPage = function() { return _frame - 1; };
+
+        this.viewer.addOnceHandler('open', () => {
+            _item = _self.viewer.world.getItemAt(0);
+            if (!_item) return;
+            const source = _item.source;
+            source._framedImageId = _self.imageId;
+            source._framedServerUrl = _self.server_url;
+            source._framedDepth = depth;
+            source._framedFrames = frames;
+            source._framedFrame = _frame;
+            source.getTileUrl = function(level, x, y) {
+                let z, f;
+                if (this._framedDepth <= 1) {
+                    z = 1; f = this._framedFrame;
+                } else if (this._framedFrames <= 1) {
+                    z = this._framedFrame; f = 1;
+                } else {
+                    const page = this._framedFrame - 1;
+                    z = (page % this._framedDepth) + 1;
+                    f = Math.floor(page / this._framedDepth) + 1;
+                }
+                return `${this._framedServerUrl}/images/image/${this._framedImageId}/${z}/${f}/tile_files/${level}/${x}_${y}.${this.fileFormat || 'jpeg'}`;
+            };
+            // Update goToPage to also reset tiles via the real item reference
+            _self.viewer.goToPage = function(page) {
+                _frame = page + 1;
+                source._framedFrame = _frame;
+                _item.tilesMatrix = {};   // force new Tile objects with updated URLs
+                _item.reset();
+                this.raiseEvent('page', { page });
+                return this;
+            };
+            // Sync slider to initial frame
+            if (_frame !== 1) {
+                _self.viewer.raiseEvent('page', { page: _frame - 1 });
+            }
+        });
+    }
+
     switchPlane(plane) {
         if (!this.mprPlanes || plane === this.currentPlane) return;
 
@@ -772,11 +821,6 @@ class EXACTViewer {
             nFrames - 1
         );
 
-        const tileSources = [];
-        for (let f = 0; f < nFrames; f++) {
-            tileSources.push(`${this.server_url}/images/image/${this.imageId}/${zDim}/${f + 1}/tile/`);
-        }
-
         // Rebuild the frame slider with the restored frame position.
         if (this.frameSlider !== undefined) {
             this.frameSlider.destroy();
@@ -794,17 +838,48 @@ class EXACTViewer {
         }
 
         // Expose current plane globally and notify segmentation tool before
-        // opening the new tile sources, so layers can be torn down cleanly.
+        // opening the new tile source, so layers can be torn down cleanly.
         window.exactCurrentPlane = plane;
         window.exactCurrentPlaneNFrames = nFrames;
         window.dispatchEvent(new CustomEvent('exactPlaneChanged', { detail: { plane } }));
 
-        // Navigate to the restored frame once OSD has opened the new tile sources.
-        if (restorePage > 0) {
-            this.viewer.addOnceHandler('open', () => this.viewer.goToPage(restorePage));
-        }
+        // Install framed-mode handler for the new plane before opening.
+        // zDim is captured in the closure; _framedFrame tracks the current slice.
+        let _frame = restorePage + 1;
+        this.viewer.goToPage = (page) => {
+            _frame = page + 1;
+            const item = this.viewer.world.getItemAt(0);
+            if (item) { item.source._framedFrame = _frame; item.tilesMatrix = {}; item.reset(); }
+            this.viewer.raiseEvent('page', { page });
+            return this.viewer;
+        };
+        this.viewer.currentPage = () => _frame - 1;
 
-        this.viewer.open(tileSources);
+        this.viewer.addOnceHandler('open', () => {
+            const item = this.viewer.world.getItemAt(0);
+            if (!item) return;
+            const source = item.source;
+            source._framedImageId = this.imageId;
+            source._framedServerUrl = this.server_url;
+            source._framedFrame = _frame;
+            source.getTileUrl = function(level, x, y) {
+                return `${this._framedServerUrl}/images/image/${this._framedImageId}/${zDim}/${this._framedFrame}/tile_files/${level}/${x}_${y}.${this.fileFormat || 'jpeg'}`;
+            };
+            // Update goToPage to use the real item reference
+            this.viewer.goToPage = (page) => {
+                _frame = page + 1;
+                source._framedFrame = _frame;
+                item.tilesMatrix = {};   // force new Tile objects with updated URLs
+                item.reset();
+                this.viewer.raiseEvent('page', { page });
+                return this.viewer;
+            };
+            if (_frame > 1) {
+                this.viewer.raiseEvent('page', { page: _frame - 1 });
+            }
+        });
+
+        this.viewer.open(`${this.server_url}/images/image/${this.imageId}/${zDim}/1/tile/`);
     }
 
     // ── 3-Axis MPR ────────────────────────────────────────────────────────────
