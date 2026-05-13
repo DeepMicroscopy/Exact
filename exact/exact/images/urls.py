@@ -14,6 +14,7 @@ urlpatterns = [
     re_path(r'^api/image/delete/(\d+)/$', views.delete_images_api, name='delete images (API)'),
     re_path(r'^api/image/download/(\d+)/$', views.download_image_api, name='download_api'),
     re_path(r'^api/auxfile/download/(\d+)/$', views.download_auxfile_api, name='download_auxfile'),
+    re_path(r'^api/auxfile/delete/(\d+)/$', views.delete_auxfile_api, name='delete_auxfile'),
     re_path(r'^image/copy/(\d+)/(\d+)/$', views.copy_image, name='copy_image'),
 
     re_path(r'^api/image/opened/(\d+)/$', views.image_opened, name='image_opened'),

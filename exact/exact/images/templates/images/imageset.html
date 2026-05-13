@@ -127,6 +127,25 @@
 <script type="text/javascript" src="{% static 'scripts/versions.js' %}"></script>
 <script type="text/javascript" src="{% static 'scripts/notify.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'scripts/jquery.autocomplete.js' %}"></script>
+<script>
+function deleteAuxfile(btn) {
+    var id = btn.dataset.auxfileId;
+    var name = btn.dataset.auxfileName;
+    if (!confirm('Delete auxiliary file "' + name + '"?')) return;
+    var csrf = (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '';
+    fetch('/images/api/auxfile/delete/' + id + '/', {
+        method: 'DELETE', credentials: 'same-origin',
+        headers: {'X-CSRFToken': csrf}
+    }).then(function(r) {
+        if (r.ok) {
+            var li = document.getElementById('auxfile-row-' + id);
+            if (li) li.remove();
+        } else {
+            alert('Delete failed (status ' + r.status + ').');
+        }
+    });
+}
+</script>
 <![endif]-->
 {% endblock additional_js %}
 {% block bodyblock %}
@@ -243,8 +262,14 @@
                     <div class="card-body">
                         <ul>
                             {% for auxfile in imageset.auxiliary_files.all %}
-                            <li>
-                                {{ auxfile.name  }} <a href="{% url 'images:download_auxfile' auxfile.id %}"><img src="{% static 'images/download.svg' %}"></a>
+                            <li id="auxfile-row-{{ auxfile.id }}">
+                                {{ auxfile.name }}
+                                <a href="{% url 'images:download_auxfile' auxfile.id %}"><img src="{% static 'images/download.svg' %}"></a>
+                                {% if 'delete_images' in imageset_perms %}
+                                <button class="btn btn-sm btn-danger p-0 px-1 ml-1" title="Delete"
+                                    data-auxfile-id="{{ auxfile.id }}" data-auxfile-name="{{ auxfile.name|escapejs }}"
+                                    onclick="deleteAuxfile(this)">&#x2715;</button>
+                                {% endif %}
                             </li>
                             {% endfor %}
             

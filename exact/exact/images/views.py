@@ -810,6 +810,15 @@ def download_auxfile_api(request, auxfile_id) -> Response:
 
     return response
 
+@api_view(['DELETE'])
+def delete_auxfile_api(request, auxfile_id) -> Response:
+    auxfile = get_object_or_404(AuxiliaryFile, id=auxfile_id)
+    if not auxfile.image_set.has_perm('delete_images', request.user):
+        return Response({}, status=HTTP_403_FORBIDDEN)
+    auxfile.delete()
+    return Response({}, status=HTTP_200_OK)
+
+
 @api_view(['GET'])
 def delete_images_api(request, image_id) -> Response:
     image = get_object_or_404(Image, id=image_id)
