@@ -28,7 +28,7 @@
     // ── SegmentationLayer ────────────────────────────────────────────────
 
     class SegmentationLayer {
-        constructor(viewer, annotationId, imageWidth, imageHeight, color, frame, plane) {
+        constructor(viewer, annotationId, imageWidth, imageHeight, color, frame, plane, nFrames) {
             this.viewer       = viewer;
             this.annotationId = annotationId;
             this.imageWidth   = imageWidth;
@@ -36,6 +36,11 @@
             this.color        = hexToRgb(color);
             this.frame        = frame || 0;
             this.plane        = plane || 0;  // 0=axial, 1=coronal, 2=sagittal
+            // nFrames = number of slices along this plane's normal axis (= voxel count).
+            // For coronal: ny_vox; for sagittal: nx_vox; for axial: nz_vox.
+            // Needed by the server to correctly map voxel coords to tile pixel rows/cols
+            // when the axial spacing is anisotropic (e.g. thick-slice MRI/CT).
+            this.nFrames      = nFrames || 0;  // 0 → server falls back to img.height/width
             this.opacity      = 0.55;
             this.editable     = false;
 
@@ -294,7 +299,7 @@
             this.tileCache.set(k, null);
             try {
                 const r = await fetch(
-                    `/annotations/api/segmentation/${this.annotationId}/tiles/${this.plane}/${tx}/${ty}/?frame=${this.frame}`,
+                    `/annotations/api/segmentation/${this.annotationId}/tiles/${this.plane}/${tx}/${ty}/?frame=${this.frame}&ph=${this.imageHeight}&nf=${this.nFrames}`,
                     { credentials: 'same-origin' });
                 if (r.status === 204) {
                     this.tileCache.set(k, new Uint8Array(TILE_SIZE * TILE_SIZE));
@@ -646,7 +651,7 @@
                 const [tx, ty] = k.split('_').map(Number);
                 uploads.push(
                     this._encodePNG(labels).then(blob =>
-                        fetch(`/annotations/api/segmentation/${this.annotationId}/tiles/${this.plane}/${tx}/${ty}/?frame=${targetFrame}`, {
+                        fetch(`/annotations/api/segmentation/${this.annotationId}/tiles/${this.plane}/${tx}/${ty}/?frame=${targetFrame}&ph=${this.imageHeight}&nf=${this.nFrames}`, {
                             method: 'PUT', credentials: 'same-origin',
                             headers: {'Content-Type':'image/png','X-CSRFToken':csrf},
                             body: blob,
@@ -666,7 +671,7 @@
                 const labels   = this.tileCache.get(k);
                 if (!labels) return;
                 const blob = await this._encodePNG(labels);
-                const url  = `/annotations/api/segmentation/${this.annotationId}/tiles/${this.plane}/${tx}/${ty}/?frame=${this.frame}`;
+                const url  = `/annotations/api/segmentation/${this.annotationId}/tiles/${this.plane}/${tx}/${ty}/?frame=${this.frame}&ph=${this.imageHeight}&nf=${this.nFrames}`;
                 await fetch(url, {
                     method: 'PUT', credentials: 'same-origin',
                     headers: {'Content-Type':'image/png','X-CSRFToken':csrf},
@@ -894,7 +899,11 @@
         _activeViewer = viewer;
 
         // Current plane (0=axial, 1=coronal, 2=sagittal).
-        const plane = window.exactCurrentPlane || 0;
+        const plane    = window.exactCurrentPlane || 0;
+        // nFrames for this plane (voxel count along the normal axis).
+        // Passed to the server as &nf= so it can correctly map voxel↔pixel for
+        // anisotropic NIfTI data where img.height ≠ ny_vox.
+        const nFrames  = window.exactCurrentPlaneNFrames || 0;
 
         // Get live image dimensions from OSD tile source — correct for the current
         // plane even if the template's IMAGE_WIDTH/HEIGHT are axial-only.
@@ -923,10 +932,13 @@
                         headers: {'Content-Type':'application/json','X-CSRFToken':getCsrf()},
                         body: JSON.stringify({
                             image: imageId, annotation_type: annotationTypeId,
+                            unique_identifier: crypto.randomUUID(),
                             vector: {tile_size: TILE_SIZE, width: actualWidth, height: actualHeight},
                         }),
                     });
-                    annotationId = (await cr.json()).id;
+                    const crData = await cr.json();
+                    if (!cr.ok) { console.error('Failed to create annotation:', crData); return; }
+                    annotationId = crData.id;
                 }
             } catch (e) { console.error('Could not get/create annotation', e); return; }
 
@@ -934,7 +946,7 @@
             const actualFrame = typeof viewer.currentPage === 'function'
                 ? viewer.currentPage() : frame;
             layer = new SegmentationLayer(
-                viewer, annotationId, actualWidth, actualHeight, color, actualFrame, plane);
+                viewer, annotationId, actualWidth, actualHeight, color, actualFrame, plane, nFrames);
             window.segmentationLayers.set(annotationTypeId, layer);
         } else {
             // For existing layers the 'page' event keeps frame in sync; only

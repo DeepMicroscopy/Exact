@@ -795,6 +795,7 @@ class EXACTViewer {
         // Expose current plane globally and notify segmentation tool before
         // opening the new tile sources, so layers can be torn down cleanly.
         window.exactCurrentPlane = plane;
+        window.exactCurrentPlaneNFrames = nFrames;
         window.dispatchEvent(new CustomEvent('exactPlaneChanged', { detail: { plane } }));
 
         // Navigate to the restored frame once OSD has opened the new tile sources.
