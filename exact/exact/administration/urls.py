@@ -1,4 +1,4 @@
-from django.urls import include, re_path
+from django.urls import re_path
 
 from . import views
 
@@ -40,6 +40,9 @@ urlpatterns = [
     re_path(r'^api/plugins/product/add/$', views.add_plugin_product, name='add_plugin_product'),
     re_path(r'^api/plugins/product/delete/$', views.remove_plugin_product, name='remove_plugin_product'),
 
+
+    re_path(r'^api/cache/stats/$', views.api_slide_cache_stats, name='api_slide_cache_stats'),
+    re_path(r'^api/cache/clear/$', views.api_clear_slide_cache, name='api_clear_slide_cache'),
 
     re_path(r'^annotation_type/list/$', views.annotation_types, name='annotation_types'),
     re_path(r'^annotation_type/(\d+)/$', views.annotation_type, name='annotation_type'),

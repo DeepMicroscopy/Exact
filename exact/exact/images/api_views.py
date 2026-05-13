@@ -41,8 +41,7 @@ from czifile import czi2tif
 from util.cellvizio import ReadableCellVizioMKTDataset # just until data access is pip installable
 
 from PIL import Image as PIL_Image
-from util.slide_server import SlideCache, SlideFile, PILBytesIO
-image_cache = SlideCache(cache_size=10)
+from util.slide_server import SlideCache, SlideFile, PILBytesIO, image_cache
 
 logger = logging.getLogger('django')
 cache = caches['default']

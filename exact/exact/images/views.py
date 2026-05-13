@@ -51,7 +51,7 @@ from exact.annotations.models import Annotation, Export, ExportFormat, \
     AnnotationType, Verification, LogImageAction
 from exact.tagger_messages.models import Message, TeamMessage, GlobalMessage
 
-from util.slide_server import SlideCache, SlideFile, PILBytesIO
+from util.slide_server import SlideCache, SlideFile, PILBytesIO, image_cache
 from util.cellvizio import ReadableCellVizioMKTDataset # just until data access is pip installable
 
 from plugins.pluginFinder import PluginFinder
@@ -83,9 +83,7 @@ from PIL import Image as PIL_Image
 from czifile import czi2tif
 from django.core.cache import cache
 
-# TODO: Add to cache
 logger = logging.getLogger('django')
-image_cache = SlideCache(cache_size=10)
 plugin_finder = PluginFinder(image_cache)
 
 cache = caches['default']

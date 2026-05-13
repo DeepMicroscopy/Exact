@@ -113,6 +113,7 @@ class zDeepZoomGenerator(DeepZoomGenerator):
         return None
     
         
+from openslide import lowlevel
     
 class OpenSlideWrapper(openslide.OpenSlide):
     """
@@ -135,11 +136,16 @@ class OpenSlideWrapper(openslide.OpenSlide):
         return FrameType.UNDEFINED
 
     def read_region(self, location, level, size, frame=0):
-        return openslide.OpenSlide.read_region(self, location, level, size)
-
+        region = lowlevel.read_region(
+            self._osr, location[0], location[1], level, size[0], size[1]
+        )
+        if self._profile is not None:
+            region.info['icc_profile'] = self._profile
+        return region
 
     def __init__(self, slide_path):
         super().__init__(slide_path)
+        self._osr = lowlevel.open(slide_path)
         self.slide_path = slide_path  # Store path for later reconstruction
 
     def __reduce__(self):
@@ -182,11 +188,38 @@ class ImageSlideWrapper(openslide.ImageSlide):
 
     """
     def read_region(self, location, level, size, zLevel=0, frame=0):
-        return openslide.ImageSlide.read_region(self, location, level, size)
 
+        image_topleft = [
+                    max(0, min(l, limit - 1)) for l, limit in zip(location, self._image.size)
+                ]
+        image_bottomright = [
+            max(0, min(l + s - 1, limit - 1))
+            for l, s, limit in zip(location, size, self._image.size)
+        ]
+        tile = Image.new("RGBA", size, (0,) * 4)
+        if not [
+            'fail' for tl, br in zip(image_topleft, image_bottomright) if br - tl < 0
+        ]:  # "< 0" not a typo
+            # Crop size is greater than zero in both dimensions.
+            # PIL thinks the bottom right is the first *excluded* pixel
+            crop_box = tuple(image_topleft + [d + 1 for d in image_bottomright])
+            tile_offset = tuple(il - l for il, l in zip(image_topleft, location))
+            assert len(crop_box) == 4 and len(tile_offset) == 2
+            crop = self._image.crop(crop_box)
+            tile.paste(crop, tile_offset)
+        if self._profile is not None:
+            tile.info['icc_profile'] = self._profile
+        return tile
+    
     def __init__(self, slide_path):
         super().__init__(slide_path)
+        self._image = Image.open(slide_path)
+        self._image.load()   # eager-load: PIL lazy I/O is not thread-safe
         self.slide_path = slide_path  # Store path for later reconstruction
+
+    @property
+    def nFrames(self):
+        return 1    
 
     def __reduce__(self):
         # Define how to pickle the object
@@ -223,12 +256,18 @@ class ImageSlide3D(openslide.ImageSlide):
 
         self.slide_path = file
         openslide.ImageSlide.__init__(self, file)
+        self._lock = Lock()
 
         try:
-            self.numberOfLayers = self._image.n_frames 
-        except:
+            self.numberOfLayers = self._image.n_frames
+        except Exception:
             self.numberOfLayers = 1
-        
+
+        # For single-frame images, eager-load so crop() is thread-safe.
+        # Multi-frame TIFFs can't be fully pre-loaded (seek invalidates prior frames),
+        # so they are protected by _lock in read_region instead.
+        if self.numberOfLayers == 1:
+            self._image.load()
 
     def read_region(self, location, level, size, frame=0):
         """Return a PIL.Image containing the contents of the region.
@@ -242,12 +281,8 @@ class ImageSlide3D(openslide.ImageSlide):
             raise OpenSlideError("Invalid level")
         if ['fail' for s in size if s < 0]:
             raise OpenSlideError("Size %s must be non-negative" % (size,))
-        # for non-pyramidal tiff files we can only read frame 0 
         if frame >= self.numberOfLayers:
-            frame = self.numberOfLayers - 1 
-        # Any corner of the requested region may be outside the bounds of
-        # the image.  Create a transparent tile of the correct size and
-        # paste the valid part of the region into the correct location.
+            frame = self.numberOfLayers - 1
         image_topleft = [max(0, min(l, limit - 1))
                     for l, limit in zip(location, self._image.size)]
         image_bottomright = [max(0, min(l + s - 1, limit - 1))
@@ -256,15 +291,14 @@ class ImageSlide3D(openslide.ImageSlide):
 
         if not ['fail' for tl, br in zip(image_topleft, image_bottomright)
                 if br - tl < 0]:  # "< 0" not a typo
-            # Crop size is greater than zero in both dimensions.
-            # PIL thinks the bottom right is the first *excluded* pixel
-            self._image.seek(frame)
-            crop = self._image.crop(image_topleft +
-                    [d + 1 for d in image_bottomright])
-            tile_offset = tuple(il - l for il, l in
-                    zip(image_topleft, location))
+            crop_box = image_topleft + [d + 1 for d in image_bottomright]
+            tile_offset = tuple(il - l for il, l in zip(image_topleft, location))
+            # seek() + crop() must be atomic — PIL's internal frame pointer is shared state
+            with self._lock:
+                self._image.seek(frame)
+                crop = self._image.crop(crop_box)
             tile.paste(crop, tile_offset)
-        return tile  
+        return tile
     
 
 import cv2
@@ -422,6 +456,7 @@ class GenericTiffHandler:
 
         # else let OpenSlide handle it for us.
         vendor = openslide.lowlevel.detect_vendor(file)
+        print('Vendor is: ',vendor)
         if vendor in vendor_handlers:
             return OpenSlideWrapper(file)
         else:
@@ -701,6 +736,24 @@ class SlideCache(object):
                     self._cache.popitem(last=False)
                 self._cache[cache_key] = slide
         return slide
+
+    def clear(self):
+        """Evict all cached slides and raw slide handlers."""
+        with self._lock:
+            self._cache.clear()
+            self._osr_cache.clear()
+
+    def stats(self):
+        """Return a dict with current cache occupancy."""
+        with self._lock:
+            return {
+                'dz_entries': len(self._cache),
+                'osr_entries': len(self._osr_cache),
+                'capacity': self.cache_size,
+            }
+
+image_cache = SlideCache(cache_size=20)
+
 
 class SlideFile(object):
     def __init__(self, relpath):

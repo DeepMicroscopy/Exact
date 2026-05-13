@@ -38,6 +38,8 @@ from .permissions import site_admin_required
 from exact.users.models import UserPreferences
 from django.core.exceptions import ValidationError
 import json
+
+from util.slide_server import image_cache as _image_cache
 import secrets
 import string
 
@@ -874,3 +876,17 @@ def migrate_bounding_box_to_4_polygon(request, annotation_type_id):
         selected_annotation_type.node_count = 4
         selected_annotation_type.save()
     return redirect(reverse('administration:annotation_type', args=(annotation_type_id, )))
+
+
+@require_GET
+@site_admin_required
+def api_slide_cache_stats(request):
+    return JsonResponse(_image_cache.stats())
+
+
+@require_POST
+@site_admin_required
+def api_clear_slide_cache(request):
+    before = _image_cache.stats()
+    _image_cache.clear()
+    return JsonResponse({'cleared': before})

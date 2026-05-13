@@ -121,6 +121,11 @@
 					<span id="active-users-dot" style="width:10px;height:10px;border-radius:50%;background:#6c757d;display:inline-block;margin-right:5px;transition:background .4s"></span>
 					<span id="active-users-label" style="color:#ccc;font-size:0.8rem;cursor:default">–</span>
 				</li>
+				<li class="nav-item" style="display:flex;align-items:center;padding:0 8px" title="Slide cache occupancy">
+					<span id="cache-dot" style="width:10px;height:10px;border-radius:50%;background:#6c757d;display:inline-block;margin-right:5px;transition:background .4s"></span>
+					<span id="cache-label" style="color:#ccc;font-size:0.8rem;cursor:default">cache –</span>
+					<button id="cache-clear-btn" title="Clear slide cache" onclick="clearSlideCache()" style="margin-left:5px;padding:0 4px;font-size:0.75rem;line-height:1.4;border:1px solid #555;background:transparent;color:#aaa;border-radius:3px;cursor:pointer">&#10005;</button>
+				</li>
 				{% endif %}
 				<li class="dropdown nav-item">
 					<a href="#" class="dropdown-toggle nav-link" data-toggle="dropdown" role="button"
@@ -191,6 +196,49 @@
 
     update();
     setInterval(update, 60000);   // refresh every minute
+})();
+
+(function () {
+    var cdot  = document.getElementById('cache-dot');
+    var clabel = document.getElementById('cache-label');
+    if (!cdot) return;
+
+    function updateCache() {
+        fetch('/administration/api/cache/stats/', {credentials: 'same-origin'})
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (d) {
+                if (!d) return;
+                var used = d.dz_entries;
+                var cap  = d.capacity;
+                var pct  = cap > 0 ? used / cap : 0;
+                var color = pct < 0.5 ? '#28a745' : pct < 0.85 ? '#ffc107' : '#dc3545';
+                cdot.style.background = color;
+                clabel.textContent = 'cache ' + used + '/' + cap;
+                cdot.title = used + ' of ' + cap + ' slide cache slots used';
+            })
+            .catch(function () {
+                cdot.style.background = '#6c757d';
+                clabel.textContent = 'cache ?';
+            });
+    }
+
+    window.clearSlideCache = function () {
+        var btn = document.getElementById('cache-clear-btn');
+        btn.disabled = true;
+        var csrfToken = document.cookie.match(/csrftoken=([^;]+)/);
+        fetch('/administration/api/cache/clear/', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {'X-CSRFToken': csrfToken ? csrfToken[1] : ''},
+        })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function () { updateCache(); })
+        .catch(function () {})
+        .finally(function () { btn.disabled = false; });
+    };
+
+    updateCache();
+    setInterval(updateCache, 60000);
 })();
 </script>
 {% endif %}
