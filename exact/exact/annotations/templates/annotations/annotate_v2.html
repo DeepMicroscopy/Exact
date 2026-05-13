@@ -1030,7 +1030,8 @@
             var osdViewer = window.exactOSDViewer;
             var frame = (osdViewer && typeof osdViewer.currentPage === 'function')
                 ? osdViewer.currentPage() : 0;
-            window.activateSegmentationLayer(typeId, color, IMAGE_ID, IMAGE_WIDTH, IMAGE_HEIGHT, frame);
+            var currentImageId = window.exactImageId || IMAGE_ID;
+            window.activateSegmentationLayer(typeId, color, currentImageId, IMAGE_WIDTH, IMAGE_HEIGHT, frame);
         } else {
             // Vector annotation type: deactivate segmentation, then fire the
             // dropdown change so Paper.js switches to this type's drawing mode.

@@ -859,11 +859,24 @@
 
     // When a new image is loaded a new OSD viewer is created and exactViewerReady fires.
     // Destroy all layers from the previous image so stale canvases don't accumulate.
+    // On an image switch (viewer changed) also re-activate the selected annotation type
+    // once OSD has opened the new tile source, because the template's one-shot onReady
+    // listener has already removed itself after the initial page load.
     window.addEventListener('exactViewerReady', () => {
-        if (_activeViewer && _activeViewer !== window.exactOSDViewer) {
+        const viewer = window.exactOSDViewer;
+        if (_activeViewer && _activeViewer !== viewer) {
+            // Reset to pan tool before tearing down so the button state is clean
+            // for the new image regardless of what tool was active before.
+            const panBtn = document.querySelector('.seg-tool-btn[data-tool="pan"]');
+            if (panBtn) panBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
             window.destroyAllSegmentationLayers();
+            const activeRow = document.querySelector('#statistics_table .stats-row.table-active');
+            if (activeRow && typeof window.selectAnnotationType === 'function' && viewer) {
+                viewer.addOnceHandler('open', () => window.selectAnnotationType(activeRow));
+            }
         }
-        _activeViewer = window.exactOSDViewer;
+        _activeViewer = viewer;
     });
 
     // When the MPR plane switches the image dimensions and tile space change.

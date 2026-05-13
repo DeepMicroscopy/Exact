@@ -28,6 +28,7 @@ class EXACTViewer {
     
         this.viewer = this.createViewer(options);
         window.exactOSDViewer = this.viewer;  // expose for segmentationTool
+        window.exactImageId   = this.imageId; // expose for segmentationTool (updated on image switch)
         window.dispatchEvent(new CustomEvent('exactViewerReady', { detail: this.viewer }));
         this.exact_registration_sync = undefined;
         this.browser_sync = undefined;
