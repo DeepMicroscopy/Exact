@@ -290,12 +290,6 @@ class Image(models.Model):
                          path = hdf_path.with_stem(hdf_path.stem + "_{}".format(key)).with_suffix('.tiff')
                          vi.tiffsave(str(path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
                          self.filename = path.name
-                else:                            
-                    path = Path(path).with_suffix('.tiff')
-
-                    vi = pyvips.Image.new_from_file(str(old_path))
-                    vi.tiffsave(str(path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
-                    self.filename = path.name
 
             osr = getSlideHandler(self.path())
             self.width, self.height = osr.level_dimensions[0]
