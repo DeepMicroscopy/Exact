@@ -9,6 +9,6 @@ def active_user_tracking_middleware(get_response):
     def middleware(request):
         response = get_response(request)
         if request.user.is_authenticated:
-            cache.set(f'exact_user_seen_{request.user.pk}', True, _WINDOW)
+            cache.set(f'exact_user_seen_{request.user.pk}', request.user.username, _WINDOW)
         return response
     return middleware

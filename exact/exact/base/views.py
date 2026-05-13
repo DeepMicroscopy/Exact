@@ -32,13 +32,13 @@ def active_users(request) -> Response:
     from django.core.cache import cache
     User = get_user_model()
 
-    # The middleware stamps exact_user_seen_<pk> = True (TTL 15 min) on every
-    # authenticated request, so we just count keys that are still alive.
-    count = sum(
-        1 for u in User.objects.filter(is_active=True).exclude(pk=user.pk)
-        if cache.get(f'exact_user_seen_{u.pk}')
-    )
-    return Response({'active_users': count, 'window_minutes': 15}, HTTP_200_OK)
+    # The middleware stamps exact_user_seen_<pk> = username (TTL 15 min) on
+    # every authenticated request, so we just collect keys still alive.
+    names = [
+        username for u in User.objects.filter(is_active=True).exclude(pk=user.pk)
+        if (username := cache.get(f'exact_user_seen_{u.pk}'))
+    ]
+    return Response({'active_users': len(names), 'users': names, 'window_minutes': 15}, HTTP_200_OK)
 
 
 def problem_report(request):

@@ -184,9 +184,11 @@
                 var color = n <= 2 ? '#28a745' : n <= 9 ? '#ffc107' : '#dc3545';
                 dot.style.background = color;
                 label.textContent = n + ' active';
-                label.title = n + ' user' + (n !== 1 ? 's' : '') +
-                              ' active in the last ' + d.window_minutes + ' min';
-                dot.title = label.title;
+                var tip = n + ' user' + (n !== 1 ? 's' : '') +
+                          ' active in the last ' + d.window_minutes + ' min';
+                if (d.users && d.users.length) tip += ':\n' + d.users.join('\n');
+                label.title = tip;
+                dot.title = tip;
             })
             .catch(function () {
                 dot.style.background = '#6c757d';
