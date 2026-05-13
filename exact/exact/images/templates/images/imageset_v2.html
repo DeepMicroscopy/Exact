@@ -49,6 +49,7 @@
 <script id="template-download" type="text/x-tmpl">
 {% for (var i=0, file; file=o.files[i]; i++) { %}
 <div class="card imagecard">
+    <div class="card_container"><center>
     {% if (file.error) { %}
     {% endverbatim %}
     <img class="card-img-top image" src="{% static 'images/upload_failed.svg' %}">
@@ -60,15 +61,16 @@
     {% } else  { %}
     {% endverbatim %}
     <a href="{% url 'annotations:annotate_without_parameters' %}{% verbatim %}{%=file.id%}/">
-        <img class="card-img-top image" src="{% endverbatim %}{{ api }}{% verbatim %}v1/images/images/{%=file.id%}/thumbnail">
+        <div class="img-wrapper"><img class="card-img-top image" src="{% endverbatim %}{{ api }}{% verbatim %}v1/images/images/{%=file.id%}/thumbnail"></div>
     </a>
     {% } %}        
     <div class="card-body">
-        <p class="name">{%=file.name%}</p>
+        <p class="name" style="width:180px">{%=file.name%}</p>
         {% if (file.error) { %}
         <div><span class="label label-danger">Error: </span> {%=file.error%}</div>
         {% } %}        
     </div>
+</div>
 
 </div>
 {% } %}
