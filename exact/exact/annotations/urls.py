@@ -34,4 +34,7 @@ urlpatterns = [
     re_path(r'^api/annotation/mediafile/upload/(\d+)/(\d+)/$', views.api_create_annotation_mediafile, name='api_create_annotation_mediafile'),
     re_path(r'^api/annotation/mediafile/delete/$', views.api_delete_annotation_mediafile, name='api_delete_annotation_mediafile'),
     re_path(r'^api/annotation/mediafile/update/$', views.api_update_annotation_mediafile, name='api_update_annotation_mediafile'),
+
+    re_path(r'^api/segmentation/(?P<annotation_id>\d+)/tiles/(?P<level>\d+)/(?P<tile_x>\d+)/(?P<tile_y>\d+)/$',
+            views.segmentation_tile, name='segmentation_tile'),
 ]

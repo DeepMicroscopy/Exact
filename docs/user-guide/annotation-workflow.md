@@ -80,6 +80,37 @@ For multi-frame images a **frame slider** appears above the viewer. Drag it or u
 
 For NIfTI volumes, a **plane selector** appears (Axial / Coronal / Sagittal / ⊞ 3-Axis). The 3-axis mode opens a 2×2 grid with all three reformats and linked crosshair navigation — click any plane to jump to that position in the other two.
 
+## Segmentation Tool (Pixel-Level Painting)
+
+The segmentation tool is available for annotation types with vector type *Segmentation*. Select such a type in the left panel to reveal the painting palette.
+
+### Tools
+
+| Button | Tool | Description |
+|---|---|---|
+| Hand | Pan | Navigate without painting (default) |
+| Brush | Brush | Paint filled circles; adjust size with the slider |
+| Eraser | Eraser | Remove painted pixels |
+| Wand | Magic wand | Flood-select pixels with similar intensity |
+| Bucket | Fill | Flood-fill a connected region |
+
+### 3D segmentation on NIfTI volumes
+
+Segmentation works in **all three MPR planes** (Axial, Coronal, Sagittal):
+
+1. Select the plane using the plane selector buttons.
+2. Navigate to the slice you want to annotate using the frame slider.
+3. Paint with the brush or other tools.
+4. Switch to another plane and scroll to the anatomical position where you painted — the segmentation appears there automatically.
+
+Annotations drawn in any plane are stored as axial tiles and derived on the fly for the other planes, so the data is always consistent. The **3-Axis mode (⊞)** is the easiest way to verify cross-plane consistency: all three views update simultaneously as you navigate.
+
+### Keyboard shortcuts
+
+| Key | Action |
+|---|---|
+| `Ctrl+Z` | Undo last stroke |
+
 ## Verification
 
 Open the **Verification** view from the imageset page. The view steps through unverified annotations one by one:

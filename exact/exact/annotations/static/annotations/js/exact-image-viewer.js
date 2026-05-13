@@ -27,8 +27,11 @@ class EXACTViewer {
         this.frame = 1;
     
         this.viewer = this.createViewer(options);
-        this.exact_registration_sync = undefined; 
-        this.browser_sync = undefined; 
+        window.exactOSDViewer = this.viewer;  // expose for segmentationTool
+        window.exactImageId   = this.imageId; // expose for segmentationTool (updated on image switch)
+        window.dispatchEvent(new CustomEvent('exactViewerReady', { detail: this.viewer }));
+        this.exact_registration_sync = undefined;
+        this.browser_sync = undefined;
 
         this.exact_image_sync = new EXACTImageSync(this.imageId, this.gHeaders, this.viewer);
         this.initViewerEventHandler(this.viewer, imageInformation);
@@ -46,6 +49,8 @@ class EXACTViewer {
         this.heatmapToggle = false;
 
         this.currentPlane = 0;
+        window.exactCurrentPlane = 0;
+        this._planeFrameMemory = {};   // plane index → last OSD page (0-indexed)
         this.mprPlanes = null;
         this.mprActive = false;
         this.mprViewers = {};   // planeIdx → { osd, canvas, nFrames, dims }
@@ -747,6 +752,10 @@ class EXACTViewer {
 
     switchPlane(plane) {
         if (!this.mprPlanes || plane === this.currentPlane) return;
+
+        // Remember where we are in the current plane before switching.
+        this._planeFrameMemory[this.currentPlane] = this.viewer.currentPage();
+
         this.currentPlane = plane;
         this.updatePlaneButtons();
 
@@ -757,13 +766,18 @@ class EXACTViewer {
         const nFrames = planeInfo.nFrames;
         const zDim = plane + 1;
 
+        // Restore last-seen frame for this plane (0-indexed), clamped to valid range.
+        const restorePage = Math.min(
+            this._planeFrameMemory[plane] ?? 0,
+            nFrames - 1
+        );
+
         const tileSources = [];
         for (let f = 0; f < nFrames; f++) {
             tileSources.push(`${this.server_url}/images/image/${this.imageId}/${zDim}/${f + 1}/tile/`);
         }
 
-        // Rebuild the frame slider for the new plane's frame count so the
-        // range and value are correct before viewer.open() fires its page event.
+        // Rebuild the frame slider with the restored frame position.
         if (this.frameSlider !== undefined) {
             this.frameSlider.destroy();
             this.frameSlider = undefined;
@@ -771,12 +785,23 @@ class EXACTViewer {
         if (nFrames > 1) {
             this.frameSlider = new Slider("#frameSlider", {
                 ticks_snap_bounds: 1,
-                value: 1,
+                value: restorePage + 1,   // slider is 1-indexed
                 min: 0,
                 tooltip: 'always',
                 max: nFrames - 1
             });
             this.frameSlider.on('change', this.onFrameSliderChanged.bind(this));
+        }
+
+        // Expose current plane globally and notify segmentation tool before
+        // opening the new tile sources, so layers can be torn down cleanly.
+        window.exactCurrentPlane = plane;
+        window.exactCurrentPlaneNFrames = nFrames;
+        window.dispatchEvent(new CustomEvent('exactPlaneChanged', { detail: { plane } }));
+
+        // Navigate to the restored frame once OSD has opened the new tile sources.
+        if (restorePage > 0) {
+            this.viewer.addOnceHandler('open', () => this.viewer.goToPage(restorePage));
         }
 
         this.viewer.open(tileSources);

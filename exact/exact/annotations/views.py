@@ -1,4 +1,5 @@
 import datetime
+import io
 import time
 import pytz
 from timeit import default_timer as timer
@@ -24,7 +25,7 @@ from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_2
 from exact.administration.models import Product
 from exact.annotations.forms import ExportFormatCreationForm, ExportFormatEditForm, AnnotationMediafileForm
 from exact.annotations.models import Annotation, AnnotationType, Export, \
-    Verification, ExportFormat, LogImageAction, AnnotationMediaFile
+    Verification, ExportFormat, LogImageAction, AnnotationMediaFile, SegmentationTile
 from exact.annotations.serializers import AnnotationSerializer, AnnotationTypeSerializer, \
     AnnotationSerializerFast, serialize_annotation, AnnotationMediaFileSerializer
 from exact.images.models import Image, ImageSet
@@ -888,6 +889,7 @@ def load_set_annotations(request) -> Response:
 def load_annotation_types(request) -> Response:
 
     annotation_types = None
+    imageset = None
     if 'imageset_id' in request.query_params:
         imageset_id = int(request.query_params['imageset_id'])
         imageset = get_object_or_404(ImageSet, pk=imageset_id)
@@ -897,7 +899,7 @@ def load_annotation_types(request) -> Response:
     else:
         annotation_types = AnnotationType.objects.filter(active=True).order_by('sort_order')
 
-    if not imageset.has_perm('read', request.user):
+    if imageset is not None and not imageset.has_perm('read', request.user):
         return Response({
             'detail': 'permission for reading this image set missing.',
         }, status=HTTP_403_FORBIDDEN)
@@ -1154,3 +1156,346 @@ def api_blurred_concealed_annotation(request) -> Response:
     return Response({
         'detail': 'you updated the last annotation',
     }, status=HTTP_200_OK)
+
+
+# ---------------------------------------------------------------------------
+# Segmentation tile endpoints
+# ---------------------------------------------------------------------------
+
+_SEG_TILE_SIZE = 256
+
+
+def _get_segmentation_annotation(annotation_id, user, require_edit=False):
+    """Return annotation if it exists, is a segmentation type, and user has access."""
+    annotation = get_object_or_404(Annotation, pk=annotation_id)
+    if annotation.annotation_type.vector_type != AnnotationType.VECTOR_TYPE.SEGMENTATION:
+        return None, HttpResponse('Annotation is not a segmentation type.', status=400)
+    perm = 'edit_annotation' if require_edit else 'read'
+    if not annotation.image.image_set.has_perm(perm, user):
+        return None, HttpResponseForbidden()
+    return annotation, None
+
+
+def _seg_bytes_to_array(png_bytes):
+    """Decode a stored PNG tile to a T×T uint8 binary array (0/1)."""
+    from PIL import Image as PILImage
+    import numpy as np
+    T = _SEG_TILE_SIZE
+    img = PILImage.open(io.BytesIO(bytes(png_bytes))).convert('L')
+    return (np.array(img, dtype=np.uint8) > 127).astype(np.uint8)
+
+
+def _array_to_png(arr):
+    """Encode a T×T uint8 binary array to PNG bytes."""
+    from PIL import Image as PILImage
+    import numpy as np
+    mask = (arr > 0).astype(np.uint8) * 255
+    buf = io.BytesIO()
+    PILImage.fromarray(mask, mode='L').save(buf, format='PNG')
+    return buf.getvalue()
+
+
+def _get_axial_tile(annotation_id, tx, ty, z):
+    """Return T×T uint8 array for axial tile, or zeros if it does not exist."""
+    import numpy as np
+    T = _SEG_TILE_SIZE
+    try:
+        t = SegmentationTile.objects.get(
+            annotation_id=annotation_id, level=0, tile_x=tx, tile_y=ty, frame=z)
+        return _seg_bytes_to_array(t.data)
+    except SegmentationTile.DoesNotExist:
+        return np.zeros((T, T), dtype=np.uint8)
+
+
+def _save_axial_tile(annotation_id, tx, ty, z, arr):
+    """Persist a T×T uint8 array as an axial tile; delete if all-zero."""
+    import numpy as np
+    if not arr.any():
+        SegmentationTile.objects.filter(
+            annotation_id=annotation_id, level=0, tile_x=tx, tile_y=ty, frame=z).delete()
+        return
+    SegmentationTile.objects.update_or_create(
+        annotation_id=annotation_id, level=0, tile_x=tx, tile_y=ty, frame=z,
+        defaults={'data': _array_to_png(arr)})
+
+
+def _z_vox_for_row(row_abs, nz, ph):
+    """Map a physical pixel row in a non-axial plane to a z-voxel index.
+
+    NIfTI renders with Superior at the top of the image, which means the
+    first row (row=0) corresponds to the largest z index (z=nz-1).  The
+    aspect-ratio-corrected physical height ph may differ from nz when
+    through-plane spacing != in-plane spacing.
+    """
+    import numpy as np
+    if ph <= 1:
+        return int(np.clip(nz - 1 - row_abs, 0, nz - 1))
+    return int(np.clip(nz - 1 - round(row_abs * (nz - 1) / (ph - 1)), 0, nz - 1))
+
+
+def _y_vox_to_axial_row(y_vox, ny_vox, py):
+    """Map an integer y-voxel index to the nearest axial image pixel row.
+
+    For isotropic in-plane data (py == ny_vox) this is simply py-1-y_vox.
+    For anisotropic data (e.g. a thick-slice MRI where sy >> sx) the axial
+    image is upscaled in the y-direction: py > ny_vox, and the correct pixel
+    row must account for the scaling factor sy/ref.
+    """
+    if ny_vox <= 1:
+        return 0
+    return round((ny_vox - 1 - y_vox) * (py - 1) / (ny_vox - 1))
+
+
+def _build_coronal_tile(annotation_id, tx, ty, y_frame, ny, nz, ph, ny_vox=None):
+    """Derive a coronal tile from stored axial tiles.
+
+    Coordinate mapping (NIfTI radiological convention, isotropic in-plane):
+      coronal col c  → axial col c  (same x-direction, both flipped the same way)
+      coronal row r  → z-voxel: nz-1-round(r*(nz-1)/(ph-1))
+      y_frame        → NIfTI y-voxel: y_frame+1 (OSD tile sources are 1-indexed)
+
+    ny     = img.height = axial pixel height (may differ from ny_vox for anisotropic data)
+    ny_vox = actual number of y-voxels (= coronal nFrames); defaults to ny for
+             isotropic data where py == ny_vox.
+    """
+    import numpy as np
+    T = _SEG_TILE_SIZE
+    py = ny  # axial pixel height
+    if ny_vox is None or ny_vox <= 0:
+        ny_vox = py  # isotropic fallback: treat pixel height as voxel count
+
+    # OSD tile sources use frame = page+1, so the displayed y-voxel is y_frame+1.
+    y_vox = max(0, min(y_frame + 1, ny_vox - 1))
+    # Map y_vox → axial image pixel row, accounting for possible y-axis upscaling.
+    pixel_row = _y_vox_to_axial_row(y_vox, ny_vox, py)
+    ax_ty = pixel_row // T
+    ax_i  = pixel_row % T
+
+    # One axial z per coronal row; batch-load unique z values.
+    row_abs   = ty * T + np.arange(T)
+    z_vox_arr = np.array([_z_vox_for_row(int(r), nz, ph) for r in row_abs])
+    unique_z  = np.unique(z_vox_arr)
+
+    tiles = SegmentationTile.objects.filter(
+        annotation_id=annotation_id, level=0,
+        tile_x=tx, tile_y=ax_ty, frame__in=unique_z.tolist())
+    tile_map = {t.frame: _seg_bytes_to_array(t.data) for t in tiles}
+
+    result = np.zeros((T, T), dtype=np.uint8)
+    for r in range(T):
+        z = int(z_vox_arr[r])
+        if z in tile_map:
+            result[r, :] = tile_map[z][ax_i, :]
+    return result
+
+
+def _write_coronal_tile(annotation_id, tx, ty, y_frame, ny, nz, ph, incoming, ny_vox=None):
+    """Write a coronal tile's label data back into the canonical axial tiles."""
+    import numpy as np
+    T = _SEG_TILE_SIZE
+    py = ny  # axial pixel height
+    if ny_vox is None or ny_vox <= 0:
+        ny_vox = py
+    y_vox = max(0, min(y_frame + 1, ny_vox - 1))
+    pixel_row = _y_vox_to_axial_row(y_vox, ny_vox, py)
+    ax_ty = pixel_row // T
+    ax_i  = pixel_row % T
+
+    row_abs   = ty * T + np.arange(T)
+    z_vox_arr = np.array([_z_vox_for_row(int(r), nz, ph) for r in row_abs])
+    unique_z  = np.unique(z_vox_arr)
+
+    tiles = SegmentationTile.objects.filter(
+        annotation_id=annotation_id, level=0,
+        tile_x=tx, tile_y=ax_ty, frame__in=unique_z.tolist())
+    tile_map = {t.frame: _seg_bytes_to_array(t.data) for t in tiles}
+
+    # Accumulate incoming rows per z (multiple coronal rows can share one z).
+    z_data = {}
+    for r in range(T):
+        z = int(z_vox_arr[r])
+        row = incoming[r, :]
+        z_data[z] = np.maximum(z_data[z], row) if z in z_data else row.copy()
+
+    for z, row_data in z_data.items():
+        arr = tile_map.get(z, np.zeros((T, T), dtype=np.uint8)).copy()
+        arr[ax_i, :] = row_data
+        _save_axial_tile(annotation_id, tx, ax_ty, z, arr)
+
+
+def _build_sagittal_tile(annotation_id, tx, ty, x_frame, nx, ny, nz, ph):
+    """Derive a sagittal tile from stored axial tiles.
+
+    Coordinate mapping (NIfTI radiological convention, isotropic in-plane):
+      sagittal col c → y-voxel: ny-1-c  → axial row c  (in tile: c%T, ax_ty=c//T)
+      sagittal row r → z-voxel: nz-1-round(r*(nz-1)/(ph-1))
+      x_frame        → NIfTI x-voxel: x_frame+1 (OSD tile sources are 1-indexed)
+    """
+    import numpy as np
+    T = _SEG_TILE_SIZE
+    x_vox = max(0, min(x_frame + 1, nx - 1))
+    ax_tx = (nx - 1 - x_vox) // T
+    ax_j  = (nx - 1 - x_vox) % T
+    # sagittal col c → ax_row=c → ax_ty=tx for c in [tx*T, (tx+1)*T)
+    ax_ty = tx
+
+    row_abs   = ty * T + np.arange(T)
+    z_vox_arr = np.array([_z_vox_for_row(int(r), nz, ph) for r in row_abs])
+    unique_z  = np.unique(z_vox_arr)
+
+    tiles = SegmentationTile.objects.filter(
+        annotation_id=annotation_id, level=0,
+        tile_x=ax_tx, tile_y=ax_ty, frame__in=unique_z.tolist())
+    tile_map = {t.frame: _seg_bytes_to_array(t.data) for t in tiles}
+
+    result = np.zeros((T, T), dtype=np.uint8)
+    for r in range(T):
+        z = int(z_vox_arr[r])
+        if z in tile_map:
+            result[r, :] = tile_map[z][:, ax_j]
+    return result
+
+
+def _write_sagittal_tile(annotation_id, tx, ty, x_frame, nx, ny, nz, ph, incoming):
+    """Write a sagittal tile's label data back into the canonical axial tiles."""
+    import numpy as np
+    T = _SEG_TILE_SIZE
+    x_vox = max(0, min(x_frame + 1, nx - 1))
+    ax_tx = (nx - 1 - x_vox) // T
+    ax_j  = (nx - 1 - x_vox) % T
+    ax_ty = tx
+
+    row_abs   = ty * T + np.arange(T)
+    z_vox_arr = np.array([_z_vox_for_row(int(r), nz, ph) for r in row_abs])
+    unique_z  = np.unique(z_vox_arr)
+
+    tiles = SegmentationTile.objects.filter(
+        annotation_id=annotation_id, level=0,
+        tile_x=ax_tx, tile_y=ax_ty, frame__in=unique_z.tolist())
+    tile_map = {t.frame: _seg_bytes_to_array(t.data) for t in tiles}
+
+    z_data = {}
+    for r in range(T):
+        z = int(z_vox_arr[r])
+        col = incoming[r, :]  # 256 y-values for this row/z
+        z_data[z] = np.maximum(z_data[z], col) if z in z_data else col.copy()
+
+    for z, col_data in z_data.items():
+        arr = tile_map.get(z, np.zeros((T, T), dtype=np.uint8)).copy()
+        arr[:, ax_j] = col_data
+        _save_axial_tile(annotation_id, ax_tx, ax_ty, z, arr)
+
+
+@login_required
+def segmentation_tile(request, annotation_id, level, tile_x, tile_y):
+    """GET  → return tile PNG (204 if tile is empty)
+       PUT  → store tile; non-axial planes write through to axial storage
+       DELETE → remove axial tile (no-op for derived planes)
+
+    `level` is the MPR plane index: 0=axial, 1=coronal, 2=sagittal.
+    All labels are stored exclusively as axial (level=0) tiles; coronal and
+    sagittal tiles are derived on-the-fly via coordinate remapping.
+
+    For non-axial planes the client must pass `ph` (physical pixel height of
+    the rendered plane image) so that the z-axis scaling can be applied.
+    """
+    import numpy as np
+    from PIL import Image as PILImage
+
+    frame  = int(request.GET.get('frame', 0))
+    plane  = int(level)
+    tile_x = int(tile_x)
+    tile_y = int(tile_y)
+
+    if request.method == 'GET':
+        annotation, err = _get_segmentation_annotation(annotation_id, request.user)
+        if err:
+            return err
+
+        if plane == 0:
+            # Axial: direct lookup.
+            try:
+                tile = SegmentationTile.objects.get(
+                    annotation_id=annotation_id,
+                    level=0, tile_x=tile_x, tile_y=tile_y, frame=frame)
+            except SegmentationTile.DoesNotExist:
+                return HttpResponse(status=204)
+            return HttpResponse(bytes(tile.data), content_type='image/png')
+
+        # Coronal / sagittal: derive from axial tiles.
+        img   = annotation.image
+        nx, ny, nz = img.width, img.height, img.frames
+        # ph = physical pixel height of the rendered plane; defaults to nz
+        # (correct for isotropic data; client always sends the real value via &ph=).
+        ph    = int(request.GET.get('ph', nz))
+        # nf = number of slices along the normal axis of this plane (voxel count).
+        # For coronal: ny_vox (may differ from ny=img.height when sy != sx).
+        # Client sends &nf= from exactCurrentPlaneNFrames; 0 means not provided.
+        nf    = int(request.GET.get('nf', 0))
+
+        if plane == 1:
+            arr = _build_coronal_tile(annotation_id, tile_x, tile_y, frame, ny, nz, ph,
+                                      ny_vox=nf if nf > 0 else None)
+        else:
+            arr = _build_sagittal_tile(annotation_id, tile_x, tile_y, frame, nx, ny, nz, ph)
+
+        if not arr.any():
+            return HttpResponse(status=204)
+        return HttpResponse(_array_to_png(arr), content_type='image/png')
+
+    elif request.method == 'PUT':
+        annotation, err = _get_segmentation_annotation(
+            annotation_id, request.user, require_edit=True)
+        if err:
+            return err
+
+        incoming_bytes = request.body
+        if not incoming_bytes:
+            return HttpResponse('Empty body.', status=400)
+
+        try:
+            incoming_img = PILImage.open(io.BytesIO(incoming_bytes)).convert('RGB')
+        except Exception:
+            return HttpResponse('Could not decode PNG.', status=400)
+
+        # Threshold red channel at 127 → binary 0/1 array.
+        incoming = (np.array(incoming_img, dtype=np.uint8)[:, :, 0] > 127).astype(np.uint8)
+
+        if plane == 0:
+            # Axial: store directly.
+            mask = incoming * 255
+            buf  = io.BytesIO()
+            PILImage.fromarray(mask, mode='L').save(buf, format='PNG')
+            SegmentationTile.objects.update_or_create(
+                annotation_id=annotation_id,
+                level=0, tile_x=tile_x, tile_y=tile_y, frame=frame,
+                defaults={'data': buf.getvalue()})
+            return HttpResponse(status=204)
+
+        # Coronal / sagittal: write through to axial tiles.
+        img   = annotation.image
+        nx, ny, nz = img.width, img.height, img.frames
+        ph    = int(request.GET.get('ph', nz))
+        nf    = int(request.GET.get('nf', 0))
+
+        if plane == 1:
+            _write_coronal_tile(annotation_id, tile_x, tile_y, frame, ny, nz, ph, incoming,
+                                ny_vox=nf if nf > 0 else None)
+        else:
+            _write_sagittal_tile(annotation_id, tile_x, tile_y, frame, nx, ny, nz, ph, incoming)
+        return HttpResponse(status=204)
+
+    elif request.method == 'DELETE':
+        annotation, err = _get_segmentation_annotation(
+            annotation_id, request.user, require_edit=True)
+        if err:
+            return err
+
+        if plane == 0:
+            SegmentationTile.objects.filter(
+                annotation_id=annotation_id,
+                level=0, tile_x=tile_x, tile_y=tile_y, frame=frame).delete()
+        # Non-axial DELETE is a no-op: the data lives in axial tiles.
+        return HttpResponse(status=204)
+
+    return HttpResponse(status=405)

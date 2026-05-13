@@ -71,6 +71,20 @@ The **⊞** button opens a 2×2 grid layout with all three planes simultaneously
 
 Clicking in any plane moves the crosshair in the other two planes, allowing linked navigation through the volume. The info bar shows voxel indices and millimetre coordinates for the current crosshair position.
 
+### 3D Segmentation
+
+Segmentation annotations (pixel-level painting) are fully supported for NIfTI volumes across all three planes.
+
+**How it works:**
+
+- All segmentation data is stored as **axial tiles**. Coronal and sagittal views are derived on the fly from the stored axial data — no duplicate storage, and cross-plane consistency is automatic.
+- A segmentation drawn in the axial plane is immediately visible in the coronal and sagittal planes at the corresponding position, and vice versa.
+- The annotation must be a *Segmentation* vector type (type 8). Select it in the annotation type panel, then use the brush, eraser, magic wand, or fill tools to paint directly on the slice.
+
+**Navigation tip:** after drawing in one plane, switch to another plane and scroll the frame slider to the anatomical position where you painted. The 3-Axis mode (⊞) is the most convenient way to confirm cross-plane consistency because all three planes update together.
+
+**Anisotropic volumes:** EXACT correctly handles non-isotropic voxel spacings (e.g. thick-slice CT/MRI where the through-plane resolution is coarser than the in-plane resolution). Tile coordinates are scaled by the actual voxel dimensions, so the displayed segmentation aligns with the underlying anatomy in every plane.
+
 ### Coordinate system
 
 NIfTI volumes are reoriented to **RAS+** (Right–Anterior–Superior) at load time using nibabel's `as_closest_canonical`. This means:
