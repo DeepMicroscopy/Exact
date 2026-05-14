@@ -759,6 +759,28 @@
         var allBtnIds    = Object.keys(RAIL_MAP);
         var allDrawerIds = Object.values(RAIL_MAP);
 
+        var annoShell = document.querySelector('.annotator-shell');
+
+        function notifyOsdResize() {
+            setTimeout(function () {
+                var v = window.exactOSDViewer;
+                if (v && v.viewport) {
+                    v.viewport.resize(new OpenSeadragon.Point(v.container.clientWidth, v.container.clientHeight));
+                    v.viewport.applyConstraints();
+                    v.forceRedraw();
+                }
+            }, 240);
+        }
+
+        function setDrawerOpen(open) {
+            if (open) {
+                annoShell.classList.add('shell-drawer-open');
+            } else {
+                annoShell.classList.remove('shell-drawer-open');
+            }
+            notifyOsdResize();
+        }
+
         function closeAllDrawers() {
             allDrawerIds.forEach(function (id) {
                 var el = document.getElementById(id);
@@ -769,8 +791,10 @@
                 if (el) el.classList.remove('rail-active');
             });
             document.getElementById('annoBackdrop').classList.remove('active');
+            setDrawerOpen(false);
         }
         window._closeAllDrawers = closeAllDrawers;
+        window.setDrawerOpen = setDrawerOpen;
 
         allBtnIds.forEach(function (btnId) {
             var btn = document.getElementById(btnId);
@@ -784,6 +808,7 @@
                     drawer.classList.add('drawer-open');
                     btn.classList.add('rail-active');
                     document.getElementById('annoBackdrop').classList.add('active');
+                    setDrawerOpen(true);
                 }
             });
         });
@@ -962,6 +987,7 @@
         drawer.classList.add('drawer-open');
         document.getElementById('railBtnImages').classList.add('rail-active');
         document.getElementById('annoBackdrop').classList.add('active');
+        if (window.setDrawerOpen) window.setDrawerOpen(true);
       });
     }
   });
