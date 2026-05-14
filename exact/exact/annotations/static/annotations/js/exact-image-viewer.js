@@ -491,6 +491,8 @@ class EXACTViewer {
             var opacity = event.opacity;
             this.userData.overlaySlider.setValue(opacity);
             this.userData.updateOverlayRegImageSlider(opacity);
+            var lbl = document.getElementById('overlayValLabel');
+            if (lbl) lbl.textContent = opacity + '%';
         }, this);
 
 
