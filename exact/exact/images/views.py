@@ -228,6 +228,58 @@ def team_imagesets_api(request, team_id):
     return JsonResponse(result, safe=False)
 
 
+@login_required
+def team_statistics_api(request, team_id):
+    """Return storage, file-type and annotation-type statistics for a team."""
+    team = get_object_or_404(Team, id=team_id, members=request.user)
+
+    imagesets = ImageSet.objects.filter(team=team).prefetch_related('images')
+
+    total_bytes = 0
+    ext_stats = {}
+    total_images = 0
+
+    for imageset in imagesets:
+        for img in imageset.images.all():
+            total_images += 1
+            suffix = os.path.splitext(img.name)[1].lower() or '(none)'
+            try:
+                size = os.path.getsize(img.original_path())
+            except OSError:
+                size = 0
+            total_bytes += size
+            if suffix not in ext_stats:
+                ext_stats[suffix] = {'count': 0, 'bytes': 0}
+            ext_stats[suffix]['count'] += 1
+            ext_stats[suffix]['bytes'] += size
+
+    from exact.annotations.models import Annotation
+    anno_qs = (
+        Annotation.objects
+        .filter(image__image_set__team=team, deleted=False)
+        .values('annotation_type__name', 'annotation_type__color_code')
+        .annotate(count=Count('id'))
+        .order_by('-count')
+    )
+
+    return JsonResponse({
+        'storage_gb': round(total_bytes / (1024 ** 3), 3),
+        'total_images': total_images,
+        'total_annotations': sum(a['count'] for a in anno_qs),
+        'extensions': sorted(
+            [{'ext': k, 'count': v['count'], 'size_gb': round(v['bytes'] / (1024 ** 3), 3)}
+             for k, v in ext_stats.items()],
+            key=lambda x: -x['size_gb']
+        ),
+        'annotation_types': [
+            {'name': a['annotation_type__name'],
+             'color': a['annotation_type__color_code'],
+             'count': a['count']}
+            for a in anno_qs
+        ],
+    })
+
+
 @api_view(['POST'])
 def upload_image(request, imageset_id):
     imageset = get_object_or_404(ImageSet, id=imageset_id)

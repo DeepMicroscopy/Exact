@@ -2,6 +2,7 @@
 <script type="text/javascript" src="{% static 'scripts/jquery-3.2.1.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'scripts/bootstrap.bundle.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'annotations/js/openseadragon.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'scripts/chart.umd.min.js' %}"></script>
 {% endblock taggerimports %}
  {% block bodyblock %}
 
@@ -54,6 +55,16 @@
                                     <div class="tab-pane fade" id="v-pills-{{team.id}}" role="tabpanel" aria-labelledby="v-pills-{{team.id}}-tab" data-team-id="{{team.id}}">
                                 {% endif %}
                                     <div class="card">
+                                        <div class="card-header d-flex justify-content-between align-items-center" style="padding:8px 12px;">
+                                            <span class="font-weight-bold" style="font-size:.9rem;">{{ team.name }}</span>
+                                            <button class="btn btn-sm btn-outline-secondary stats-btn"
+                                                    data-team-id="{{ team.id }}"
+                                                    data-team-name="{{ team.name }}"
+                                                    title="Team statistics"
+                                                    style="font-size:.78rem;">
+                                                <i class="fa fa-bar-chart"></i> Statistics
+                                            </button>
+                                        </div>
                                         <div class="card-body">
                                             <div class="row imageset-container" id="imagesets-{{team.id}}">
                                                 <div class="imageset-loading" style="padding:20px;color:#888;">
@@ -75,14 +86,225 @@
       </div>
 </div>
 
+<!-- ── Team Statistics Modal ── -->
+<div class="modal fade" id="teamStatsModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-xl" role="document">
+    <div class="modal-content" style="background:#1e1e26;color:#ddd;border:1px solid #333;">
+      <div class="modal-header" style="border-bottom:1px solid #333;">
+        <h5 class="modal-title">
+          <i class="fa fa-bar-chart" style="color:#5c6af6;margin-right:8px;"></i>
+          Team Statistics: <strong id="statsTeamName"></strong>
+        </h5>
+        <button type="button" class="close" data-dismiss="modal" style="color:#aaa;">&times;</button>
+      </div>
+      <div class="modal-body" style="min-height:340px;">
+
+        <!-- Loading -->
+        <div id="statsLoading" class="text-center py-5">
+          <div class="spinner-border" style="color:#5c6af6;width:2.5rem;height:2.5rem;" role="status"></div>
+          <div class="mt-3" style="color:#888;">Calculating statistics…</div>
+        </div>
+
+        <!-- Main content -->
+        <div id="statsContent" style="display:none;">
+          <!-- Summary cards -->
+          <div class="row mb-4">
+            <div class="col-4">
+              <div style="background:#26263a;border-radius:10px;padding:18px 12px;text-align:center;border:1px solid #333;">
+                <div style="font-size:2rem;font-weight:700;color:#818cf8;" id="statImages">–</div>
+                <div style="font-size:.75rem;color:#888;margin-top:4px;">Images</div>
+              </div>
+            </div>
+            <div class="col-4">
+              <div style="background:#26263a;border-radius:10px;padding:18px 12px;text-align:center;border:1px solid #333;">
+                <div style="font-size:2rem;font-weight:700;color:#818cf8;" id="statStorage">–</div>
+                <div style="font-size:.75rem;color:#888;margin-top:4px;">Storage</div>
+              </div>
+            </div>
+            <div class="col-4">
+              <div style="background:#26263a;border-radius:10px;padding:18px 12px;text-align:center;border:1px solid #333;">
+                <div style="font-size:2rem;font-weight:700;color:#818cf8;" id="statAnnotations">–</div>
+                <div style="font-size:.75rem;color:#888;margin-top:4px;">Annotations</div>
+              </div>
+            </div>
+          </div>
+          <!-- Charts row -->
+          <div class="row">
+            <div class="col-md-4">
+              <h6 style="font-size:.78rem;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">
+                Storage by file type
+              </h6>
+              <div style="position:relative;height:260px;">
+                <canvas id="extChart"></canvas>
+              </div>
+            </div>
+            <div class="col-md-8">
+              <h6 style="font-size:.78rem;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">
+                Annotations by type
+              </h6>
+              <div style="position:relative;" id="annoChartWrap">
+                <canvas id="annoChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty state -->
+        <div id="statsEmpty" style="display:none;" class="text-center py-5">
+          <i class="fa fa-inbox fa-2x" style="color:#444;"></i>
+          <div class="mt-2" style="color:#666;">No data found for this team.</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
     var STATIC_ROOT = '{% static "" %}';
     var VIEW_IMAGESET_URL = '{% url "images:view_imageset" 0 %}'.replace('/0/', '/');
     var CREATE_IMAGESET_URL = '{% url "images:create_imageset" %}';
     var TEAM_IMAGESETS_URL = '/images/api/team/';
+    var TEAM_STATS_URL     = '/images/api/team/';
 
     var loadedTeams = new Set();
 
+    // ── Chart instances (destroyed on re-open) ──────────────────────
+    var _extChart  = null;
+    var _annoChart = null;
+
+    // ── Chart.js defaults for dark theme ───────────────────────────
+    Chart.defaults.color = '#aaa';
+    Chart.defaults.borderColor = '#333';
+
+    // Soft palette for file-type pie (cycles if more than 12 types)
+    var EXT_PALETTE = [
+        '#5c6af6','#818cf8','#4ade80','#facc15','#f87171',
+        '#38bdf8','#fb923c','#a78bfa','#34d399','#f472b6',
+        '#60a5fa','#e879f9'
+    ];
+
+    function extColor(i) { return EXT_PALETTE[i % EXT_PALETTE.length]; }
+
+    function formatGB(gb) {
+        if (gb >= 1)   return gb.toFixed(2) + ' GB';
+        if (gb >= 0.001) return (gb * 1024).toFixed(1) + ' MB';
+        return (gb * 1024 * 1024).toFixed(0) + ' KB';
+    }
+
+    function showTeamStats(teamId, teamName) {
+        document.getElementById('statsTeamName').textContent = teamName;
+        document.getElementById('statsLoading').style.display  = '';
+        document.getElementById('statsContent').style.display  = 'none';
+        document.getElementById('statsEmpty').style.display    = 'none';
+
+        // Destroy previous chart instances
+        if (_extChart)  { _extChart.destroy();  _extChart  = null; }
+        if (_annoChart) { _annoChart.destroy(); _annoChart = null; }
+
+        $('#teamStatsModal').modal('show');
+
+        $.getJSON(TEAM_STATS_URL + teamId + '/statistics/', function(d) {
+            document.getElementById('statsLoading').style.display = 'none';
+
+            if (!d.total_images && !d.total_annotations) {
+                document.getElementById('statsEmpty').style.display = '';
+                return;
+            }
+
+            document.getElementById('statImages').textContent      = d.total_images.toLocaleString();
+            document.getElementById('statStorage').textContent     = formatGB(d.storage_gb);
+            document.getElementById('statAnnotations').textContent = d.total_annotations.toLocaleString();
+
+            // ── Pie chart: storage by file type ──────────────────────
+            var extCtx = document.getElementById('extChart').getContext('2d');
+            _extChart = new Chart(extCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: d.extensions.map(function(e) { return e.ext; }),
+                    datasets: [{
+                        data:            d.extensions.map(function(e) { return e.size_gb; }),
+                        backgroundColor: d.extensions.map(function(_, i) { return extColor(i); }),
+                        borderColor:     '#1e1e26',
+                        borderWidth:     2,
+                        hoverOffset:     8,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { animateRotate: true, duration: 700 },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { boxWidth: 12, font: { size: 11 }, padding: 8 }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    var e = d.extensions[ctx.dataIndex];
+                                    return ' ' + e.ext + ': ' + formatGB(e.size_gb) + ' (' + e.count + ' file' + (e.count !== 1 ? 's' : '') + ')';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // ── Bar chart: annotations by type ───────────────────────
+            var annoCtx = document.getElementById('annoChart').getContext('2d');
+            var barH = Math.max(200, d.annotation_types.length * 32);
+            document.getElementById('annoChartWrap').style.height = barH + 'px';
+
+            _annoChart = new Chart(annoCtx, {
+                type: 'bar',
+                data: {
+                    labels: d.annotation_types.map(function(a) { return a.name; }),
+                    datasets: [{
+                        label: 'Count',
+                        data:            d.annotation_types.map(function(a) { return a.count; }),
+                        backgroundColor: d.annotation_types.map(function(a) { return a.color + 'cc'; }),
+                        borderColor:     d.annotation_types.map(function(a) { return a.color; }),
+                        borderWidth: 1,
+                        borderRadius: 4,
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 600, easing: 'easeOutQuart' },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    return ' ' + ctx.parsed.x.toLocaleString() + ' annotations';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid:  { color: '#2a2a3a' },
+                            ticks: { color: '#888', font: { size: 11 } }
+                        },
+                        y: {
+                            grid:  { display: false },
+                            ticks: { color: '#ccc', font: { size: 12 } }
+                        }
+                    }
+                }
+            });
+
+            document.getElementById('statsContent').style.display = '';
+        }).fail(function() {
+            document.getElementById('statsLoading').style.display = 'none';
+            document.getElementById('statsEmpty').style.display   = '';
+        });
+    }
+
+    // ── Imageset card helpers ───────────────────────────────────────
     function prioSymbol(priority) {
         if (priority === -1)
             return '<span class="glyphicon glyphicon-download" data-toggle="tooltip" data-placement="right" title="Low labeling priority"></span>';
@@ -165,11 +387,16 @@
             loadTeamImagesets(activePane.data('team-id'));
         }
 
-        // Load on tab switch (click delegation is reliable across Bootstrap versions)
+        // Load on tab switch
         $(document).on('click', '[data-toggle="pill"]', function() {
             var target = $(this).attr('href');
             var teamId = $(target).data('team-id');
             if (teamId) loadTeamImagesets(teamId);
+        });
+
+        // Statistics button
+        $(document).on('click', '.stats-btn', function() {
+            showTeamStats($(this).data('team-id'), $(this).data('team-name'));
         });
 
         $('#newTeamButton').on('click', function() {
