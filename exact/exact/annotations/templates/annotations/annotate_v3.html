@@ -150,6 +150,17 @@
         {% endfor %}
       </div>
     </div>
+    {% if 'edit_set' in imageset_perms and not imageset_lock %}
+    <input type="file" id="imgDropInput" accept="image/*" multiple style="display:none">
+    <div class="drawer-drop-overlay" id="imgDropOverlay">
+      <img src="{% static 'annotations/image_upload.svg' %}" alt="Upload">
+      <span>Drop images to upload</span>
+    </div>
+    <div class="drawer-upload-status" id="imgUploadStatus" style="display:none">
+      <div class="drawer-upload-progress" id="imgUploadProgress"></div>
+      <span id="imgUploadMsg"></span>
+    </div>
+    {% endif %}
     <div class="drawer-footer drawer-nav-btns">
       <button type="button" class="annotate_button btn btn-sm btn-primary" id="back_button"
               data-toggle="tooltip" title="back (q)">
@@ -759,6 +770,7 @@
             });
             document.getElementById('annoBackdrop').classList.remove('active');
         }
+        window._closeAllDrawers = closeAllDrawers;
 
         allBtnIds.forEach(function (btnId) {
             var btn = document.getElementById(btnId);
@@ -917,5 +929,144 @@
     });
 })();
 </script>
+
+{% if 'edit_set' in imageset_perms and not imageset_lock %}
+<script>
+(function () {
+  var drawer   = document.getElementById('drawerImages');
+  var overlay  = document.getElementById('imgDropOverlay');
+  var input    = document.getElementById('imgDropInput');
+  var status   = document.getElementById('imgUploadStatus');
+  var bar      = document.getElementById('imgUploadProgress');
+  var msg      = document.getElementById('imgUploadMsg');
+  if (!drawer || !overlay) return;
+
+  var csrf      = (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '';
+  var uploadUrl = '{% url "images:upload_image" selected_image.image_set.id %}';
+
+  // Auto-open the image-list drawer whenever a file drag enters the page.
+  // fileDragActive prevents repeated opens as dragenter fires per-element.
+  var fileDragActive = false;
+  var autoOpened = false;
+  document.addEventListener('dragenter', function (e) {
+    if (fileDragActive) return;
+    if (!e.dataTransfer) return;
+    var types = Array.from(e.dataTransfer.types || []);
+    // 'Files' (standard) or 'public.file-url' (Safari/macOS)
+    if (!types.some(function (t) { return t === 'Files' || t === 'public.file-url'; })) return;
+    fileDragActive = true;
+    if (!drawer.classList.contains('drawer-open')) {
+      autoOpened = true;
+      if (window._closeAllDrawers) window._closeAllDrawers();
+      requestAnimationFrame(function () {
+        drawer.classList.add('drawer-open');
+        document.getElementById('railBtnImages').classList.add('rail-active');
+        document.getElementById('annoBackdrop').classList.add('active');
+      });
+    }
+  });
+  // Close auto-opened drawer when drag leaves the browser window.
+  document.addEventListener('dragleave', function (e) {
+    if (e.relatedTarget === null) {
+      fileDragActive = false;
+      if (autoOpened) {
+        if (window._closeAllDrawers) window._closeAllDrawers();
+        autoOpened = false;
+      }
+    }
+  });
+  document.addEventListener('drop', function (e) {
+    fileDragActive = false;
+    if (autoOpened && !drawer.contains(e.target)) {
+      if (window._closeAllDrawers) window._closeAllDrawers();
+    }
+    autoOpened = false;
+  });
+
+  // dragCount handles the enter/leave flicker caused by child elements
+  var dragCount = 0;
+
+  drawer.addEventListener('dragenter', function (e) {
+    e.preventDefault();
+    dragCount++;
+    overlay.classList.add('visible');
+  });
+  drawer.addEventListener('dragover', function (e) {
+    e.preventDefault();
+  });
+  drawer.addEventListener('dragleave', function (e) {
+    dragCount--;
+    if (dragCount <= 0) { dragCount = 0; overlay.classList.remove('visible'); }
+  });
+  drawer.addEventListener('drop', function (e) {
+    e.preventDefault();
+    dragCount = 0;
+    overlay.classList.remove('visible');
+    startUpload(e.dataTransfer.files);
+  });
+
+  input.addEventListener('change', function () { startUpload(this.files); this.value = ''; });
+
+  function startUpload(files) {
+    if (!files || !files.length) return;
+    var list  = Array.from(files);
+    var total = list.length;
+    var done  = 0;
+
+    status.style.display = '';
+    bar.style.width = '0%';
+    msg.textContent = 'Uploading 0 / ' + total + '…';
+
+    function uploadNext() {
+      var file = list[done];
+      var fd   = new FormData();
+      fd.append('files[]', file);
+      fd.append('csrfmiddlewaretoken', csrf);
+
+      var lastId = null;
+
+      var xhr = new XMLHttpRequest();
+      xhr.upload.addEventListener('progress', function (e) {
+        if (e.lengthComputable) {
+          bar.style.width = Math.round((done + e.loaded / e.total) / total * 100) + '%';
+        }
+      });
+      xhr.addEventListener('load', function () {
+        try {
+          var resp = JSON.parse(xhr.responseText);
+          if (resp.files && resp.files[0] && resp.files[0].id > 0) {
+            lastId = resp.files[0].id;
+          }
+        } catch (_) {}
+        done++;
+        bar.style.width = Math.round(done / total * 100) + '%';
+        msg.textContent = 'Uploading ' + done + ' / ' + total + '…';
+        if (done >= total) {
+          msg.textContent = total + ' file' + (total > 1 ? 's' : '') + ' uploaded…';
+          setTimeout(function () {
+            if (lastId) {
+              window.location.href = window.location.pathname.replace(/\/\d+\/$/, '/' + lastId + '/');
+            } else {
+              location.reload();
+            }
+          }, 600);
+        } else {
+          uploadNext();
+        }
+      });
+      xhr.addEventListener('error', function () {
+        msg.textContent = 'Upload failed: ' + file.name;
+        done++;
+        uploadNext();
+      });
+      xhr.open('POST', uploadUrl);
+      xhr.send(fd);
+    }
+
+    uploadNext();
+  }
+})();
+</script>
+{% endif %}
 
 {% endblock %}
