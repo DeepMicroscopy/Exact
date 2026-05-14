@@ -490,10 +490,17 @@
     <!-- Zoom / overlay / registration controls -->
     <div class="anno-viewer-controls">
       <div>
-        <div id="zoomSlider"    style="width:20vw"></div>
-        <div style="width:5vw"></div>
-        <div id="overlaySlider" style="width:20vw"></div>
-        <div style="width:18vw;text-align:right">
+        <div class="vc-slider-wrap">
+          <span class="vc-label">Zoom</span>
+          <div id="zoomSlider"></div>
+          <span class="vc-value" id="zoomValLabel"></span>
+        </div>
+        <div class="vc-slider-wrap">
+          <span class="vc-label">Opacity</span>
+          <div id="overlaySlider"></div>
+          <span class="vc-value" id="overlayValLabel">100%</span>
+        </div>
+        <div>
           <select id="registration_selector" title="Select registration" style="display:none;max-width:100%">
             <option value="">-- No registration --</option>
           </select>

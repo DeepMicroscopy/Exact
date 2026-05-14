@@ -83,11 +83,38 @@
 .anno-viewer-controls {
   flex: 0 0 auto;
   color: var(--ad-muted);
-  display: table;
-  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 8px 6px 16px;
 }
-.anno-viewer-controls > div        { display: table-row; }
-.anno-viewer-controls > div > div  { display: table-cell; }
+.anno-viewer-controls > div { display: contents; }
+/* Slider + label wrapper */
+.vc-slider-wrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1 1 0;
+  min-width: 100px;
+  max-width: 260px;
+}
+.vc-slider-wrap #zoomSlider,
+.vc-slider-wrap #overlaySlider { flex: 1 1 0; min-width: 0; }
+.vc-label {
+  font-size: .68rem;
+  color: var(--ad-muted);
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+.vc-value {
+  font-size: .68rem;
+  color: var(--ad-text);
+  white-space: nowrap;
+  min-width: 30px;
+  text-align: right;
+  flex: 0 0 auto;
+}
+#registration_selector, #registrationField { margin-left: auto; }
 
 /* OSD canvas area */
 .anno-osd-area {
@@ -110,6 +137,89 @@
   align-items: center;
   gap: 8px;
   padding: 3px 0;
+}
+
+/* ── Bootstrap Slider: dark compact theme ── */
+.slider.slider-horizontal {
+  width: 100%;
+  height: 28px;
+}
+.slider-track {
+  height: 3px !important;
+  background: var(--ad-border) !important;
+  box-shadow: none !important;
+  border-radius: 2px !important;
+  margin-top: -1px !important;
+}
+.slider-selection {
+  background: var(--ad-accent) !important;
+  box-shadow: none !important;
+  border-radius: 2px !important;
+}
+.slider-track-low, .slider-track-high { background: transparent !important; }
+.slider-handle {
+  width: 13px !important;
+  height: 13px !important;
+  background: var(--ad-acc2) !important;
+  border: none !important;
+  box-shadow: 0 0 0 3px rgba(92,106,246,.25), 0 2px 5px rgba(0,0,0,.5) !important;
+  margin-top: -5px !important;
+  top: 50% !important;
+}
+.slider-handle:hover, .slider-handle:focus {
+  background: #fff !important;
+  box-shadow: 0 0 0 4px rgba(92,106,246,.35), 0 2px 5px rgba(0,0,0,.5) !important;
+}
+/* Hide tick marks; keep snapping */
+.slider-tick          { background: transparent !important; box-shadow: none !important; }
+.slider-tick.in-selection { background: transparent !important; }
+/* Hide tick label row entirely (overlaySlider no longer uses labels, others keep theirs) */
+.slider-tick-label-container { display: none !important; }
+
+/* ── Float-panel range inputs ── */
+.fp-adv-sliders input[type="range"],
+#frameSliderDiv input[type="range"],
+.custom-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 3px;
+  background: var(--ad-border);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+  margin: 6px 0;
+}
+.fp-adv-sliders input[type="range"]::-webkit-slider-thumb,
+#frameSliderDiv input[type="range"]::-webkit-slider-thumb,
+.custom-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--ad-acc2);
+  box-shadow: 0 0 0 3px rgba(92,106,246,.25);
+  cursor: pointer;
+  transition: background .12s, box-shadow .12s;
+}
+.fp-adv-sliders input[type="range"]::-webkit-slider-thumb:hover,
+.custom-range::-webkit-slider-thumb:hover {
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(92,106,246,.35);
+}
+.fp-adv-sliders input[type="range"]::-moz-range-thumb,
+.custom-range::-moz-range-thumb {
+  width: 13px; height: 13px;
+  border-radius: 50%;
+  background: var(--ad-acc2);
+  border: none;
+  box-shadow: 0 0 0 3px rgba(92,106,246,.25);
+  cursor: pointer;
+}
+.fp-adv-sliders input[type="range"]::-moz-range-track,
+.custom-range::-moz-range-track {
+  height: 3px;
+  background: var(--ad-border);
+  border-radius: 2px;
 }
 
 /* Misc viewer decorations */
@@ -336,7 +446,12 @@
   padding: 8px 10px;
 }
 
-/* Image list */
+/* Image list — override styles_v2.css max-height so the drawer-body handles scrolling */
+#drawerImages #image_list {
+  max-height: none !important;
+  overflow-y: visible !important;
+}
+
 .drawer-img-filter { padding: 8px 10px; border-bottom: 1px solid var(--ad-border); }
 .drawer-img-filter .form-control,
 .drawer-img-filter select {
