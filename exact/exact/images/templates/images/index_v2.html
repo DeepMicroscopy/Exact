@@ -132,7 +132,7 @@
           <div class="row">
             <div class="col-md-4">
               <h6 style="font-size:.78rem;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">
-                Storage by file type
+                Files by type
               </h6>
               <div style="position:relative;height:260px;">
                 <canvas id="extChart"></canvas>
@@ -216,14 +216,14 @@
             document.getElementById('statStorage').textContent     = formatGB(d.storage_gb);
             document.getElementById('statAnnotations').textContent = d.total_annotations.toLocaleString();
 
-            // ── Pie chart: storage by file type ──────────────────────
+            // ── Doughnut chart: file count by type ───────────────────
             var extCtx = document.getElementById('extChart').getContext('2d');
             _extChart = new Chart(extCtx, {
                 type: 'doughnut',
                 data: {
                     labels: d.extensions.map(function(e) { return e.ext; }),
                     datasets: [{
-                        data:            d.extensions.map(function(e) { return e.size_gb; }),
+                        data:            d.extensions.map(function(e) { return e.count; }),
                         backgroundColor: d.extensions.map(function(_, i) { return extColor(i); }),
                         borderColor:     '#1e1e26',
                         borderWidth:     2,
@@ -243,7 +243,7 @@
                             callbacks: {
                                 label: function(ctx) {
                                     var e = d.extensions[ctx.dataIndex];
-                                    return ' ' + e.ext + ': ' + formatGB(e.size_gb) + ' (' + e.count + ' file' + (e.count !== 1 ? 's' : '') + ')';
+                                    return ' ' + e.ext + ': ' + e.count + ' file' + (e.count !== 1 ? 's' : '');
                                 }
                             }
                         }

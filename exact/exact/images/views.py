@@ -240,6 +240,16 @@ def team_statistics_api(request, team_id):
     total_images = 0
 
     for imageset in imagesets:
+        # Count total disk usage the same way as the storage overview:
+        # walk the whole imageset folder (includes tiles, thumbnails, caches).
+        root = imageset.root_path()
+        for dirpath, _dirnames, filenames in os.walk(root):
+            for fname in filenames:
+                fp = os.path.join(dirpath, fname)
+                if os.path.isfile(fp) and not os.path.islink(fp):
+                    total_bytes += os.path.getsize(fp)
+
+        # Extension breakdown counts only original image files.
         for img in imageset.images.all():
             total_images += 1
             suffix = os.path.splitext(img.name)[1].lower() or '(none)'
@@ -247,7 +257,6 @@ def team_statistics_api(request, team_id):
                 size = os.path.getsize(img.original_path())
             except OSError:
                 size = 0
-            total_bytes += size
             if suffix not in ext_stats:
                 ext_stats[suffix] = {'count': 0, 'bytes': 0}
             ext_stats[suffix]['count'] += 1
@@ -269,7 +278,7 @@ def team_statistics_api(request, team_id):
         'extensions': sorted(
             [{'ext': k, 'count': v['count'], 'size_gb': round(v['bytes'] / (1024 ** 3), 3)}
              for k, v in ext_stats.items()],
-            key=lambda x: -x['size_gb']
+            key=lambda x: -x['count']
         ),
         'annotation_types': [
             {'name': a['annotation_type__name'],
