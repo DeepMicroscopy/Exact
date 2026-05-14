@@ -14,6 +14,7 @@ urlpatterns = [
 
     #endregion
 
+    re_path(r'^manage/$', views.product_management, name='product_management'),
     re_path(r'^products/list/$', views.products, name='products'),
     re_path(r'^products/(\d+)/$', views.product, name='product'),
     re_path(r'^products/create/$', views.create_product, name='create_product'),

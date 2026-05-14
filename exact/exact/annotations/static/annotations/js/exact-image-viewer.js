@@ -476,10 +476,13 @@ class EXACTViewer {
 
         this.overlaySlider = new Slider("#overlaySlider", {
             ticks: [0, 25, 50, 75, 100],
-            ticks_labels: ['0', '25%', '50% Opacity', '75%', '100%'],
-            //tooltip: 'always',
             ticks_snap_bounds: 1,
+            tooltip: 'hide',
             value: 100
+        });
+        var overlayValLabel = document.getElementById('overlayValLabel');
+        this.overlaySlider.on('change', function (e) {
+            if (overlayValLabel) overlayValLabel.textContent = e.newValue + '%';
         });
         this.overlaySlider.on('change', this.updateOverlayRegImageSlider.bind(this));
 
@@ -488,6 +491,8 @@ class EXACTViewer {
             var opacity = event.opacity;
             this.userData.overlaySlider.setValue(opacity);
             this.userData.updateOverlayRegImageSlider(opacity);
+            var lbl = document.getElementById('overlayValLabel');
+            if (lbl) lbl.textContent = opacity + '%';
         }, this);
 
 
@@ -598,9 +603,16 @@ class EXACTViewer {
                 ticks: ticks_to_use,
                 scale: 'logarithmic',
                 ticks_labels: labels_to_use,
-                tooltip: 'always',
+                tooltip: 'hide',
                 ticks_snap_bounds: 1,
                 value: 0
+            });
+            var zoomValLabel = document.getElementById('zoomValLabel');
+            this.gZoomSlider.on('change', function (e) {
+                if (zoomValLabel) {
+                    var idx = ticks_to_use.indexOf(e.newValue);
+                    zoomValLabel.textContent = idx >= 0 ? labels_to_use[idx] : '';
+                }
             });
             this.gZoomSlider.on('change', this.onSliderChanged.bind(this));
         }

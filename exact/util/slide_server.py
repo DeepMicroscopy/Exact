@@ -593,10 +593,11 @@ class PILBytesIO(BytesIO):
 
 def getSlideHandler(path):
         # Determine format of slide to see how to handle it.
+        t = time.time()
         f = open(path,'rb')
         magic_number = {0: f.read(4)}
         candidates=[]
-        print('Magic number:',[hex(x) for x in magic_number[0]])
+        print('T:%.3fs:'%(time.time()-t)+'Magic number:',[hex(x) for x in magic_number[0]])
         for ftype in SupportedFileTypes:
             mnum = magic_number
             if ftype.magic_number_offset not in magic_number:
@@ -606,7 +607,7 @@ def getSlideHandler(path):
             if (magic_number[ftype.magic_number_offset]==ftype.magic_number):
                 candidates.append(ftype)
                 print('Match for file type:', ftype)
-
+        print('T:%.3fs:'%(time.time()-t), 'Looking through all candidates now')
         if (len(candidates)>0):
             for ftype in candidates:
                 if (path.split('.')[-1].lower() in ftype.extensions):
@@ -617,6 +618,7 @@ def getSlideHandler(path):
                     except Exception as e:
                         print('Unable to open file handler. :-( ',e)
                         pass
+        print('T:%.3fs:'%(time.time()-t), 'Now opening openslide')
         
         # as last resort, try openSlide:
         try:
@@ -682,22 +684,46 @@ class PlaneSlideAdapter:
     def get_thumbnail(self, size):
         return self._slide.get_thumbnail(size)
 
-
+import time
 class SlideCache(object):
     def __init__(self, cache_size):
         self.cache_size = cache_size
         self._lock = Lock()
         self._cache = OrderedDict()  # (path, plane) → zDeepZoomGenerator
         self._osr_cache = {}         # path → raw handler, shared across all planes
+        self._load_locks = {}        # path → Lock, held only while that slide is loading
 
     def _get_osr(self, path):
-        """Return the raw slide handler, loading it once and caching it per path."""
+        """Return the raw slide handler, loading it once and caching it per path.
+
+        Uses per-path locks so that:
+        - threads waiting for the same slide queue on that slide's lock only
+        - threads serving cached slides (or loading a different slide) are never blocked
+        """
+        # Fast path: already cached — only a brief global lock for the dict check
         with self._lock:
             if path in self._osr_cache:
                 return self._osr_cache[path]
-        osr = getSlideHandler(path)
-        with self._lock:
-            self._osr_cache[path] = osr
+            # Ensure a per-path load lock exists before releasing the global lock
+            if path not in self._load_locks:
+                self._load_locks[path] = Lock()
+            path_lock = self._load_locks[path]
+
+        # Serialize concurrent loads of the SAME path, but do NOT hold _lock
+        with path_lock:
+            # Re-check: another thread may have finished loading while we waited
+            with self._lock:
+                if path in self._osr_cache:
+                    return self._osr_cache[path]
+
+            t = time.time()
+            osr = getSlideHandler(path)   # slow — lock NOT held globally here
+            print('Loaded slide in %.3fs: %s' % (time.time() - t, path))
+
+            with self._lock:
+                self._osr_cache[path] = osr
+                self._load_locks.pop(path, None)
+
         return osr
 
     def get(self, path, plane=PlaneType.AXIAL):

@@ -61,12 +61,18 @@
             this._preStrokeSnap  = null;
 
             // Tile state
-            this.tileCache      = new Map(); // `${tx}_${ty}` → Uint8Array | null(loading)
+            this.tileCache      = new Map(); // `${tx}_${ty}` → Uint8Array | null(queued/loading)
             this.renderCache    = new Map(); // `${tx}_${ty}` → ImageBitmap (colored, ready to blit)
             this.dirtyTiles     = new Set();
             this.imgTileCache   = new Map(); // `${tx}_${ty}` → ImageBitmap (raw image pixels)
             this._dziMaxLevel   = null;
             this._dziTileSize   = 254;
+
+            // Fetch queue — limits concurrent segmentation tile requests so the
+            // server is not flooded when a large WSI is viewed at low zoom.
+            this._fetchQueue       = []; // {tx, ty, k} not yet started
+            this._activeFetches    = 0;
+            this._maxConcurrentFetches = 4;
 
             this._setupCanvases();
             this._bindViewerEvents();
@@ -293,10 +299,28 @@
             return this.tileCache.get(k);
         }
 
-        async _ensureTile(tx, ty) {
+        // Queue a tile fetch (called from _redraw). Marks the tile as pending
+        // immediately so subsequent redraws won't re-enqueue it.
+        _ensureTile(tx, ty) {
             const k = this._tileKey(tx, ty);
             if (this.tileCache.has(k)) return;
-            this.tileCache.set(k, null);
+            this.tileCache.set(k, null); // mark queued
+            this._fetchQueue.push({ tx, ty, k });
+            this._drainFetchQueue();
+        }
+
+        _drainFetchQueue() {
+            while (this._activeFetches < this._maxConcurrentFetches && this._fetchQueue.length > 0) {
+                const job = this._fetchQueue.shift();
+                this._activeFetches++;
+                this._doFetchTile(job.tx, job.ty, job.k).finally(() => {
+                    this._activeFetches--;
+                    this._drainFetchQueue();
+                });
+            }
+        }
+
+        async _doFetchTile(tx, ty, k) {
             try {
                 const r = await fetch(
                     `/annotations/api/segmentation/${this.annotationId}/tiles/${this.plane}/${tx}/${ty}/?frame=${this.frame}&ph=${this.imageHeight}&nf=${this.nFrames}`,
@@ -317,7 +341,6 @@
                     this._prerenderTile(tx, ty); // draw into displayCanvas immediately
                 }
             } catch (_) { this.tileCache.delete(k); }
-            // No full _redraw() needed — tile was painted directly into displayCanvas.
         }
 
         // ── Display ──────────────────────────────────────────────────────
@@ -391,6 +414,11 @@
                 this._drawCursorShape(dCtx, this._cursorVpX, this._cursorVpY);
             }
 
+            // Drop queued-but-not-started fetches from the previous viewport so
+            // they don't block tiles needed for the current view.
+            this._fetchQueue.forEach(({ k }) => this.tileCache.delete(k));
+            this._fetchQueue = [];
+
             // Trigger tile fetches for newly visible tiles (display canvas will
             // update incrementally as each tile arrives).
             const vp     = this.viewer.viewport;
@@ -399,6 +427,17 @@
                 new OpenSeadragon.Point(bounds.x, bounds.y));
             const brImg  = item.viewportToImageCoordinates(
                 new OpenSeadragon.Point(bounds.x + bounds.width, bounds.y + bounds.height));
+
+            // Hide overlay and skip fetching when zoomed out so far that individual
+            // pixels are invisible — avoids flooding the server with hundreds of
+            // tile requests and prevents unbounded tileCache growth on large WSIs.
+            const MAX_FETCH_PIXELS = 4096;
+            if ((brImg.x - tlImg.x) > MAX_FETCH_PIXELS || (brImg.y - tlImg.y) > MAX_FETCH_PIXELS) {
+                this.displayCanvas.style.display = 'none';
+                return;
+            }
+            this.displayCanvas.style.display = '';
+
             const tx0 = Math.max(0, Math.floor(tlImg.x / TILE_SIZE));
             const ty0 = Math.max(0, Math.floor(tlImg.y / TILE_SIZE));
             const tx1 = Math.min(Math.ceil(this.imageWidth  / TILE_SIZE) - 1,

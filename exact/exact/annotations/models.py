@@ -498,6 +498,10 @@ class AnnotationType(models.Model):
         if vector_type is AnnotationType.VECTOR_TYPE.SEGMENTATION:
             return 'Segmentation'
 
+    @property
+    def vector_type_display(self):
+        return self.get_vector_type_name(self.vector_type) or str(self.vector_type)
+
     def validate_vector(self, vector: Union[dict, None]) -> bool:
         """
         Validate a vector. Returns whether the vector is valid.

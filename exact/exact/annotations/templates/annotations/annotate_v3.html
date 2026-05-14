@@ -1,0 +1,1105 @@
+{% extends 'annotations/base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block additional_annotation_js %}
+<link rel="stylesheet" type="text/css" href="{% static 'annotations/css/bootstrap-slider.min.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'annotations/css/annotator-dark.css' %}">
+
+<script async type="text/javascript" src="{% static 'annotations/js/opencv.js' %}"></script>
+<script type="text/javascript" src="{% static 'scripts/jquery-3.2.1.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'scripts/bootstrap.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/openseadragon.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/openseadragon-guides.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/boundingboxes.js' %}"></script>
+<script async type="text/javascript" src="{% static 'annotations/js/openseadragon-filtering.js' %}"></script>
+<script type="text/javascript" src="{% static 'scripts/notify.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/selection.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/openseadragon-scalebar.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/heatmap.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/openseadragon-heatmapjs-overlay.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/openseadragon-paperjs-overlay.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/paper-full.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/imaginghelper.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/screeningTool.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/exact-sync.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/exact-image-viewer.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/exact-imageset-viewer.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/openseadragon_filtering_viewer.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/searchTool.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/AsthmaAnalysis.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/teamTool.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/processingTool.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/statistics-viewer.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/plugin-handler.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/show-annotation-properties.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/show-image-properties.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/exact-browser-sync.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/exact-quad-tree.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/annotations.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/exact-overlay-opacity.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/bootstrap-slider.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'annotations/js/segmentationTool.js' %}"></script>
+{% endblock additional_annotation_js %}
+
+{% block bodyblock %}
+
+<div class="annotator-shell">
+
+  <!-- ═══════════════════════════════════════════════════════
+       ICON RAIL  (48 px — one icon per tool drawer)
+       ═══════════════════════════════════════════════════════ -->
+  <nav class="anno-rail" id="annoRail">
+
+    <button class="rail-btn" id="railBtnImages" title="Image list">
+      <i class="fa fa-list fa-fw"></i>
+    </button>
+
+    <div class="rail-sep"></div>
+
+    <button class="rail-btn" id="railBtnInfo" title="Annotation &amp; image info">
+      <i class="fa fa-info-circle fa-fw"></i>
+    </button>
+    <button class="rail-btn" id="railBtnSearch" title="Search annotations">
+      <i class="fa fa-search fa-fw"></i>
+    </button>
+    <button class="rail-btn" id="railBtnFilter" title="Image filters">
+      <i class="fa fa-adjust fa-fw"></i>
+    </button>
+    {% if show_processing %}
+    <button class="rail-btn" id="railBtnProcessing" title="Processing plugins">
+      <i class="fa fa-cog fa-fw"></i>
+    </button>
+    {% endif %}
+    {% if annotation_types %}
+    <button class="rail-btn" id="railBtnTeam" title="Team annotations">
+      <i class="fa fa-users fa-fw"></i>
+    </button>
+    {% endif %}
+    {% if HasMediaFiles %}
+    <button class="rail-btn" id="railBtnMedia" title="Media files">
+      <i class="fa fa-headphones fa-fw"></i>
+    </button>
+    {% endif %}
+    <button class="rail-btn" id="railBtnScreening" title="Screening tool">
+      <i class="fa fa-crosshairs fa-fw"></i>
+    </button>
+    {% if asthma %}
+    <button class="rail-btn" id="railBtnAsthma" title="Asthma analysis">
+      <i class="fa fa-heartbeat fa-fw"></i>
+    </button>
+    {% endif %}
+    <button class="rail-btn" id="railBtnSync" title="Browser sync">
+      <i class="fa fa-exchange fa-fw"></i>
+    </button>
+
+    <div class="rail-spacer"></div>
+
+    <button class="rail-btn" id="railBtnThumbs" title="Image thumbnails">
+      <i class="fa fa-th fa-fw"></i>
+    </button>
+
+  </nav>
+
+  <!-- ═══════════════════════════════════════════════════════
+       TOOL DRAWERS  (slide over viewer from rail edge)
+       ═══════════════════════════════════════════════════════ -->
+
+  <!-- Image list -->
+  <aside class="anno-drawer" id="drawerImages">
+    <div class="drawer-title">
+      <a href="{% url 'images:view_imageset' selected_image.image_set.id %}">
+        {{ selected_image.image_set.name }}
+      </a>
+    </div>
+    <div class="drawer-img-filter">
+      <div class="input-group input-group-sm">
+        <select id="filter_images" class="form-control form-control-sm">
+          <option value="All">{% trans 'Show All' %}</option>
+          <option value="Unverified">{% trans 'Show Unverified' %}</option>
+          <option value="Verified">{% trans 'Show Verified' %}</option>
+          <option value="NoAnnotations">{% trans 'No Annotations' %}</option>
+          <option value="ComputerGenerated">{% trans 'Computer Generated' %}</option>
+          {% for annotation_type in annotation_types %}
+          <option value="{{ annotation_type.id }}">{{ annotation_type.name }} ({{annotation_type.product.name}})</option>
+          {% endfor %}
+          {% for annotation_type in global_annotation_types %}
+          <option value="{{ annotation_type.id }}">{{ annotation_type.name }} ({{annotation_type.product.name}})</option>
+          {% endfor %}
+        </select>
+        <span class="input-group-btn">
+          <button class="btn btn-sm btn-primary" id="filter_update_btn">
+            <image src="{% static 'images/search.svg' %}">
+          </button>
+        </span>
+      </div>
+    </div>
+    <div class="drawer-body">
+      <div id="image_list"
+           data-static-file="{% static '' %}"
+           data-static_cdn={{ USE_CDN_WSI }}
+           data-image_set_name="{{ selected_image.image_set.name }}">
+        {% for set_image in set_images %}
+        <a id="annotate_image_link_{{ set_image.id }}"
+           href="{% url 'annotations:annotate' set_image.id %}{% if set_image.defaultFrame > 0 %}?frame={{ set_image.defaultFrame }}{% endif %}{% if filtered is not None %}?selected_annotation_type={{ filtered }}{% endif %}"
+           class="annotate_image_link {% if set_image.id == selected_image.id %}active{% endif %}"
+           data-image_id="{{ set_image.id }}"
+           data-defaultFrame="{{ set_image.defaultFrame }}">
+          {{ set_image.name }}
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% if 'edit_set' in imageset_perms and not imageset_lock %}
+    <input type="file" id="imgDropInput" accept="image/*" multiple style="display:none">
+    <div class="drawer-drop-overlay" id="imgDropOverlay">
+      <img src="{% static 'annotations/image_upload.svg' %}" alt="Upload">
+      <span>Drop images to upload</span>
+    </div>
+    <div class="drawer-upload-status" id="imgUploadStatus" style="display:none">
+      <div class="drawer-upload-progress" id="imgUploadProgress"></div>
+      <span id="imgUploadMsg"></span>
+    </div>
+    {% endif %}
+    <div class="drawer-footer drawer-nav-btns">
+      <button type="button" class="annotate_button btn btn-sm btn-primary" id="back_button"
+              data-toggle="tooltip" title="back (q)">
+        <image src="{% static 'images/backspace.svg' %}">
+      </button>
+      {% if 'delete_images' in imageset_perms and not imageset_lock %}
+      <button type="button" class="btn btn-sm btn-danger" id="deleteImageButton"
+              data-toggle="tooltip" title="delete image">
+        <image src="{% static 'images/trash2.svg' %}">
+      </button>
+      {% endif %}
+      {% if 'annotate' in imageset_perms %}
+      <button type="button" class="annotate_button btn btn-sm btn-success" id="verify_image_button"
+              data-toggle="tooltip" title="verify (f)">
+        <image src="{% static 'images/CheckAll.svg' %}">
+      </button>
+      {% endif %}
+      <button type="button" class="annotate_button btn btn-sm btn-primary" id="skip_button"
+              data-toggle="tooltip" title="next (e)">
+        <image src="{% static 'images/BackspaceReverse.svg' %}">
+      </button>
+    </div>
+  </aside>
+
+  <!-- Annotation + image info -->
+  <aside class="anno-drawer" id="drawerInfo">
+    <div class="drawer-title">Annotation &amp; image info</div>
+    <div class="drawer-body p-2">
+      <p style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ad-muted);margin:6px 0 4px">
+        Annotation
+      </p>
+      <div id="AnnotationInformation">
+        <table style="width:100%;text-align:center" class="table table-sm">
+          <tr><th></th><th></th><th>Remark</th></tr>
+          <tr>
+            <td>First Editor:</td><td><a id="annotationFirstEditor"></a></td>
+            <td rowspan="5">
+              <textarea id="annotationRemark" rows="5" cols="10" style="resize:none;width:100%"></textarea>
+            </td>
+          </tr>
+          <tr><td>Last Editor:</td><td><a id="annotationLastEditor"></a></td></tr>
+          <tr>
+            <td><label id="annotationSizeLengthLabel">Size/Length:</label></td>
+            <td><a id="annotationSize"></a></td>
+          </tr>
+          <tr><td>Unique ID:</td><td><a id="annotationUniqueID"></a></td></tr>
+          <tr><td>Verified:</td><td><label id="annotationVerified"></label></td></tr>
+        </table>
+      </div>
+      <p style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ad-muted);margin:12px 0 4px;border-top:1px solid var(--ad-border);padding-top:8px">
+        Image
+      </p>
+      <div id="ImageInformation">
+        <table style="width:100%;text-align:center" id="image_info_table">
+          <tr><th></th><th></th><th>Remark</th></tr>
+        </table>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Search -->
+  <aside class="anno-drawer" id="drawerSearch">
+    <div class="drawer-title">Search annotations</div>
+    <div class="drawer-body p-2">
+      <div class="input-group input-group-sm mb-2">
+        <input type="text" id="searchInputAnnotation"
+               placeholder="Search annotations…"
+               title="Syntax: @Field:Value; [@Field:Value]"
+               class="form-control form-control-sm">
+        <span class="input-group-btn">
+          <button class="btn btn-sm btn-primary" id="search_update_btn">
+            <image src="{% static 'images/search.svg' %}">
+          </button>
+        </span>
+      </div>
+      <div class="d-flex mb-2" style="gap:4px">
+        <button type="button" class="annotate_button btn btn-sm btn-primary" id="back_button_search">
+          <image src="{% static 'images/backspace.svg' %}">
+        </button>
+        <input type="text" id="currentSearchElement" title="Current ID"
+               class="form-control form-control-sm" style="flex:1">
+        <button type="button" class="annotate_button btn btn-sm btn-primary" id="next_button_search">
+          <image src="{% static 'images/BackspaceReverse.svg' %}">
+        </button>
+      </div>
+      <table style="width:100%;text-align:center"
+             class="table table-striped table-bordered table-sm">
+        <tbody id="annotationSearchResults">
+          <tr><th>ID</th><th>Label</th><th>First Ed.</th><th>Last Ed.</th><th>Ver.</th><th>Remark</th></tr>
+        </tbody>
+      </table>
+    </div>
+  </aside>
+
+  <!-- Image filters -->
+  <aside class="anno-drawer" id="drawerFilter">
+    <div class="drawer-title">Image filters</div>
+    <div class="drawer-body">
+      <div class="filter-row">
+        <label for="BRIGHTNESSSlider">Brightness</label>
+        <input id="BRIGHTNESSSlider" type="text"
+               data-slider-min="-255" data-slider-max="255"
+               data-slider-step="1" data-slider-value="0" data-slider-enabled="false" />
+        <input id="BRIGHTNESSSlider-enabled" type="checkbox" />
+      </div>
+      <div class="filter-row">
+        <label for="ContrastSlider">Contrast</label>
+        <input id="ContrastSlider" type="text"
+               data-slider-min="0" data-slider-max="10"
+               data-slider-step="0.1" data-slider-value="1" data-slider-enabled="false" />
+        <input id="ContrastSlider-enabled" type="checkbox" />
+      </div>
+      <div class="filter-row">
+        <label for="CLAHESlider">CLAHE</label>
+        <input id="CLAHESlider" type="text"
+               data-slider-min="0" data-slider-max="50"
+               data-slider-step="1" data-slider-value="1" data-slider-enabled="false" />
+        <input id="CLAHESlider-enabled" type="checkbox" />
+      </div>
+      <div class="filter-row">
+        <label for="THRESHOLDINGSlider">Threshold</label>
+        <input id="THRESHOLDINGSlider" type="text"
+               data-slider-min="0" data-slider-max="255"
+               data-slider-step="1" data-slider-value="128" data-slider-enabled="false" />
+        <input id="THRESHOLDINGSlider-enabled" type="checkbox" />
+      </div>
+      <div class="filter-row" style="gap:12px;flex-wrap:wrap">
+        <label style="min-width:auto"><input id="Invert-enabled" type="checkbox"> Invert</label>
+        <label style="min-width:auto"><input id="GREYSCALE-enabled" type="checkbox"> Grey</label>
+        <label style="min-width:auto"><input id="Red-enabled"   type="checkbox" checked> R</label>
+        <label style="min-width:auto"><input id="Green-enabled" type="checkbox" checked> G</label>
+        <label style="min-width:auto"><input id="Blue-enabled"  type="checkbox" checked> B</label>
+      </div>
+    </div>
+  </aside>
+
+  {% if show_processing %}
+  <aside class="anno-drawer" id="drawerProcessing">
+    <div class="drawer-title">Processing</div>
+    <div class="drawer-body p-2">
+      <table style="width:100%">
+        {% for plugin in availablePlugins %}
+        <tr id="process-{{plugin.id}}">
+          <td><a class="annotate_button btn btn-sm btn-success" id="run_processing_{{ plugin.id }}" href="">process</a></td>
+          <td>{{plugin.name}}</td>
+        </tr>
+        <tr style="display:none" id="processing-{{plugin.id}}">
+          <td>
+            <div class="progress" style="width:100px">
+              <div class="progress-bar progress-bar-striped progress-bar-animated"
+                   role="progressbar"
+                   aria-valuenow="{{plugin.processing_complete}}"
+                   aria-valuemin="0" aria-valuemax="100"
+                   style="width:{{plugin.processing_complete|floatformat:"0"}}%"
+                   id="completed-{{ plugin.id }}">-inf %</div>
+            </div>
+          </td>
+          <td>{{plugin.name}}</td>
+        </tr>
+        <tr style="display:none" id="compl-{{plugin.id}}">
+          <td>
+            <label class="btn btn-outline-secondary btn-sm" for="vis-plugin-{{plugin.id}}">
+              <input type="checkbox" class="btn-check btn-sm" id="vis-plugin-{{plugin.id}}"
+                     checked autocomplete="off" data-plugin_id={{plugin.id}}
+                     data-plugin_resultentries="[]">
+              <image src="{% static 'images/eye_fill_small.svg' %}">
+            </label>
+          </td>
+          <td><a data-toggle="collapse" href="#collapsePlugin-{{plugin.id}}" aria-expanded="false">{{plugin.name}}</a></td>
+          <td><input type="range" id="alpha-plugin-{{plugin.id}}" min="1" max="100"
+                     value="{% if plugin.result %}{{plugin.result.default_alpha|floatformat:"0"}}{% else %}100{% endif %}"
+                     class="visslider" data-plugin_id={{plugin.id}}></td>
+        </tr>
+        <tr><td></td><td colspan=2><div class="collapse" id="collapsePlugin-{{plugin.id}}"></div></td></tr>
+        {% endfor %}
+      </table>
+    </div>
+  </aside>
+  {% endif %}
+
+  {% if annotation_types %}
+  <aside class="anno-drawer" id="drawerTeam">
+    <div class="drawer-title">Team annotations</div>
+    <div class="drawer-body p-2">
+      <table class="table table-sm">
+        <thead>
+          <tr><th>User</th><th title="created by">Created</th><th title="last edited by">Edited</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Toggle All</td>
+            <td><input id="ShowUserCreatedAnnotationsToggle"    type="checkbox" checked /></td>
+            <td><input id="ShowUserLastEditedAnnotationsToggle" type="checkbox" checked /></td>
+          </tr>
+          {% for user in team.members.all %}
+          <tr>
+            <td>{{ user.username }}</td>
+            <td><input id="ShowUserCreatedAnnotations_{{user.id}}"    type="checkbox" checked data-user_id={{user.id}} /></td>
+            <td><input id="ShowUserLastEditedAnnotations_{{user.id}}" type="checkbox" checked data-user_id={{user.id}} /></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </aside>
+  {% endif %}
+
+  {% if HasMediaFiles %}
+  <aside class="anno-drawer" id="drawerMedia">
+    <div class="drawer-title">Media</div>
+    <div class="drawer-body p-3">
+      <div id="AnnotationMediaInformation">
+        <audio id="audio" controls="controls" style="width:100%;margin-bottom:8px">
+          <source id="annotationAudio" src="" type="audio/mpeg">
+          Your browser does not support the audio format.
+        </audio>
+        <label>
+          <input type='checkbox' id='autoplay_media' name="autoplay_media" checked> AutoPlay
+        </label>
+      </div>
+    </div>
+  </aside>
+  {% endif %}
+
+  <aside class="anno-drawer" id="drawerScreening">
+    <div class="drawer-title">Screening</div>
+    <div class="drawer-body p-2">
+      <div class="d-flex mb-2" style="gap:4px">
+        <input type="number" id="screeningResolutionX" placeholder="350"
+               title="Tile width px" class="form-control form-control-sm" value={{ resolution_x }}>
+        <input type="number" id="screeningResolutionY" placeholder="350"
+               title="Tile height px" class="form-control form-control-sm" value={{ resolution_y }}>
+        <button class="btn btn-sm btn-primary" id="screening_resolution_update_btn">
+          <image src="{% static 'images/play.svg' %}">
+        </button>
+      </div>
+      <div class="collapse"><img id="screeningImage" alt="Not initialised!" style="max-width:100%"></div>
+      <canvas id="screeningImageOutput" style="max-width:100%"></canvas>
+    </div>
+  </aside>
+
+  {% if asthma %}
+  <aside class="anno-drawer" id="drawerAsthma">
+    <div class="drawer-title">Asthma analysis</div>
+    <div class="drawer-body p-2">
+      <button class="btn btn-sm btn-success mb-2" id="asthma_update_btn">
+        <span class="fa fa-refresh"></span> Update
+      </button>
+      <table style="white-space:nowrap;width:100%;text-align:center"
+             class="table table-striped table-bordered table-sm">
+        <tbody>
+          <tr><th></th><th>Actual</th><th>Healthy</th><th>IAD</th><th>RAO</th><th>B.pn.</th></tr>
+          <tr><td>Neutrophils</td><td id=asthma_neutrophils></td><td>&lt;5%</td><td>5–20%</td><td>&gt;20%</td><td>&lt;90%</td></tr>
+          <tr><td>Macrophages</td><td id=asthma_macrophages></td><td>50–70%</td><td></td><td></td><td></td></tr>
+          <tr><td>Eosinophils</td><td id=asthma_eosinophils></td><td>&lt;0.5%</td><td>&gt;0.5%</td><td>&gt;0.5%</td><td></td></tr>
+          <tr><td>Mast Cells</td><td id=asthma_mast_cell></td><td>&lt;1%</td><td>&gt;1%</td><td>&gt;1%</td><td></td></tr>
+          <tr><td>Total</td><td id=asthma_total></td><td></td><td></td><td></td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </aside>
+  {% endif %}
+
+  <aside class="anno-drawer" id="drawerSync">
+    <div class="drawer-title">Browser sync</div>
+    <div class="drawer-body p-2">
+      <div class="input-group input-group-sm mb-2">
+        <select id="sync_browser_image" name="Open images" class="form-control form-control-sm"></select>
+        <span class="input-group-btn">
+          <button class="btn btn-sm btn-primary" id="search_browserimages_btn">
+            <image src="{% static 'images/search.svg' %}">
+          </button>
+        </span>
+        <span class="input-group-btn" id="open_registration_image_visibility">
+          <a href="" id="open_registration_image">
+            <span class="fa fa-window-maximize fa-2x" style="color:var(--ad-muted);padding:4px 6px"></span>
+          </a>
+        </span>
+      </div>
+      <table style="white-space:nowrap;width:100%;text-align:center"
+             class="table table-striped table-bordered table-sm">
+        <tbody id="syncBrowserOptions">
+          <tr><th>Sync</th><th>Active</th><th>Update</th></tr>
+          <tr><td>Search</td><td><input id="SyncBrowserSearch-enabled" type="checkbox" /></td><td></td></tr>
+          <tr>
+            <td>Viewpoint</td>
+            <td><input id="SyncBrowserViewpoint-enabled" type="checkbox" /></td>
+            <td><button class="btn btn-sm btn-primary" id="update_browser_sync_images_btn">
+              <image src="{% static 'images/search.svg' %}"></button></td>
+          </tr>
+          <tr><td>Overlay opacity</td><td><input id="OverlayRegImage-enabled" type="checkbox" /></td><td></td></tr>
+          <tr><td>Sync annos</td><td><input id="SyncAnnosToView-enabled" type="checkbox" /></td><td></td></tr>
+          <tr>
+            <td colspan=3>
+              <table><tbody id="registrationTables">
+                <tr>
+                  <td><input type="number" id="registration00" placeholder=1 class="form-control form-control-sm" style="width:60px"></td>
+                  <td><input type="number" id="registration01" placeholder=0 class="form-control form-control-sm" style="width:60px"></td>
+                  <td><input type="number" id="registration02" placeholder=0 class="form-control form-control-sm" style="width:60px"></td>
+                </tr>
+                <tr>
+                  <td><input type="number" id="registration10" placeholder=0 class="form-control form-control-sm" style="width:60px"></td>
+                  <td><input type="number" id="registration11" placeholder=1 class="form-control form-control-sm" style="width:60px"></td>
+                  <td><input type="number" id="registration12" placeholder=0 class="form-control form-control-sm" style="width:60px"></td>
+                </tr>
+                <tr>
+                  <td><input type="number" id="registration20" placeholder=0 class="form-control form-control-sm" style="width:60px"></td>
+                  <td><input type="number" id="registration21" placeholder=0 class="form-control form-control-sm" style="width:60px"></td>
+                  <td><input type="number" id="registration22" placeholder=1 class="form-control form-control-sm" style="width:60px"></td>
+                </tr>
+              </tbody></table>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </aside>
+
+  <!-- Backdrop: click outside drawer to close -->
+  <div class="anno-backdrop" id="annoBackdrop"></div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       VIEWER  (fills remaining width, full height)
+       ═══════════════════════════════════════════════════════ -->
+  <div class="anno-viewer" id="annotationImage">
+
+    <!-- Zoom / overlay / registration controls -->
+    <div class="anno-viewer-controls">
+      <div>
+        <div class="vc-slider-wrap">
+          <span class="vc-label">Zoom</span>
+          <div id="zoomSlider"></div>
+          <span class="vc-value" id="zoomValLabel"></span>
+        </div>
+        <div class="vc-slider-wrap">
+          <span class="vc-label">Opacity</span>
+          <div id="overlaySlider"></div>
+          <span class="vc-value" id="overlayValLabel">100%</span>
+        </div>
+        <div>
+          <select id="registration_selector" title="Select registration" style="display:none;max-width:100%">
+            <option value="">-- No registration --</option>
+          </select>
+          <span id="registrationField"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- OSD canvas area -->
+    <div class="anno-osd-area">
+      <div class="seadragon-viewer" id="openseadragon_background"></div>
+      <div class="seadragon-viewer" id="openseadragon1"></div>
+
+      <!-- Segmentation palette -->
+      <div id="seg-palette" style="display:none;position:absolute;top:8px;right:12px;z-index:20;
+           background:rgba(14,14,20,0.95);border-radius:8px;padding:10px 12px;
+           flex-direction:column;gap:8px;min-width:140px;color:#ddd;font-size:.82rem;
+           box-shadow:0 4px 20px rgba(0,0,0,.65);border:1px solid #36363f;">
+        <div style="font-weight:700;font-size:.7rem;color:#888;text-transform:uppercase;letter-spacing:.05em">
+          Segmentation
+        </div>
+        <div class="btn-group btn-group-sm w-100" role="group">
+          <button class="btn btn-outline-light seg-tool-btn" data-tool="pencil" title="Pencil">🖊</button>
+          <button class="btn btn-outline-light seg-tool-btn" data-tool="wand"   title="Magic wand">🪄</button>
+          <button class="btn btn-outline-light seg-tool-btn" data-tool="fill"   title="Fill">🪣</button>
+          <button class="btn btn-outline-light seg-tool-btn" data-tool="eraser" title="Eraser">🧽</button>
+          <button class="btn btn-outline-light seg-tool-btn" data-tool="pan"    title="Pan">✋</button>
+        </div>
+        <div>
+          <div style="color:#999;margin-bottom:3px">Shape</div>
+          <div class="btn-group btn-group-sm w-100" role="group">
+            <button class="btn btn-outline-secondary seg-shape-btn active" data-shape="circle">&#x25CF;</button>
+            <button class="btn btn-outline-secondary seg-shape-btn"        data-shape="square">&#x25A0;</button>
+          </div>
+        </div>
+        <div>
+          <div style="color:#999;margin-bottom:2px">Size: <span id="seg-brush-size-val">20</span> px</div>
+          <input id="seg-brush-size" type="range" class="custom-range" min="1" max="200" step="1" value="20" style="width:100%">
+        </div>
+        <div id="seg-tolerance-row">
+          <div style="color:#999;margin-bottom:2px">Tolerance: <span id="seg-tolerance-val">20</span></div>
+          <input id="seg-tolerance" type="range" class="custom-range" min="0" max="255" step="1" value="20" style="width:100%">
+        </div>
+        <div>
+          <div style="color:#999;margin-bottom:2px">Opacity: <span id="seg-opacity-val">55%</span></div>
+          <input id="seg-opacity" type="range" class="custom-range" min="0" max="100" step="1" value="55" style="width:100%">
+        </div>
+        <div id="seg-slice-copy" style="display:none">
+          <div style="color:#999;margin-bottom:3px">Copy slice</div>
+          <div class="btn-group btn-group-sm w-100" role="group">
+            <button class="btn btn-outline-light" id="seg-copy-prev" title="Copy to previous slice">◀ Prev</button>
+            <button class="btn btn-outline-light" id="seg-copy-next" title="Copy to next slice">Next ▶</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MPR layout -->
+      <div id="mprLayout" style="display:none;position:absolute;inset:0;
+           grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1px;background:#222;">
+        <div id="osd_mpr_0" style="position:relative;overflow:hidden;background:#000;"></div>
+        <div id="osd_mpr_1" style="position:relative;overflow:hidden;background:#000;"></div>
+        <div id="osd_mpr_2" style="position:relative;overflow:hidden;background:#000;"></div>
+        <div id="mpr_info"  style="background:#111;color:#aaa;padding:6px;font-size:11px;display:flex;align-items:center;gap:16px;"></div>
+      </div>
+    </div>{# /anno-osd-area #}
+
+    <!-- Frame slider -->
+    <div id="frameSliderDiv">
+      <div id="frameSlider" style="width:60vw;"></div>
+      <div id="planeSelector" style="display:none;margin-left:auto;">
+        <div class="btn-group btn-group-sm" role="group">
+          <button type="button" class="btn btn-outline-secondary active" id="planeBtn_0">Axial</button>
+          <button type="button" class="btn btn-outline-secondary" id="planeBtn_1">Coronal</button>
+          <button type="button" class="btn btn-outline-secondary" id="planeBtn_2">Sagittal</button>
+          <button type="button" class="btn btn-outline-secondary" id="planeBtn_3d">&#x229E; 3-Axis</button>
+        </div>
+      </div>
+    </div>
+
+  </div>{# /anno-viewer #}
+
+  <!-- ═══════════════════════════════════════════════════════
+       THUMBNAIL PANEL  (slides from right edge)
+       ═══════════════════════════════════════════════════════ -->
+  <div class="anno-thumbs" id="imagesetThumbnails">
+    <div class="card-columns" style="column-count:1">
+      {% for set_image in set_images %}
+      <div class="card" id="thumbnailCard_{{ set_image.id }}">
+        <a href="{% url 'annotations:annotate' set_image.id %}">
+          <img class="card-img-top" style="max-width:80px"
+               id="imageThumbnail_{{ set_image.id }}"
+               alt="Loading thumbnail" data-image_id="{{ set_image.id }}">
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Hidden compat buttons (annotations.js / exact-imageset-viewer.js) -->
+  <button type="button" id="loadAnnotationMenu"     style="display:none">&#10311;</button>
+  <button type="button" id="loadImagesetThumbnails" style="display:none">&#10311;</button>
+
+  <!-- Advanced controls kept in DOM for JS; not shown in the panel -->
+  <div style="display:none">
+    {% if show_advanced_options %}
+    <input type="checkbox" id="display_messages" checked="true">
+    <select id="tristate_option">
+      <option value="unused">Deactivated</option>
+      <option value="no_interact">Visible, no Interaction</option>
+      <option value="no_vis">Not Visible, Interaction</option>
+    </select>
+    {% else %}
+    <input type="hidden" id="tristate_option" value="unused">
+    <input type="checkbox" id="display_messages" checked="true">
+    {% endif %}
+  </div>
+
+  <!-- Data spans for JS -->
+  <span id="image_id"    class="invisible">{{ selected_image.id }}</span>
+  <span id="image_set_id" class="invisible">{{ selected_image.image_set.id }}</span>
+  <span id="user_id"    class="invisible">{{ user_id }}</span>
+  <span id="team_id"    class="invisible">{{ team.id }}</span>
+
+  <!-- ═══════════════════════════════════════════════════════
+       FLOATING ANNOTATION PANEL  (fixed, draggable)
+       ═══════════════════════════════════════════════════════ -->
+  <div class="anno-float-panel" id="annoFloatPanel">
+    <div class="fp-header" id="fpDragHandle">
+      <span class="fp-header-name" id="active_image_name">{{ selected_image.name }}</span>
+      <button class="fp-toggle" id="fpToggleBtn" title="Collapse/expand">
+        <i class="fa fa-chevron-down"></i>
+        <i class="fa fa-chevron-up"></i>
+      </button>
+    </div>
+    <div class="fp-body">
+      {% if annotation_types %}
+      <table class="table table-sm mb-0" id="statistics_table">
+        <thead>
+          <tr>
+            <th style="width:5px"></th>
+            <th>Label</th>
+            <th class="text-center" style="width:28px" title="Key">Key</th>
+            <th class="text-center" style="width:36px" title="Count">&#35;</th>
+            <th class="text-center" style="width:28px" title="Visible">Vis</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for annotation_type in annotation_types %}
+          <tr class="stats-row"
+              data-annotation_type_id="{{ annotation_type.id }}"
+              data-vector_type="{{ annotation_type.vector_type }}"
+              data-color="{{ annotation_type.color_code }}"
+              data-key="{{ forloop.counter }}">
+            <td style="padding:0;width:5px;background-color:{{ annotation_type.color_code }}"></td>
+            <td id="annotation_type_id_button_{{ annotation_type.id }}">
+              {{ annotation_type.name }}
+              {% if annotation_type.vector_type == 8 %}
+              <span class="badge badge-secondary" style="font-size:.58rem">seg</span>
+              {% endif %}
+            </td>
+            <td class="text-center text-muted">{{ forloop.counter }}</td>
+            <td class="text-center" id="count_{{ annotation_type.id }}">–</td>
+            <td class="text-center">
+              <input type="checkbox" id="DrawCheckBox_{{ annotation_type.id }}"
+                     data-annotation_type_id="{{ annotation_type.id }}" checked>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
+      {% if global_annotation_types %}
+      <div class="panel-global-section">
+        <div class="panel-global-heading">Image labels</div>
+        {% for annotation_type in global_annotation_types %}
+        <div class="panel-global-row">
+          <label for="GlobalAnnotation_{{ annotation_type.id }}">{{ annotation_type.name }}</label>
+          <span class="key-badge">&#x21E7;{{ forloop.counter }}</span>
+          <input type="checkbox" id="GlobalAnnotation_{{ annotation_type.id }}"
+                 data-annotation_type_id="{{ annotation_type.id }}"
+                 data-key_number="{{ forloop.counter }}">
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    {% csrf_token %}
+    <div class="fp-footer">
+      <div class="fp-footer-total">
+        Total: <span id="statistics_total_annotations">{{ total_annotations }}</span>
+      </div>
+      <select id="annotation_type_id" name="selected_annotation_type">
+        {% for annotation_type in annotation_types %}
+        <option value="{{ annotation_type.id }}" name="{{ annotation_type.name }}"
+                id="annotation_type_{{ annotation_type.id }}"
+                data-annotation_type_key={{ forloop.counter }}>
+          {{ annotation_type.name }} ({{ forloop.counter }})
+        </option>
+        {% endfor %}
+      </select>
+      {% if show_advanced_options %}
+      <div class="fp-adv-sliders">
+        <label for="StrokeWidthSlider">Stroke</label>
+        <input id="StrokeWidthSlider" type="range" class="custom-range" min="1" max="500" step="1" value="5" />
+        <label for="OpacitySlider">Opacity</label>
+        <input id="OpacitySlider" type="range" class="custom-range" min="0.01" max="1.0" step="0.01" value="0.0" />
+      </div>
+      {% else %}
+      <input id="StrokeWidthSlider" type="hidden" value="5">
+      <input id="OpacitySlider" type="hidden" value="0.01">
+      {% endif %}
+    </div>
+  </div>{# /anno-float-panel #}
+
+</div>{# /annotator-shell #}
+
+<script>
+(function () {
+    var IMAGE_ID     = parseInt(document.getElementById('image_id').textContent.trim());
+    var IMAGE_WIDTH  = {{ selected_image.width }};
+    var IMAGE_HEIGHT = {{ selected_image.height }};
+    var activeRow = null;
+
+    // ── Annotation type selection ────────────────────────────────
+    window.selectAnnotationType = function (row) {
+        if (activeRow) activeRow.classList.remove('table-active');
+        row.classList.add('table-active');
+        activeRow = row;
+
+        var typeId     = parseInt(row.dataset.annotation_type_id);
+        var vectorType = parseInt(row.dataset.vector_type);
+        var color      = row.dataset.color;
+        var select     = document.getElementById('annotation_type_id');
+        if (select) select.value = typeId;
+
+        if (vectorType === 8) {
+            var osdViewer = window.exactOSDViewer;
+            var frame = (osdViewer && typeof osdViewer.currentPage === 'function')
+                ? osdViewer.currentPage() : 0;
+            window.activateSegmentationLayer(typeId, color,
+                window.exactImageId || IMAGE_ID, IMAGE_WIDTH, IMAGE_HEIGHT, frame);
+        } else {
+            if (window.deactivateSegmentationLayer) window.deactivateSegmentationLayer();
+            if (select) $(select).trigger('change');
+        }
+    };
+
+    document.addEventListener('DOMContentLoaded', function () {
+
+        // ── Rail / drawer wiring ─────────────────────────────────
+        var RAIL_MAP = {
+            railBtnImages:    'drawerImages',
+            railBtnInfo:      'drawerInfo',
+            railBtnSearch:    'drawerSearch',
+            railBtnFilter:    'drawerFilter',
+            {% if show_processing %}railBtnProcessing: 'drawerProcessing',{% endif %}
+            {% if annotation_types %}railBtnTeam: 'drawerTeam',{% endif %}
+            {% if HasMediaFiles %}railBtnMedia: 'drawerMedia',{% endif %}
+            railBtnScreening: 'drawerScreening',
+            {% if asthma %}railBtnAsthma: 'drawerAsthma',{% endif %}
+            railBtnSync:      'drawerSync',
+        };
+        var allBtnIds    = Object.keys(RAIL_MAP);
+        var allDrawerIds = Object.values(RAIL_MAP);
+
+        var annoShell = document.querySelector('.annotator-shell');
+
+        function notifyOsdResize() {
+            setTimeout(function () {
+                var v = window.exactOSDViewer;
+                if (v && v.viewport) {
+                    v.viewport.resize(new OpenSeadragon.Point(v.container.clientWidth, v.container.clientHeight));
+                    v.viewport.applyConstraints();
+                    v.forceRedraw();
+                }
+            }, 240);
+        }
+
+        function setDrawerOpen(open) {
+            if (open) {
+                annoShell.classList.add('shell-drawer-open');
+            } else {
+                annoShell.classList.remove('shell-drawer-open');
+            }
+            notifyOsdResize();
+        }
+
+        function closeAllDrawers() {
+            allDrawerIds.forEach(function (id) {
+                var el = document.getElementById(id);
+                if (el) el.classList.remove('drawer-open');
+            });
+            allBtnIds.forEach(function (id) {
+                var el = document.getElementById(id);
+                if (el) el.classList.remove('rail-active');
+            });
+            document.getElementById('annoBackdrop').classList.remove('active');
+            setDrawerOpen(false);
+        }
+        window._closeAllDrawers = closeAllDrawers;
+        window.setDrawerOpen = setDrawerOpen;
+
+        allBtnIds.forEach(function (btnId) {
+            var btn = document.getElementById(btnId);
+            if (!btn) return;
+            btn.addEventListener('click', function () {
+                var drawerId = RAIL_MAP[btnId];
+                var drawer   = document.getElementById(drawerId);
+                var wasOpen  = drawer && drawer.classList.contains('drawer-open');
+                closeAllDrawers();
+                if (!wasOpen && drawer) {
+                    drawer.classList.add('drawer-open');
+                    btn.classList.add('rail-active');
+                    document.getElementById('annoBackdrop').classList.add('active');
+                    setDrawerOpen(true);
+                }
+            });
+        });
+
+        document.getElementById('annoBackdrop').addEventListener('click', closeAllDrawers);
+
+        // Thumbnails
+        var railThumbs = document.getElementById('railBtnThumbs');
+        if (railThumbs) {
+            railThumbs.addEventListener('click', function () {
+                this.classList.toggle('rail-active');
+                document.getElementById('imagesetThumbnails').classList.toggle('thumbs-open');
+                document.getElementById('loadImagesetThumbnails').click();
+            });
+        }
+
+        // ── Float panel collapse toggle ─────────────────────────
+        document.getElementById('fpToggleBtn').addEventListener('click', function () {
+            document.getElementById('annoFloatPanel').classList.toggle('fp-collapsed');
+        });
+
+        // ── Float panel drag ─────────────────────────────────────
+        (function () {
+            var panel  = document.getElementById('annoFloatPanel');
+            var handle = document.getElementById('fpDragHandle');
+            var dragging = false, ox, oy;
+
+            handle.addEventListener('mousedown', function (e) {
+                if (e.target.closest('.fp-toggle')) return;
+                dragging = true;
+                var r = panel.getBoundingClientRect();
+                // switch to top/left so bottom anchor doesn't fight us
+                panel.style.bottom = 'auto';
+                panel.style.right  = 'auto';
+                panel.style.left   = r.left + 'px';
+                panel.style.top    = r.top  + 'px';
+                ox = e.clientX - r.left;
+                oy = e.clientY - r.top;
+                e.preventDefault();
+            });
+            document.addEventListener('mousemove', function (e) {
+                if (!dragging) return;
+                panel.style.left = Math.max(0, e.clientX - ox) + 'px';
+                panel.style.top  = Math.max(0, e.clientY - oy) + 'px';
+            });
+            document.addEventListener('mouseup', function () { dragging = false; });
+        })();
+
+        // ── Statistics table rows ────────────────────────────────
+        document.querySelectorAll('#statistics_table .stats-row').forEach(function (row) {
+            row.addEventListener('click', function (e) {
+                if (e.target.type === 'checkbox') return;
+                window.selectAnnotationType(row);
+            });
+        });
+
+        var firstRow = document.querySelector('#statistics_table .stats-row');
+        if (firstRow) {
+            if (window.exactOSDViewer) {
+                window.selectAnnotationType(firstRow);
+            } else {
+                window.addEventListener('exactViewerReady', function onReady() {
+                    window.removeEventListener('exactViewerReady', onReady);
+                    window.selectAnnotationType(firstRow);
+                });
+            }
+        }
+
+        // Load annotation counts
+        document.querySelectorAll('#statistics_table .stats-row').forEach(function (row) {
+            var typeId = row.dataset.annotation_type_id;
+            fetch('/api/v1/annotations/annotations/?annotation_type=' + typeId +
+                  '&image=' + IMAGE_ID + '&deleted=False&page_size=1&format=json',
+                  { credentials: 'same-origin' })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    var el = document.getElementById('count_' + typeId);
+                    if (el) el.textContent = d.count !== undefined ? d.count : '?';
+                })
+                .catch(function () {});
+        });
+
+        // Visibility checkboxes for segmentation layers
+        document.querySelectorAll('#statistics_table .stats-row').forEach(function (row) {
+            var typeId     = parseInt(row.dataset.annotation_type_id);
+            var vectorType = parseInt(row.dataset.vector_type);
+            if (vectorType !== 8) return;
+            var cb = document.getElementById('DrawCheckBox_' + typeId);
+            if (!cb) return;
+            cb.addEventListener('change', function (e) {
+                e.stopPropagation();
+                var layer = window.segmentationLayers && window.segmentationLayers.get(typeId);
+                if (layer) layer.setVisible(cb.checked);
+            });
+        });
+
+        // Seg tool palette
+        document.querySelectorAll('.seg-tool-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var tolRow = document.getElementById('seg-tolerance-row');
+                if (tolRow) tolRow.style.display =
+                    (btn.dataset.tool === 'wand' || btn.dataset.tool === 'fill') ? 'block' : 'none';
+            });
+        });
+        var tolRow = document.getElementById('seg-tolerance-row');
+        if (tolRow) tolRow.style.display = 'none';
+
+        // Slice-copy visibility
+        function updateSliceCopyVisibility() {
+            var viewer = window.exactOSDViewer;
+            var isVol  = viewer && viewer.tileSources && viewer.tileSources.length > 1;
+            var el = document.getElementById('seg-slice-copy');
+            if (el) el.style.display = isVol ? 'block' : 'none';
+        }
+        window.addEventListener('exactViewerReady', updateSliceCopyVisibility);
+        window.addEventListener('exactPlaneChanged', updateSliceCopyVisibility);
+        updateSliceCopyVisibility();
+
+        function getActiveSegLayer() {
+            var ar = document.querySelector('#statistics_table .stats-row.table-active');
+            if (!ar) return null;
+            return window.segmentationLayers &&
+                   window.segmentationLayers.get(parseInt(ar.dataset.annotation_type_id));
+        }
+        document.getElementById('seg-copy-prev').addEventListener('click', function () {
+            var l = getActiveSegLayer(); if (l) l.copyToAdjacentFrame(-1);
+        });
+        document.getElementById('seg-copy-next').addEventListener('click', function () {
+            var l = getActiveSegLayer(); if (l) l.copyToAdjacentFrame(1);
+        });
+
+        // Keyboard shortcuts 1–9
+        document.addEventListener('keydown', function (e) {
+            if (e.target.nodeName === 'INPUT' || e.target.nodeName === 'TEXTAREA') return;
+            if (e.ctrlKey || e.altKey || e.metaKey) return;
+            var digit = (e.key >= '1' && e.key <= '9') ? parseInt(e.key) : 0;
+            if (!digit) return;
+            var row = document.querySelector(
+                '#statistics_table .stats-row[data-key="' + digit + '"]');
+            if (row) { e.preventDefault(); window.selectAnnotationType(row); }
+        });
+
+    });
+})();
+</script>
+
+{% if 'edit_set' in imageset_perms and not imageset_lock %}
+<script>
+(function () {
+  var drawer   = document.getElementById('drawerImages');
+  var overlay  = document.getElementById('imgDropOverlay');
+  var input    = document.getElementById('imgDropInput');
+  var status   = document.getElementById('imgUploadStatus');
+  var bar      = document.getElementById('imgUploadProgress');
+  var msg      = document.getElementById('imgUploadMsg');
+  if (!drawer || !overlay) return;
+
+  var csrf      = (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '';
+  var uploadUrl = '{% url "images:upload_image" selected_image.image_set.id %}';
+
+  // Auto-open the image-list drawer whenever a file drag enters the page.
+  // fileDragActive prevents repeated opens as dragenter fires per-element.
+  var fileDragActive = false;
+  var autoOpened = false;
+  document.addEventListener('dragenter', function (e) {
+    if (fileDragActive) return;
+    if (!e.dataTransfer) return;
+    var types = Array.from(e.dataTransfer.types || []);
+    // 'Files' (standard) or 'public.file-url' (Safari/macOS)
+    if (!types.some(function (t) { return t === 'Files' || t === 'public.file-url'; })) return;
+    fileDragActive = true;
+    if (!drawer.classList.contains('drawer-open')) {
+      autoOpened = true;
+      if (window._closeAllDrawers) window._closeAllDrawers();
+      requestAnimationFrame(function () {
+        drawer.classList.add('drawer-open');
+        document.getElementById('railBtnImages').classList.add('rail-active');
+        document.getElementById('annoBackdrop').classList.add('active');
+        if (window.setDrawerOpen) window.setDrawerOpen(true);
+      });
+    }
+  });
+  // Close auto-opened drawer when drag leaves the browser window.
+  document.addEventListener('dragleave', function (e) {
+    if (e.relatedTarget === null) {
+      fileDragActive = false;
+      if (autoOpened) {
+        if (window._closeAllDrawers) window._closeAllDrawers();
+        autoOpened = false;
+      }
+    }
+  });
+  document.addEventListener('drop', function (e) {
+    fileDragActive = false;
+    if (autoOpened && !drawer.contains(e.target)) {
+      if (window._closeAllDrawers) window._closeAllDrawers();
+    }
+    autoOpened = false;
+  });
+
+  // dragCount handles the enter/leave flicker caused by child elements
+  var dragCount = 0;
+
+  drawer.addEventListener('dragenter', function (e) {
+    e.preventDefault();
+    dragCount++;
+    overlay.classList.add('visible');
+  });
+  drawer.addEventListener('dragover', function (e) {
+    e.preventDefault();
+  });
+  drawer.addEventListener('dragleave', function (e) {
+    dragCount--;
+    if (dragCount <= 0) { dragCount = 0; overlay.classList.remove('visible'); }
+  });
+  drawer.addEventListener('drop', function (e) {
+    e.preventDefault();
+    dragCount = 0;
+    overlay.classList.remove('visible');
+    startUpload(e.dataTransfer.files);
+  });
+
+  input.addEventListener('change', function () { startUpload(this.files); this.value = ''; });
+
+  function startUpload(files) {
+    if (!files || !files.length) return;
+    var list  = Array.from(files);
+    var total = list.length;
+    var done  = 0;
+
+    status.style.display = '';
+    bar.style.width = '0%';
+    msg.textContent = 'Uploading 0 / ' + total + '…';
+
+    function uploadNext() {
+      var file = list[done];
+      var fd   = new FormData();
+      fd.append('files[]', file);
+      fd.append('csrfmiddlewaretoken', csrf);
+
+      var lastId = null;
+
+      var xhr = new XMLHttpRequest();
+      xhr.upload.addEventListener('progress', function (e) {
+        if (e.lengthComputable) {
+          bar.style.width = Math.round((done + e.loaded / e.total) / total * 100) + '%';
+        }
+      });
+      xhr.addEventListener('load', function () {
+        try {
+          var resp = JSON.parse(xhr.responseText);
+          if (resp.files && resp.files[0] && resp.files[0].id > 0) {
+            lastId = resp.files[0].id;
+          }
+        } catch (_) {}
+        done++;
+        bar.style.width = Math.round(done / total * 100) + '%';
+        msg.textContent = 'Uploading ' + done + ' / ' + total + '…';
+        if (done >= total) {
+          msg.textContent = total + ' file' + (total > 1 ? 's' : '') + ' uploaded…';
+          setTimeout(function () {
+            if (lastId) {
+              window.location.href = window.location.pathname.replace(/\/\d+\/$/, '/' + lastId + '/');
+            } else {
+              location.reload();
+            }
+          }, 600);
+        } else {
+          uploadNext();
+        }
+      });
+      xhr.addEventListener('error', function () {
+        msg.textContent = 'Upload failed: ' + file.name;
+        done++;
+        uploadNext();
+      });
+      xhr.open('POST', uploadUrl);
+      xhr.send(fd);
+    }
+
+    uploadNext();
+  }
+})();
+</script>
+{% endif %}
+
+{% endblock %}
