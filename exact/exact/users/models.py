@@ -51,6 +51,7 @@ class UserPreferences(models.Model):
     class Frontends(models.IntegerChoices):
         DEFAULT = 1, "Default"
         LIGHTROOM = 2, "Lightroom"
+        LIGHTROOM_V2 = 3, "Lightroom v2"
 
     frontend = models.IntegerField(choices=Frontends.choices, default=Frontends.LIGHTROOM)
     is_site_admin = models.BooleanField(default=False)

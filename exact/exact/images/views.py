@@ -188,7 +188,7 @@ def index(request):
 
     last_image_action = LogImageAction.objects.filter(user=request.user).order_by('-time').first()
 
-    template = 'images/index_v2.html' if hasattr(request.user,'prefs') and hasattr(request.user.prefs,'frontend') and request.user.prefs.frontend==2 else 'images/index.html'
+    template = 'images/index_v2.html' if hasattr(request.user,'prefs') and hasattr(request.user.prefs,'frontend') and request.user.prefs.frontend>=2 else 'images/index.html'
 
     return TemplateResponse(request, template, {
         'last_image_action': last_image_action,
@@ -428,6 +428,7 @@ def upload_image(request, imageset_id):
 #     with open(os.path.join(settings.IMAGE_PATH, image.path()), "rb") as f:
 #         return HttpResponse(f.read(), content_type="image/jpeg")
 
+import time
 @login_required
 @cache_page(60 * 60 * 24 * 30)
 def view_image(request, image_id, z_dimension:int=1, frame:int=1):
@@ -436,6 +437,7 @@ def view_image(request, image_id, z_dimension:int=1, frame:int=1):
 
     it will return forbidden on if the user is not authenticated
     """
+    t = time.time()
     z_dimension, frame = int(z_dimension), int(frame)
     image = get_object_or_404(Image, id=image_id)
     if not image.image_set.has_perm('read', request.user):
@@ -462,6 +464,7 @@ def view_image(request, image_id, z_dimension:int=1, frame:int=1):
 
     if hasattr(cache, "delete_pattern"):
         cache.set(cache_key, value, None)
+    print(image_id, frame, time.time()-t)
     return HttpResponse(value, content_type='application/xml')
 
 @login_required
@@ -631,6 +634,7 @@ def view_image_tile(request, image_id, z_dimension, frame, level, tile_path):
 
     it will return forbidden on if the user is not authenticated
     """
+    t = time.time()
     image_id, z_dimension, frame, level = int(image_id), int(z_dimension), int(frame), int(level)
     results = re.search(r"(\d+)_(\d+).(png|jpeg)", tile_path)
     col = int(results.group(1))
@@ -674,6 +678,8 @@ def view_image_tile(request, image_id, z_dimension, frame, level, tile_path):
 
         if hasattr(cache, "delete_pattern"):
             tiles_cache.set(cache_key, buffer, 7*24*60*60)
+        #print('tile:', image_id, frame, time.time()-t)
+
         return HttpResponse(buffer, content_type='image/%s' % format)
     except Exception as e:
         print('Error: ',e)
@@ -966,7 +972,7 @@ def view_imageset(request, image_set_id):
         target_imageset=imageset
 
     all_products = Product.objects.filter(team=imageset.team).order_by('name')
-    template = 'images/imageset_v2.html' if hasattr(request.user,'prefs') and hasattr(request.user.prefs,'frontend') and request.user.prefs.frontend==2 else 'images/imageset.html'
+    template = 'images/imageset_v2.html' if hasattr(request.user,'prefs') and hasattr(request.user.prefs,'frontend') and request.user.prefs.frontend>=2 else 'images/imageset.html'
     return render(request, template, {
         'image_count': imageset.images.count(),
         'imageset': imageset,
