@@ -92,8 +92,7 @@
 						Administration
 					</a>
 					<div class="dropdown-menu" aria-labelledby="administrationNavbarDropdown">
-						<a class="dropdown-item" href="{% url 'administration:products' %}">Products</a>
-						<a class="dropdown-item" href="{% url 'administration:annotation_types' %}">Annotation Types</a>
+						<a class="dropdown-item" href="{% url 'administration:product_management' %}">Products &amp; Types</a>
 						{% if show_processing_panel %}
 						<a class="dropdown-item" href="{% url 'administration:plugins' %}">Plugins</a>
 						{% endif %}

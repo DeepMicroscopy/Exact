@@ -68,11 +68,62 @@ def logs(request):
     })
 
 def products(request):
-    teams = Team.objects.filter(members=request.user)
-    return render(request, 'administration/product.html', {
-        'products': Product.objects.filter(team__in=request.user.team_set.all()).order_by('team_id'),
-        'create_form': ProductCreationForm,
-        'teams': teams
+    return redirect(reverse('administration:product_management'))
+
+
+@login_required
+def product_management(request):
+    teams = Team.objects.filter(members=request.user).order_by('name')
+    products_qs = (Product.objects
+                   .filter(team__in=teams)
+                   .order_by('team__name', 'name')
+                   .select_related('team')
+                   .prefetch_related('annotationtype_set'))
+
+    selected_product = None
+    selected_at = None
+    new_type_for = None
+    panel = 'create_product'
+    at_edit_form = None
+    at_create_form = None
+    product_edit_form = None
+
+    product_create_form = ProductCreationForm()
+    product_create_form.fields['team'].queryset = teams
+
+    atid = request.GET.get('annotation_type')
+    ntf  = request.GET.get('new_type_for')
+    pid  = request.GET.get('product')
+
+    if atid:
+        selected_at = get_object_or_404(AnnotationType, id=atid)
+        selected_product = selected_at.product
+        panel = 'edit_annotation_type'
+        at_edit_form = AnnotationTypeEditForm(instance=selected_at)
+        at_edit_form.fields['product'].queryset = products_qs
+    elif ntf:
+        new_type_for = get_object_or_404(Product, id=ntf)
+        selected_product = new_type_for
+        panel = 'create_annotation_type'
+        at_create_form = AnnotationTypeCreationForm(initial={'product': new_type_for.id})
+        at_create_form.fields['product'].queryset = products_qs
+    elif pid:
+        selected_product = get_object_or_404(Product, id=pid)
+        panel = 'edit_product'
+        product_edit_form = ProductEditForm(instance=selected_product)
+        product_edit_form.fields['team'].queryset = teams
+
+    return render(request, 'administration/product_management.html', {
+        'teams': teams,
+        'all_products': products_qs,
+        'selected_product': selected_product,
+        'selected_at': selected_at,
+        'panel': panel,
+        'new_type_for': new_type_for,
+        'at_edit_form': at_edit_form,
+        'at_create_form': at_create_form,
+        'product_edit_form': product_edit_form,
+        'product_create_form': product_create_form,
     })
 
 
@@ -451,13 +502,11 @@ def create_product(request):
                         annotationType.save()
 
 
-                return redirect(reverse('administration:product', args=(product.id,)))
+                return redirect(reverse('administration:product_management') + f'?product={product.id}')
         else:
             messages.error(request, _('The name team combination is already in use by an product.'))
-        
 
-            
-    return redirect(reverse('administration:products'))
+    return redirect(reverse('administration:product_management'))
 
 
 def edit_product(request, product_id):
@@ -475,7 +524,7 @@ def edit_product(request, product_id):
             selected_product.save()
 
             messages.success(request, _('The product was edited successfully.'))
-    return redirect(reverse('administration:product', args=(product_id, )))
+    return redirect(reverse('administration:product_management') + f'?product={product_id}')
 
 
 def annotation_types(request):
@@ -768,15 +817,16 @@ def create_annotation_type(request):
                     type = form.save()
 
                 messages.success(request, _('The annotation type was created successfully.'))
-                return redirect(reverse('administration:annotation_type', args=(type.id,)))
+                return redirect(reverse('administration:product_management') + f'?annotation_type={type.id}')
         else:
             messages.error(request, _('The name is already in use by an annotation type.'))
-    
-    return redirect(reverse('administration:annotation_types'))
+
+    return redirect(reverse('administration:product_management'))
 
 
 def delete_annotation_type(request, annotation_type_id):
     selected_annotation_type = get_object_or_404(AnnotationType, id=annotation_type_id)
+    product_id = selected_annotation_type.product_id
 
     if request.method == 'GET':
         if request.user.has_perm('annotations.delete_annotationtype'):
@@ -785,13 +835,12 @@ def delete_annotation_type(request, annotation_type_id):
             else:
                 messages.success(request, _('The annotation type was deleted successfully.'))
                 selected_annotation_type.delete()
-                return redirect(reverse('administration:annotation_types'))
-                
+                base = reverse('administration:product_management')
+                return redirect(f'{base}?product={product_id}' if product_id else base)
         else:
             messages.error(request, _('Missing rights to delete annotation type.'))
 
-
-    return redirect(reverse('administration:annotation_type', args=(annotation_type_id, )))
+    return redirect(reverse('administration:product_management') + f'?annotation_type={annotation_type_id}')
 
 
 def edit_annotation_type(request, annotation_type_id):
@@ -823,7 +872,7 @@ def edit_annotation_type(request, annotation_type_id):
             selected_annotation_type.save()
 
             messages.success(request, _('The annotation type was edited successfully.'))
-    return redirect(reverse('administration:annotation_type', args=(annotation_type_id, )))
+    return redirect(reverse('administration:product_management') + f'?annotation_type={annotation_type_id}')
 
 
 @staff_member_required

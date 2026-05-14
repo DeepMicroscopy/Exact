@@ -1,0 +1,564 @@
+{% extends 'base/base.html' %}
+{% load widget_tweaks %}
+
+{% block bodyblock %}
+<style>
+  /* Light-mode defaults */
+  :root {
+    --pm-border:      #dee2e6;
+    --pm-sidebar-bg:  #f8f9fa;
+    --pm-header-bg:   #f8f9fa;
+    --pm-header-txt:  #495057;
+    --pm-row-border:  #f0f0f0;
+    --pm-at-border:   #f4f4f4;
+    --pm-link-txt:    #212529;
+    --pm-at-txt:      #444;
+    --pm-badge-bg:    #e9ecef;
+    --pm-badge-txt:   #6c757d;
+    --pm-panel-h4-border: #dee2e6;
+    --pm-actions-border:  #dee2e6;
+    --pm-panel-head-bg: #fff;
+    --pm-panel-head-txt: #333;
+    --pm-accent:      #007bff;
+    --pm-readonly-bg: #f8f9fa;
+    --pm-form-bg:     #fff;
+    --pm-form-txt:    #495057;
+    --pm-form-border: #ced4da;
+    --pm-card-bg:     #fff;
+    --pm-card-border: rgba(0,0,0,.125);
+  }
+  {% if frontend >= 2 %}
+  :root {
+    --pm-border:      #3a3540;
+    --pm-sidebar-bg:  #201e26;
+    --pm-header-bg:   #2d2a35;
+    --pm-header-txt:  #bbb;
+    --pm-row-border:  #2a2830;
+    --pm-at-border:   #252330;
+    --pm-link-txt:    #ccc;
+    --pm-at-txt:      #aaa;
+    --pm-badge-bg:    #35323e;
+    --pm-badge-txt:   #888;
+    --pm-panel-h4-border: #3a3540;
+    --pm-actions-border:  #3a3540;
+    --pm-panel-head-bg: #2a2730;
+    --pm-panel-head-txt: #ccc;
+    --pm-accent:      #5aabff;
+    --pm-readonly-bg: #2a2730;
+    --pm-form-bg:     #1e1b24;
+    --pm-form-txt:    #ccc;
+    --pm-form-border: #4a4555;
+    --pm-card-bg:     #252230;
+    --pm-card-border: #3a3540;
+  }
+  {% endif %}
+
+  .pm-sidebar {
+    height: calc(100vh - 80px);
+    overflow-y: auto;
+    border-right: 1px solid var(--pm-border);
+    padding: 0;
+    position: sticky;
+    top: 70px;
+    background: var(--pm-sidebar-bg);
+  }
+  .pm-sidebar .accordion .card {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    margin-bottom: -1px;
+    background: var(--pm-card-bg);
+    border-color: var(--pm-card-border);
+  }
+  .pm-sidebar .accordion .card-header {
+    padding: 0.5rem 0.75rem;
+    background: var(--pm-header-bg);
+    border-color: var(--pm-border);
+  }
+  .pm-sidebar .accordion .card-header h6 {
+    margin: 0;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--pm-header-txt);
+  }
+  .pm-sidebar .accordion .card-header button {
+    color: var(--pm-header-txt) !important;
+  }
+  .pm-sidebar .accordion .card-body {
+    padding: 0;
+    background: var(--pm-card-bg);
+  }
+  .pm-product-row {
+    display: flex;
+    align-items: center;
+    padding: 0.35rem 0.75rem 0.35rem 1.25rem;
+    border-bottom: 1px solid var(--pm-row-border);
+    gap: 6px;
+  }
+  .pm-product-row:last-child { border-bottom: none; }
+  .pm-product-row a.product-link {
+    flex: 1;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--pm-link-txt);
+    text-decoration: none;
+  }
+  .pm-product-row a.product-link:hover { color: var(--pm-accent); }
+  .pm-product-row a.product-link.active-product { color: var(--pm-accent); font-weight: 700; }
+  .pm-product-row .btn-add-type {
+    flex: 0 0 auto;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    font-size: 0.75rem;
+    line-height: 1;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .pm-at-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .pm-at-list li {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.25rem 0.75rem 0.25rem 2rem;
+    border-bottom: 1px solid var(--pm-at-border);
+    font-size: 0.78rem;
+  }
+  .pm-at-list li:last-child { border-bottom: none; }
+  .pm-at-list li a {
+    color: var(--pm-at-txt);
+    text-decoration: none;
+    flex: 1;
+  }
+  .pm-at-list li a:hover { color: var(--pm-accent); }
+  .pm-at-list li a.active-at { color: var(--pm-accent); font-weight: 600; }
+  .pm-color-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 1px solid rgba(128,128,128,0.3);
+    flex: 0 0 auto;
+  }
+  .pm-type-badge {
+    font-size: 0.62rem;
+    background: var(--pm-badge-bg);
+    color: var(--pm-badge-txt);
+    border-radius: 3px;
+    padding: 1px 4px;
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+  .pm-panel {
+    padding: 1.5rem;
+  }
+  .pm-panel .form-group label {
+    font-weight: 500;
+    font-size: 0.85rem;
+    color: var(--pm-form-txt);
+  }
+  .pm-panel .form-control {
+    font-size: 0.85rem;
+    background-color: var(--pm-form-bg);
+    color: var(--pm-form-txt);
+    border-color: var(--pm-form-border);
+  }
+  .pm-panel .form-control:focus {
+    background-color: var(--pm-form-bg);
+    color: var(--pm-form-txt);
+    border-color: var(--pm-accent);
+    box-shadow: 0 0 0 0.2rem rgba(90,171,255,0.2);
+  }
+  .pm-panel select.form-control option {
+    background: var(--pm-form-bg);
+    color: var(--pm-form-txt);
+  }
+  .pm-panel h4 {
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--pm-panel-h4-border);
+    color: var(--pm-link-txt);
+  }
+  .pm-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--pm-actions-border);
+  }
+  .pm-sidebar-header {
+    padding: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--pm-border);
+    background: var(--pm-panel-head-bg);
+  }
+  .pm-sidebar-header h6 {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--pm-panel-head-txt);
+  }
+  .inactive-badge {
+    font-size: 0.6rem;
+    background: #ffc107;
+    color: #333;
+    border-radius: 3px;
+    padding: 1px 4px;
+  }
+  .pm-panel .form-check-label { color: var(--pm-form-txt); }
+  .pm-panel input[type="color"].form-control { padding: 2px 6px; }
+</style>
+
+<div class="container-fluid" style="padding-top: 1rem;">
+  {% for message in messages %}
+  <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+    {{ message }}
+    <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+  </div>
+  {% endfor %}
+
+  <div class="row">
+    <!-- LEFT SIDEBAR -->
+    <div class="col-md-3 col-lg-3 col-xl-2 pm-sidebar">
+      <div class="pm-sidebar-header">
+        <h6>Products &amp; Types</h6>
+        <a href="{% url 'administration:product_management' %}" class="btn btn-sm btn-outline-primary">+ Product</a>
+      </div>
+
+      <div class="accordion" id="teamAccordion">
+        {% for team in teams %}
+        {% with is_active_team=selected_product.team_id|stringformat:"s" %}
+        <div class="card">
+          <div class="card-header" id="teamHead{{ team.id }}">
+            <h6>
+              <button class="btn btn-link btn-sm p-0 text-left w-100 font-weight-bold"
+                      style="color: var(--pm-header-txt); text-decoration: none;"
+                      type="button"
+                      data-toggle="collapse"
+                      data-target="#teamBody{{ team.id }}"
+                      aria-expanded="{% if selected_product and selected_product.team_id == team.id %}true{% else %}false{% endif %}">
+                {{ team.name }}
+              </button>
+            </h6>
+          </div>
+          <div id="teamBody{{ team.id }}"
+               class="collapse {% if not selected_product and forloop.first %}show{% elif selected_product and selected_product.team_id == team.id %}show{% endif %}"
+               aria-labelledby="teamHead{{ team.id }}">
+            <div class="card-body">
+              {% for product in all_products %}
+                {% if product.team_id == team.id %}
+                <div class="pm-product-row">
+                  <a href="?product={{ product.id }}"
+                     class="product-link {% if selected_product and selected_product.id == product.id %}active-product{% endif %}">
+                    {{ product.name }}
+                  </a>
+                  <a href="?new_type_for={{ product.id }}"
+                     class="btn btn-sm btn-outline-secondary btn-add-type"
+                     title="Add annotation type">+</a>
+                </div>
+                <ul class="pm-at-list">
+                  {% for at in product.annotationtype_set.all %}
+                  <li>
+                    <span class="pm-color-dot" style="background: {{ at.color_code }};"></span>
+                    <a href="?annotation_type={{ at.id }}"
+                       class="{% if selected_at and selected_at.id == at.id %}active-at{% endif %}">
+                      {{ at.name }}
+                    </a>
+                    <span class="pm-type-badge">{{ at.vector_type_display }}</span>
+                    {% if not at.active %}<span class="inactive-badge">off</span>{% endif %}
+                  </li>
+                  {% endfor %}
+                </ul>
+                {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        {% endwith %}
+        {% empty %}
+        <div class="p-3 text-muted" style="font-size: 0.82rem;">No teams found.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="col-md-9 col-lg-9 col-xl-10">
+      <div class="pm-panel">
+
+        <!-- CREATE PRODUCT -->
+        {% if panel == 'create_product' %}
+        <h4>Create New Product</h4>
+        <form action="{% url 'administration:create_product' %}" method="POST" style="max-width: 520px;">
+          {% csrf_token %}
+          <div class="form-group">
+            <label>{{ product_create_form.name.label }}</label>
+            {% render_field product_create_form.name class+='form-control' %}
+          </div>
+          <div class="form-group">
+            <label>{{ product_create_form.description.label }}</label>
+            {% render_field product_create_form.description class+='form-control' %}
+          </div>
+          <div class="form-group">
+            <label>{{ product_create_form.team.label }}</label>
+            {% render_field product_create_form.team class+='form-control' %}
+          </div>
+          <div class="form-group">
+            <label>Copy from existing product <span class="text-muted">(optional)</span></label>
+            <select class="form-control" name="copy_product">
+              <option value="0">— don't copy —</option>
+              {% for p in all_products %}
+              <option value="{{ p.id }}">{{ p.team.name }} – {{ p.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="pm-actions">
+            <span></span>
+            <button type="submit" class="btn btn-primary">Create Product</button>
+          </div>
+        </form>
+
+        <!-- EDIT PRODUCT -->
+        {% elif panel == 'edit_product' %}
+        <h4>Edit Product: {{ selected_product.name }}</h4>
+        <form action="{% url 'administration:edit_product' selected_product.id %}" method="POST" style="max-width: 520px;">
+          {% csrf_token %}
+          <div class="form-group">
+            <label>{{ product_edit_form.name.label }}</label>
+            {% render_field product_edit_form.name class+='form-control' %}
+          </div>
+          <div class="form-group">
+            <label>{{ product_edit_form.description.label }}</label>
+            {% render_field product_edit_form.description class+='form-control' %}
+          </div>
+          <div class="form-group">
+            <label>{{ product_edit_form.team.label }}</label>
+            {% render_field product_edit_form.team class+='form-control' %}
+          </div>
+          <div class="pm-actions">
+            <span></span>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+          </div>
+        </form>
+
+        <!-- CREATE ANNOTATION TYPE -->
+        {% elif panel == 'create_annotation_type' %}
+        <h4>New Annotation Type{% if new_type_for %} for <em>{{ new_type_for.name }}</em>{% endif %}</h4>
+        <form action="{% url 'administration:create_annotation_type' %}" method="POST" style="max-width: 560px;">
+          {% csrf_token %}
+          <div class="form-row">
+            <div class="col form-group">
+              <label>{{ at_create_form.name.label }}</label>
+              {% render_field at_create_form.name class+='form-control' %}
+            </div>
+            <div class="col-auto form-group">
+              <label>{{ at_create_form.sort_order.label }}</label>
+              {% render_field at_create_form.sort_order class+='form-control' style='width:80px' %}
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="col form-group">
+              <label>{{ at_create_form.vector_type.label }}</label>
+              <select name="vector_type" id="id_vector_type_create" class="form-control" onchange="updateSizeFields('create')">
+                <option value="1">Bounding Box</option>
+                <option value="2">Point</option>
+                <option value="3">Line</option>
+                <option value="4">Multiline</option>
+                <option value="5">Polygon</option>
+                <option value="6">Fixed Size Bounding Box</option>
+                <option value="7">Global Annotation</option>
+                <option value="8">Segmentation</option>
+              </select>
+            </div>
+            <div class="col form-group">
+              <label>{{ at_create_form.product.label }}</label>
+              {% render_field at_create_form.product class+='form-control' %}
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="col form-group">
+              <label>Color</label>
+              <input type="color" name="color_code" class="form-control" value="#CC4444" style="height: 38px; padding: 2px 6px;">
+            </div>
+            <div class="col form-group" id="c_node_count">
+              <label>{{ at_create_form.node_count.label }}</label>
+              {% render_field at_create_form.node_count class+='form-control' %}
+            </div>
+          </div>
+          <div class="form-row" id="c_size_fields">
+            <div class="col form-group">
+              <label>{{ at_create_form.default_width.label }}</label>
+              {% render_field at_create_form.default_width class+='form-control' %}
+            </div>
+            <div class="col form-group">
+              <label>{{ at_create_form.default_height.label }}</label>
+              {% render_field at_create_form.default_height class+='form-control' %}
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="col form-group form-check ml-2">
+              {% render_field at_create_form.active class+='form-check-input' %}
+              <label class="form-check-label">{{ at_create_form.active.label }}</label>
+            </div>
+            <div class="col form-group form-check">
+              {% render_field at_create_form.closed class+='form-check-input' %}
+              <label class="form-check-label">{{ at_create_form.closed.label }}
+                <span data-toggle="tooltip" title="Last polygon point connects to first." class="fa fa-question-circle text-muted"></span>
+              </label>
+            </div>
+            <div class="col form-group form-check">
+              {% render_field at_create_form.area_hit_test class+='form-check-input' %}
+              <label class="form-check-label">{{ at_create_form.area_hit_test.label }}
+                <span data-toggle="tooltip" title="Allow drawing inside existing annotations." class="fa fa-question-circle text-muted"></span>
+              </label>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="col form-group form-check ml-2">
+              {% render_field at_create_form.multi_frame class+='form-check-input' %}
+              <label class="form-check-label">{{ at_create_form.multi_frame.label }}
+                <span data-toggle="tooltip" title="Annotation applies to multiple frames." class="fa fa-question-circle text-muted"></span>
+              </label>
+            </div>
+            <div class="col form-group form-check">
+              {% render_field at_create_form.enable_concealed class+='form-check-input' %}
+              <label class="form-check-label">{{ at_create_form.enable_concealed.label }}</label>
+            </div>
+            <div class="col form-group form-check">
+              {% render_field at_create_form.enable_blurred class+='form-check-input' %}
+              <label class="form-check-label">{{ at_create_form.enable_blurred.label }}</label>
+            </div>
+          </div>
+          <div class="pm-actions">
+            <a href="{% url 'administration:product_management' %}" class="btn btn-outline-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary">Create Annotation Type</button>
+          </div>
+        </form>
+
+        <!-- EDIT ANNOTATION TYPE -->
+        {% elif panel == 'edit_annotation_type' %}
+        <h4>Edit Annotation Type: {{ selected_at.name }}</h4>
+        <form action="{% url 'administration:edit_annotation_type' selected_at.id %}" method="POST"
+              enctype="multipart/form-data" style="max-width: 560px;">
+          {% csrf_token %}
+          <div class="form-row">
+            <div class="col form-group">
+              <label>{{ at_edit_form.name.label }}</label>
+              {% render_field at_edit_form.name class+='form-control' %}
+            </div>
+            <div class="col-auto form-group">
+              <label>{{ at_edit_form.sort_order.label }}</label>
+              {% render_field at_edit_form.sort_order class+='form-control' style='width:80px' %}
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="col form-group">
+              <label>Vector Type</label>
+              <input type="text" class="form-control" value="{{ selected_at.vector_type_display }}" readonly style="background:var(--pm-readonly-bg);">
+            </div>
+            <div class="col form-group">
+              <label>{{ at_edit_form.product.label }}</label>
+              {% render_field at_edit_form.product class+='form-control' %}
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="col form-group">
+              <label>Color</label>
+              <input type="color" name="color_code" class="form-control"
+                     value="{{ at_edit_form.color_code.value }}"
+                     style="height: 38px; padding: 2px 6px;">
+            </div>
+            <div class="col form-group">
+              <label>{{ at_edit_form.default_width.label }}</label>
+              {% render_field at_edit_form.default_width class+='form-control' %}
+            </div>
+            <div class="col form-group">
+              <label>{{ at_edit_form.default_height.label }}</label>
+              {% render_field at_edit_form.default_height class+='form-control' %}
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="col form-group form-check ml-2">
+              {% render_field at_edit_form.active class+='form-check-input' %}
+              <label class="form-check-label">{{ at_edit_form.active.label }}</label>
+            </div>
+            <div class="col form-group form-check">
+              {% render_field at_edit_form.closed class+='form-check-input' %}
+              <label class="form-check-label">{{ at_edit_form.closed.label }}
+                <span data-toggle="tooltip" title="Last polygon point connects to first." class="fa fa-question-circle text-muted"></span>
+              </label>
+            </div>
+            <div class="col form-group form-check">
+              {% render_field at_edit_form.area_hit_test class+='form-check-input' %}
+              <label class="form-check-label">{{ at_edit_form.area_hit_test.label }}
+                <span data-toggle="tooltip" title="Allow drawing inside existing annotations." class="fa fa-question-circle text-muted"></span>
+              </label>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="col form-group form-check ml-2">
+              {% render_field at_edit_form.multi_frame class+='form-check-input' %}
+              <label class="form-check-label">{{ at_edit_form.multi_frame.label }}
+                <span data-toggle="tooltip" title="Annotation applies to multiple frames." class="fa fa-question-circle text-muted"></span>
+              </label>
+            </div>
+            <div class="col form-group form-check">
+              {% render_field at_edit_form.enable_concealed class+='form-check-input' %}
+              <label class="form-check-label">{{ at_edit_form.enable_concealed.label }}</label>
+            </div>
+            <div class="col form-group form-check">
+              {% render_field at_edit_form.enable_blurred class+='form-check-input' %}
+              <label class="form-check-label">{{ at_edit_form.enable_blurred.label }}</label>
+            </div>
+          </div>
+          {% if selected_at.image_file %}
+          <div class="form-group">
+            <label>Current Example Image</label><br>
+            <img src="{{ selected_at.image_file.url }}" style="max-height: 60px; border: 1px solid var(--pm-border); border-radius: 4px;">
+          </div>
+          {% endif %}
+          <div class="form-group">
+            <label>Upload Example Image</label>
+            <input type="file" name="image_file" class="form-control-file">
+          </div>
+          <div class="pm-actions">
+            <a href="{% url 'administration:delete_annotation_type' selected_at.id %}"
+               class="btn btn-outline-danger"
+               onclick="return confirm('Delete annotation type \'{{ selected_at.name }}\'? This cannot be undone.');">
+              Delete
+            </a>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+          </div>
+        </form>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function updateSizeFields(mode) {
+  var sel = document.getElementById('id_vector_type_' + mode);
+  if (!sel) return;
+  var v = parseInt(sel.value);
+  var sizeRow = document.getElementById(mode[0] + '_size_fields');
+  var nodeRow = document.getElementById(mode[0] + '_node_count');
+  if (sizeRow) sizeRow.style.display = (v === 1 || v === 6) ? '' : 'none';
+  if (nodeRow) nodeRow.style.display = (v === 5 || v === 4) ? '' : 'none';
+}
+document.addEventListener('DOMContentLoaded', function () {
+  updateSizeFields('create');
+});
+</script>
+{% endblock %}

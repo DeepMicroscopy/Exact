@@ -127,7 +127,7 @@
   left: 60px;   /* rail (48px) + gap */
   width: 265px;
   max-height: 56vh;
-  background: rgba(18,18,24,0.96);  /* opaque — no backdrop-filter over canvas */
+  background: rgba(70,70,70,0.96);  /* opaque — no backdrop-filter over canvas */
   border: 1px solid var(--ad-glass-b);
   border-radius: 10px;
   z-index: 200;
@@ -334,6 +334,45 @@
   color: var(--ad-text) !important; font-size: .78rem !important;
 }
 .drawer-img-filter .btn-primary { background: var(--ad-accent); border-color: var(--ad-accent); padding: 3px 8px; }
+
+/* ── Drag-to-upload overlay (covers entire image-list drawer) ── */
+.drawer-drop-overlay {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: rgba(136, 136, 136, 0.5);
+  border: 3px dashed rgba(255, 255, 255, 0.7);
+  border-radius: 4px;
+  z-index: 200;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  pointer-events: none;
+}
+.drawer-drop-overlay.visible { display: flex; }
+.drawer-drop-overlay img { width: 56px; height: 56px; opacity: 0.9; }
+.drawer-drop-overlay span {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+.drawer-upload-status {
+  flex: 0 0 auto;
+  padding: 4px 10px;
+  font-size: 0.68rem;
+  color: var(--ad-muted);
+  border-top: 1px solid var(--ad-border);
+}
+.drawer-upload-progress {
+  height: 3px;
+  background: var(--ad-accent);
+  border-radius: 2px;
+  width: 0%;
+  transition: width 0.2s;
+  margin-bottom: 3px;
+}
 
 #image_list { padding: 4px 2px; }
 #image_list a.annotate_image_link {
