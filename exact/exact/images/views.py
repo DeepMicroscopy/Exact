@@ -1707,6 +1707,8 @@ def manual_registration(request, image_source, image_target):
     return render(request, 'images/register_manually.html', {
             'source': image_source,
             'target': image_target,
+            'frames1': image_source_obj.frames,
+            'frames2': image_target_obj.frames,
             'step':step,
             'step1':step>0,
             'step2':step>1,

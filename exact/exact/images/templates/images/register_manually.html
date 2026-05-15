@@ -195,7 +195,15 @@
             </div>
              <!-- style="width: 25vw;" -->
              <div style="height: 85vh; position: relative; width: 100%;">
-                <div id="frameSlider1" style="width: 60vw;"></div>
+                {% if frames1 > 1 %}
+                <div style="display:flex;align-items:center;gap:10px;padding:4px 0 4px 4px;">
+                  <span style="font-size:.8rem;color:#888;">Z</span>
+                  <div id="frameSlider1"></div>
+                  <span style="font-size:.8rem;color:#aaa;" id="frameLabel1">{{zpos1}}</span>
+                </div>
+                {% else %}
+                <div id="frameSlider1" style="display:none;"></div>
+                {% endif %}
                 <div id="openseadragon1" style="position: absolute; height: 100%; width: 100%;"></div>
             
                 <!-- Crosshair overlay -->
@@ -225,8 +233,16 @@
             </div>
              <!-- style="width: 25vw;" -->
              <div style="height: 85vh; position: relative; width: 100%;">
+                {% if frames2 > 1 %}
+                <div style="display:flex;align-items:center;gap:10px;padding:4px 0 4px 4px;">
+                  <span style="font-size:.8rem;color:#888;">Z</span>
+                  <div id="frameSlider2"></div>
+                  <span style="font-size:.8rem;color:#aaa;" id="frameLabel2">{{zpos2}}</span>
+                </div>
+                {% else %}
+                <div id="frameSlider2" style="display:none;"></div>
+                {% endif %}
                 <div id="openseadragon2" style="position: absolute; height: 100%; width: 100%;"></div>
-                <div id="frameSlider2" style="width: 60vw;"></div>
             
                 <!-- Crosshair overlay -->
                 <div id="crosshair" style="
@@ -269,6 +285,9 @@
         </div>
     </div>
 </div>
+<span id="reg-cfg" style="display:none"
+      data-frames1="{{ frames1 }}" data-frames2="{{ frames2 }}"
+      data-zpos1="{{ zpos1 }}"   data-zpos2="{{ zpos2 }}"></span>
 <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
 <form id="submit-form" method="POST" action="{% url 'images:annotate_manually' source target %}">
     {% csrf_token %}
@@ -338,6 +357,36 @@ function store() {
 function getCSRFToken() {
     return document.querySelector('[name=csrfmiddlewaretoken]').value;
 }
+
+    var _cfg    = document.getElementById('reg-cfg').dataset;
+    var FRAMES1 = parseInt(_cfg.frames1);
+    var FRAMES2 = parseInt(_cfg.frames2);
+    var ZPOS1   = parseInt(_cfg.zpos1);
+    var ZPOS2   = parseInt(_cfg.zpos2);
+
+    if (FRAMES1 > 1) {
+        var lbl1 = document.getElementById('frameLabel1');
+        var sl1 = new Slider('#frameSlider1', {
+            min: 1, max: FRAMES1, step: 1, value: ZPOS1, tooltip: 'hide'
+        });
+        sl1.on('change', function (e) {
+            var z = e.newValue;
+            if (lbl1) lbl1.textContent = z;
+            dragon2.open(server_url + '/images/image/' + imageId + '/1/' + z + '/tile/');
+        });
+    }
+
+    if (FRAMES2 > 1) {
+        var lbl2 = document.getElementById('frameLabel2');
+        var sl2 = new Slider('#frameSlider2', {
+            min: 1, max: FRAMES2, step: 1, value: ZPOS2, tooltip: 'hide'
+        });
+        sl2.on('change', function (e) {
+            var z = e.newValue;
+            if (lbl2) lbl2.textContent = z;
+            dragon1.open(server_url + '/images/image/{{ target }}/1/' + z + '/tile/');
+        });
+    }
 
 </script>
 
