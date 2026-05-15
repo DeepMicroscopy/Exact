@@ -496,8 +496,10 @@ class EXACTViewer {
         }, this);
 
 
-        // disable nav if image is to small
-        if (imageInformation['width'] < 2500 || imageInformation['height'] < 2500)
+        // show navigator only for large images (≥10 000 px in either dimension)
+        var imageLargeEnoughForNav = imageInformation['width'] >= 10000 || imageInformation['height'] >= 10000;
+        this.showNavigator = imageLargeEnoughForNav;
+        if (!imageLargeEnoughForNav)
             viewer.navigator.element.style.display = "none";
         else {
             viewer.navigator.element.style.display = "inline-block";
