@@ -11,6 +11,7 @@
 | `c` | | Toggle annotation mode (draw ↔ select) |
 | `y` | | Toggle annotation visibility |
 | `b` | | Push active annotation type to background |
+| `Ctrl+F` | | Find a file in the image list |
 | `Ctrl+A` | | Draw on top of existing annotation |
 | `0–4` | | Change label of selected local annotation |
 | `0–4` | `Shift` | Change label of selected global annotation |
