@@ -32,7 +32,7 @@ class StatisticsViewer{
             }, anno_type).length;
 
             total_loaded += elements;
-            let annotype_element = document.getElementById(anno_type.name + '_' + anno_type.id);
+            let annotype_element = document.getElementById('count_' + anno_type.id);
             if (annotype_element !== null) {
                 if (type_statistics.finished) {
                     annotype_element.innerHTML = elements;
