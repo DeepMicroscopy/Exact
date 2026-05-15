@@ -53,7 +53,7 @@ class EXACTRegistrationSync {
     loadRegistrationInformation(url, context) {
 
         $.ajax(this.API_1_REGISTRATION_BASE_URL + url
-            +'&fields=id,transformation_matrix,file,rotation_angle,inv_matrix,get_scale,get_inv_scale,source_image.name,source_image.id,target_image.name,target_image.id'
+            +'&fields=id,transformation_matrix,file,rotation_angle,inv_matrix,get_scale,get_inv_scale,source_image.name,source_image.id,source_image.depth,source_image.frames,target_image.name,target_image.id'
             +'&expand=target_image,source_image,source_image.image_set', {
             type: 'GET',
             headers: context.gHeaders,
@@ -68,7 +68,7 @@ class EXACTRegistrationSync {
                 // and present them as flipped pairs so the overlay works in both directions.
                 $.ajax(context.API_1_REGISTRATION_BASE_URL
                     + '?source_image=' + context.imageInformation.id
-                    + '&fields=id,transformation_matrix,file,inv_matrix,get_scale,get_inv_scale,source_image.name,source_image.id,target_image.name,target_image.id'
+                    + '&fields=id,transformation_matrix,file,inv_matrix,get_scale,get_inv_scale,source_image.name,source_image.id,target_image.name,target_image.id,target_image.depth,target_image.frames'
                     + '&expand=target_image,source_image,target_image.image_set', {
                     type: 'GET',
                     headers: context.gHeaders,

@@ -103,27 +103,93 @@ class EXACTRegistrationHandler {
                 document.getElementById('registrationField').textContent = 'Registered to: ' + this.registration_pair.source_image.name + method;
             }
             $("#registration_selector").val(this.registration_pair.source_image.name);
+
+            // Z-stack slider: show when source image has depth > 1 (multi-file z-stack)
+            // or frames > 1 (multi-frame file like CZI). The two cases vary different
+            // URL components: z_dimension for depth, frame for frames.
+            var srcDepth  = this.registration_pair.source_image.depth  || 1;
+            var srcFrames = this.registration_pair.source_image.frames || 1;
+            var zLevels = srcDepth > 1 ? srcDepth : (srcFrames > 1 ? srcFrames : 1);
+            this._zVariesFrame = srcDepth <= 1 && srcFrames > 1;
+            this._currentZLevel = 1;
+            var zWrap = document.getElementById('zStackSliderWrap');
+            var zLabel = document.getElementById('zStackValLabel');
+            if (zLevels > 1 && zWrap) {
+                if (zLabel) zLabel.textContent = '1';
+                zWrap.style.display = '';
+                // Destroy previous instance if any
+                if (this._zSlider) { try { this._zSlider.destroy(); } catch(e) {} }
+                this._zSlider = new Slider('#zStackSlider', {
+                    min: 1, max: zLevels, step: 1, value: 1, tooltip: 'hide'
+                });
+                var self = this;
+                this._zSlider.on('change', function (e) {
+                    var z = e.newValue;
+                    if (zLabel) zLabel.textContent = z;
+                    self._currentZLevel = z;
+                    self._reloadBackgroundViewerAtDepth(z);
+                });
+            } else if (zWrap) {
+                zWrap.style.display = 'none';
+                if (this._zSlider) { try { this._zSlider.destroy(); } catch(e) {} this._zSlider = null; }
+            }
+
             var self = this;
             this.viewer.addHandler('animation', function() {
             self.syncViewBackgroundForeground();
             });
 
+            this._bgInitialOpen = true;
             this.background_viewer.addHandler("open", function (event) {
-
-                let opacity = 100; // New default value: 100%, since registration is shown anyhow
-                this.userData.viewer.raiseEvent('updateOverlayImageSlider', { opacity });
+                if (this.userData._bgInitialOpen) {
+                    this.userData._bgInitialOpen = false;
+                    let opacity = 100;
+                    this.userData.viewer.raiseEvent('updateOverlayImageSlider', { opacity });
+                }
                 this.userData.syncViewBackgroundForeground();
-            }, this);          
+            }, this);
 
         } else {
             if (this.background_viewer !== undefined) {
                 this.background_viewer.destroy();
                 document.getElementById('registrationField').textContent = '';
-
                 this.background_viewer = undefined;
-            }       
+            }
+            var zWrap = document.getElementById('zStackSliderWrap');
+            if (zWrap) zWrap.style.display = 'none';
         }
 
+    }
+
+    _tileSourceForDepth(z) {
+        var srcId = this.registration_pair.source_image.id;
+        var baseUrl = this.viewer.tileSources[0]
+            .replace(`images/image/${this.registration_pair.target_image.id}`,
+                     `images/image/${srcId}`);
+        // Tile URL pattern: /images/image/<id>/<z_dimension>/<frame>/tile/
+        // For depth-based z-stacks vary z_dimension (1st numeric after id).
+        // For frame-based z-stacks (CZI etc.) vary frame (2nd numeric after id).
+        if (this._zVariesFrame) {
+            return baseUrl.replace(
+                new RegExp(`(images/image/${srcId}/\\d+/)\\d+(/)`),
+                '$1' + z + '$2'
+            );
+        } else {
+            return baseUrl.replace(
+                new RegExp(`(images/image/${srcId}/)\\d+(/)`),
+                '$1' + z + '$2'
+            );
+        }
+    }
+
+    _reloadBackgroundViewerAtDepth(depth) {
+        if (!this.background_viewer) return;
+        var newSource = this._tileSourceForDepth(depth);
+        var self = this;
+        this.background_viewer.open(newSource);
+        this.background_viewer.addOnceHandler('open', function () {
+            self.syncViewBackgroundForeground();
+        });
     }
 
 
