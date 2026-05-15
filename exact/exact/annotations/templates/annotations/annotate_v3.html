@@ -811,6 +811,9 @@
         window._closeAllDrawers = closeAllDrawers;
         window.setDrawerOpen = setDrawerOpen;
 
+        // Drawers that need the viewer to remain fully interactive (no backdrop overlay)
+        var NO_BACKDROP_DRAWERS = { drawerScreening: true };
+
         allBtnIds.forEach(function (btnId) {
             var btn = document.getElementById(btnId);
             if (!btn) return;
@@ -822,7 +825,9 @@
                 if (!wasOpen && drawer) {
                     drawer.classList.add('drawer-open');
                     btn.classList.add('rail-active');
-                    document.getElementById('annoBackdrop').classList.add('active');
+                    if (!NO_BACKDROP_DRAWERS[drawerId]) {
+                        document.getElementById('annoBackdrop').classList.add('active');
+                    }
                     setDrawerOpen(true);
                 }
             });

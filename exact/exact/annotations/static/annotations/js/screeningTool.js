@@ -24,8 +24,6 @@ class ScreeningTool {
         if (window._closeAllDrawers) window._closeAllDrawers();
         drawer.classList.add('drawer-open');
         if (btn) btn.classList.add('rail-active');
-        var backdrop = document.getElementById('annoBackdrop');
-        if (backdrop) backdrop.classList.add('active');
         if (window.setDrawerOpen) window.setDrawerOpen(true);
     }
 
