@@ -459,6 +459,11 @@
   color: var(--ad-text) !important; font-size: .78rem !important;
 }
 .drawer-img-filter .btn-primary { background: var(--ad-accent); border-color: var(--ad-accent); padding: 3px 8px; }
+.drawer-img-filter .btn-outline-secondary {
+  border-color: var(--ad-border) !important; color: var(--ad-text-muted) !important;
+  background: transparent !important; font-size: .85rem;
+}
+.drawer-img-filter .btn-outline-secondary:hover { color: #fff !important; }
 
 /* ── Drag-to-upload overlay (covers entire image-list drawer) ── */
 .drawer-drop-overlay {

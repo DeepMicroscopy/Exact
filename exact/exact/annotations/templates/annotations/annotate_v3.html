@@ -113,6 +113,14 @@
       </a>
     </div>
     <div class="drawer-img-filter">
+      <div class="input-group input-group-sm" style="margin-bottom:6px;">
+        <input type="text" id="imageSearchInput" class="form-control form-control-sm"
+               placeholder="Search images…" autocomplete="off">
+        <span class="input-group-btn">
+          <button class="btn btn-sm btn-outline-secondary" id="imageSearchClear" tabindex="-1" title="Clear search"
+                  style="line-height:1;padding:3px 7px;">&times;</button>
+        </span>
+      </div>
       <div class="input-group input-group-sm">
         <select id="filter_images" class="form-control form-control-sm">
           <option value="All">{% trans 'Show All' %}</option>
@@ -821,6 +829,60 @@
         });
 
         document.getElementById('annoBackdrop').addEventListener('click', closeAllDrawers);
+
+        // ── Image list search ────────────────────────────────────────
+        var imageSearchInput = document.getElementById('imageSearchInput');
+        var imageSearchClear = document.getElementById('imageSearchClear');
+
+        function filterImageList(query) {
+            var q = query.trim().toLowerCase();
+            var links = document.querySelectorAll('#image_list .annotate_image_link');
+            links.forEach(function (a) {
+                a.style.display = (!q || a.textContent.toLowerCase().indexOf(q) !== -1) ? '' : 'none';
+            });
+            imageSearchClear.style.display = q ? '' : 'none';
+        }
+
+        imageSearchInput.addEventListener('input', function () { filterImageList(this.value); });
+
+        imageSearchClear.addEventListener('click', function () {
+            imageSearchInput.value = '';
+            filterImageList('');
+            imageSearchInput.focus();
+        });
+        imageSearchClear.style.display = 'none';
+
+        function openImageDrawerAndSearch() {
+            var drawer = document.getElementById('drawerImages');
+            var btn    = document.getElementById('railBtnImages');
+            if (!drawer.classList.contains('drawer-open')) {
+                closeAllDrawers();
+                drawer.classList.add('drawer-open');
+                btn.classList.add('rail-active');
+                document.getElementById('annoBackdrop').classList.add('active');
+                setDrawerOpen(true);
+            }
+            imageSearchInput.select();
+            imageSearchInput.focus();
+        }
+
+        document.addEventListener('keydown', function (e) {
+            var isMac = navigator.platform.toUpperCase().indexOf('MAC') !== -1;
+            var mod = isMac ? e.metaKey : e.ctrlKey;
+            if (mod && e.key === 'f') {
+                // Only intercept when not already typing in another text field
+                var tag = document.activeElement && document.activeElement.tagName;
+                if (tag !== 'TEXTAREA' && (tag !== 'INPUT' || document.activeElement === imageSearchInput)) {
+                    e.preventDefault();
+                    openImageDrawerAndSearch();
+                }
+            }
+            // Escape clears search and closes drawer if nothing else is focused
+            if (e.key === 'Escape' && document.activeElement === imageSearchInput) {
+                imageSearchInput.value = '';
+                filterImageList('');
+            }
+        });
 
         // Thumbnails
         var railThumbs = document.getElementById('railBtnThumbs');
