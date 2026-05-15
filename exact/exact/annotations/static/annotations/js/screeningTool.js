@@ -17,16 +17,28 @@ class ScreeningTool {
         this.initUiEvents(this);
     }
 
+    ensureDrawerOpen() {
+        var drawer = document.getElementById('drawerScreening');
+        if (!drawer || drawer.classList.contains('drawer-open')) return;
+        var btn = document.getElementById('railBtnScreening');
+        if (window._closeAllDrawers) window._closeAllDrawers();
+        drawer.classList.add('drawer-open');
+        if (btn) btn.classList.add('rail-active');
+        var backdrop = document.getElementById('annoBackdrop');
+        if (backdrop) backdrop.classList.add('active');
+        if (window.setDrawerOpen) window.setDrawerOpen(true);
+    }
+
     handleKeyUp(event) {
 
         if (["textarea", "text", "number"].includes(event.target.type) || this.screening_sync.screening_mode === undefined)
             return;
-            
+
         switch (event.keyCode) {
             case 65: //a left tile
                 var coordinates = this.moveLeft();
                 this.viewer.raiseEvent('viewCoordinates', { coordinates });
-
+                this.ensureDrawerOpen();
                 break;
             case 192: // ^ key
                 var coordinates = this.moveUp();
@@ -36,40 +48,41 @@ class ScreeningTool {
             case 87: //w up tile
                 var coordinates = this.moveUp();
                 this.viewer.raiseEvent('viewCoordinates', { coordinates });
-
+                this.ensureDrawerOpen();
                 break;
 
             case 83: //s down tile
                 var coordinates = this.moveDown();
                 this.viewer.raiseEvent('viewCoordinates', { coordinates });
-
+                this.ensureDrawerOpen();
                 break;
             case 68: //d right tile
                 var coordinates = this.moveRight();
                 this.viewer.raiseEvent('viewCoordinates', { coordinates });
-
+                this.ensureDrawerOpen();
                 break;
 
             case 74: //j left tile
                 var coordinates = this.moveLeft(false);
                 this.viewer.raiseEvent('viewCoordinates', { coordinates });
-
+                this.ensureDrawerOpen();
                 break;
             case 73: //i up tile
                 var coordinates = this.moveUp(false);
                 this.viewer.raiseEvent('viewCoordinates', { coordinates });
-
+                this.ensureDrawerOpen();
                 break;
 
             case 75: //k down tile
                 var coordinates = this.moveDown(false);
                 this.viewer.raiseEvent('viewCoordinates', { coordinates });
+                this.ensureDrawerOpen();
 
                 break;
             case 76: //l right tile
                 var coordinates = this.moveRight(false);
                 this.viewer.raiseEvent('viewCoordinates', { coordinates });
-
+                this.ensureDrawerOpen();
                 break;
         }
     };
