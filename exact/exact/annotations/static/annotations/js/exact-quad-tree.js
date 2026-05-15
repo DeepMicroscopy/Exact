@@ -110,7 +110,7 @@ class EXACTRegistrationHandler {
 
             this.background_viewer.addHandler("open", function (event) {
 
-                let opacity = 50;
+                let opacity = 100; // New default value: 100%, since registration is shown anyhow
                 this.userData.viewer.raiseEvent('updateOverlayImageSlider', { opacity });
                 this.userData.syncViewBackgroundForeground();
             }, this);          
