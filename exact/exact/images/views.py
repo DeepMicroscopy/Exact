@@ -228,6 +228,22 @@ def team_imagesets_api(request, team_id):
     return JsonResponse(result, safe=False)
 
 
+_VOLUMETRIC_EXTS = {'.nii', '.nii.gz', '.dcm', '.mha', '.mhd', '.nrrd', '.vtk', '.mgz'}
+_MOVIE_EXTS      = {'.mp4', '.mov', '.avi', '.mkv', '.webm', '.mkt', '.mpg', '.mpeg'}
+
+def _classify_image(img):
+    ext = os.path.splitext(img.name)[1].lower()
+    if ext in _VOLUMETRIC_EXTS:
+        return 'Volumetric'
+    if img.depth > 1:
+        return 'Z-Stack'
+    if img.frames > 1:
+        return 'Movie' if ext in _MOVIE_EXTS else 'Z-Stack'
+    if min(img.width, img.height) >= 10000 and max(img.width, img.height) >= 100000:
+        return 'Whole Slide Image'
+    return 'Regular Image'
+
+
 @login_required
 def team_statistics_api(request, team_id):
     """Return storage, file-type and annotation-type statistics for a team."""
@@ -237,6 +253,7 @@ def team_statistics_api(request, team_id):
 
     total_bytes = 0
     ext_stats = {}
+    type_stats = {}
     total_images = 0
 
     for imageset in imagesets:
@@ -249,7 +266,7 @@ def team_statistics_api(request, team_id):
                 if os.path.isfile(fp) and not os.path.islink(fp):
                     total_bytes += os.path.getsize(fp)
 
-        # Extension breakdown counts only original image files.
+        # Extension and image-type breakdown counts only original image files.
         for img in imageset.images.all():
             total_images += 1
             suffix = os.path.splitext(img.name)[1].lower() or '(none)'
@@ -262,6 +279,9 @@ def team_statistics_api(request, team_id):
             ext_stats[suffix]['count'] += 1
             ext_stats[suffix]['bytes'] += size
 
+            itype = _classify_image(img)
+            type_stats[itype] = type_stats.get(itype, 0) + 1
+
     from exact.annotations.models import Annotation
     anno_qs = (
         Annotation.objects
@@ -270,6 +290,9 @@ def team_statistics_api(request, team_id):
         .annotate(count=Count('id'))
         .order_by('-count')
     )
+
+    # Fixed display order for image types
+    TYPE_ORDER = ['Whole Slide Image', 'Regular Image', 'Z-Stack', 'Movie', 'Volumetric']
 
     return JsonResponse({
         'storage_gb': round(total_bytes / (1024 ** 3), 3),
@@ -280,6 +303,10 @@ def team_statistics_api(request, team_id):
              for k, v in ext_stats.items()],
             key=lambda x: -x['count']
         ),
+        'image_types': [
+            {'type': t, 'count': type_stats[t]}
+            for t in TYPE_ORDER if t in type_stats
+        ],
         'annotation_types': [
             {'name': a['annotation_type__name'],
              'color': a['annotation_type__color_code'],

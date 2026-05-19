@@ -138,7 +138,15 @@
                 <canvas id="extChart"></canvas>
               </div>
             </div>
-            <div class="col-md-8">
+            <div class="col-md-4">
+              <h6 style="font-size:.78rem;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">
+                Image modalities
+              </h6>
+              <div style="position:relative;height:260px;">
+                <canvas id="typeChart"></canvas>
+              </div>
+            </div>
+            <div class="col-md-4">
               <h6 style="font-size:.78rem;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">
                 Annotations by type
               </h6>
@@ -171,6 +179,7 @@
 
     // ── Chart instances (destroyed on re-open) ──────────────────────
     var _extChart  = null;
+    var _typeChart = null;
     var _annoChart = null;
 
     // ── Chart.js defaults for dark theme ───────────────────────────
@@ -200,6 +209,7 @@
 
         // Destroy previous chart instances
         if (_extChart)  { _extChart.destroy();  _extChart  = null; }
+        if (_typeChart) { _typeChart.destroy(); _typeChart = null; }
         if (_annoChart) { _annoChart.destroy(); _annoChart = null; }
 
         $('#teamStatsModal').modal('show');
@@ -244,6 +254,45 @@
                                 label: function(ctx) {
                                     var e = d.extensions[ctx.dataIndex];
                                     return ' ' + e.ext + ': ' + e.count + ' file' + (e.count !== 1 ? 's' : '');
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // ── Doughnut chart: image modalities ─────────────────────
+            var TYPE_COLORS = {
+                'Whole Slide Image': '#5c6af6',
+                'Regular Image':     '#4ade80',
+                'Z-Stack':           '#facc15',
+                'Movie':             '#f87171',
+                'Volumetric':        '#38bdf8',
+            };
+            var typeCtx = document.getElementById('typeChart').getContext('2d');
+            _typeChart = new Chart(typeCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: d.image_types.map(function(t) { return t.type; }),
+                    datasets: [{
+                        data:            d.image_types.map(function(t) { return t.count; }),
+                        backgroundColor: d.image_types.map(function(t) { return TYPE_COLORS[t.type] || '#888'; }),
+                        borderColor:     '#1e1e26',
+                        borderWidth:     2,
+                        hoverOffset:     8,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { animateRotate: true, duration: 700 },
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 }, padding: 8 } },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    var t = d.image_types[ctx.dataIndex];
+                                    return ' ' + t.type + ': ' + t.count.toLocaleString();
                                 }
                             }
                         }
