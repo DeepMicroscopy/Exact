@@ -12,9 +12,9 @@ import shutil
 
 def base_data(request):
     show_datasets = settings.SHOW_DEMO_DATASETS
-    show_processing_panel = settings.SHOW_PROCESSING_PANEL and request.user.has_perm('processing.use_server_side_plugins')
+    show_processing_panel = settings.SHOW_PROCESSING_PANEL and hasattr(request, 'user') and request.user.has_perm('processing.use_server_side_plugins')
 
-    if request.user.is_authenticated:
+    if hasattr(request, 'user') and request.user.is_authenticated:
         my_teams = Team.objects.filter(members=request.user)
         unread_message_count = 0
 #        processing_queue = PluginJob.objects.filter(~Q(creator=request.user)).count()
@@ -41,7 +41,7 @@ def base_data(request):
         'TOOLS_ENABLED': settings.TOOLS_ENABLED,
         'SHOW_AVAILABLE_SPACE' : settings.SHOW_AVAILABLE_SPACE,
         'my_teams': my_teams,
-        'frontend' : request.user.prefs.frontend if hasattr(request.user,'prefs') and hasattr(request.user.prefs,'frontend') and request.user.prefs.frontend else 1,
+        'frontend' : request.user.prefs.frontend if hasattr(request, 'user') and hasattr(request.user,'prefs') and hasattr(request.user.prefs,'frontend') and request.user.prefs.frontend else 1,
         'free_tb' : storage_memory_data['free_tb'],
         'used_tb' : storage_memory_data['used_tb'],
         'total_tb' : storage_memory_data['total_tb'],
