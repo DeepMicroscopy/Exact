@@ -91,3 +91,4 @@ nav:
     - Plugin System: developer-guide/plugins.md
     - Frontend: developer-guide/frontend.md
   - API Reference: api/index.md
+  - What's New: whats-new.md
