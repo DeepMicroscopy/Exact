@@ -592,13 +592,6 @@ class PILBytesIO(BytesIO):
 
 
 def getSlideHandler(path):
-        import pathlib as _pl
-        if _pl.Path(path).is_dir():
-            dcm_files = list(_pl.Path(path).rglob('*.dcm')) + list(_pl.Path(path).rglob('*.DCM'))
-            if dcm_files:
-                return SlideIOSlide(str(path))
-            raise ValueError(f'No supported format found in directory: {path}')
-
         # Determine format of slide to see how to handle it.
         t = time.time()
         f = open(path,'rb')

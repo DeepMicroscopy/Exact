@@ -122,39 +122,7 @@ class Image(models.Model):
         super(Image, self).save(*args, **kwargs)
 
 
-    def _save_from_directory(self, path: Path):
-        """Handle a pre-assembled directory (e.g. DICOM series folder)."""
-        osr = getSlideHandler(str(path))
-        self.filename = path.name
-        self.save()
-        if osr.nFrames > 1:
-            for frame_id in range(osr.nFrames):
-                FrameDescription.objects.create(
-                    Image=self,
-                    frame_id=frame_id,
-                    file_path=self.filename,
-                    description=osr.frame_descriptors[frame_id],
-                    frame_type=osr.frame_type,
-                )
-            self.frames = osr.nFrames
-            self.defaultFrame = osr.default_frame
-        self.width, self.height = osr.level_dimensions[0]
-        try:
-            self.mpp = (float(osr.properties[openslide.PROPERTY_NAME_MPP_X]) +
-                        float(osr.properties[openslide.PROPERTY_NAME_MPP_Y])) / 2
-        except (KeyError, ValueError):
-            self.mpp = 0
-        try:
-            self.objectivePower = osr.properties[openslide.PROPERTY_NAME_OBJECTIVE_POWER]
-        except (KeyError, ValueError):
-            self.objectivePower = 1
-        self.save()
-
     def save_file(self, path:Path):
-
-        if Path(path).is_dir():
-            self._save_from_directory(Path(path))
-            return
 
         try:
             # check if the file can be opened natively, if not convert it

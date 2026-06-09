@@ -23,8 +23,6 @@ urlpatterns = [
 
     re_path(r'^image/setfree/(\d+)/$', views.set_free, name='setfree_imageset'),
     re_path(r'^image/upload/(\d+)/$', views.upload_image, name='upload_image'),
-    re_path(r'^image/upload_folder_chunk/(\d+)/$', views.upload_folder_chunk, name='upload_folder_chunk'),
-    re_path(r'^image/upload_folder_finalize/(\d+)/$', views.upload_folder_finalize, name='upload_folder_finalize'),
     re_path(r'^image/rename/(\d+)/$', views.rename_image, name='rename_image'),
     re_path(r'^api/image/crop/(\d+)/(\d+)/(\d+)/(\d+)/(\d+)/(\d+)/(\d+)/$', views.crop_from_image, name='crop_from_image'),
     re_path(r'^image/(\d+)/(\d+)/(\d+)/tile/$', views.view_image, name='view_image'),
