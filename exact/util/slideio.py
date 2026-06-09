@@ -48,7 +48,7 @@ class SlideIOSlide():
 
         # SlideIO sometimes returns 0 for resolution on DICOM files that lack
         # standard PixelSpacing tags.  Fall back to pydicom for those tags.
-        if self.mpp_x == 0.0 and not _Path(filename).is_dir():
+        if self.mpp_x == 0.0:
             _dcm = self._read_dcm_meta()
             if _dcm is not None:
                 ps = (getattr(_dcm, 'PixelSpacing', None)
