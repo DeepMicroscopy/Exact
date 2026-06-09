@@ -45,9 +45,19 @@ class SlideIOSlide():
         # Zeiss is funny and thinks BGR is the proper way to store images ...
         if (os.path.splitext(filename.upper())[-1] == '.CZI'):
             self.mode = 'BGRA'
-        
-    
-        #print('Circular mask shape:',self.circMask.shape)
+
+        # SlideIO sometimes returns 0 for resolution on DICOM files that lack
+        # standard PixelSpacing tags.  Fall back to pydicom for those tags.
+        if self.mpp_x == 0.0:
+            _dcm = self._read_dcm_meta()
+            if _dcm is not None:
+                ps = (getattr(_dcm, 'PixelSpacing', None)
+                      or getattr(_dcm, 'ImagerPixelSpacing', None)
+                      or getattr(_dcm, 'NominalScannedPixelSpacing', None))
+                if ps and float(ps[0]) > 0:
+                    self.mpp_x = float(ps[1]) * 1000  # mm → µm
+                    self.mpp_y = float(ps[0]) * 1000
+
         self.properties = { openslide.PROPERTY_NAME_BACKGROUND_COLOR:  '000000',
                            openslide.PROPERTY_NAME_MPP_X: self.mpp_x,
                            openslide.PROPERTY_NAME_MPP_Y: self.mpp_y,
@@ -71,11 +81,35 @@ class SlideIOSlide():
     def nFrames(self):
         return self.scene.num_z_slices
     
+    def _read_dcm_meta(self):
+        """Read DICOM metadata via pydicom; returns dataset or None."""
+        if not hasattr(self, '_dcm_meta_cache'):
+            ext = os.path.splitext(self.fileName.lower())[1]
+            if ext == '.dcm':
+                try:
+                    import pydicom
+                    self._dcm_meta_cache = pydicom.dcmread(self.fileName, stop_before_pixels=True)
+                except Exception:
+                    self._dcm_meta_cache = None
+            else:
+                self._dcm_meta_cache = None
+        return self._dcm_meta_cache
+
     @property
     def frame_descriptors(self) -> list[str]:
         """ returns a list of strings, used as descriptor for each frame
         """
-        return ['%.2f µ' % (self.scene.z_resolution*1E6*x) for x in range(self.scene.num_z_slices)]
+        z_res = self.scene.z_resolution * 1e6
+        if z_res > 0:
+            return ['%.2f µ' % (z_res * x) for x in range(self.scene.num_z_slices)]
+        # For DICOM temporal sequences, fall back to FrameTime tag
+        _dcm = self._read_dcm_meta()
+        if _dcm is not None:
+            ft = getattr(_dcm, 'FrameTime', None)
+            if ft is not None:
+                frame_time_s = float(ft) / 1000.0
+                return ['%.2f s (%d)' % (frame_time_s * x, x) for x in range(self.scene.num_z_slices)]
+        return ['Frame %d' % x for x in range(self.scene.num_z_slices)]
 
     @property
     def default_frame(self):
@@ -93,6 +127,11 @@ class SlideIOSlide():
 
     @property
     def frame_type(self):
+        _dcm = self._read_dcm_meta()
+        if _dcm is not None:
+            modality = str(getattr(_dcm, 'Modality', ''))
+            if modality in ('CT', 'MR', 'PT', 'NM'):
+                return FrameType.ZSTACK
         return FrameType.TIMESERIES
 
 
@@ -105,7 +144,15 @@ class SlideIOSlide():
         img = self.scene.read_block(rect=[*location, int(size[0]/ds), int(size[1]/ds)], size=size, slices=(frame, frame+1))
         img_4ch = np.zeros([size[1], size[0],4], dtype=np.uint8)
         img_4ch[:,:,3] = 255
-        img_4ch[:,:,0:3] = img if self.mode=='RGBA' else img[:,:,::-1]
+        if img.ndim == 2:
+            # Grayscale (single-channel) — broadcast to RGB
+            img_4ch[:,:,0] = img
+            img_4ch[:,:,1] = img
+            img_4ch[:,:,2] = img
+        elif self.mode == 'RGBA':
+            img_4ch[:,:,0:3] = img
+        else:
+            img_4ch[:,:,0:3] = img[:,:,::-1]
         return Image.fromarray(img_4ch)
 
     @property
@@ -129,7 +176,7 @@ class SlideIOSlide():
         return (id_x+(id_y*self.geometry_columns[level]))
     
 
-    def get_id(self, pixelX:int, pixelY:int, level:int) -> (int, int, int):
+    def get_id(self, pixelX:int, pixelY:int, level:int) -> tuple:
 
         id_x = round(-0.5+(pixelX/self.geometry_tilesize[level][1]))
         id_y = round(-0.5+(pixelY/self.geometry_tilesize[level][0]))
