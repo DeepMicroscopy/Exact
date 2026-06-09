@@ -25,9 +25,13 @@ class SlideIOSlide():
         # Define how to pickle the object
         return (self.__class__, (self.fileName,))
 
-    def __init__(self,filename):
+    def __init__(self, filename):
         self.fileName = filename
-        self.fh = slideio.open_slide(filename)
+        from pathlib import Path as _Path
+        if _Path(filename).is_dir():
+            self.fh = slideio.open_slide(filename, 'DCM')
+        else:
+            self.fh = slideio.open_slide(filename)
         self.scene = self.fh.get_scene(0)
 
 
