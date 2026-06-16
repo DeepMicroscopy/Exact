@@ -1,60 +1,254 @@
-{% extends 'base/base.html' %}
 {% load static %}
 {% load i18n %}
 {% load widget_tweaks %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="shortcut icon" type="image/png" href="{% static 'symbols/exact_small.ico' %}">
+  <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/font-awesome.min.css' %}">
+  <title>EXACT — Login</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
 
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0f0f14;
+      background-image:
+        radial-gradient(ellipse 80% 60% at 20% 10%, rgba(170,15,234,.18) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 80% 90%, rgba(90,10,160,.20) 0%, transparent 55%);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
 
+    /* ── Card ─────────────────────────────────────────── */
+    .login-card {
+      width: 100%;
+      max-width: 400px;
+      padding: 0 16px;
+    }
 
-{% block bodyblock %}
-    <div class="row">
-        <div class="col-md-4 col-md-offset-4">
-            <div class="panel panel-primary login-panel">
-                <div class="panel-heading">
-                    <h1 class="panel-title">Login</h1>
-                </div>
-                <div class="panel-body">
-                    <form class="login" method="POST" action="{% url 'login' %}" id="loginForm">
-                        {% csrf_token %}
-                        <div class="form-group">
-                            <label for="inputUsername">{{ form.username.label }}</label>
-                            {% render_field form.username id='inputUsername' class+='form-control' autocomplete='username webauthn' %}
-                            {% for error in form.username.errors %}
-                                <p class="text-danger">{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                        <div class="form-group">
-                            <label for="inputPassword">{{ form.password.label }}</label>
-                            {% render_field form.password id='inputPassword' class+='form-control' %}
-                            {% for error in form.password.errors %}
-                                <p class="text-danger">{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                        {% for error in form.non_field_errors %}
-                            <p class="text-danger">{{ error }}</p>
-                        {% endfor %}
-                        <input type="hidden" name="next" value="{{ request.GET.next }}" />
-                        <input type="hidden" name="passkeys" id="passkeys"/>
-                        <button class="btn btn-primary btn-block" type="submit">Login</button><br/>
-                        {%include 'passkeys.js' %}
-                        <button class="btn btn-block btn-dark" type="button" onclick="authn('loginForm')"> &nbsp;Login By Passkeys</button>
-                    </form>
-                    <div class="login-panel-footer">
-                        <a href="{% url 'django_registration_register' %}">Register a new User</a> - <a href="{% url 'password_reset' %}">Password Reset</a>
-                    </div>
-                    
-                </div>
-            </div>
-        </div>
-    </div>
-{% endblock bodyblock %}
+    .login-box {
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 16px;
+      padding: 40px 36px 32px;
+      box-shadow: 0 24px 64px rgba(0,0,0,.55), 0 0 0 1px rgba(170,15,234,.12);
+      backdrop-filter: blur(12px);
+    }
 
-{% block additional_js %}
-<script type="text/javascript" src="{% static 'scripts/jquery-3.2.1.min.js' %}"></script>
-<script type="text/javascript" src="{% static 'scripts/bootstrap.min.js' %}"></script>
-<script type="text/javascript" src="{% static 'scripts/notify.min.js' %}"></script>
+    /* ── Logo ─────────────────────────────────────────── */
+    .login-logo {
+      display: block;
+      margin: 0 auto 8px;
+      height: 44px;
+    }
+
+    .login-tagline {
+      text-align: center;
+      color: rgba(255,255,255,.35);
+      font-size: .72rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+    }
+
+    /* ── Form labels ─────────────────────────────────── */
+    label {
+      display: block;
+      font-size: .75rem;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.45);
+      margin-bottom: 6px;
+    }
+
+    /* ── Inputs ──────────────────────────────────────── */
+    .login-input {
+      width: 100%;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 8px;
+      color: #e8e8f0;
+      font-size: .92rem;
+      padding: 10px 13px;
+      outline: none;
+      transition: border-color .18s, box-shadow .18s, background .18s;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    .login-input::placeholder { color: rgba(255,255,255,.22); }
+    .login-input:focus {
+      background: rgba(255,255,255,.09);
+      border-color: rgba(170,15,234,.65);
+      box-shadow: 0 0 0 3px rgba(170,15,234,.18);
+    }
+    .login-input:-webkit-autofill {
+      -webkit-box-shadow: 0 0 0 100px #1e1a2e inset;
+      -webkit-text-fill-color: #e8e8f0;
+    }
+
+    .form-group { margin-bottom: 18px; }
+
+    /* ── Error text ──────────────────────────────────── */
+    .field-error {
+      font-size: .76rem;
+      color: #f87171;
+      margin-top: 4px;
+    }
+    .error-box {
+      background: rgba(248,113,113,.10);
+      border: 1px solid rgba(248,113,113,.30);
+      border-radius: 7px;
+      padding: 9px 12px;
+      font-size: .82rem;
+      color: #f87171;
+      margin-bottom: 16px;
+    }
+
+    /* ── Buttons ─────────────────────────────────────── */
+    .btn-login {
+      width: 100%;
+      padding: 11px;
+      border: none;
+      border-radius: 8px;
+      font-size: .9rem;
+      font-weight: 600;
+      letter-spacing: .03em;
+      cursor: pointer;
+      transition: opacity .15s, transform .1s;
+    }
+    .btn-login:active { transform: scale(.98); }
+
+    .btn-primary-login {
+      background: linear-gradient(135deg, #aa0fea 0%, #7c09b0 100%);
+      color: #fff;
+      box-shadow: 0 4px 18px rgba(170,15,234,.35);
+      margin-bottom: 10px;
+    }
+    .btn-primary-login:hover { opacity: .88; }
+
+    .btn-passkey {
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.14);
+      color: rgba(255,255,255,.75);
+    }
+    .btn-passkey:hover {
+      background: rgba(255,255,255,.10);
+      color: #fff;
+    }
+    .btn-passkey i { margin-right: 6px; }
+
+    /* ── Divider ─────────────────────────────────────── */
+    .login-divider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 14px 0;
+      color: rgba(255,255,255,.20);
+      font-size: .72rem;
+    }
+    .login-divider::before,
+    .login-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: rgba(255,255,255,.10);
+    }
+
+    /* ── Footer links ────────────────────────────────── */
+    .login-footer {
+      margin-top: 22px;
+      text-align: center;
+      font-size: .78rem;
+      color: rgba(255,255,255,.30);
+    }
+    .login-footer a {
+      color: rgba(170,15,234,.85);
+      text-decoration: none;
+      transition: color .15s;
+    }
+    .login-footer a:hover { color: #c844f5; }
+    .login-footer .sep { margin: 0 8px; }
+
+    /* ── Copyright ───────────────────────────────────── */
+    .login-copy {
+      text-align: center;
+      margin-top: 20px;
+      font-size: .68rem;
+      color: rgba(255,255,255,.15);
+    }
+  </style>
+</head>
+<body>
+
+<div class="login-card">
+  <div class="login-box">
+
+    <img src="{% static 'images/logo.svg' %}" class="login-logo" alt="EXACT">
+    <p class="login-tagline">Label Server</p>
+
+    <form class="login" method="POST" action="{% url 'login' %}" id="loginForm">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+      <div class="error-box">
+        {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="form-group">
+        <label for="inputUsername">{{ form.username.label }}</label>
+        {% render_field form.username id='inputUsername' class='login-input' autocomplete='username webauthn' placeholder='Username' %}
+        {% for error in form.username.errors %}
+          <p class="field-error">{{ error }}</p>
+        {% endfor %}
+      </div>
+
+      <div class="form-group">
+        <label for="inputPassword">{{ form.password.label }}</label>
+        {% render_field form.password id='inputPassword' class='login-input' placeholder='Password' %}
+        {% for error in form.password.errors %}
+          <p class="field-error">{{ error }}</p>
+        {% endfor %}
+      </div>
+
+      <input type="hidden" name="next" value="{{ request.GET.next }}">
+      <input type="hidden" name="passkeys" id="passkeys">
+
+      <button class="btn-login btn-primary-login" type="submit">Sign in</button>
+
+      <div class="login-divider">or</div>
+
+      {%include 'passkeys.js' %}
+      <button class="btn-login btn-passkey" type="button" onclick="authn('loginForm')">
+        <i class="fa fa-key"></i>Sign in with Passkey
+      </button>
+    </form>
+
+  </div>
+
+  <div class="login-footer">
+    <a href="{% url 'django_registration_register' %}">Create account</a>
+    <span class="sep">·</span>
+    <a href="{% url 'password_reset' %}">Forgot password?</a>
+  </div>
+
+  <p class="login-copy">EXACT Label Server</p>
+</div>
+
+<script src="{% static 'scripts/jquery-3.2.1.min.js' %}"></script>
+<script src="{% static 'scripts/bootstrap.min.js' %}"></script>
 <script>
   window.onload = function () {
     checkConditionalUI('loginForm');
   };
 </script>
-{% endblock %}
+</body>
+</html>
