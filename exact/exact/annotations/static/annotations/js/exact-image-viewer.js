@@ -30,6 +30,7 @@ class EXACTViewer {
         if (this._framedSetup) this._installFramedMode(this._framedSetup);
         window.exactOSDViewer = this.viewer;  // expose for segmentationTool
         window.exactImageId   = this.imageId; // expose for segmentationTool (updated on image switch)
+        window.exactAnnotationViewer = this;  // expose for inline template handlers
         window.dispatchEvent(new CustomEvent('exactViewerReady', { detail: this.viewer }));
         this.exact_registration_sync = undefined;
         this.browser_sync = undefined;
@@ -1115,6 +1116,7 @@ class EXACTViewer {
     // ── end 3-Axis MPR ────────────────────────────────────────────────────────
 
     destroy() {
+        if (window.exactAnnotationViewer === this) window.exactAnnotationViewer = null;
         window.removeEventListener('exactMPRPlanesAvailable', this._mprHandler);
         if (this.mprActive) this.exit3AxisMode();
         $('#planeSelector').hide();

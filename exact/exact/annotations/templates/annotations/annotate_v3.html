@@ -970,18 +970,29 @@
                 .catch(function () {});
         });
 
-        // Visibility checkboxes for segmentation layers
+        // Visibility checkboxes for all annotation types
         document.querySelectorAll('#statistics_table .stats-row').forEach(function (row) {
             var typeId     = parseInt(row.dataset.annotation_type_id);
             var vectorType = parseInt(row.dataset.vector_type);
-            if (vectorType !== 8) return;
             var cb = document.getElementById('DrawCheckBox_' + typeId);
             if (!cb) return;
-            cb.addEventListener('change', function (e) {
-                e.stopPropagation();
-                var layer = window.segmentationLayers && window.segmentationLayers.get(typeId);
-                if (layer) layer.setVisible(cb.checked);
-            });
+            if (vectorType === 8) {
+                // Segmentation layers: toggle canvas layer directly
+                cb.addEventListener('change', function (e) {
+                    e.stopPropagation();
+                    var layer = window.segmentationLayers && window.segmentationLayers.get(typeId);
+                    if (layer) layer.setVisible(cb.checked);
+                });
+            } else {
+                // Regular annotation types: toggle via annotation viewer
+                cb.addEventListener('change', function (e) {
+                    e.stopPropagation();
+                    var v = window.exactAnnotationViewer;
+                    if (v && v.changeAnnotationTypeVisibility) {
+                        v.changeAnnotationTypeVisibility(typeId, cb.checked, false, false);
+                    }
+                });
+            }
         });
 
         // Seg tool palette
