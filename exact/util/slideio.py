@@ -134,6 +134,60 @@ class SlideIOSlide():
                 return FrameType.ZSTACK
         return FrameType.TIMESERIES
 
+    @property
+    def meta_data(self) -> dict:
+        result = {}
+        _dcm = self._read_dcm_meta()
+        if _dcm is None:
+            return result
+        def _get(tag, default=''):
+            v = getattr(_dcm, tag, None)
+            return str(v).strip() if v is not None else default
+        # Timing
+        ft = getattr(_dcm, 'FrameTime', None)
+        if ft is not None:
+            result['fps'] = round(1000.0 / float(ft), 3)
+        series_date = _get('SeriesDate')
+        series_time = _get('SeriesTime')
+        if series_date:
+            ts = series_date
+            if series_time:
+                t = series_time.split('.')[0]
+                ts += ' ' + t[:2] + ':' + t[2:4] + ':' + t[4:6]
+            result['acquisition_datetime'] = ts
+        # Device / study
+        for tag, key in [
+            ('Modality',            'modality'),
+            ('Manufacturer',        'manufacturer'),
+            ('ManufacturerModelName','device_model'),
+            ('DeviceSerialNumber',  'device_serial'),
+            ('SeriesDescription',   'series_description'),
+            ('StudyDescription',    'study_description'),
+            ('PatientID',           'patient_id'),
+            ('InstitutionName',     'institution'),
+        ]:
+            v = _get(tag)
+            if v:
+                result[key] = v
+        return result
+
+    @property
+    def meta_data_dict(self) -> dict:
+        labels = {
+            'fps':                  'Frame rate (fps)',
+            'acquisition_datetime': 'Acquisition date/time',
+            'modality':             'Modality',
+            'manufacturer':         'Manufacturer',
+            'device_model':         'Device model',
+            'device_serial':        'Device serial',
+            'series_description':   'Series description',
+            'study_description':    'Study description',
+            'patient_id':           'Patient ID',
+            'institution':          'Institution',
+        }
+        present = self.meta_data
+        return {k: v for k, v in labels.items() if k in present}
+
 
     def get_thumbnail(self, size):
         return Image.fromarray(self.scene.read_block(rect=[0, 0, *self.scene.rect[2:]], size=size))
