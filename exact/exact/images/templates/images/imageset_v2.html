@@ -3,6 +3,317 @@
 {% load static %}
 {% load widget_tweaks %}
 
+{% block head %}
+<style>
+  /* ── Kill container-fluid gutters ─────────────────────────── */
+  .content.container-fluid {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  /* ── Page background ──────────────────────────────────────── */
+  body, .content {
+    background: #0f0f14 !important;
+    background-image:
+      radial-gradient(ellipse 70% 40% at 5% 0%, rgba(170,15,234,.10) 0%, transparent 55%),
+      radial-gradient(ellipse 50% 35% at 95% 100%, rgba(90,10,160,.12) 0%, transparent 55%) !important;
+  }
+
+  /* ── Feedback alerts (hide when invisible) ─────────────────── */
+  .js_feedback { margin: 0 16px 8px; }
+
+  /* ── Tab nav ──────────────────────────────────────────────── */
+  #myTab {
+    border-bottom: 1px solid rgba(255,255,255,.09);
+    background: rgba(255,255,255,.02);
+    padding: 0 16px;
+    margin: 0;
+  }
+  #myTab .nav-link {
+    color: rgba(255,255,255,.40);
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    padding: 10px 16px;
+    font-size: .83rem;
+    font-weight: 500;
+    background: transparent;
+    transition: color .15s, border-color .15s;
+  }
+  #myTab .nav-link:hover {
+    color: rgba(255,255,255,.75);
+    background: transparent;
+    border-color: transparent;
+  }
+  #myTab .nav-link.active {
+    color: #d580f8;
+    border-bottom: 2px solid #aa0fea;
+    background: transparent;
+  }
+
+  /* ── Tab content wrapper ──────────────────────────────────── */
+  #myTabContent {
+    padding: 20px 16px;
+  }
+
+  /* ── Cards (general) ─────────────────────────────────────── */
+  .card {
+    background: rgba(255,255,255,.04) !important;
+    border: 1px solid rgba(255,255,255,.09) !important;
+    border-radius: 10px !important;
+    color: #e0e0ea !important;
+  }
+  .card-header {
+    background: rgba(255,255,255,.04) !important;
+    border-bottom: 1px solid rgba(255,255,255,.09) !important;
+    border-radius: 10px 10px 0 0 !important;
+    padding: 12px 16px !important;
+  }
+  .card-header h3, .card-header h4 {
+    font-size: .95rem;
+    font-weight: 600;
+    margin: 0;
+    color: #e0e0ea;
+  }
+  .card-body { background: transparent !important; }
+  .card-body-extend { color: #e0e0ea; }
+
+  /* ── Image cards ──────────────────────────────────────────── */
+  .imagecard {
+    width: 180px !important;
+    border: 1px solid rgba(255,255,255,.09) !important;
+    border-radius: 10px !important;
+    overflow: hidden;
+    background: rgba(255,255,255,.04) !important;
+    margin: 6px !important;
+    transition: transform .18s, border-color .18s, box-shadow .18s;
+    display: inline-flex;
+    flex-direction: column;
+  }
+  .imagecard:hover {
+    transform: translateY(-3px);
+    border-color: rgba(170,15,234,.40) !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,.4), 0 0 0 1px rgba(170,15,234,.16);
+  }
+  .img-wrapper {
+    background: rgba(255,255,255,.06) !important;
+    height: 130px !important;
+    width: 100% !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-bottom: 1px solid rgba(255,255,255,.07);
+  }
+  .img-wrapper img { object-fit: contain; max-height: 100%; max-width: 100%; }
+  .imagecard .card-body { padding: 8px 10px !important; }
+  .card-title { margin: 0; }
+  .card-title a { color: #e0e0ea !important; font-size: .78rem; font-weight: 500; }
+  .card-title a:hover { color: #d580f8 !important; }
+
+  /* ── Rename button ────────────────────────────────────────── */
+  .imagecard .btn-light {
+    background: rgba(255,255,255,.07) !important;
+    border: 1px solid rgba(255,255,255,.10) !important;
+    color: rgba(255,255,255,.5) !important;
+    border-radius: 5px;
+    padding: 1px 5px;
+    font-size: .75rem;
+  }
+  .imagecard .btn-light:hover { color: #d580f8 !important; border-color: rgba(170,15,234,.4) !important; }
+
+  /* ── Upload card ──────────────────────────────────────────── */
+  #uploadcard {
+    border: 1.5px dashed rgba(255,255,255,.16) !important;
+    background: transparent !important;
+    display: inline-flex;
+    flex-direction: column;
+  }
+  #uploadcard:hover { border-color: #aa0fea !important; background: rgba(170,15,234,.07) !important; }
+  .inputDnD input[type=file] {
+    color: rgba(255,255,255,.4);
+    font-size: .78rem;
+  }
+  #uploadimage {
+    color: rgba(255,255,255,.35);
+    font-size: .78rem;
+    padding: 6px 10px;
+    text-align: center;
+  }
+
+  /* ── Annotations sidebar ──────────────────────────────────── */
+  .col-md-2 > .card, .col-md-2 > div > .card {
+    background: rgba(255,255,255,.04) !important;
+    border: 1px solid rgba(255,255,255,.09) !important;
+    border-radius: 10px !important;
+    padding: 12px 14px;
+    color: #e0e0ea;
+  }
+  .col-md-2 h4 {
+    font-size: .82rem;
+    font-weight: 700;
+    color: rgba(255,255,255,.55);
+    letter-spacing: .06em;
+    margin-bottom: 10px;
+  }
+  .col-md-2 .card .card-header { font-size: .78rem; font-weight: 600; color: #c880f8; }
+  .col-md-2 li { color: rgba(255,255,255,.55); font-size: .8rem; }
+  .col-md-2 li b { color: #e0e0ea; }
+
+  /* ── Download link ────────────────────────────────────────── */
+  a.image2 { color: rgba(170,15,234,.75) !important; font-size: .7rem; display: block; text-align: center; padding: 4px 0; }
+  a.image2:hover { color: #d580f8 !important; }
+
+  /* ── Tables ───────────────────────────────────────────────── */
+  .table { color: #e0e0ea !important; }
+  .table thead th {
+    color: rgba(255,255,255,.45);
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(255,255,255,.10) !important;
+    border-top: none !important;
+  }
+  .table td { border-top: 1px solid rgba(255,255,255,.06) !important; font-size: .82rem; }
+  .table-striped tbody tr:nth-of-type(odd) { background: rgba(255,255,255,.025) !important; }
+
+  /* ── Forms / inputs ───────────────────────────────────────── */
+  .form-control {
+    background: rgba(255,255,255,.06) !important;
+    border: 1px solid rgba(255,255,255,.12) !important;
+    color: #e0e0ea !important;
+    border-radius: 7px !important;
+  }
+  .form-control:focus {
+    background: rgba(255,255,255,.09) !important;
+    border-color: rgba(170,15,234,.65) !important;
+    box-shadow: 0 0 0 3px rgba(170,15,234,.18) !important;
+    color: #e0e0ea !important;
+    outline: none !important;
+  }
+  .form-control option { background: #1a1a26; color: #e0e0ea; }
+  textarea.form-control { resize: vertical; }
+
+  /* ── Buttons ──────────────────────────────────────────────── */
+  .btn-primary {
+    background: linear-gradient(135deg, #aa0fea 0%, #7c09b0 100%) !important;
+    border: none !important;
+    color: #fff !important;
+    border-radius: 7px !important;
+    font-size: .82rem;
+    font-weight: 600;
+    box-shadow: 0 3px 12px rgba(170,15,234,.3);
+  }
+  .btn-primary:hover { opacity: .88 !important; }
+  .btn-secondary {
+    background: rgba(255,255,255,.08) !important;
+    border: 1px solid rgba(255,255,255,.14) !important;
+    color: rgba(255,255,255,.7) !important;
+    border-radius: 7px !important;
+    font-size: .82rem;
+  }
+  .btn-secondary:hover { background: rgba(255,255,255,.13) !important; color: #fff !important; }
+  .btn-warning {
+    background: rgba(250,204,21,.15) !important;
+    border: 1px solid rgba(250,204,21,.35) !important;
+    color: #facc15 !important;
+    border-radius: 7px !important;
+    font-size: .82rem;
+  }
+  .btn-danger {
+    background: rgba(248,113,113,.15) !important;
+    border: 1px solid rgba(248,113,113,.35) !important;
+    color: #f87171 !important;
+    border-radius: 7px !important;
+    font-size: .82rem;
+  }
+  .btn-success {
+    background: rgba(74,222,128,.15) !important;
+    border: 1px solid rgba(74,222,128,.35) !important;
+    color: #4ade80 !important;
+    border-radius: 7px !important;
+    font-size: .82rem;
+  }
+  .btn-default {
+    background: rgba(255,255,255,.06) !important;
+    border: 1px solid rgba(255,255,255,.12) !important;
+    color: rgba(255,255,255,.6) !important;
+    border-radius: 7px !important;
+  }
+  .input-group-btn { margin-left: 4px; }
+
+  /* ── Sub-tabs (upload) ────────────────────────────────────── */
+  #upLoadTab.nav-tabs { padding: 0; margin-bottom: 0; }
+  #upLoadTab .nav-link h4 { font-size: .82rem; margin: 0; font-weight: 500; }
+  #upLoadTab .nav-link.active h4 { color: #d580f8; }
+
+  /* ── Code blocks ──────────────────────────────────────────── */
+  code {
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: 4px;
+    padding: 2px 5px;
+    color: #c880f8;
+    font-size: .8em;
+  }
+
+  /* ── Modal (rename) ───────────────────────────────────────── */
+  #renameModal .modal-content {
+    background: #14141c;
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: 12px;
+    color: #e0e0ea;
+  }
+  #renameModal .modal-header {
+    border-bottom: 1px solid rgba(255,255,255,.09);
+    padding: 14px 20px;
+  }
+  #renameModal .modal-footer { border-top: 1px solid rgba(255,255,255,.09); }
+  #renameModal .btn-close, #renameModal .btn-secondary.close, #renameModal [data-dismiss="modal"] {
+    color: rgba(255,255,255,.5);
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+  }
+
+  /* ── Progress bar ─────────────────────────────────────────── */
+  .progress {
+    background: rgba(255,255,255,.07);
+    border-radius: 4px;
+    height: 4px;
+  }
+  .progress-bar { background: #aa0fea !important; }
+
+  /* ── Thumbnail radio labels (registration tab) ────────────── */
+  .thumbnail label img { border-radius: 6px; max-width: 100%; }
+  .thumbnail input[type=radio]:checked + label img {
+    outline: 2px solid #aa0fea;
+    outline-offset: 2px;
+  }
+
+  /* ── Collapse card (options) ──────────────────────────────── */
+  .collapse .card.card-body {
+    background: rgba(255,255,255,.03) !important;
+    border: 1px solid rgba(255,255,255,.09) !important;
+    color: #e0e0ea;
+  }
+
+  /* ── Links ────────────────────────────────────────────────── */
+  a { color: rgba(170,15,234,.85); }
+  a:hover { color: #c844f5; }
+  .label.label-info {
+    background: rgba(129,140,248,.18);
+    border: 1px solid rgba(129,140,248,.35);
+    color: #818cf8;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: .72rem;
+  }
+</style>
+{% endblock head %}
+
 {% block taggerimports %}
 
 <script type="text/javascript" src="{% static 'scripts/jquery-3.2.1.min.js' %}"></script>

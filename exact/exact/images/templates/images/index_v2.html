@@ -1,166 +1,551 @@
-{% extends 'base/base.html' %} {% load static %} {% load widget_tweaks %} {% block taggerimports %}
-<script type="text/javascript" src="{% static 'scripts/jquery-3.2.1.min.js' %}"></script>
-<script type="text/javascript" src="{% static 'scripts/bootstrap.bundle.min.js' %}"></script>
-<script type="text/javascript" src="{% static 'annotations/js/openseadragon.min.js' %}"></script>
-<script type="text/javascript" src="{% static 'scripts/chart.umd.min.js' %}"></script>
+{% extends 'base/base.html' %} {% load static %} {% load widget_tweaks %}
+
+{% block taggerimports %}
+<script src="{% static 'scripts/jquery-3.2.1.min.js' %}"></script>
+<script src="{% static 'scripts/bootstrap.bundle.min.js' %}"></script>
+<script src="{% static 'annotations/js/openseadragon.min.js' %}"></script>
+<script src="{% static 'scripts/chart.umd.min.js' %}"></script>
 {% endblock taggerimports %}
- {% block bodyblock %}
 
+{% block head %}
+<style>
+  /* ── Variables ────────────────────────────────────────────── */
+  :root {
+    --idx-bg:        #0f0f14;
+    --idx-glass:     rgba(255,255,255,.04);
+    --idx-glass-h:   rgba(255,255,255,.07);
+    --idx-border:    rgba(255,255,255,.09);
+    --idx-border-h:  rgba(170,15,234,.45);
+    --idx-purple:    #aa0fea;
+    --idx-purple-d:  rgba(170,15,234,.18);
+    --idx-text:      #e0e0ea;
+    --idx-muted:     rgba(255,255,255,.36);
+    --idx-radius:    12px;
+  }
 
-<div class="container-fluid h-100 text-bg-dark" style="padding-top:20px">
-    <div class="row justify-content-center h-100">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                </div>
-                <div class="card-body">
-                    <div class="row">
+  /* ── Kill container-fluid gutters for full-bleed layout ───── */
+  .content.container-fluid {
+    padding: 0 !important;
+  }
 
-                        <div class="col-sm-3">
-                            <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist" aria-orientation="vertical">
-                                {% for team in userteams %}
-                                    {% if forloop.first and not last_image_action and last_image_action.image.id is not None %}
-                                        <a class="nav-link active" id="v-pills-profile-tab" data-toggle="pill" href="#v-pills-{{team.id}}" role="tab" aria-controls="v-pills-{{team.id}}" aria-selected="false">{{team.name}}</a>
-                                    {% elif last_image_action.image.image_set.team.id == team.id %}
-                                        <a class="nav-link active" id="v-pills-profile-tab" data-toggle="pill" href="#v-pills-{{team.id}}" role="tab" aria-controls="v-pills-{{team.id}}" aria-selected="false">{{team.name}}</a>
-                                    {% else %}
-                                        <a class="nav-link" id="v-pills-profile-tab" data-toggle="pill" href="#v-pills-{{team.id}}" role="tab" aria-controls="v-pills-{{team.id}}" aria-selected="false">{{team.name}}</a>
-                                    {% endif %}
-                                {% endfor %}
-                                    <div id="newTeamBodyActive" style="display:none">
-                                        <form method="post" action="{% url 'users:create_team' %}">
-                                            {% csrf_token %}
-                                            <div class="input-group mb-3">
-                                                <input type="text" name="name" class="form-control" placeholder="Team name" aria-label="Team name" aria-describedby="button-addon2">
-                                                <div class="input-group-append">
-                                                  <input class="btn btn-primary" type="submit" id="button-addon2" value="&#10003;"></input>
-                                                  <button class="btn btn-danger" type="button" id="cancelTeambutton">&#10006;</button>
-                                                </div>
-                                              </div>
-                                        </form>
-                                    </div>
-                                    <div id="newTeamBody">
-                                    <a href="#" class="nav-link" id="newTeamButton"><img src="{% static 'images/new_team.svg' %}">New Team</a>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-sm">
-                            <div class="tab-content" id="v-pills-tabContent">
-                                {% for team in userteams %}
-                                {% if forloop.first and not last_image_action and last_image_action.image.id is not None %}
-                                    <div class="tab-pane fade show active" id="v-pills-{{team.id}}" role="tabpanel" aria-labelledby="v-pills-{{team.id}}-tab" data-team-id="{{team.id}}">
-                                {% elif last_image_action.image.image_set.team.id == team.id %}
-                                    <div class="tab-pane fade show active" id="v-pills-{{team.id}}" role="tabpanel" aria-labelledby="v-pills-{{team.id}}-tab" data-team-id="{{team.id}}">
-                                {% else %}
-                                    <div class="tab-pane fade" id="v-pills-{{team.id}}" role="tabpanel" aria-labelledby="v-pills-{{team.id}}-tab" data-team-id="{{team.id}}">
-                                {% endif %}
-                                    <div class="card">
-                                        <div class="card-header d-flex justify-content-between align-items-center" style="padding:8px 12px;">
-                                            <span class="font-weight-bold" style="font-size:.9rem;">{{ team.name }}</span>
-                                            <button class="btn btn-sm btn-outline-secondary stats-btn"
-                                                    data-team-id="{{ team.id }}"
-                                                    data-team-name="{{ team.name }}"
-                                                    title="Team statistics"
-                                                    style="font-size:.78rem;">
-                                                <i class="fa fa-bar-chart"></i> Statistics
-                                            </button>
-                                        </div>
-                                        <div class="card-body">
-                                            <div class="row imageset-container" id="imagesets-{{team.id}}">
-                                                <div class="imageset-loading" style="padding:20px;color:#888;">
-                                                    <span class="spinner-border spinner-border-sm" role="status"></span>
-                                                    Loading…
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
+  /* ── Shell ────────────────────────────────────────────────── */
+  .idx-shell {
+    display: flex;
+    min-height: 100vh;
+    padding-top: 70px; /* match navbar clearance from styles_v2.css */
+    background: var(--idx-bg);
+    background-image:
+      radial-gradient(ellipse 70% 50% at 5% 0%, rgba(170,15,234,.14) 0%, transparent 55%),
+      radial-gradient(ellipse 50% 40% at 95% 100%, rgba(90,10,160,.16) 0%, transparent 55%);
+  }
 
-                    </div>
-                </div>
-            </div>
-        </div>
+  /* ── Sidebar ──────────────────────────────────────────────── */
+  .idx-sidebar {
+    flex: 0 0 220px;
+    padding: 28px 14px 28px 20px;
+    border-right: 1px solid var(--idx-border);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .idx-sidebar-title {
+    font-size: .65rem;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--idx-muted);
+    padding: 0 8px 12px;
+    border-bottom: 1px solid var(--idx-border);
+    margin-bottom: 8px;
+  }
+
+  /* ── Team links ───────────────────────────────────────────── */
+  .idx-team-link {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    color: var(--idx-muted);
+    font-size: .85rem;
+    font-weight: 500;
+    text-decoration: none !important;
+    transition: background .15s, color .15s;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    width: 100%;
+    text-align: left;
+  }
+  .idx-team-link:hover {
+    background: var(--idx-glass-h);
+    color: var(--idx-text);
+  }
+  .idx-team-link.active {
+    background: var(--idx-purple-d);
+    color: #d580f8;
+    border: 1px solid rgba(170,15,234,.30);
+  }
+
+  .idx-team-initial {
+    flex: 0 0 26px;
+    height: 26px;
+    border-radius: 6px;
+    background: rgba(170,15,234,.22);
+    color: #c770f0;
+    font-size: .72rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .idx-team-link.active .idx-team-initial {
+    background: rgba(170,15,234,.40);
+    color: #e0a8ff;
+  }
+
+  /* ── New-team inline form ─────────────────────────────────── */
+  .idx-new-team-btn {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    color: var(--idx-muted);
+    font-size: .82rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px dashed rgba(255,255,255,.14);
+    background: transparent;
+    width: 100%;
+    margin-top: 6px;
+    transition: border-color .15s, color .15s;
+    text-align: left;
+  }
+  .idx-new-team-btn:hover { border-color: var(--idx-purple); color: #d580f8; }
+
+  .idx-team-form input.form-control {
+    background: rgba(255,255,255,.06);
+    border: 1px solid var(--idx-border);
+    color: var(--idx-text);
+    border-radius: 7px;
+    font-size: .82rem;
+    padding: 5px 9px;
+  }
+  .idx-team-form input.form-control:focus {
+    border-color: var(--idx-purple);
+    box-shadow: 0 0 0 2px var(--idx-purple-d);
+    background: rgba(255,255,255,.09);
+    outline: none;
+  }
+  .idx-team-form .btn-confirm {
+    background: var(--idx-purple);
+    border: none;
+    color: #fff;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: .8rem;
+    cursor: pointer;
+  }
+  .idx-team-form .btn-cancel {
+    background: rgba(255,255,255,.08);
+    border: 1px solid var(--idx-border);
+    color: var(--idx-muted);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: .8rem;
+    cursor: pointer;
+  }
+
+  /* ── Main content ─────────────────────────────────────────── */
+  .idx-main {
+    flex: 1;
+    padding: 28px 28px 40px;
+    overflow-y: auto;
+  }
+
+  /* ── Team header ──────────────────────────────────────────── */
+  .idx-team-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 22px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--idx-border);
+  }
+  .idx-team-title {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--idx-text);
+    margin: 0;
+  }
+
+  .idx-stats-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--idx-border);
+    background: var(--idx-glass);
+    color: var(--idx-muted);
+    font-size: .78rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color .15s, color .15s, background .15s;
+  }
+  .idx-stats-btn:hover {
+    border-color: var(--idx-purple);
+    color: #d580f8;
+    background: var(--idx-purple-d);
+  }
+
+  /* ── Imageset grid ────────────────────────────────────────── */
+  .imageset-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .imageset-loading {
+    color: var(--idx-muted);
+    font-size: .85rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 32px 0;
+  }
+  .imageset-loading .spinner-border { color: var(--idx-purple); }
+
+  /* ── Imageset card ────────────────────────────────────────── */
+  .idx-iset-card {
+    width: 180px;
+    background: var(--idx-glass);
+    border: 1px solid var(--idx-border);
+    border-radius: var(--idx-radius);
+    overflow: hidden;
+    transition: transform .18s, border-color .18s, box-shadow .18s;
+    cursor: pointer;
+    text-decoration: none !important;
+  }
+  .idx-iset-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(170,15,234,.40);
+    box-shadow: 0 8px 28px rgba(0,0,0,.45), 0 0 0 1px rgba(170,15,234,.18);
+  }
+
+  .idx-iset-thumb {
+    height: 130px;
+    background: rgba(255,255,255,.03);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-bottom: 1px solid var(--idx-border);
+  }
+  .idx-iset-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .idx-iset-body {
+    padding: 9px 10px 10px;
+  }
+  .idx-iset-name {
+    display: block;
+    font-size: .78rem;
+    font-weight: 600;
+    color: var(--idx-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+  }
+  .idx-iset-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 4px;
+  }
+  .idx-iset-count {
+    font-size: .68rem;
+    color: var(--idx-muted);
+  }
+  .idx-prio-high { color: #f87171; font-size: .7rem; }
+  .idx-prio-low  { color: #60a5fa; font-size: .7rem; }
+
+  /* ── "New imageset" card ──────────────────────────────────── */
+  .idx-new-card {
+    width: 180px;
+    height: 180px;
+    border: 1.5px dashed rgba(255,255,255,.14);
+    border-radius: var(--idx-radius);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+    background: transparent;
+  }
+  .idx-new-card:hover {
+    border-color: var(--idx-purple);
+    background: var(--idx-purple-d);
+  }
+  .idx-new-card-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(170,15,234,.20);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: #c770f0;
+    transition: background .15s;
+  }
+  .idx-new-card:hover .idx-new-card-icon { background: rgba(170,15,234,.40); }
+  .idx-new-card-label {
+    font-size: .75rem;
+    font-weight: 500;
+    color: var(--idx-muted);
+  }
+
+  /* ── New-imageset inline form ─────────────────────────────── */
+  .idx-new-form-card {
+    width: 180px;
+    background: var(--idx-glass);
+    border: 1px solid var(--idx-border);
+    border-radius: var(--idx-radius);
+    padding: 14px 12px;
+  }
+  .idx-new-form-card input.form-control {
+    background: rgba(255,255,255,.06);
+    border: 1px solid var(--idx-border);
+    color: var(--idx-text);
+    border-radius: 7px;
+    font-size: .8rem;
+    padding: 5px 8px;
+    width: 100%;
+    margin-bottom: 8px;
+  }
+  .idx-new-form-card input.form-control:focus {
+    border-color: var(--idx-purple);
+    box-shadow: 0 0 0 2px var(--idx-purple-d);
+    outline: none;
+    background: rgba(255,255,255,.09);
+    color: var(--idx-text);
+  }
+  .idx-new-form-card input.form-control::placeholder { color: rgba(255,255,255,.25); }
+  .idx-new-form-actions { display: flex; gap: 6px; }
+  .idx-form-confirm {
+    flex: 1;
+    background: var(--idx-purple);
+    border: none;
+    color: #fff;
+    border-radius: 6px;
+    padding: 5px 0;
+    font-size: .78rem;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .idx-form-cancel {
+    flex: 0 0 auto;
+    background: rgba(255,255,255,.07);
+    border: 1px solid var(--idx-border);
+    color: var(--idx-muted);
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-size: .78rem;
+    cursor: pointer;
+  }
+
+  /* ── Statistics modal ─────────────────────────────────────── */
+  #teamStatsModal .modal-content {
+    background: #14141c;
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: 14px;
+    color: var(--idx-text);
+  }
+  #teamStatsModal .modal-header {
+    border-bottom: 1px solid var(--idx-border);
+    padding: 16px 22px;
+  }
+  #teamStatsModal .modal-title { font-size: .95rem; font-weight: 600; }
+  #teamStatsModal .close {
+    color: var(--idx-muted);
+    opacity: 1;
+    font-size: 1.3rem;
+    line-height: 1;
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+  #teamStatsModal .modal-body { padding: 22px; }
+
+  .stat-card {
+    background: rgba(255,255,255,.04);
+    border: 1px solid var(--idx-border);
+    border-radius: 10px;
+    padding: 18px 12px;
+    text-align: center;
+  }
+  .stat-card-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #818cf8;
+    line-height: 1.1;
+  }
+  .stat-card-label {
+    font-size: .7rem;
+    color: var(--idx-muted);
+    margin-top: 5px;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+  }
+
+  .chart-section-title {
+    font-size: .68rem;
+    font-weight: 700;
+    color: var(--idx-muted);
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    margin-bottom: 12px;
+  }
+</style>
+{% endblock head %}
+
+{% block bodyblock %}
+<div class="idx-shell">
+
+  <!-- ── Sidebar: team list ──────────────────────────────────── -->
+  <aside class="idx-sidebar">
+    <div class="idx-sidebar-title">My Teams</div>
+
+    <nav id="v-pills-tab" role="tablist">
+      {% for team in userteams %}
+        {% if forloop.first and not last_image_action and last_image_action.image.id is not None %}
+          <a class="idx-team-link active" data-toggle="pill" href="#v-pills-{{team.id}}" role="tab" aria-selected="true">
+        {% elif last_image_action.image.image_set.team.id == team.id %}
+          <a class="idx-team-link active" data-toggle="pill" href="#v-pills-{{team.id}}" role="tab" aria-selected="true">
+        {% else %}
+          <a class="idx-team-link" data-toggle="pill" href="#v-pills-{{team.id}}" role="tab" aria-selected="false">
+        {% endif %}
+          <span class="idx-team-initial">{{ team.name|slice:":1"|upper }}</span>
+          {{ team.name }}
+        </a>
+      {% endfor %}
+
+      <!-- New team -->
+      <div id="newTeamBodyActive" style="display:none" class="idx-team-form" style="padding:4px 0;">
+        <form method="post" action="{% url 'users:create_team' %}">
+          {% csrf_token %}
+          <div style="display:flex;gap:4px;padding:4px 0;">
+            <input type="text" name="name" class="form-control" placeholder="Team name">
+            <input class="btn-confirm" type="submit" value="✓">
+            <button class="btn-cancel" type="button" id="cancelTeambutton">✕</button>
+          </div>
+        </form>
       </div>
+      <div id="newTeamBody">
+        <button class="idx-new-team-btn" id="newTeamButton">
+          <span style="font-size:1rem;line-height:1;">＋</span> New Team
+        </button>
+      </div>
+    </nav>
+  </aside>
+
+  <!-- ── Main: imageset panels ──────────────────────────────── -->
+  <main class="idx-main">
+    <div class="tab-content" id="v-pills-tabContent">
+      {% for team in userteams %}
+        {% if forloop.first and not last_image_action and last_image_action.image.id is not None %}
+          <div class="tab-pane fade show active" id="v-pills-{{team.id}}" role="tabpanel" data-team-id="{{team.id}}">
+        {% elif last_image_action.image.image_set.team.id == team.id %}
+          <div class="tab-pane fade show active" id="v-pills-{{team.id}}" role="tabpanel" data-team-id="{{team.id}}">
+        {% else %}
+          <div class="tab-pane fade" id="v-pills-{{team.id}}" role="tabpanel" data-team-id="{{team.id}}">
+        {% endif %}
+
+          <div class="idx-team-header">
+            <h1 class="idx-team-title">{{ team.name }}</h1>
+            <button class="idx-stats-btn stats-btn"
+                    data-team-id="{{ team.id }}"
+                    data-team-name="{{ team.name }}">
+              <i class="fa fa-bar-chart"></i> Statistics
+            </button>
+          </div>
+
+          <div class="imageset-container" id="imagesets-{{team.id}}">
+            <div class="imageset-loading">
+              <span class="spinner-border spinner-border-sm" role="status"></span>
+              Loading…
+            </div>
+          </div>
+
+        </div>
+      {% endfor %}
+    </div>
+  </main>
+
 </div>
 
 <!-- ── Team Statistics Modal ── -->
 <div class="modal fade" id="teamStatsModal" tabindex="-1" role="dialog">
   <div class="modal-dialog modal-xl" role="document">
-    <div class="modal-content" style="background:#1e1e26;color:#ddd;border:1px solid #333;">
-      <div class="modal-header" style="border-bottom:1px solid #333;">
+    <div class="modal-content">
+      <div class="modal-header">
         <h5 class="modal-title">
-          <i class="fa fa-bar-chart" style="color:#5c6af6;margin-right:8px;"></i>
-          Team Statistics: <strong id="statsTeamName"></strong>
+          <i class="fa fa-bar-chart" style="color:#818cf8;margin-right:8px;"></i>
+          Statistics: <strong id="statsTeamName"></strong>
         </h5>
-        <button type="button" class="close" data-dismiss="modal" style="color:#aaa;">&times;</button>
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
       </div>
-      <div class="modal-body" style="min-height:340px;">
+      <div class="modal-body" style="min-height:320px;">
 
-        <!-- Loading -->
         <div id="statsLoading" class="text-center py-5">
-          <div class="spinner-border" style="color:#5c6af6;width:2.5rem;height:2.5rem;" role="status"></div>
-          <div class="mt-3" style="color:#888;">Calculating statistics…</div>
+          <div class="spinner-border" style="color:#818cf8;width:2.2rem;height:2.2rem;" role="status"></div>
+          <div class="mt-3" style="color:rgba(255,255,255,.35);font-size:.82rem;">Calculating…</div>
         </div>
 
-        <!-- Main content -->
         <div id="statsContent" style="display:none;">
-          <!-- Summary cards -->
           <div class="row mb-4">
-            <div class="col-4">
-              <div style="background:#26263a;border-radius:10px;padding:18px 12px;text-align:center;border:1px solid #333;">
-                <div style="font-size:2rem;font-weight:700;color:#818cf8;" id="statImages">–</div>
-                <div style="font-size:.75rem;color:#888;margin-top:4px;">Images</div>
-              </div>
-            </div>
-            <div class="col-4">
-              <div style="background:#26263a;border-radius:10px;padding:18px 12px;text-align:center;border:1px solid #333;">
-                <div style="font-size:2rem;font-weight:700;color:#818cf8;" id="statStorage">–</div>
-                <div style="font-size:.75rem;color:#888;margin-top:4px;">Storage</div>
-              </div>
-            </div>
-            <div class="col-4">
-              <div style="background:#26263a;border-radius:10px;padding:18px 12px;text-align:center;border:1px solid #333;">
-                <div style="font-size:2rem;font-weight:700;color:#818cf8;" id="statAnnotations">–</div>
-                <div style="font-size:.75rem;color:#888;margin-top:4px;">Annotations</div>
-              </div>
-            </div>
+            <div class="col-4"><div class="stat-card">
+              <div class="stat-card-value" id="statImages">–</div>
+              <div class="stat-card-label">Images</div>
+            </div></div>
+            <div class="col-4"><div class="stat-card">
+              <div class="stat-card-value" id="statStorage">–</div>
+              <div class="stat-card-label">Storage</div>
+            </div></div>
+            <div class="col-4"><div class="stat-card">
+              <div class="stat-card-value" id="statAnnotations">–</div>
+              <div class="stat-card-label">Annotations</div>
+            </div></div>
           </div>
-          <!-- Charts row -->
           <div class="row">
             <div class="col-md-4">
-              <h6 style="font-size:.78rem;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">
-                Files by type
-              </h6>
-              <div style="position:relative;height:260px;">
-                <canvas id="extChart"></canvas>
-              </div>
+              <div class="chart-section-title">Files by type</div>
+              <div style="position:relative;height:240px;"><canvas id="extChart"></canvas></div>
             </div>
             <div class="col-md-4">
-              <h6 style="font-size:.78rem;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">
-                Image modalities
-              </h6>
-              <div style="position:relative;height:260px;">
-                <canvas id="typeChart"></canvas>
-              </div>
+              <div class="chart-section-title">Image modalities</div>
+              <div style="position:relative;height:240px;"><canvas id="typeChart"></canvas></div>
             </div>
             <div class="col-md-4">
-              <h6 style="font-size:.78rem;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">
-                Annotations by type
-              </h6>
-              <div style="position:relative;" id="annoChartWrap">
-                <canvas id="annoChart"></canvas>
-              </div>
+              <div class="chart-section-title">Annotations by type</div>
+              <div style="position:relative;" id="annoChartWrap"><canvas id="annoChart"></canvas></div>
             </div>
           </div>
         </div>
 
-        <!-- Empty state -->
         <div id="statsEmpty" style="display:none;" class="text-center py-5">
-          <i class="fa fa-inbox fa-2x" style="color:#444;"></i>
-          <div class="mt-2" style="color:#666;">No data found for this team.</div>
+          <i class="fa fa-inbox fa-2x" style="color:rgba(255,255,255,.18);"></i>
+          <div class="mt-2" style="color:rgba(255,255,255,.3);font-size:.82rem;">No data found for this team.</div>
         </div>
 
       </div>
@@ -169,183 +554,117 @@
 </div>
 
 <script>
-    var STATIC_ROOT = '{% static "" %}';
-    var VIEW_IMAGESET_URL = '{% url "images:view_imageset" 0 %}'.replace('/0/', '/');
+    var STATIC_ROOT        = '{% static "" %}';
+    var VIEW_IMAGESET_URL  = '{% url "images:view_imageset" 0 %}'.replace('/0/', '/');
     var CREATE_IMAGESET_URL = '{% url "images:create_imageset" %}';
     var TEAM_IMAGESETS_URL = '/images/api/team/';
     var TEAM_STATS_URL     = '/images/api/team/';
+    var CSRF_TOKEN         = '{{ csrf_token }}';
 
     var loadedTeams = new Set();
+    var _extChart = null, _typeChart = null, _annoChart = null;
 
-    // ── Chart instances (destroyed on re-open) ──────────────────────
-    var _extChart  = null;
-    var _typeChart = null;
-    var _annoChart = null;
+    Chart.defaults.color = 'rgba(255,255,255,.45)';
+    Chart.defaults.borderColor = 'rgba(255,255,255,.08)';
 
-    // ── Chart.js defaults for dark theme ───────────────────────────
-    Chart.defaults.color = '#aaa';
-    Chart.defaults.borderColor = '#333';
-
-    // Soft palette for file-type pie (cycles if more than 12 types)
     var EXT_PALETTE = [
-        '#5c6af6','#818cf8','#4ade80','#facc15','#f87171',
+        '#818cf8','#aa0fea','#4ade80','#facc15','#f87171',
         '#38bdf8','#fb923c','#a78bfa','#34d399','#f472b6',
         '#60a5fa','#e879f9'
     ];
-
     function extColor(i) { return EXT_PALETTE[i % EXT_PALETTE.length]; }
 
     function formatGB(gb) {
-        if (gb >= 1)   return gb.toFixed(2) + ' GB';
+        if (gb >= 1)     return gb.toFixed(2) + ' GB';
         if (gb >= 0.001) return (gb * 1024).toFixed(1) + ' MB';
         return (gb * 1024 * 1024).toFixed(0) + ' KB';
     }
 
     function showTeamStats(teamId, teamName) {
         document.getElementById('statsTeamName').textContent = teamName;
-        document.getElementById('statsLoading').style.display  = '';
-        document.getElementById('statsContent').style.display  = 'none';
-        document.getElementById('statsEmpty').style.display    = 'none';
-
-        // Destroy previous chart instances
+        document.getElementById('statsLoading').style.display = '';
+        document.getElementById('statsContent').style.display = 'none';
+        document.getElementById('statsEmpty').style.display   = 'none';
         if (_extChart)  { _extChart.destroy();  _extChart  = null; }
         if (_typeChart) { _typeChart.destroy(); _typeChart = null; }
         if (_annoChart) { _annoChart.destroy(); _annoChart = null; }
-
         $('#teamStatsModal').modal('show');
 
         $.getJSON(TEAM_STATS_URL + teamId + '/statistics/', function(d) {
             document.getElementById('statsLoading').style.display = 'none';
-
             if (!d.total_images && !d.total_annotations) {
                 document.getElementById('statsEmpty').style.display = '';
                 return;
             }
-
             document.getElementById('statImages').textContent      = d.total_images.toLocaleString();
             document.getElementById('statStorage').textContent     = formatGB(d.storage_gb);
             document.getElementById('statAnnotations').textContent = d.total_annotations.toLocaleString();
 
-            // ── Doughnut chart: file count by type ───────────────────
-            var extCtx = document.getElementById('extChart').getContext('2d');
-            _extChart = new Chart(extCtx, {
+            var doughnutOpts = {
+                responsive: true, maintainAspectRatio: false,
+                animation: { animateRotate: true, duration: 700 },
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 11, font: { size: 11 }, padding: 8 } }
+                }
+            };
+
+            _extChart = new Chart(document.getElementById('extChart').getContext('2d'), {
                 type: 'doughnut',
                 data: {
                     labels: d.extensions.map(function(e) { return e.ext; }),
-                    datasets: [{
-                        data:            d.extensions.map(function(e) { return e.count; }),
+                    datasets: [{ data: d.extensions.map(function(e) { return e.count; }),
                         backgroundColor: d.extensions.map(function(_, i) { return extColor(i); }),
-                        borderColor:     '#1e1e26',
-                        borderWidth:     2,
-                        hoverOffset:     8,
-                    }]
+                        borderColor: '#14141c', borderWidth: 2, hoverOffset: 8 }]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: { animateRotate: true, duration: 700 },
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: { boxWidth: 12, font: { size: 11 }, padding: 8 }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(ctx) {
-                                    var e = d.extensions[ctx.dataIndex];
-                                    return ' ' + e.ext + ': ' + e.count + ' file' + (e.count !== 1 ? 's' : '');
-                                }
-                            }
-                        }
-                    }
-                }
+                options: $.extend(true, {}, doughnutOpts, {
+                    plugins: { legend: doughnutOpts.plugins.legend,
+                        tooltip: { callbacks: { label: function(ctx) {
+                            var e = d.extensions[ctx.dataIndex];
+                            return ' ' + e.ext + ': ' + e.count + ' file' + (e.count !== 1 ? 's' : '');
+                        }}}}
+                })
             });
 
-            // ── Doughnut chart: image modalities ─────────────────────
             var TYPE_COLORS = {
-                'Whole Slide Image': '#5c6af6',
-                'Regular Image':     '#4ade80',
-                'Z-Stack':           '#facc15',
-                'Movie':             '#f87171',
-                'Volumetric':        '#38bdf8',
+                'Whole Slide Image': '#818cf8', 'Regular Image': '#4ade80',
+                'Z-Stack': '#facc15', 'Movie': '#f87171', 'Volumetric': '#38bdf8'
             };
-            var typeCtx = document.getElementById('typeChart').getContext('2d');
-            _typeChart = new Chart(typeCtx, {
+            _typeChart = new Chart(document.getElementById('typeChart').getContext('2d'), {
                 type: 'doughnut',
                 data: {
                     labels: d.image_types.map(function(t) { return t.type; }),
-                    datasets: [{
-                        data:            d.image_types.map(function(t) { return t.count; }),
+                    datasets: [{ data: d.image_types.map(function(t) { return t.count; }),
                         backgroundColor: d.image_types.map(function(t) { return TYPE_COLORS[t.type] || '#888'; }),
-                        borderColor:     '#1e1e26',
-                        borderWidth:     2,
-                        hoverOffset:     8,
-                    }]
+                        borderColor: '#14141c', borderWidth: 2, hoverOffset: 8 }]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: { animateRotate: true, duration: 700 },
-                    plugins: {
-                        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 }, padding: 8 } },
-                        tooltip: {
-                            callbacks: {
-                                label: function(ctx) {
-                                    var t = d.image_types[ctx.dataIndex];
-                                    return ' ' + t.type + ': ' + t.count.toLocaleString();
-                                }
-                            }
-                        }
-                    }
-                }
+                options: doughnutOpts
             });
 
-            // ── Bar chart: annotations by type ───────────────────────
-            var annoCtx = document.getElementById('annoChart').getContext('2d');
-            var barH = Math.max(200, d.annotation_types.length * 32);
+            var barH = Math.max(180, d.annotation_types.length * 30);
             document.getElementById('annoChartWrap').style.height = barH + 'px';
-
-            _annoChart = new Chart(annoCtx, {
+            _annoChart = new Chart(document.getElementById('annoChart').getContext('2d'), {
                 type: 'bar',
                 data: {
                     labels: d.annotation_types.map(function(a) { return a.name; }),
-                    datasets: [{
-                        label: 'Count',
+                    datasets: [{ label: 'Count',
                         data:            d.annotation_types.map(function(a) { return a.count; }),
-                        backgroundColor: d.annotation_types.map(function(a) { return a.color + 'cc'; }),
+                        backgroundColor: d.annotation_types.map(function(a) { return a.color + 'bb'; }),
                         borderColor:     d.annotation_types.map(function(a) { return a.color; }),
-                        borderWidth: 1,
-                        borderRadius: 4,
-                    }]
+                        borderWidth: 1, borderRadius: 4 }]
                 },
                 options: {
-                    indexAxis: 'y',
-                    responsive: true,
-                    maintainAspectRatio: false,
+                    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
                     animation: { duration: 600, easing: 'easeOutQuart' },
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: function(ctx) {
-                                    return ' ' + ctx.parsed.x.toLocaleString() + ' annotations';
-                                }
-                            }
-                        }
-                    },
+                    plugins: { legend: { display: false },
+                        tooltip: { callbacks: { label: function(ctx) {
+                            return ' ' + ctx.parsed.x.toLocaleString() + ' annotations';
+                        }}}},
                     scales: {
-                        x: {
-                            grid:  { color: '#2a2a3a' },
-                            ticks: { color: '#888', font: { size: 11 } }
-                        },
-                        y: {
-                            grid:  { display: false },
-                            ticks: { color: '#ccc', font: { size: 12 } }
-                        }
+                        x: { grid: { color: 'rgba(255,255,255,.06)' }, ticks: { font: { size: 11 } } },
+                        y: { grid: { display: false }, ticks: { font: { size: 12 } } }
                     }
                 }
             });
-
             document.getElementById('statsContent').style.display = '';
         }).fail(function() {
             document.getElementById('statsLoading').style.display = 'none';
@@ -353,65 +672,54 @@
         });
     }
 
-    // ── Imageset card helpers ───────────────────────────────────────
-    function prioSymbol(priority) {
-        if (priority === -1)
-            return '<span class="glyphicon glyphicon-download" data-toggle="tooltip" data-placement="right" title="Low labeling priority"></span>';
-        if (priority === 1)
-            return '<span class="glyphicon glyphicon-exclamation-sign" data-toggle="tooltip" data-placement="right" title="High labeling priority"></span>';
+    /* ── Imageset card rendering ──────────────────────────────── */
+    function prioLabel(priority) {
+        if (priority === 1)  return '<span class="idx-prio-high" title="High priority">▲</span>';
+        if (priority === -1) return '<span class="idx-prio-low"  title="Low priority">▼</span>';
         return '';
     }
 
     function renderImagesets(imagesets, teamId) {
         var html = '';
         imagesets.forEach(function(iset) {
-            html += '<div class="card imagecard"><center>';
-            if (iset.first_image_id) {
-                html += '<a href="' + VIEW_IMAGESET_URL + iset.id + '/">' +
-                        '<div class="img-wrapper"><center>' +
-                        '<img class="card-img-top" loading="lazy" ' +
-                        'src="/api/v1/images/images/' + iset.first_image_id + '/thumbnail/" ' +
-                        'alt="Thumbnail not found!"></center></div></a>';
-            } else {
-                html += '<a href="' + VIEW_IMAGESET_URL + iset.id + '/"><center>' +
-                        '<div class="img-wrapper"><img class="card-img-top" ' +
-                        'src="' + STATIC_ROOT + 'images/empty_imageset.svg" alt="Empty imageset">' +
-                        '</div></center></a>';
-            }
-            html += '<div class="card-body"><h5 class="card-title">' +
-                    '<a href="' + VIEW_IMAGESET_URL + iset.id + '/">' +
-                    iset.name + ' <br> (' + iset.image_count + ' images) ' + prioSymbol(iset.priority) +
-                    '</a></h5></div></div>';
+            var thumb = iset.first_image_id
+                ? '<img loading="lazy" src="/api/v1/images/images/' + iset.first_image_id + '/thumbnail/" alt="">'
+                : '<img src="' + STATIC_ROOT + 'images/empty_imageset.svg" alt="">';
+            html += '<a class="idx-iset-card" href="' + VIEW_IMAGESET_URL + iset.id + '/">' +
+                    '<div class="idx-iset-thumb">' + thumb + '</div>' +
+                    '<div class="idx-iset-body">' +
+                    '<span class="idx-iset-name" title="' + iset.name + '">' + iset.name + '</span>' +
+                    '<div class="idx-iset-meta">' +
+                    '<span class="idx-iset-count">' + iset.image_count + ' image' + (iset.image_count !== 1 ? 's' : '') + '</span>' +
+                    prioLabel(iset.priority) +
+                    '</div></div></a>';
         });
-        // Add "new imageset" card
-        html += '<div class="card imagecard"><center>' +
-                '<a href="#" id="newImagesetButton-' + teamId + '"><div class="img-wrapper">' +
-                '<img class="card-img-top" src="' + STATIC_ROOT + 'images/new_imageset.svg" alt="Create new imageset">' +
-                '</div></a>' +
-                '<div class="card-body" id="newImageSetBody-' + teamId + '">' +
-                '<h5 class="card-title">New imageset</h5></div>' +
-                '<div class="card-body" id="newImageSetBodyActive-' + teamId + '" style="display:none">' +
-                '<h5 class="card-title">' +
+
+        /* New imageset card */
+        html += '<div class="idx-new-card" id="newImagesetButton-' + teamId + '">' +
+                '<div class="idx-new-card-icon">＋</div>' +
+                '<span class="idx-new-card-label">New imageset</span>' +
+                '</div>' +
+                '<div class="idx-new-form-card" id="newImageSetBodyActive-' + teamId + '" style="display:none">' +
                 '<form method="post" action="' + CREATE_IMAGESET_URL + '">' +
-                '{% csrf_token %}' +
-                '<div class="input-group mb-3">' +
+                '<input type="hidden" name="csrfmiddlewaretoken" value="' + CSRF_TOKEN + '">' +
                 '<input type="hidden" name="team" value="' + teamId + '">' +
-                '<input type="text" name="name" class="form-control" placeholder="Imageset name" aria-label="Imageset name" aria-describedby="button-addon2-' + teamId + '">' +
-                '<div class="input-group-append">' +
-                '<input class="btn btn-primary" type="submit" id="button-addon2-' + teamId + '" value="&#10003;"></input>' +
-                '<button class="btn btn-danger" type="button" id="cancelbutton-' + teamId + '">&#10006;</button>' +
-                '</div></div></form></h5></div></div>';
+                '<input type="text" name="name" class="form-control" placeholder="Imageset name" autocomplete="off">' +
+                '<div class="idx-new-form-actions">' +
+                '<input class="idx-form-confirm" type="submit" value="Create">' +
+                '<button class="idx-form-cancel" type="button" id="cancelbutton-' + teamId + '">Cancel</button>' +
+                '</div></form></div>';
         return html;
     }
 
     function attachNewImagesetHandlers(teamId) {
         $('#newImagesetButton-' + teamId).on('click', function() {
-            $('#newImageSetBody-' + teamId).hide();
+            $(this).hide();
             $('#newImageSetBodyActive-' + teamId).show();
         });
         $('#cancelbutton-' + teamId).on('click', function() {
-            $('#newImageSetBody-' + teamId).show();
             $('#newImageSetBodyActive-' + teamId).hide();
+            $('#newImagesetButton-' + teamId).show();
         });
     }
 
@@ -423,27 +731,22 @@
             container.innerHTML = renderImagesets(data, teamId);
             attachNewImagesetHandlers(teamId);
         }).fail(function() {
-            container.innerHTML = '<div style="padding:12px;color:#c00;">Failed to load imagesets.</div>';
+            container.innerHTML = '<div style="color:#f87171;font-size:.82rem;">Failed to load imagesets.</div>';
         });
     }
 
     $(document).ready(function() {
         $('.dropdown-toggle').dropdown();
 
-        // Load active tab immediately
         var activePane = $('.tab-pane.active[data-team-id]');
-        if (activePane.length) {
-            loadTeamImagesets(activePane.data('team-id'));
-        }
+        if (activePane.length) loadTeamImagesets(activePane.data('team-id'));
 
-        // Load on tab switch
         $(document).on('click', '[data-toggle="pill"]', function() {
             var target = $(this).attr('href');
             var teamId = $(target).data('team-id');
             if (teamId) loadTeamImagesets(teamId);
         });
 
-        // Statistics button
         $(document).on('click', '.stats-btn', function() {
             showTeamStats($(this).data('team-id'), $(this).data('team-name'));
         });
@@ -458,5 +761,4 @@
         });
     });
 </script>
-
 {% endblock %}
