@@ -742,6 +742,9 @@
         if (activePane.length) loadTeamImagesets(activePane.data('team-id'));
 
         $(document).on('click', '[data-toggle="pill"]', function() {
+            // Manually manage active state — Bootstrap won't do it for custom classes
+            $('.idx-team-link').removeClass('active');
+            $(this).addClass('active');
             var target = $(this).attr('href');
             var teamId = $(target).data('team-id');
             if (teamId) loadTeamImagesets(teamId);
