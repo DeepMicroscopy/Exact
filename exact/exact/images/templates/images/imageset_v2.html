@@ -107,8 +107,25 @@
   }
   .img-wrapper img { object-fit: contain; max-height: 100%; max-width: 100%; }
   .imagecard .card-body { padding: 8px 10px !important; }
-  .card-title { margin: 0; }
-  .card-title a { color: #e0e0ea !important; font-size: .78rem; font-weight: 500; }
+  .card-title {
+    margin: 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .card-title a {
+    flex: 1;
+    color: #e0e0ea !important;
+    font-size: .78rem;
+    font-weight: 500;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-all;
+    line-height: 1.35;
+  }
   .card-title a:hover { color: #d580f8 !important; }
 
   /* ── Rename button ────────────────────────────────────────── */
@@ -533,8 +550,8 @@ function deleteAuxfile(btn) {
 
                             <div class="card-body">
                                 <h5 class="card-title">
-                                    <a href="{% url 'annotations:annotate' image.id %}" title="{{image.name}}"> {{image.name|truncatechars:30}}</a> <button class="btn btn-light" onClick="showRenameDialog('{{image.name}}',{{image.id}})">&#9998;</button>
-                                </h5>                
+                                    <a href="{% url 'annotations:annotate' image.id %}" title="{{image.name}}">{{image.name}}</a><button class="btn btn-light" onClick="showRenameDialog('{{image.name}}',{{image.id}})">&#9998;</button>
+                                </h5>
                             </div>
 
                         </div>
