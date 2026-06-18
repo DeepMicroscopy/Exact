@@ -9,6 +9,7 @@ app_name = 'images'
 urlpatterns = [
     re_path(r'^$', views.index, name='index'),
     re_path(r'^api/list_imagesets/$', views.api_index, name='Index (REST API)'),
+    path('api/search/', views.search_api, name='search_api'),
     path('api/team/<int:team_id>/imagesets/', views.team_imagesets_api, name='team_imagesets_api'),
     path('api/team/<int:team_id>/statistics/', views.team_statistics_api, name='team_statistics_api'),
     re_path(r'^image/delete/(\d+)/$', views.delete_images, name='delete_images'),

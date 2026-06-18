@@ -201,6 +201,58 @@ def index(request):
 
 
 @login_required
+def search_api(request):
+    """Search imagesets and images by name across all teams the user belongs to."""
+    q = request.GET.get('q', '').strip()
+    if len(q) < 2:
+        return JsonResponse({'imagesets': [], 'images': []})
+
+    first_image_sq = Image.objects.filter(
+        image_set=OuterRef('pk')
+    ).order_by('id').values('id')[:1]
+
+    imagesets = (
+        ImageSet.objects.filter(team__members=request.user, name__icontains=q)
+        .select_related('team')
+        .annotate(first_image_id=Subquery(first_image_sq), image_count_agg=Count('images'))
+        .order_by('name')[:40]
+    )
+
+    images = (
+        Image.objects.filter(
+            image_set__team__members=request.user,
+            name__icontains=q,
+            image_type=0,
+        )
+        .select_related('image_set', 'image_set__team')
+        .order_by('name')[:60]
+    )
+
+    return JsonResponse({
+        'imagesets': [
+            {
+                'id': iset.id,
+                'name': iset.name,
+                'image_count': iset.image_count_agg,
+                'first_image_id': iset.first_image_id,
+                'team_name': iset.team.name if iset.team else '',
+            }
+            for iset in imagesets
+        ],
+        'images': [
+            {
+                'id': img.id,
+                'name': img.name,
+                'imageset_id': img.image_set.id,
+                'imageset_name': img.image_set.name,
+                'team_name': img.image_set.team.name if img.image_set.team else '',
+            }
+            for img in images
+        ],
+    })
+
+
+@login_required
 def team_imagesets_api(request, team_id):
     """Return JSON list of imagesets for a team with first-image ID and count.
 

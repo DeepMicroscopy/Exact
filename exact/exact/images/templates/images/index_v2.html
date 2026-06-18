@@ -158,12 +158,158 @@
     cursor: pointer;
   }
 
+  /* ── Search pill (in team header) ─────────────────────────── */
+  .idx-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .idx-search-pill {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 0 10px;
+    border-radius: 8px;
+    border: 1px solid var(--idx-border);
+    background: var(--idx-glass);
+    color: var(--idx-muted);
+    font-size: .78rem;
+    transition: border-color .15s, background .15s;
+    height: 31px; /* match idx-stats-btn height */
+  }
+  .idx-search-pill:focus-within {
+    border-color: rgba(170,15,234,.55);
+    background: rgba(170,15,234,.07);
+  }
+  .idx-search-pill-icon {
+    font-size: .72rem;
+    color: var(--idx-muted);
+    flex-shrink: 0;
+    pointer-events: none;
+  }
+  .idx-search-input {
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--idx-text);
+    font-size: .78rem;
+    width: 120px;
+    padding: 0 6px;
+    transition: width .2s;
+  }
+  .idx-search-pill:focus-within .idx-search-input { width: 200px; }
+  .idx-search-input::placeholder { color: var(--idx-muted); }
+  .idx-search-pill-clear {
+    background: none;
+    border: none;
+    color: var(--idx-muted);
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 2px;
+    flex-shrink: 0;
+  }
+  .idx-search-pill-clear:hover { color: var(--idx-text); }
+
+  /* ── Per-pane search results ───────────────────────────────── */
+  .idx-pane-results { margin-bottom: 16px; }
+  .idx-search-section-title {
+    font-size: .65rem;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--idx-muted);
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--idx-border);
+  }
+  #idxSearchImagesets { margin-bottom: 28px; }
+  .idx-search-cards { display: flex; flex-wrap: wrap; gap: 12px; }
+  .idx-search-empty {
+    text-align: center;
+    padding: 48px 0;
+    color: var(--idx-muted);
+    font-size: .85rem;
+    line-height: 2;
+  }
+  .idx-search-empty .fa { font-size: 1.6rem; opacity: .35; display: block; margin-bottom: 8px; }
+
+  /* Imageset result card reuses .idx-iset-card; team badge overlaid */
+  .idx-search-iset-card { position: relative; }
+  .idx-search-team-badge {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: rgba(170,15,234,.22);
+    border: 1px solid rgba(170,15,234,.35);
+    border-radius: 4px;
+    font-size: .6rem;
+    font-weight: 700;
+    color: #d580f8;
+    padding: 1px 5px;
+    letter-spacing: .04em;
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Image result card */
+  .idx-img-card {
+    width: 130px;
+    background: var(--idx-glass);
+    border: 1px solid var(--idx-border);
+    border-radius: var(--idx-radius);
+    overflow: hidden;
+    transition: transform .18s, border-color .18s, box-shadow .18s;
+    text-decoration: none !important;
+    display: block;
+  }
+  .idx-img-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--idx-border-h);
+    box-shadow: 0 8px 24px rgba(0,0,0,.4), 0 0 0 1px var(--idx-purple-d);
+  }
+  .idx-img-thumb {
+    width: 100%;
+    height: 90px;
+    background: rgba(255,255,255,.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-bottom: 1px solid var(--idx-border);
+  }
+  .idx-img-thumb img { object-fit: contain; max-height: 100%; max-width: 100%; }
+  .idx-img-body { padding: 6px 8px 8px; }
+  .idx-img-name {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-all;
+    font-size: .72rem;
+    font-weight: 600;
+    color: var(--idx-text);
+    line-height: 1.3;
+    margin-bottom: 3px;
+  }
+  .idx-img-meta {
+    font-size: .65rem;
+    color: var(--idx-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   /* ── Main content ─────────────────────────────────────────── */
   .idx-main {
     flex: 1;
-    padding: 28px 28px 40px;
+    padding: 0 0 40px;
     overflow-y: auto;
   }
+  #v-pills-tabContent { padding: 0 28px; }
 
   /* ── Team header ──────────────────────────────────────────── */
   .idx-team-header {
@@ -463,6 +609,7 @@
 
   <!-- ── Main: imageset panels ──────────────────────────────── -->
   <main class="idx-main">
+
     <div class="tab-content" id="v-pills-tabContent">
       {% for team in userteams %}
         {% if forloop.first and not last_image_action and last_image_action.image.id is not None %}
@@ -475,11 +622,34 @@
 
           <div class="idx-team-header">
             <h1 class="idx-team-title">{{ team.name }}</h1>
-            <button class="idx-stats-btn stats-btn"
-                    data-team-id="{{ team.id }}"
-                    data-team-name="{{ team.name }}">
-              <i class="fa fa-bar-chart"></i> Statistics
-            </button>
+            <div class="idx-header-actions">
+              <div class="idx-search-pill">
+                <i class="fa fa-search idx-search-pill-icon"></i>
+                <input type="text" class="idx-search-input" placeholder="Search…"
+                       autocomplete="off" data-team-id="{{ team.id }}">
+                <button class="idx-search-pill-clear" style="display:none;" title="Clear">&times;</button>
+              </div>
+              <button class="idx-stats-btn stats-btn"
+                      data-team-id="{{ team.id }}"
+                      data-team-name="{{ team.name }}">
+                <i class="fa fa-bar-chart"></i> Statistics
+              </button>
+            </div>
+          </div>
+
+          <!-- Per-pane search results (hidden when search is empty) -->
+          <div class="idx-pane-results" id="idx-results-{{ team.id }}" style="display:none;">
+            <div class="idx-search-empty" style="display:none;">
+              <i class="fa fa-search"></i><br>No results found.
+            </div>
+            <div class="idx-search-imagesets-sec" style="display:none;">
+              <div class="idx-search-section-title">Imagesets</div>
+              <div class="idx-search-cards idx-iset-result-cards"></div>
+            </div>
+            <div class="idx-search-images-sec" style="display:none;">
+              <div class="idx-search-section-title">Images</div>
+              <div class="idx-search-cards idx-img-result-cards"></div>
+            </div>
           </div>
 
           <div class="imageset-container" id="imagesets-{{team.id}}">
@@ -491,7 +661,7 @@
 
         </div>
       {% endfor %}
-    </div>
+    </div><!-- /tab-content -->
   </main>
 
 </div>
@@ -763,6 +933,99 @@
         $('#cancelTeambutton').on('click', function() {
             $('#newTeamBody').show();
             $('#newTeamBodyActive').hide();
+        });
+
+        // ── Per-pane search ────────────────────────────────────
+        var SEARCH_URL   = '/images/api/search/';
+        var ANNOTATE_URL = '{% url "annotations:annotate" 0 %}'.replace('/0/', '/');
+        var searchTimers = {};
+
+        function renderIsetCard(iset) {
+            var thumb = iset.first_image_id
+                ? '<img src="/api/v1/images/images/' + iset.first_image_id + '/thumbnail/" loading="lazy" alt="">'
+                : '<img src="' + STATIC_ROOT + 'images/empty_imageset.svg" alt="">';
+            return '<a class="idx-iset-card idx-search-iset-card" href="' + VIEW_IMAGESET_URL + iset.id + '/">' +
+                   '<div class="idx-search-team-badge" title="' + iset.team_name + '">' + iset.team_name + '</div>' +
+                   '<div class="idx-iset-thumb">' + thumb + '</div>' +
+                   '<div class="idx-iset-body">' +
+                   '<span class="idx-iset-name">' + iset.name + '</span>' +
+                   '<div class="idx-iset-meta"><span class="idx-iset-count">' +
+                   iset.image_count + ' image' + (iset.image_count !== 1 ? 's' : '') +
+                   '</span></div></div></a>';
+        }
+
+        function renderImgCard(img) {
+            return '<a class="idx-img-card" href="' + ANNOTATE_URL + img.id + '/">' +
+                   '<div class="idx-img-thumb">' +
+                   '<img src="/api/v1/images/images/' + img.id + '/thumbnail/" loading="lazy" alt="">' +
+                   '</div><div class="idx-img-body">' +
+                   '<div class="idx-img-name" title="' + img.name + '">' + img.name + '</div>' +
+                   '<div class="idx-img-meta">' + img.imageset_name + '</div>' +
+                   '</div></a>';
+        }
+
+        function showPaneResults(teamId, data) {
+            var pane    = document.getElementById('idx-results-' + teamId);
+            var isets   = data.imagesets || [];
+            var imgs    = data.images   || [];
+            var isEmpty = !isets.length && !imgs.length;
+
+            pane.querySelector('.idx-search-empty').style.display           = isEmpty ? '' : 'none';
+            pane.querySelector('.idx-search-imagesets-sec').style.display   = isets.length ? '' : 'none';
+            pane.querySelector('.idx-search-images-sec').style.display      = imgs.length  ? '' : 'none';
+            pane.querySelector('.idx-iset-result-cards').innerHTML          = isets.map(renderIsetCard).join('');
+            pane.querySelector('.idx-img-result-cards').innerHTML           = imgs.map(renderImgCard).join('');
+        }
+
+        function clearPaneSearch(teamId) {
+            document.getElementById('idx-results-' + teamId).style.display    = 'none';
+            document.getElementById('imagesets-' + teamId).style.display      = '';
+        }
+
+        $(document).on('input', '.idx-search-input', function () {
+            var input  = this;
+            var teamId = input.dataset.teamId;
+            var q      = input.value.trim();
+            var pill   = input.closest('.idx-search-pill');
+            pill.querySelector('.idx-search-pill-clear').style.display = q ? '' : 'none';
+
+            clearTimeout(searchTimers[teamId]);
+            if (q.length < 2) { clearPaneSearch(teamId); return; }
+
+            document.getElementById('imagesets-' + teamId).style.display   = 'none';
+            document.getElementById('idx-results-' + teamId).style.display = '';
+
+            searchTimers[teamId] = setTimeout(function () {
+                $.getJSON(SEARCH_URL + '?q=' + encodeURIComponent(q), function (data) {
+                    showPaneResults(teamId, data);
+                });
+            }, 220);
+        });
+
+        $(document).on('click', '.idx-search-pill-clear', function () {
+            var pill   = this.closest('.idx-search-pill');
+            var input  = pill.querySelector('.idx-search-input');
+            var teamId = input.dataset.teamId;
+            input.value = '';
+            this.style.display = 'none';
+            clearPaneSearch(teamId);
+            input.focus();
+        });
+
+        document.addEventListener('keydown', function (e) {
+            var activeInput = document.querySelector('.tab-pane.show .idx-search-input');
+            if (!activeInput) return;
+            if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+                e.preventDefault();
+                activeInput.focus();
+                activeInput.select();
+            }
+            if (e.key === 'Escape' && document.activeElement === activeInput) {
+                activeInput.value = '';
+                activeInput.closest('.idx-search-pill').querySelector('.idx-search-pill-clear').style.display = 'none';
+                clearPaneSearch(activeInput.dataset.teamId);
+                activeInput.blur();
+            }
         });
     });
 </script>
