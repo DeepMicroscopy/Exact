@@ -177,6 +177,28 @@
     .login-footer a:hover { color: #c844f5; }
     .login-footer .sep { margin: 0 8px; }
 
+    /* ── Quote ───────────────────────────────────────── */
+    .login-quote {
+      margin: 0 0 26px;
+      padding: 11px 13px;
+      border-left: 2px solid rgba(170,15,234,.35);
+      background: rgba(170,15,234,.06);
+      border-radius: 0 7px 7px 0;
+    }
+    .login-quote-text {
+      font-size: .74rem;
+      font-style: italic;
+      color: rgba(255,255,255,.42);
+      line-height: 1.5;
+      margin: 0 0 4px;
+    }
+    .login-quote-attr {
+      font-size: .66rem;
+      color: rgba(170,15,234,.65);
+      font-weight: 600;
+      letter-spacing: .04em;
+    }
+
     /* ── Copyright ───────────────────────────────────── */
     .login-copy {
       text-align: center;
@@ -193,6 +215,11 @@
 
     <img src="{% static 'images/logo.svg' %}" class="login-logo" alt="EXACT">
     <p class="login-tagline">Label Server</p>
+
+    <div class="login-quote">
+      <div class="login-quote-text" id="quoteText"></div>
+      <div class="login-quote-attr" id="quoteAttr"></div>
+    </div>
 
     <form class="login" method="POST" action="{% url 'login' %}" id="loginForm">
       {% csrf_token %}
@@ -249,6 +276,201 @@
   window.onload = function () {
     checkConditionalUI('loginForm');
   };
+
+  (function () {
+    var Q = [
+      // Misattributed classics
+      ["Be yourself; everyone else is already taken.", "Oscar Wilde, allegedly"],
+      ["The definition of insanity is doing the same thing over and over and expecting different results.", "Albert Einstein, who never said this"],
+      ["I have not failed. I've just found 10,000 ways that won't work.", "Thomas Edison, embellishing slightly"],
+      ["The early bird gets the worm, but the second mouse gets the cheese.", "Steven Wright"],
+      ["Well-behaved women seldom make history.", "Misattributed to everyone famous"],
+      ["If you want to go fast, go alone. If you want to go far, go together.", "Ancient African proverb™ (source: a LinkedIn post)"],
+      ["Give a man a fish and you feed him for a day. Teach a man to fish and he'll spend all weekend on a boat drinking beer.", "Unknown philosopher"],
+      ["The journey of a thousand miles begins with a single step.", "Lao Tzu, who walked everywhere anyway"],
+      ["To be or not to be, that is the question.", "Hamlet, really overthinking it"],
+      ["It always seems impossible until it's done.", "Nelson Mandela, or possibly a motivational poster"],
+
+      // AI & ML
+      ["The model is always right. The labels are sometimes right. The data is never right.", "Every ML engineer, 3 AM"],
+      ["Garbage in, garbage out. Annotated garbage in, confidently wrong predictions out.", "Data Science Proverb"],
+      ["More data beats clever algorithms. More annotations beat more data. More coffee beats more annotations.", "Andrew Ng, expanded edition"],
+      ["A sufficiently advanced neural network is indistinguishable from magic.", "Arthur C. Clarke, updated"],
+      ["Any sufficiently large dataset contains most of the world's weirdness.", "Observation from ImageNet"],
+      ["It's not a bug, it's an unexpected feature learned from training data.", "ML Researcher"],
+      ["The best model is the one that ships. The second best is the one that actually works.", "Unknown PM"],
+      ["In theory, theory and practice are the same. In practice, they're not, and the validation loss proves it.", "Anonymous"],
+      ["The first 90% of the model takes 10% of the time. The last 10% takes the other 90%, plus two more GPUs.", "Hofstadter's Law for ML"],
+      ["There are two hard problems in machine learning: naming things, and off-by-one errors in tensor dimensions.", "Stack Overflow refugee"],
+      ["I wanted a neural network that could learn anything. Instead I got one that memorized the training set.", "Every ML student, ever"],
+      ["The model has learned to be confidently wrong. This is progress.", "Researcher, week 6"],
+      ["We're not teaching machines to think. We're teaching them to guess, very quickly, with great conviction.", "AI Skeptic"],
+      ["Fine-tuning is just adding more annotations and hoping.", "Honest research summary"],
+      ["If your model is 99% accurate on the test set, you probably leaked the test set.", "Practical wisdom"],
+      ["A bounding box is just a rectangle with opinions.", "Computer Vision Engineer"],
+      ["Segmentation masks: because bounding boxes were too easy.", "Someone who regrets their life choices"],
+      ["The attention mechanism attends to everything except what you want.", "Transformer user, frustrated"],
+      ["ChatGPT would have just made up a better annotation.", "Overheard at a labeling session"],
+      ["Deep learning is just linear algebra that went to therapy.", "Math PhD, slightly offended"],
+
+      // Annotation-specific
+      ["In the beginning, God created the labels. And they were ambiguous.", "Genesis 1:1, ML Edition"],
+      ["A polygon is worth a thousand pixels.", "Annotation Proverb"],
+      ["The hardest part of annotation is deciding where one thing ends and another begins.", "Philosopher who annotates cells"],
+      ["Inter-annotator agreement: when two humans disagree less than your model disagrees with reality.", "Statistics Department"],
+      ["To annotate is human; to hallucinate labels is divine.", "Unknown theologian"],
+      ["One person's background is another person's foreground.", "Gestalt Psychology meets Image Segmentation"],
+      ["Label noise is just the universe reminding you that nothing is certain.", "Bayesian Buddhist"],
+      ["The bounding box that can be named is not the eternal bounding box.", "Lao Tzu, briefly a computer vision scientist"],
+      ["I annotated 10,000 cells today. Tomorrow I shall annotate 10,000 more.", "Les Misérables, Lab Edition"],
+      ["All annotations are wrong. Some are useful.", "George Box, slightly misapplied"],
+      ["An annotation saved is an annotation earned.", "Benjamin Franklin, if he'd worked in pathology"],
+      ["Not all those who annotate are lost. Some are just very zoomed in.", "Tolkien, digital edition"],
+      ["What we call a 'class' is just a human's attempt to impose order on chaos.", "Philosophy of ML, Chapter 1"],
+      ["The label is a lie.", "Portal, rethemed"],
+
+      // Science misquotes
+      ["E = mc². Also, GPU costs ≈ m × c³.", "Einstein, updated for cloud computing"],
+      ["I think, therefore I annotate.", "Descartes, employed at a data company"],
+      ["Nature does not make jumps. Annotations sometimes do.", "Leibniz, mostly"],
+      ["God does not play dice with the universe. He does play dice with dataset splits.", "Einstein, extended"],
+      ["What is a man? A miserable little pile of hyperparameters!", "Dracula, Castlevania"],
+      ["The cosmos is within us. We are made of star stuff. We are also made of mislabeled training data.", "Carl Sagan, partially"],
+      ["Eureka! The model converged! (It had converged to a local minimum.)", "Archimedes, debugging"],
+      ["The truth is out there, but it's in a proprietary dataset.", "X-Files, ML crossover"],
+      ["Two things are infinite: the universe and human stupidity. And I'm not sure about the universe. Also GPU wait times.", "Einstein, attributed"],
+      ["Science is organized knowledge. Wisdom is organized knowledge plus a good training set.", "Herbert Spencer, updated"],
+      ["In science, there are no shortcuts. In machine learning, shortcuts are the entire point.", "Richard Feynman, never said"],
+      ["We shall not cease from exploration, and the end of all our exploring will be to arrive where we started and realize we needed more data.", "T.S. Eliot, via gradient descent"],
+
+      // Philosophy & life
+      ["I am not afraid of storms, for I am learning how to sail. Also how to sail ships into adversarial examples.", "Louisa May Alcott, sort of"],
+      ["That which does not kill us makes us stronger. That which does not converge makes us tune hyperparameters.", "Nietzsche, extended"],
+      ["Hell is other people's code.", "Sartre, working in a shared repo"],
+      ["The only true wisdom is knowing you don't know why the model failed.", "Socrates, debugging"],
+      ["Man is condemned to be free. Also to click bounding boxes for eight hours.", "Sartre, data labeling"],
+      ["God is dead. God remains dead. And we have killed him with our training labels.", "Nietzsche, loss function"],
+      ["One must imagine Sisyphus happy. One must also imagine him annotating.", "Camus, revised"],
+      ["I've seen things you people wouldn't believe. Attack ships on fire off the shoulder of Orion. Also, a model that generalized well on the first try.", "Roy Batty, impressed"],
+      ["The unexamined model is not worth deploying.", "Socrates, MLOps edition"],
+      ["We are all just bounding boxes in the wind.", "Anonymous annotator"],
+      ["In the beginning was the Word, and the Word was a label, and the label was ambiguous.", "John 1:1, annotated"],
+      ["I think, therefore I overfit.", "Descartes, after 200 epochs"],
+
+      // Tech & programming
+      ["There are only two hard things in computer science: cache invalidation, naming things, and off-by-one errors.", "Phil Karlton, extended"],
+      ["It works on my machine.", "Every developer, eternal"],
+      ["The code works in production. I have no idea why. I have no idea why it didn't before.", "Developer, relieved"],
+      ["Move fast and break things. Then annotate the broken things.", "Facebook, pivoted to ML"],
+      ["Any application that can be written in JavaScript, will eventually be written in JavaScript. Including annotation tools.", "Atwood's Law"],
+      ["Real programmers don't comment their code. If it was hard to write, it should be hard to understand.", "Old saying, harmful"],
+      ["I have always wished for my computer to be as easy to use as my telephone. My wish has come true. I no longer know how to use my telephone.", "Bjarne Stroustrup"],
+      ["Software is like entropy: it can only increase.", "Norman Augustine, sort of"],
+      ["First, solve the problem. Then, write the code. Then spend three days fixing the Docker container.", "John Johnson, revised"],
+      ["Programming is the art of telling another human what one wants the computer to do. Annotation is the art of telling the computer what humans see.", "Donald Knuth, extended"],
+
+      // Historical figures on modern things
+      ["I have not yet begun to label.", "John Paul Jones, pathologist"],
+      ["Ask not what your dataset can do for you — ask what you can annotate for your dataset.", "JFK, data scientist"],
+      ["I have a dream that one day my model will be judged not by the color of its training set but by the content of its validation metrics.", "MLK, AI conference keynote"],
+      ["We shall label on the beaches, we shall label on the landing grounds, we shall label in the fields and in the streets.", "Churchill, annotation marathon"],
+      ["Four score and seven epochs ago, our model brought forth on this dataset a new prediction, conceived in gradient descent.", "Lincoln, Gettysburg Address, ML Edition"],
+      ["Never in the field of human computation was so much predicted by so few parameters for so many images.", "Churchill, CNN"],
+      ["I came, I saw, I annotated.", "Julius Caesar, briefly a contractor"],
+      ["Float like a butterfly, sting like a precision-recall curve.", "Muhammad Ali, metrics meeting"],
+      ["It's not whether you get knocked down; it's whether your model can recover from adversarial examples.", "Vince Lombardi, AI edition"],
+      ["Genius is one percent inspiration, ninety-nine percent GPU hours.", "Edison, revised"],
+      ["The reports of my model's death are greatly exaggerated.", "Mark Twain, about his deprecated baseline"],
+      ["I didn't fail 10,000 times. I found 10,000 hyperparameter combinations that didn't work.", "Edison, doing AutoML"],
+      ["Elementary, my dear Watson. The model has overfitted.", "Sherlock Holmes, to his data scientist"],
+      ["To infinity and beyond! (The loss function disagreed.)", "Buzz Lightyear, training run"],
+      ["May the F1 score be with you.", "Obi-Wan Kenobi, metrics review"],
+      ["With great model comes great responsibility for its predictions.", "Uncle Ben, ML ethics"],
+
+      // General absurdity
+      ["The early annotator gets the clean dataset.", "Nobody, ever"],
+      ["An apple a day keeps the doctor away. A labeled apple keeps the model's precision up.", "Medical AI proverb"],
+      ["If you can't measure it, you can't improve it. If you can't label it, you can't measure it.", "Lord Kelvin, expanded"],
+      ["Time flies like an arrow. Fruit flies like a banana. Unlabeled images pile up like entropy.", "Groucho Marx, segmented"],
+      ["I've been on a diet for two weeks and all I've lost is two weeks. Also the training labels.", "Totie Fields, researcher"],
+      ["Do, or do not. There is no 'try except pass'.", "Yoda, code review"],
+      ["Why so serious? It's just a 40% F1 score.", "The Joker, at standup"],
+      ["You shall not pass! (unless your validation accuracy is above 0.85)", "Gandalf, CI/CD"],
+      ["You're a model, Harry.", "Hagrid, confused"],
+      ["My precious... the training data.", "Gollum, data hoarding"],
+      ["I'll be back. After the model finishes training.", "Terminator, patience"],
+      ["Houston, we have a problem. The model is hallucinating bounding boxes.", "Apollo 13, updated"],
+      ["After all, tomorrow is another training run.", "Scarlett O'Hara, optimistic"],
+      ["Keep your friends close and your validation set separate.", "Michael Corleone, data hygiene"],
+      ["I'm going to make him an offer he can't refuse: a cleaner dataset.", "Don Corleone, data quality"],
+      ["To infinity and beyond the test set distribution!", "Buzz Lightyear, overconfident"],
+
+      // Meta & self-referential
+      ["This quote was randomly selected from a pool of 200 quotes. The model chose it. Probably.", "EXACT v2.0"],
+      ["You've read 1 of 250 quotes. Only 249 to go before you've seen them all.", "Achievement unlocked"],
+      ["The best time to annotate was yesterday. The second best time is after you log in.", "Ancient proverb"],
+      ["Behind this login screen lies either great science or great procrastination. Often both.", "Schrödinger, IT dept."],
+      ["Another day, another dataset.", "Pathologist, 8:47 AM"],
+      ["Not all who wander are lost. Some are looking for the right annotation type.", "Tolkien, using EXACT"],
+      ["Home is where the dataset is.", "Annotator's bumper sticker"],
+      ["I annotate, therefore I am (very tired).", "Descartes, end of shift"],
+      ["All great science begins with a single annotation.", "EXACT marketing team"],
+      ["Welcome back. The annotations missed you.", "EXACT Label Server"],
+      ["The best annotation is one someone else did.", "Every researcher"],
+      ["Please log in. The cells aren't going to label themselves. Yet.", "ML Roadmap 2027"],
+      ["Fun fact: this quote is funnier after you've been annotating for four hours.", "Experience"],
+      ["This login screen has been annotated with 3 bounding boxes and a polygon.", "QA Engineer"],
+      ["Error 418: I'm a teapot. Also, please enter your password.", "RFC 2324"],
+      ["The password you entered is incorrect. Like a bad annotation, it happens to everyone.", "EXACT auth system"],
+
+      // Misquoted motivational
+      ["Shoot for the moon. Even if you miss, you'll land among the training data.", "Les Brown, revised"],
+      ["Life is what happens when you're busy labeling images.", "John Lennon, lab edition"],
+      ["Dream big, annotate bigger.", "Unknown motivational poster in a lab"],
+      ["Be the annotation you wish to see in the world.", "Gandhi, computer vision"],
+      ["A journey of a thousand images begins with a single click.", "Lao Tzu, annotation tool"],
+      ["The secret of getting ahead is getting started. The secret of getting started is having good annotation guidelines.", "Mark Twain, project manager"],
+      ["Success is not final, failure is not fatal: it is the model retraining that counts.", "Churchill, revised"],
+      ["You miss 100% of the annotations you don't make.", "Wayne Gretzky, via Michael Scott"],
+      ["Whether you think you can annotate, or you think you can't — you're right.", "Henry Ford, productivity coach"],
+      ["The difference between ordinary and extraordinary is that little 'extra' GPU hour.", "Jimmy Johnson, cloud computing"],
+
+      // Random absurdist
+      ["A watched model never converges.", "Murphy's Law, ML edition"],
+      ["If a tree falls in a forest and no one annotates it, does it have a bounding box?", "Philosophy 101"],
+      ["The answer is always more data. Except when it's regularization.", "Statistician's creed"],
+      ["It's turtles all the way down. Below the turtles: mislabeled data.", "Cosmology and ML"],
+      ["On the Internet, nobody knows you're a dog. But the model is 94% sure.", "New Yorker, updated"],
+      ["Life imitates art. Art imitates training data. Training data imitates life. This is a problem.", "Oscar Wilde, on distribution shift"],
+      ["I am large, I contain multitudes of parameters.", "Walt Whitman, language model"],
+      ["The medium is the message. The annotation is the label.", "Marshall McLuhan, sort of"],
+      ["Brevity is the soul of wit. Precision is the soul of a bounding box.", "Shakespeare, slightly"],
+      ["Hell is other people's annotation guidelines.", "Sartre, revised again"],
+      ["If you label it, they will come.", "Field of Dreams, ML edition"],
+      ["Show me the labels!", "Jerry Maguire, data request"],
+      ["You had me at 'ground truth'.", "Jerry Maguire, ML crossover"],
+      ["I see dead pixels.", "The Sixth Sense, image processing"],
+      ["There is no spoon. There is no ground truth. There is only loss.", "The Matrix, philosophical"],
+      ["I know kung fu. Also, I know how to overfit.", "Neo, after training"],
+      ["The truth will set you free. But first it will make your F1 score worse.", "John 8:32, revised"],
+      ["We're not in Kansas anymore. We're in the validation set.", "Dorothy, distribution shift"],
+      ["It's alive! It's alive! (Val loss is still increasing.)", "Dr. Frankenstein, training loop"],
+      ["Elementary. The model has confused cats with dogs again.", "Sherlock Holmes, image classification"],
+      ["With great annotation power comes great annotation responsibility.", "Uncle Ben, senior annotator"],
+      ["I am inevitable. (So is overfitting.)", "Thanos, training data"],
+      ["Why do we label? So that we may learn to label again.", "Batman Begins, annotation camp"],
+      ["Some men just want to watch the training loss burn.", "Alfred, observing a bad run"],
+      ["I volunteer as tribute! (To label the hard cases.)", "Katniss Everdeen, active learning"],
+      ["Winter is coming. Bring more labeled data.", "Ned Stark, seasonality warning"],
+      ["A Lannister always pays their annotation debts.", "Cersei, freelance annotator"],
+      ["It is not our abilities that show what we truly are. It is our choice of learning rate.", "Dumbledore, ML"],
+      ["After all this time? Always. (Still haven't finished the dataset.)", "Snape, annotation marathon"],
+    ];
+
+    var q = Q[Math.floor(Math.random() * Q.length)];
+    document.getElementById('quoteText').textContent = '“' + q[0] + '”';
+    document.getElementById('quoteAttr').textContent = '— ' + q[1];
+  }());
 </script>
 </body>
 </html>
