@@ -317,6 +317,56 @@
     color: #e0e0ea;
   }
 
+  /* ── Image search bar ────────────────────────────────────── */
+  .img-search-wrap {
+    flex: 1;
+    max-width: 320px;
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .img-search-icon {
+    position: absolute;
+    left: 10px;
+    color: rgba(255,255,255,.30);
+    font-size: .8rem;
+    pointer-events: none;
+  }
+  .img-search-input {
+    width: 100%;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 7px;
+    color: #e0e0ea;
+    font-size: .82rem;
+    padding: 6px 30px 6px 30px;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s, background .15s;
+  }
+  .img-search-input::placeholder { color: rgba(255,255,255,.22); }
+  .img-search-input:focus {
+    background: rgba(255,255,255,.09);
+    border-color: rgba(170,15,234,.65);
+    box-shadow: 0 0 0 3px rgba(170,15,234,.18);
+  }
+  .img-search-clear {
+    position: absolute;
+    right: 8px;
+    background: none;
+    border: none;
+    color: rgba(255,255,255,.35);
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 2px;
+  }
+  .img-search-clear:hover { color: rgba(255,255,255,.7); }
+  .img-search-count {
+    font-size: .75rem;
+    color: rgba(255,255,255,.35);
+    white-space: nowrap;
+  }
+
   /* ── Links ────────────────────────────────────────────────── */
   a { color: rgba(170,15,234,.85); }
   a:hover { color: #c844f5; }
@@ -534,10 +584,20 @@ function deleteAuxfile(btn) {
         <!-- Images tab -->
         <div class="col-md-10">
         <div class="card">
-            <div class="card-header">
-                <h3>{{ imageset.name }}</h3>
+            <div class="card-header" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                <h3 style="flex:0 0 auto;margin:0;">{{ imageset.name }}</h3>
+                <div class="img-search-wrap">
+                  <i class="fa fa-search img-search-icon"></i>
+                  <input type="text" id="imageSearch" class="img-search-input" placeholder="Search images…" autocomplete="off">
+                  <button type="button" id="imageSearchClear" class="img-search-clear" style="display:none;" title="Clear">&times;</button>
+                </div>
+                <span id="imageSearchCount" class="img-search-count" style="display:none;"></span>
             </div>
             <div class="card-body card-body-extend" style="max-height: 95vh; overflow-y: auto;">
+                <div id="imageSearchEmpty" style="display:none;padding:24px 0;color:rgba(255,255,255,.35);font-size:.85rem;text-align:center;">
+                  <i class="fa fa-search" style="font-size:1.4rem;margin-bottom:8px;display:block;opacity:.4;"></i>
+                  No images match your search.
+                </div>
                 <div class="row" id="files">
                     {% for image in imageset.images.all|dictsort:"name" %}
                     {% if image.image_type != 1 %}
@@ -1393,6 +1453,55 @@ function deleteAuxfile(btn) {
     {% if showRegTab %}
         $('#myTab li:nth-child(3) button').tab('show') // Select third tab
     {% endif %}
+</script>
+
+<script>
+(function () {
+    var input   = document.getElementById('imageSearch');
+    var clearBtn = document.getElementById('imageSearchClear');
+    var countEl = document.getElementById('imageSearchCount');
+    var emptyEl = document.getElementById('imageSearchEmpty');
+    if (!input) return;
+
+    var totalCards = document.querySelectorAll('#files .imagecard:not(#uploadcard)').length;
+
+    function filterImages() {
+        var q = input.value.trim().toLowerCase();
+        var cards = document.querySelectorAll('#files .imagecard:not(#uploadcard)');
+        var visible = 0;
+        cards.forEach(function (card) {
+            var nameEl = card.querySelector('.card-title a');
+            var name = nameEl ? (nameEl.getAttribute('title') || nameEl.textContent || '').toLowerCase() : '';
+            var show = !q || name.indexOf(q) !== -1;
+            card.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+        clearBtn.style.display = q ? '' : 'none';
+        if (q) {
+            countEl.textContent = visible + ' of ' + totalCards;
+            countEl.style.display = '';
+        } else {
+            countEl.style.display = 'none';
+        }
+        emptyEl.style.display = (visible === 0 && q) ? '' : 'none';
+    }
+
+    input.addEventListener('input', filterImages);
+    clearBtn.addEventListener('click', function () {
+        input.value = '';
+        filterImages();
+        input.focus();
+    });
+
+    // Keyboard shortcut: / focuses the search box when not in another input
+    document.addEventListener('keydown', function (e) {
+        if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+            e.preventDefault();
+            input.focus();
+            input.select();
+        }
+    });
+}());
 </script>
 
 {% endblock bodyblock%}
