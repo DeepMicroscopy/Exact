@@ -26,7 +26,22 @@
 
 <body>
 	<link href="{% static 'css/font-awesome.min.css' %}" rel="stylesheet">
-	
+
+	{% if is_impersonating %}
+	<div id="impersonation-banner" style="position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#b8000c;color:#fff;font-size:.9rem;display:flex;align-items:center;justify-content:center;gap:1rem;padding:6px 16px;box-shadow:0 2px 6px rgba(0,0,0,.4);">
+		<i class="fa fa-user-secret"></i>
+		<span>You are impersonating <strong>{{ request.user.username }}</strong></span>
+		<form method="post" action="{% url 'administration:stop_impersonating' %}" style="margin:0;">
+			{% csrf_token %}
+			<button type="submit" style="background:#fff;color:#b8000c;border:none;border-radius:4px;padding:2px 12px;font-weight:bold;cursor:pointer;font-size:.85rem;">Return to my account</button>
+		</form>
+	</div>
+	<style>
+		body { padding-top: calc(var(--navbar-height, 56px) + 34px) !important; }
+		#impersonation-banner + nav { top: 34px !important; }
+	</style>
+	{% endif %}
+
 	{% block selectorblock %}{% endblock %}
 
 	{% if frontend >= 2 %}
