@@ -3,12 +3,8 @@
 """
 
 import numpy as np
-from pydicom.encaps import decode_data_sequence
 from PIL import Image
-import io
 import os
-import struct
-from os import stat
 import openslide
 import slideio
 from util.enums import FrameType
@@ -138,42 +134,57 @@ class SlideIOSlide():
     def meta_data(self) -> dict:
         result = {}
         _dcm = self._read_dcm_meta()
-        if _dcm is None:
-            return result
-        def _get(tag, default=''):
-            v = getattr(_dcm, tag, None)
-            return str(v).strip() if v is not None else default
-        # Timing
-        ft = getattr(_dcm, 'FrameTime', None)
-        if ft is not None:
-            result['fps'] = round(1000.0 / float(ft), 3)
-        series_date = _get('SeriesDate')
-        series_time = _get('SeriesTime')
-        if series_date:
-            ts = series_date
-            if series_time:
-                t = series_time.split('.')[0]
-                ts += ' ' + t[:2] + ':' + t[2:4] + ':' + t[4:6]
-            result['acquisition_datetime'] = ts
-        # Device / study
-        for tag, key in [
-            ('Modality',            'modality'),
-            ('Manufacturer',        'manufacturer'),
-            ('ManufacturerModelName','device_model'),
-            ('DeviceSerialNumber',  'device_serial'),
-            ('SeriesDescription',   'series_description'),
-            ('StudyDescription',    'study_description'),
-            ('PatientID',           'patient_id'),
-            ('InstitutionName',     'institution'),
-        ]:
-            v = _get(tag)
-            if v:
-                result[key] = v
+        if _dcm is not None:
+            def _get(tag, default=''):
+                v = getattr(_dcm, tag, None)
+                return str(v).strip() if v is not None else default
+            ft = getattr(_dcm, 'FrameTime', None)
+            if ft is not None:
+                result['fps'] = round(1000.0 / float(ft), 3)
+            series_date = _get('SeriesDate')
+            series_time = _get('SeriesTime')
+            if series_date:
+                ts = series_date
+                if series_time:
+                    t = series_time.split('.')[0]
+                    ts += ' ' + t[:2] + ':' + t[2:4] + ':' + t[4:6]
+                result['acquisition_datetime'] = ts
+            for tag, key in [
+                ('Modality',             'modality'),
+                ('Manufacturer',         'manufacturer'),
+                ('ManufacturerModelName','device_model'),
+                ('DeviceSerialNumber',   'device_serial'),
+                ('SeriesDescription',    'series_description'),
+                ('StudyDescription',     'study_description'),
+                ('PatientID',            'patient_id'),
+                ('InstitutionName',      'institution'),
+            ]:
+                v = _get(tag)
+                if v:
+                    result[key] = v
+        else:
+            # Non-DICOM: extract what slideio exposes on the scene
+            name = getattr(self.scene, 'name', '').strip()
+            if name:
+                result['scene_name'] = name
+            comp = getattr(self.scene, 'compression', None)
+            if comp is not None:
+                result['compression'] = str(comp).split('.')[-1]
+            nc = getattr(self.scene, 'num_channels', None)
+            if nc is not None and nc > 1:
+                result['num_channels'] = nc
+            dtype = getattr(self.scene, 'dtype', None)
+            if dtype is not None:
+                result['dtype'] = str(dtype)
+            t_res = getattr(self.scene, 't_resolution', 0)
+            if t_res and t_res > 0:
+                result['t_resolution_s'] = round(t_res, 6)
         return result
 
     @property
     def meta_data_dict(self) -> dict:
         labels = {
+            # DICOM
             'fps':                  'Frame rate (fps)',
             'acquisition_datetime': 'Acquisition date/time',
             'modality':             'Modality',
@@ -184,6 +195,12 @@ class SlideIOSlide():
             'study_description':    'Study description',
             'patient_id':           'Patient ID',
             'institution':          'Institution',
+            # Non-DICOM (slideio scene)
+            'scene_name':           'Scene name',
+            'compression':          'Compression',
+            'num_channels':         'Channels',
+            'dtype':                'Pixel type',
+            't_resolution_s':       'Frame interval (s)',
         }
         present = self.meta_data
         return {k: v for k, v in labels.items() if k in present}

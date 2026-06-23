@@ -249,3 +249,26 @@ class NIfTISlide:
             canvas[dst_y1:dst_y1 + crop.shape[0], dst_x1:dst_x1 + crop.shape[1]] = crop
 
         return Image.fromarray(canvas, 'RGBA')
+
+    @property
+    def meta_data(self) -> dict:
+        result = {
+            'dtype': str(self._nib_header.get_data_dtype()),
+        }
+        tr = float(self._nib_header.get_tr())
+        if tr > 0:
+            result['tr_seconds'] = round(tr, 4)
+        descrip = self._nib_header['descrip'].tobytes().rstrip(b'\x00').decode('utf-8', errors='replace').strip()
+        if descrip:
+            result['description'] = descrip
+        return result
+
+    @property
+    def meta_data_dict(self) -> dict:
+        labels = {
+            'dtype':       'Data type',
+            'tr_seconds':  'Repetition time TR (s)',
+            'description': 'Description',
+        }
+        present = self.meta_data
+        return {k: v for k, v in labels.items() if k in present}

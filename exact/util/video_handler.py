@@ -2,6 +2,7 @@
 Scripts for MP4 files's support
 
 """
+import os
 import threading
 from collections import OrderedDict
 
@@ -34,10 +35,22 @@ class ReadableVideoDataset(openslide.ImageSlide):
         # Get video properties
         self._width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         self._height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        self.numberOfLayers = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))    # total number of frames
+        self.numberOfLayers = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         self.fps = cap.get(cv2.CAP_PROP_FPS)
 
+        # Decode FOURCC codec identifier (e.g. 'avc1', 'mp4v')
+        fourcc_int = int(cap.get(cv2.CAP_PROP_FOURCC))
+        self._codec = ''.join(
+            chr((fourcc_int >> 8 * i) & 0xFF) for i in range(4)
+        ).strip('\x00') or 'unknown'
+
+        # Bitrate in kbps (available in OpenCV ≥ 4.x; 0 if unsupported)
+        bitrate = cap.get(cv2.CAP_PROP_BITRATE)
+        self._bitrate_kbps = int(bitrate) if bitrate > 0 else None
+
         cap.release()
+
+        self._file_size_bytes = os.path.getsize(filename)
 
         self._dimensions = (self._width, self._height)
     
@@ -237,3 +250,27 @@ class ReadableVideoDataset(openslide.ImageSlide):
     def frame_to_time(self, frame_idx: int) -> float:
         """Convert frame index to time in seconds."""
         return frame_idx / self.fps if self.fps > 0 else 0
+
+    @property
+    def meta_data(self) -> dict:
+        result = {
+            'codec':        self._codec,
+            'fps':          round(self.fps, 3),
+            'duration':     round(self.get_duration(), 2),
+            'file_size_mb': round(self._file_size_bytes / (1024 ** 2), 2),
+        }
+        if self._bitrate_kbps:
+            result['bitrate_kbps'] = self._bitrate_kbps
+        return result
+
+    @property
+    def meta_data_dict(self) -> dict:
+        labels = {
+            'codec':        'Codec',
+            'fps':          'Frame rate (fps)',
+            'duration':     'Duration (s)',
+            'file_size_mb': 'File size (MB)',
+            'bitrate_kbps': 'Bitrate (kbps)',
+        }
+        present = self.meta_data
+        return {k: v for k, v in labels.items() if k in present}

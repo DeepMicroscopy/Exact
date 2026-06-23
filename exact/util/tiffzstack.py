@@ -347,6 +347,33 @@ class OMETiffZStack(openslide.OpenSlide):
 
         self.zstack = zstack
 
+    @property
+    def meta_data(self) -> dict:
+        result = {}
+        m0 = self.metadata.get(0, {})
+        if 'dtype' in m0:
+            result['dtype'] = m0['dtype']
+        try:
+            nc = int(m0.get('SizeC', 1))
+            if nc > 1:
+                result['num_channels'] = nc
+        except (ValueError, TypeError):
+            pass
+        name = m0.get('name', '').strip()
+        if name:
+            result['image_name'] = name
+        return result
+
+    @property
+    def meta_data_dict(self) -> dict:
+        labels = {
+            'dtype':        'Pixel type',
+            'num_channels': 'Channels',
+            'image_name':   'Image name',
+        }
+        present = self.meta_data
+        return {k: v for k, v in labels.items() if k in present}
+
     def get_thumbnail(self, size):
         return self.read_region((0,0),self.level_count-1, self.level_dimensions[-1]).resize(size)
         
