@@ -1,3 +1,69 @@
+# What's New — June 2026
+
+A summary of everything that landed in EXACT over the past few weeks.
+
+---
+
+## Redesigned overview UI (dark glass-morphism)
+
+The home page (`index_v2`) and imageset view (`imageset_v2`) have been
+restyled to match the dark glass-morphism aesthetic introduced in the login
+screen. Cards, sidebars, and tables all use semi-transparent layered surfaces
+with a consistent purple accent colour, and image names that are too long to
+fit on one line now wrap to a second line instead of being hidden behind a
+hover tooltip.
+
+---
+
+## Search — images and imagesets
+
+Two complementary search features make it faster to find content across large
+deployments:
+
+**Search within an imageset** — a search pill in the top-right corner of the
+image-set view filters the visible image cards in real time as you type.
+Press `/` to focus it without reaching for the mouse.
+
+**Global search from the home page** — each team panel in the home view has a
+search pill (next to the Statistics button). Typing triggers a server-side
+search across both imagesets *and* individual images for that team's data.
+Results appear in-place, with team badges and direct links, without navigating
+away from the overview. Press `/` to focus the active team's search field;
+`Escape` clears it.
+
+---
+
+## File metadata in the image properties panel
+
+The image properties panel now shows format-specific metadata automatically
+for several reader backends. No configuration is required — metadata is
+surfaced as soon as a matching file is opened:
+
+| Format | Metadata shown |
+|---|---|
+| **Video** (MP4, AVI, …) | Codec, frame rate, duration, file size, bitrate |
+| **NIfTI** | Voxel data type, repetition time TR (fMRI), description field |
+| **OME-TIFF z-stack** | Pixel type, number of channels (if > 1), image name from OME-XML |
+| **SlideIO** (VSI, CZI, SVS, …) | Scene name, compression type, number of channels (if > 1), pixel type, frame interval |
+| **DICOM** (via SlideIO) | Modality, manufacturer, device model, acquisition date/time, series and study descriptions, patient ID, institution |
+
+---
+
+## User impersonation (site admins)
+
+Site administrators can now impersonate any user directly from **Administration → User Management**. Select a user, open the *Personal* tab, and click **Impersonate**. EXACT logs you in as that user so you can reproduce reported issues or inspect their exact view of the data.
+
+A persistent red banner is displayed on every page while impersonation is active, showing the impersonated username and a **Return to my account** button that ends the session and brings you back to the User Management page.
+
+Safety constraints:
+
+- Only site admins can start an impersonation session.
+- You cannot impersonate yourself.
+- You cannot start a second impersonation while one is already active.
+- Impersonating a superuser requires superuser privileges.
+
+---
+
 # What's New — May 2026
 
 A summary of everything that landed in EXACT over the past few weeks.

@@ -7,6 +7,7 @@ from django.db import transaction
 from django.core.files.storage import FileSystemStorage
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import login as auth_login
 
 from exact.processing.models import Plugin
 from exact.processing.serializers import PluginSerializer
@@ -925,6 +926,44 @@ def migrate_bounding_box_to_4_polygon(request, annotation_type_id):
         selected_annotation_type.node_count = 4
         selected_annotation_type.save()
     return redirect(reverse('administration:annotation_type', args=(annotation_type_id, )))
+
+
+@site_admin_required
+@require_POST
+def user_impersonate_api(request, user_id: int):
+    target = get_object_or_404(User, pk=user_id)
+
+    if target.id == request.user.id:
+        return JsonResponse({"error": "Cannot impersonate yourself."}, status=400)
+
+    if 'impersonating_real_user_id' in request.session:
+        return JsonResponse({"error": "Already impersonating a user. Stop the current session first."}, status=400)
+
+    if getattr(target, "is_superuser", False) and not getattr(request.user, "is_superuser", False):
+        return JsonResponse({"error": "Only superusers may impersonate superusers."}, status=403)
+
+    real_user_id = request.user.id
+    # auth_login() flushes the session when switching users, so set our key AFTER it.
+    # Don't pass backend explicitly — let Django pick the single configured one so
+    # the stored backend path matches AUTHENTICATION_BACKENDS on subsequent requests.
+    target.backend = settings.AUTHENTICATION_BACKENDS[0]
+    auth_login(request, target)
+    request.session['impersonating_real_user_id'] = real_user_id
+    return JsonResponse({"ok": True, "redirect": "/"})
+
+
+@login_required
+@require_POST
+def user_stop_impersonating(request):
+    real_user_id = request.session.get('impersonating_real_user_id')
+    if not real_user_id:
+        return redirect(reverse('images:index'))
+
+    real_user = get_object_or_404(User, pk=real_user_id)
+    real_user.backend = settings.AUTHENTICATION_BACKENDS[0]
+    auth_login(request, real_user)
+    # impersonating_real_user_id is gone because auth_login flushes the session
+    return redirect(reverse('administration:user_management'))
 
 
 @require_GET

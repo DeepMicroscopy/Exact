@@ -34,7 +34,10 @@ def base_data(request):
         cache.set('storage_memory_data', storage_memory_data, 60)
 
 
+    is_impersonating = bool(request.session.get('impersonating_real_user_id'))
+
     return {
+        'is_impersonating': is_impersonating,
         'IMPRINT_URL': settings.IMPRINT_URL,
         'USE_IMPRINT': settings.USE_IMPRINT,
         'IMPRINT_NAME': settings.IMPRINT_NAME,

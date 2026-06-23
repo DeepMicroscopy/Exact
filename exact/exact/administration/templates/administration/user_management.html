@@ -152,6 +152,9 @@
       <button class="btn btn-outline-warning" id="btn-toggle-staff" type="button">Toggle staff</button>
 
       {% if user.prefs.is_site_admin %}
+        <button class="btn btn-outline-info" id="btn-impersonate" type="button" title="Log in as this user to inspect their view">
+          <i class="fa fa-user-secret"></i> Impersonate
+        </button>
         <button class="btn btn-danger" id="btn-delete-user" type="button">Delete user…</button>
       {% endif %}
     </div>
@@ -307,7 +310,7 @@
                               .replace('/1/teams/1/remove/', '/' + userId + '/teams/' + teamId + '/remove/');
   if (name === "teamToggleAdmin") return "{% url 'administration:user_team_toggle_admin_api' user_id=1 team_id=1 %}"
                               .replace('/1/teams/1/toggle-admin/', '/' + userId + '/teams/' + teamId + '/toggle-admin/');
-                            
+  if (name === "impersonate") return "{% url 'administration:user_impersonate_api' user_id=1 %}".replace('/1/impersonate/', '/' + userId + '/impersonate/');
   return null;
 }
 
@@ -696,6 +699,32 @@ $(document).on('click', '.team-toggle-admin', function() {
   });
 });
 
+
+  $('#btn-impersonate').on('click', function() {
+    if (!currentUserId) return;
+    if (!confirm("Impersonate this user? You will be logged in as them. Use the red banner to return to your account.")) return;
+
+    $.ajax({
+      url: urlFor("impersonate", currentUserId),
+      method: "POST",
+      headers: { "X-CSRFToken": csrftoken },
+      success: function(resp) {
+        if (resp && resp.redirect) {
+          window.location.href = resp.redirect;
+        } else {
+          window.location.href = "/";
+        }
+      },
+      error: function(xhr) {
+        var msg = "Impersonation failed.";
+        try {
+          var data = xhr.responseJSON;
+          if (data && data.error) msg = data.error;
+        } catch(e) {}
+        $.notify(msg, "error");
+      }
+    });
+  });
 
   $('#btn-toggle-active').on('click', function() {
     if (!currentUserId) return;
