@@ -6,7 +6,7 @@
 
 This is a collaborative online tool for labeling image data.
 
-![ScreenShot](./doc/paper/ArchitekturAndView.svg "Example annotation of a complete WSI")
+<img width="1795" height="756" alt="image" src="https://github.com/user-attachments/assets/460f852e-a20c-411f-b0ea-070a0c83d612" />
 
 
 ## Reference
