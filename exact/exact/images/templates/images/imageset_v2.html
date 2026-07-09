@@ -586,6 +586,9 @@ function deleteAuxfile(btn) {
       <li class="nav-item" role="presentation">
       <button class="nav-link" id="upload-tab" data-toggle="tab" data-target="#upload" type="button" role="tab" aria-controls="upload" aria-selected="false">Import/Export</button>
     </li>
+      <li class="nav-item" role="presentation">
+        <a class="nav-link" href="{% url 'tables:list' imageset.id %}"><i class="fa fa-table"></i> Tables</a>
+      </li>
     </ul>
   <div class="tab-content" id="myTabContent">
     <div class="tab-pane fade show active" id="images" role="tabpanel" aria-labelledby="images-tab">

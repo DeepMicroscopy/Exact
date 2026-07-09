@@ -68,6 +68,7 @@ INSTALLED_APPS = [
     'exact.administration',
     'django.contrib.admin',
     'exact.tagger_messages',
+    'exact.tables',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',

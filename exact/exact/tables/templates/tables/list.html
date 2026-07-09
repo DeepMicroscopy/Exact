@@ -1,0 +1,122 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block head %}
+<style>
+.tbl-list-wrap { max-width: 860px; margin: 32px auto; }
+.tbl-card {
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 12px;
+  backdrop-filter: blur(8px);
+  padding: 24px 28px;
+  margin-bottom: 16px;
+}
+.tbl-card h2 { color: #fff; margin-bottom: 4px; font-size: 1.15rem; }
+.tbl-card .tbl-meta { color: rgba(255,255,255,.45); font-size: .82rem; margin-bottom: 14px; }
+.tbl-row {
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.tbl-row-name { color: #d580f8; font-weight: 600; flex: 1; font-size: .95rem; }
+.tbl-row-meta { color: rgba(255,255,255,.4); font-size: .78rem; white-space: nowrap; }
+.tbl-row-actions { display: flex; gap: 8px; }
+.btn-tbl-open {
+  background: linear-gradient(135deg,#aa0fea,#7b00b8);
+  color: #fff; border: none; border-radius: 6px;
+  padding: 5px 14px; font-size: .82rem; cursor: pointer; text-decoration: none;
+}
+.btn-tbl-open:hover { opacity: .85; color: #fff; }
+.btn-tbl-del {
+  background: rgba(220,50,50,.15); color: #f88; border: 1px solid rgba(220,50,50,.3);
+  border-radius: 6px; padding: 5px 10px; font-size: .82rem; cursor: pointer;
+}
+.btn-tbl-del:hover { background: rgba(220,50,50,.3); }
+.tbl-create-form input[type=text], .tbl-create-form textarea {
+  background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12);
+  color: #fff; border-radius: 6px; padding: 7px 12px; width: 100%;
+  font-size: .88rem; margin-bottom: 10px;
+}
+.tbl-create-form input::placeholder, .tbl-create-form textarea::placeholder { color: rgba(255,255,255,.3); }
+.btn-tbl-create {
+  background: linear-gradient(135deg,#aa0fea,#7b00b8);
+  color: #fff; border: none; border-radius: 6px;
+  padding: 7px 20px; font-size: .88rem; cursor: pointer;
+}
+.empty-msg { color: rgba(255,255,255,.35); font-size: .9rem; text-align: center; padding: 24px 0; }
+</style>
+{% endblock %}
+
+{% block bodyblock %}
+<div class="tbl-list-wrap">
+  <div class="tbl-card">
+    <h2>Tables — {{ imageset.name }}</h2>
+    <div class="tbl-meta">
+      <a href="{% url 'images:view_imageset' imageset.id %}" style="color:rgba(170,15,234,.7);">
+        ← Back to imageset</a>
+    </div>
+
+    {% if datasets %}
+      {% for ds in datasets %}
+        {% with cv=ds.current_version %}
+        <div class="tbl-row">
+          <span class="fa fa-table" style="color:#aa0fea;font-size:1.1rem;"></span>
+          <span class="tbl-row-name">{{ ds.name }}</span>
+          {% if cv %}
+            <span class="tbl-row-meta">v{{ cv.version_number }} &middot; {{ cv.row_count }} rows &middot; {{ cv.col_count }} cols</span>
+          {% else %}
+            <span class="tbl-row-meta">empty</span>
+          {% endif %}
+          <div class="tbl-row-actions">
+            <a href="{% url 'tables:view' ds.id %}" class="btn-tbl-open">Open</a>
+            <button class="btn-tbl-del" data-id="{{ ds.id }}" data-name="{{ ds.name }}">Delete</button>
+          </div>
+        </div>
+        {% endwith %}
+      {% endfor %}
+    {% else %}
+      <div class="empty-msg">No tables yet. Create one below.</div>
+    {% endif %}
+  </div>
+
+  <div class="tbl-card">
+    <h2 style="font-size:1rem;margin-bottom:14px;">New table</h2>
+    <form method="POST" class="tbl-create-form">
+      {% csrf_token %}
+      <input type="text" name="name" placeholder="Table name" required maxlength="255">
+      <textarea name="description" placeholder="Description (optional)" rows="2"></textarea>
+      <button type="submit" class="btn-tbl-create"><i class="fa fa-plus"></i> Create</button>
+    </form>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('.btn-tbl-del').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var id = btn.dataset.id, name = btn.dataset.name;
+    if (!confirm('Delete table "' + name + '" and all its history? This cannot be undone.')) return;
+    fetch('/tables/api/' + id + '/delete/', {
+      method: 'POST',
+      headers: {'X-CSRFToken': getCookie('csrftoken')}
+    }).then(function(r) { return r.json(); }).then(function(d) {
+      if (d.ok) location.reload();
+      else alert(d.error || 'Delete failed');
+    });
+  });
+});
+function getCookie(name) {
+  var v = null;
+  document.cookie.split(';').forEach(function(c) {
+    c = c.trim();
+    if (c.startsWith(name + '=')) v = decodeURIComponent(c.slice(name.length + 1));
+  });
+  return v;
+}
+</script>
+{% endblock %}
