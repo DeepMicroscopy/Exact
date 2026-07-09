@@ -89,6 +89,12 @@ class Image(models.Model):
     
 
     image_type = models.IntegerField(choices=SOURCE_TYPES, default=ImageSourceTypes.DEFAULT)
+    creator = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='uploaded_images',
+    )
 
     def get_file_name(self, depth=1, frame=1): 
         if depth > 1 or self.depth > 1:

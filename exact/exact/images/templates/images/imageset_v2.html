@@ -138,6 +138,15 @@
     font-size: .75rem;
   }
   .imagecard .btn-light:hover { color: #d580f8 !important; border-color: rgba(170,15,234,.4) !important; }
+  .img-uploader {
+    font-size: .72rem;
+    color: rgba(255,255,255,.38);
+    margin-top: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .img-uploader .fa { margin-right: 3px; font-size: .68rem; }
 
   /* ── Upload card ──────────────────────────────────────────── */
   #uploadcard {
@@ -612,6 +621,11 @@ function deleteAuxfile(btn) {
                                 <h5 class="card-title">
                                     <a href="{% url 'annotations:annotate' image.id %}" title="{{image.name}}">{{image.name}}</a><button class="btn btn-light" onClick="showRenameDialog('{{image.name}}',{{image.id}})">&#9998;</button>
                                 </h5>
+                                {% if image.creator %}
+                                <div class="img-uploader" title="Uploaded by {{ image.creator.get_full_name|default:image.creator.username }}">
+                                    <i class="fa fa-user"></i> {{ image.creator.get_full_name|default:image.creator.username }}
+                                </div>
+                                {% endif %}
                             </div>
 
                         </div>

@@ -505,7 +505,8 @@ def upload_image(request, imageset_id):
                         image = Image(
                             name=name,
                             image_set=imageset,
-                            checksum=fchecksum)
+                            checksum=fchecksum,
+                            creator=request.user)
                         type='image'
                         image.save_file(path)
                 except Exception as e:
@@ -625,6 +626,16 @@ def image_metadata(request, image_id) -> Response:
                       'mpp_x': 'x Resolution (microns/px)',
                       'mpp_y': 'y Resolution (microns/px)',
                       }
+
+    # DB-level fields — always available
+    if image.creator_id:
+        creator = image.creator
+        display = (creator.get_full_name().strip() or creator.username)
+        meta_data['uploaded_by'] = display
+        meta_data_dict['uploaded_by'] = 'Uploaded by'
+    if image.time:
+        meta_data['upload_time'] = image.time.strftime('%Y-%m-%d %H:%M')
+        meta_data_dict['upload_time'] = 'Upload date'
 
     try:
         slideobj = image_cache.get(image.path())
