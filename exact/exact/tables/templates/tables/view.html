@@ -1,0 +1,203 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'tables/table_editor.css' %}">
+{% endblock %}
+
+{% block bodyblock %}
+<div class="te-shell">
+
+  <!-- Toolbar -->
+  <div class="te-toolbar">
+    <div class="te-toolbar-left">
+      <a href="{% url 'tables:list' imageset.id %}" class="te-back-btn" title="Back to table list">
+        <i class="fa fa-arrow-left"></i>
+      </a>
+      <span class="te-dataset-name">{{ dataset.name }}</span>
+      <span class="te-version-badge" id="te-version-badge"></span>
+      <span class="te-dirty-indicator" id="te-dirty" style="display:none;" title="Unsaved changes">●</span>
+    </div>
+    <div class="te-toolbar-right">
+      {% if can_write %}
+      <button class="te-btn te-btn-primary" id="btn-save" disabled>
+        <i class="fa fa-save"></i> Save
+      </button>
+      <button class="te-btn" id="btn-import">
+        <i class="fa fa-upload"></i> Import CSV
+      </button>
+      {% endif %}
+      <button class="te-btn" id="btn-export-csv">
+        <i class="fa fa-download"></i> CSV
+      </button>
+      <button class="te-btn" id="btn-export-xlsx">
+        <i class="fa fa-file-excel-o"></i> XLSX
+      </button>
+      <button class="te-btn" id="btn-history">
+        <i class="fa fa-history"></i> History
+      </button>
+      <button class="te-btn" id="btn-settings">
+        <i class="fa fa-sliders"></i> Display
+      </button>
+      {% if can_write %}
+      <button class="te-btn te-btn-add-row" id="btn-add-row" title="Add row">
+        <i class="fa fa-plus"></i> Row
+      </button>
+      <button class="te-btn te-btn-add-col" id="btn-add-col" title="Add column">
+        <i class="fa fa-plus"></i> Col
+      </button>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Main table area -->
+  <div class="te-main">
+    <div class="te-table-wrap" id="te-table-wrap">
+      <div class="te-loading" id="te-loading">
+        <i class="fa fa-spinner fa-spin"></i> Loading…
+      </div>
+      <table class="te-table" id="te-table" style="display:none;">
+        <thead id="te-thead"></thead>
+        <tbody id="te-tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="te-footer" id="te-footer" style="display:none;">
+      <span id="te-stats"></span>
+      <div class="te-page-ctrl">
+        <button class="te-page-btn" id="btn-prev-page">&#8592;</button>
+        <span id="te-page-label"></span>
+        <button class="te-page-btn" id="btn-next-page">&#8594;</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- History panel -->
+  <div class="te-panel" id="te-history-panel">
+    <div class="te-panel-header">
+      <span>Version History</span>
+      <button class="te-panel-close" id="btn-history-close">&times;</button>
+    </div>
+    <div class="te-panel-body" id="te-history-body">
+      <div class="te-panel-loading">Loading…</div>
+    </div>
+    <div class="te-panel-footer" id="te-history-footer" style="display:none;">
+      <span id="te-preview-label"></span>
+      <button class="te-btn te-btn-primary" id="btn-restore" style="display:none;">
+        <i class="fa fa-undo"></i> Restore this version
+      </button>
+    </div>
+  </div>
+
+  <!-- Settings (display) panel -->
+  <div class="te-panel" id="te-settings-panel">
+    <div class="te-panel-header">
+      <span>Display Settings</span>
+      <button class="te-panel-close" id="btn-settings-close">&times;</button>
+    </div>
+    <div class="te-panel-body" id="te-settings-body">
+      <p class="te-settings-section-hd">Columns</p>
+      <p class="te-hint">Uncheck to hide a column.</p>
+      <div id="te-col-list"></div>
+      <div id="te-hidden-rows-section" style="display:none;">
+        <p class="te-settings-section-hd" style="margin-top:18px;">Hidden rows</p>
+        <div id="te-row-list"></div>
+        <button class="te-btn" id="btn-show-all-rows" style="margin-top:8px;width:100%;justify-content:center;">
+          <i class="fa fa-eye"></i> Show all hidden rows
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Save modal -->
+<div class="te-modal-bg" id="te-save-modal" style="display:none;">
+  <div class="te-modal">
+    <h4>Save new version</h4>
+    <input type="text" id="te-save-comment" placeholder="Optional comment…" class="te-modal-input">
+    <div class="te-modal-actions">
+      <button class="te-btn te-btn-primary" id="btn-save-confirm">Save</button>
+      <button class="te-btn" id="btn-save-cancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Import modal -->
+<div class="te-modal-bg" id="te-import-modal" style="display:none;">
+  <div class="te-modal">
+    <h4>Import CSV</h4>
+    <input type="file" id="te-import-file" accept=".csv,.tsv,.txt" class="te-file-input">
+    <div class="te-delimiter-row">
+      <label class="te-header-toggle">
+        <input type="checkbox" id="te-import-has-header" checked>
+        First row is header
+      </label>
+    </div>
+    <div class="te-delimiter-row">
+      <label class="te-delimiter-label">Delimiter</label>
+      <select id="te-import-delimiter" class="te-delimiter-select">
+        <option value=","  selected>Comma (,)</option>
+        <option value=";">Semicolon (;)</option>
+        <option value="&#9;">Tab (\t)</option>
+        <option value="|">Pipe (|)</option>
+      </select>
+    </div>
+    <div id="te-import-preview" class="te-import-preview"></div>
+    <div id="te-import-warning" class="te-import-warning" style="display:none;">
+      <i class="fa fa-exclamation-triangle"></i>
+      Table already has data. Importing will create a new version (history is preserved).
+    </div>
+    <input type="text" id="te-import-comment" placeholder="Version comment (optional)…" class="te-modal-input">
+    <div class="te-modal-actions">
+      <button class="te-btn te-btn-primary" id="btn-import-confirm" disabled>Import</button>
+      <button class="te-btn" id="btn-import-cancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var TE_CONFIG = {
+  datasetId: {{ dataset.id }},
+  canWrite:  {{ can_write|yesno:"true,false" }},
+  currentVersion: {{ current_version.version_number|default:0 }},
+  urlData:        "{% url 'tables:data'        dataset.id %}",
+  urlSave:        "{% url 'tables:save'        dataset.id %}",
+  urlImport:      "{% url 'tables:import'      dataset.id %}",
+  urlExportCsv:   "{% url 'tables:export_csv'  dataset.id %}",
+  urlExportXlsx:  "{% url 'tables:export_xlsx' dataset.id %}",
+  urlVersions:    "{% url 'tables:versions'    dataset.id %}",
+  urlVersionData: "{% url 'tables:version_data' dataset_id=dataset.id version_number=1 %}".replace('/1/data', '/{v}/data'),
+  urlSettings:    "{% url 'tables:settings'    dataset.id %}",
+  urlResolve:     "{% url 'tables:resolve_url' %}",
+  urlRefSets:     "{% url 'tables:ref_imagesets' %}",
+  urlRefImages:   "{% url 'tables:ref_images' imageset_id=1 %}".replace('/1/images/', '/{id}/images/'),
+  csrfToken: "{{ request.session.get|default:'' }}"
+};
+</script>
+<script>
+// Inline CSRF helper (session cookie)
+function getCsrf() {
+  var v = '';
+  document.cookie.split(';').forEach(function(c) {
+    c = c.trim();
+    if (c.startsWith('csrftoken=')) v = decodeURIComponent(c.slice(10));
+  });
+  return v;
+}
+TE_CONFIG.csrfToken = getCsrf();
+</script>
+<!-- Reference picker modal -->
+<div class="te-modal-bg" id="te-ref-modal" style="display:none;">
+  <div class="te-modal te-ref-modal">
+    <h4><i class="fa fa-link"></i> Insert reference</h4>
+    <input type="text" id="te-ref-search" class="te-modal-input" placeholder="Search imagesets and images…">
+    <div id="te-ref-tree" class="te-ref-tree"></div>
+    <div class="te-modal-actions">
+      <button class="te-btn" id="btn-ref-cancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="{% static 'tables/table_editor.js' %}"></script>
+{% endblock %}

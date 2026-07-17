@@ -54,6 +54,7 @@ urlpatterns = [
     re_path(r'^tools/', include('exact.tools.urls')),
     re_path(r'^datasets/', include('exact.datasets.urls')),
     re_path(r'^processing/', include('exact.processing.urls')),
+    path('tables/', include('exact.tables.urls', namespace='tables')),
 
     re_path('', include(router.urls)),
 

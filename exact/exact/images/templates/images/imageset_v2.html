@@ -586,6 +586,9 @@ function deleteAuxfile(btn) {
       <li class="nav-item" role="presentation">
       <button class="nav-link" id="upload-tab" data-toggle="tab" data-target="#upload" type="button" role="tab" aria-controls="upload" aria-selected="false">Import/Export</button>
     </li>
+      <li class="nav-item" role="presentation">
+        <a class="nav-link" href="{% url 'tables:list' imageset.id %}"><i class="fa fa-table"></i> Tables</a>
+      </li>
     </ul>
   <div class="tab-content" id="myTabContent">
     <div class="tab-pane fade show active" id="images" role="tabpanel" aria-labelledby="images-tab">
@@ -1436,6 +1439,150 @@ function deleteAuxfile(btn) {
     let ifile = $('#files');
     let fi = $('#inputFiles')
     $(function () {
+      var _csvPendingFile = null;
+      var _csvPendingData = null;
+      var _csvPendingText = null;
+      var _tablesUrl = "{% url 'tables:list' imageset.id %}";
+
+      function _escHtml(s) {
+        return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      }
+
+      function _parseCsv(text, delim) {
+        delim = delim || ',';
+        var rows = [], row = [], field = '', inQ = false;
+        text = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+        for (var i = 0; i <= text.length; i++) {
+          var c = text[i];
+          if (inQ) {
+            if (c === '"') { if (text[i+1] === '"') { field += '"'; i++; } else { inQ = false; } }
+            else if (c === undefined) { row.push(field); rows.push(row); }
+            else { field += c; }
+          } else {
+            if (c === '"') { inQ = true; }
+            else if (c === delim) { row.push(field); field = ''; }
+            else if (c === '\n' || c === undefined) {
+              row.push(field); field = '';
+              if (row.length > 1 || row[0] !== '') rows.push(row);
+              row = [];
+            } else { field += c; }
+          }
+        }
+        return rows;
+      }
+
+      function _renderCsvDropPreview() {
+        var el = document.getElementById('csv-drop-preview');
+        if (!el || !_csvPendingText) return;
+        var delim     = document.getElementById('csv-drop-delimiter').value;
+        var hasHeader = document.getElementById('csv-drop-has-header').checked;
+        var rows = _parseCsv(_csvPendingText, delim);
+        if (!rows.length) { el.innerHTML = '<p style="padding:8px;color:rgba(255,255,255,.3);font-size:12px;">Empty file.</p>'; return; }
+        var hdrs, body, extra;
+        if (hasHeader) { hdrs = rows[0]; body = rows.slice(1,6); extra = rows.length - 6; }
+        else           { hdrs = rows[0].map(function(_,i){ return 'Col '+(i+1); }); body = rows.slice(0,5); extra = rows.length - 5; }
+        var tdStyle = 'padding:3px 8px;border-bottom:1px solid rgba(255,255,255,.05);color:rgba(255,255,255,.7);white-space:nowrap;max-width:130px;overflow:hidden;text-overflow:ellipsis;font-size:11px;';
+        var thStyle = 'padding:4px 8px;border-bottom:1px solid rgba(170,15,234,.4);color:#d580f8;font-weight:600;white-space:nowrap;text-align:left;font-size:11px;';
+        var t = '<table style="border-collapse:collapse;width:100%;"><thead><tr>';
+        hdrs.forEach(function(h){ t += '<th style="'+thStyle+'">' + _escHtml(h) + '</th>'; });
+        t += '</tr></thead><tbody>';
+        body.forEach(function(r){
+          t += '<tr>';
+          r.forEach(function(c){ t += '<td style="'+tdStyle+'">' + _escHtml(c) + '</td>'; });
+          t += '</tr>';
+        });
+        if (extra > 0) t += '<tr><td colspan="'+hdrs.length+'" style="padding:4px 8px;color:rgba(255,255,255,.22);font-size:10px;">…and '+extra+' more rows</td></tr>';
+        t += '</tbody></table>';
+        el.innerHTML = t;
+      }
+
+      function _csvModalClose() {
+        document.getElementById('csv-drop-modal').style.display = 'none';
+        _csvPendingFile = null;
+        _csvPendingData = null;
+        _csvPendingText = null;
+      }
+
+      function _csvModalShow(file, data) {
+        _csvPendingFile = file;
+        _csvPendingData = data;
+        document.getElementById('csv-drop-filename').textContent = file.name;
+        document.getElementById('csv-drop-table-name').value = file.name.replace(/\.(csv|tsv)$/i, '');
+        document.getElementById('csv-drop-step1').style.display = '';
+        document.getElementById('csv-drop-step2').style.display = 'none';
+        document.getElementById('csv-drop-status').style.display = 'none';
+        document.getElementById('csv-drop-confirm').disabled = false;
+        document.getElementById('csv-drop-modal').style.display = 'flex';
+      }
+
+      document.getElementById('csv-drop-close').addEventListener('click', _csvModalClose);
+      document.getElementById('csv-drop-modal').addEventListener('click', function(e) {
+        if (e.target === this) _csvModalClose();
+      });
+      document.getElementById('csv-choice-aux').addEventListener('click', function() {
+        var d = _csvPendingData;
+        _csvModalClose();
+        if (d) d.process().done(function() { d.submit(); });
+      });
+      document.getElementById('csv-choice-table').addEventListener('click', async function() {
+        document.getElementById('csv-drop-step1').style.display = 'none';
+        document.getElementById('csv-drop-step2').style.display = '';
+        document.getElementById('csv-drop-table-name').focus();
+        var previewEl = document.getElementById('csv-drop-preview');
+        previewEl.innerHTML = '<p style="padding:8px;color:rgba(255,255,255,.3);font-size:12px;"><i class="fa fa-spinner fa-spin"></i> Loading preview…</p>';
+        if (_csvPendingFile) {
+          _csvPendingText = await _csvPendingFile.text();
+          _renderCsvDropPreview();
+        }
+      });
+      document.getElementById('csv-drop-delimiter').addEventListener('change', _renderCsvDropPreview);
+      document.getElementById('csv-drop-has-header').addEventListener('change', _renderCsvDropPreview);
+      document.getElementById('csv-drop-back').addEventListener('click', function() {
+        document.getElementById('csv-drop-step1').style.display = '';
+        document.getElementById('csv-drop-step2').style.display = 'none';
+      });
+      document.getElementById('csv-drop-confirm').addEventListener('click', async function() {
+        var name = (document.getElementById('csv-drop-table-name').value || '').trim();
+        if (!name) { document.getElementById('csv-drop-table-name').focus(); return; }
+        var delim     = document.getElementById('csv-drop-delimiter').value;
+        var hasHeader = document.getElementById('csv-drop-has-header').checked;
+        var statusEl  = document.getElementById('csv-drop-status');
+        var statusTxt = document.getElementById('csv-drop-status-text');
+        var file = _csvPendingFile;
+        statusEl.style.display = '';
+        document.getElementById('csv-drop-confirm').disabled = true;
+        try {
+          statusTxt.textContent = 'Creating table…';
+          var createFd = new FormData();
+          createFd.append('name', name);
+          createFd.append('csrfmiddlewaretoken', gCsrfToken);
+          var createResp = await fetch(_tablesUrl, {method:'POST', body:createFd, credentials:'same-origin'});
+          var match = createResp.url.match(/\/tables\/dataset\/(\d+)\//);
+          if (!match) throw new Error('Table creation failed');
+          var datasetId = match[1];
+
+          statusTxt.textContent = 'Importing CSV…';
+          var csvText = _csvPendingText || await file.text();
+          var importFd = new FormData();
+          importFd.append('file', new Blob([csvText], {type:'text/csv'}), file.name);
+          importFd.append('delimiter', delim);
+          importFd.append('has_header', hasHeader ? '1' : '0');
+          importFd.append('force', 'true');
+          importFd.append('comment', 'Imported from ' + file.name);
+          var importUrl = _tablesUrl.replace(/\/\d+\/$/, '/api/' + datasetId + '/import/');
+          var importResp = await fetch(importUrl, {
+            method:'POST', body:importFd, credentials:'same-origin',
+            headers:{'X-CSRFToken': gCsrfToken}
+          });
+          var importJson = await importResp.json();
+          if (!importJson.ok) throw new Error(importJson.error || 'Import failed');
+          window.location.href = createResp.url;
+        } catch(err) {
+          statusTxt.textContent = 'Error: ' + err.message;
+          document.getElementById('csv-drop-confirm').disabled = false;
+        }
+      });
+
       $('#fileupload').fileupload({
         showElementClass: 'show',
         fileInput: fi,
@@ -1446,15 +1593,17 @@ function deleteAuxfile(btn) {
         sequentialUploads: true, // solves the issues with high Image counts... hopefully.
         url: "{% url 'images:upload_image' imageset.id %}",
         formData: [
-            {
-                name: 'csrfmiddlewaretoken',
-                value: gCsrfToken
-            },
-            {
-                name: 'imageset',
-                value: {{ imageset.id }},
-            }],
-        });
+            {name:'csrfmiddlewaretoken', value: gCsrfToken},
+            {name:'imageset', value: parseInt(_tablesUrl.match(/\/(\d+)\/$/)[1])}],
+        add: function(e, data) {
+          var file = data.files[0];
+          if (file && /\.(csv|tsv)$/i.test(file.name)) {
+            _csvModalShow(file, data);
+          } else {
+            data.process().done(function() { data.submit(); });
+          }
+        },
+      });
     });
     var id = $('#inputFiles');
     
@@ -1517,5 +1666,60 @@ function deleteAuxfile(btn) {
     });
 }());
 </script>
+
+<!-- CSV drop choice modal -->
+<div id="csv-drop-modal" style="display:none;position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.65);align-items:center;justify-content:center;backdrop-filter:blur(3px);">
+  <div style="position:relative;background:#1a1028;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:28px 32px;width:460px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.6);font-family:system-ui,sans-serif;">
+    <button id="csv-drop-close" style="position:absolute;top:10px;right:14px;background:none;border:none;color:rgba(255,255,255,.4);font-size:22px;cursor:pointer;line-height:1;">&times;</button>
+    <!-- Step 1: choice -->
+    <div id="csv-drop-step1">
+      <h5 style="color:#d580f8;margin:0 0 8px;font-size:1rem;"><i class="fa fa-file-text-o"></i> CSV file detected</h5>
+      <p style="color:rgba(255,255,255,.55);font-size:13px;margin:0 0 22px;">
+        <strong id="csv-drop-filename" style="color:#fff;"></strong><br>
+        How would you like to add this file?
+      </p>
+      <div style="display:flex;gap:12px;">
+        <button id="csv-choice-aux" class="btn btn-dark" style="flex:1;border:1px solid rgba(255,255,255,.15);font-size:13px;color:#ccc;">
+          <i class="fa fa-paperclip"></i> Auxiliary file
+        </button>
+        <button id="csv-choice-table" class="btn" style="flex:1;background:linear-gradient(135deg,#aa0fea,#7b00b8);color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;cursor:pointer;">
+          <i class="fa fa-table"></i> Import as table
+        </button>
+      </div>
+    </div>
+    <!-- Step 2: table import options -->
+    <div id="csv-drop-step2" style="display:none;">
+      <h5 style="color:#d580f8;margin:0 0 16px;font-size:1rem;"><i class="fa fa-table"></i> Import as new table</h5>
+      <label style="font-size:12px;color:rgba(255,255,255,.5);display:block;margin-bottom:4px;">Table name</label>
+      <input id="csv-drop-table-name" type="text" placeholder="Table name"
+             style="width:100%;box-sizing:border-box;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#fff;border-radius:6px;padding:8px 12px;font-size:13px;margin-bottom:12px;outline:none;">
+      <div style="display:flex;gap:14px;margin-bottom:14px;align-items:flex-end;">
+        <div style="flex:1;">
+          <label style="font-size:12px;color:rgba(255,255,255,.5);display:block;margin-bottom:4px;">Delimiter</label>
+          <select id="csv-drop-delimiter" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#fff;border-radius:6px;padding:7px 10px;font-size:12px;">
+            <option value=",">Comma (,)</option>
+            <option value=";">Semicolon (;)</option>
+            <option value="&#9;">Tab (\t)</option>
+            <option value="|">Pipe (|)</option>
+          </select>
+        </div>
+        <label style="font-size:12px;color:rgba(255,255,255,.6);cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px;padding-bottom:6px;">
+          <input type="checkbox" id="csv-drop-has-header" checked style="accent-color:#aa0fea;">
+          First row is header
+        </label>
+      </div>
+      <div id="csv-drop-preview" style="max-height:160px;overflow:auto;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);margin-bottom:12px;min-height:32px;"></div>
+      <div id="csv-drop-status" style="display:none;font-size:12px;color:rgba(255,255,255,.45);margin-bottom:10px;">
+        <i class="fa fa-spinner fa-spin"></i> <span id="csv-drop-status-text"></span>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button id="csv-drop-back" class="btn btn-dark" style="flex:1;border:1px solid rgba(255,255,255,.15);font-size:13px;color:#ccc;">← Back</button>
+        <button id="csv-drop-confirm" class="btn" style="flex:1;background:linear-gradient(135deg,#aa0fea,#7b00b8);color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;cursor:pointer;">
+          <i class="fa fa-check"></i> Create &amp; Import
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
 {% endblock bodyblock%}
