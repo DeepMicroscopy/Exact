@@ -1,34 +1,44 @@
-/* ── EXACT brand colors ─────────────────────────────────────────────────── */
+/* ── EXACT / DeepMicroscopy brand colors ─────────────────────────────────── */
 :root {
-  --md-primary-fg-color:        #005a9b;
-  --md-primary-fg-color--light: #1478c8;
-  --md-primary-fg-color--dark:  #00407a;
-  --md-accent-fg-color:         #0090d4;
+  --md-primary-fg-color:        #0f4880;
+  --md-primary-fg-color--light: #1a67b5;
+  --md-primary-fg-color--dark:  #093260;
+  --md-accent-fg-color:         #0284c7;
 }
 
-/* ── Header logo: let the wide SVG breathe ──────────────────────────────── */
+/* ── Header logo ─────────────────────────────────────────────────────────── */
+/* Logo is black-on-transparent; invert to white on the coloured header      */
 .md-header__button.md-logo img,
 .md-header__button.md-logo svg {
-  height: 28px;
+  height: 30px;
   width: auto;
+  filter: brightness(0) invert(1);
 }
 
-/* ── Home page hero ─────────────────────────────────────────────────────── */
+/* ── Home-page hero ──────────────────────────────────────────────────────── */
 .hero {
   padding: 4rem 1rem 3rem;
   text-align: center;
-  background: linear-gradient(160deg, #005a9b 0%, #003d6b 100%);
+  background: linear-gradient(150deg, #0f4880 0%, #062040 100%);
   color: white;
   margin: -0.8rem -0.8rem 2rem;
-  border-radius: 0 0 4px 4px;
+  border-radius: 0 0 6px 6px;
+}
+
+.hero-logo {
+  display: block;
+  height: 48px;
+  width: auto;
+  margin: 0 auto 1.6rem;
+  filter: brightness(0) invert(1);
 }
 
 .hero p {
-  font-size: 1.2rem;
-  opacity: 0.9;
-  max-width: 640px;
+  font-size: 1.15rem;
+  opacity: 0.92;
+  max-width: 600px;
   margin: 0 auto 1.5rem;
-  line-height: 1.6;
+  line-height: 1.65;
   color: white;
 }
 
@@ -37,22 +47,18 @@
   vertical-align: middle;
 }
 
-/* ── Feature cards on home page ─────────────────────────────────────────── */
+/* ── Feature cards ───────────────────────────────────────────────────────── */
 .md-typeset .grid.cards > ul > li {
   border-left: 3px solid var(--md-primary-fg-color);
 }
 
-/* ── Slightly tighter nav sidebar ──────────────────────────────────────── */
-.md-nav__item {
-  padding: 0;
-}
+/* ── Nav sidebar ─────────────────────────────────────────────────────────── */
+.md-nav__item { padding: 0; }
 
-/* ── Code blocks: slightly softer ──────────────────────────────────────── */
-.md-typeset pre > code {
-  font-size: 0.82rem;
-}
+/* ── Code blocks ─────────────────────────────────────────────────────────── */
+.md-typeset pre > code { font-size: 0.82rem; }
 
-/* ── Table: zebra stripe ────────────────────────────────────────────────── */
+/* ── Table: zebra stripe ─────────────────────────────────────────────────── */
 .md-typeset table:not([class]) tr:nth-child(even) {
-  background-color: rgba(0, 90, 155, 0.05);
+  background-color: rgba(15, 72, 128, 0.04);
 }

@@ -8,8 +8,8 @@ copyright: Copyright &copy; 2021–2026 DeepMicroscopy · MIT License
 
 theme:
   name: material
-  logo: assets/logo.svg
-  favicon: assets/icon.svg
+  logo: assets/deepmicroscopy-logo.png
+  favicon: assets/deepmicroscopy-logo.png
   palette:
     - scheme: default
       primary: custom
@@ -77,6 +77,7 @@ markdown_extensions:
 
 nav:
   - Home: index.md
+  - What's New: whats-new.md
   - Getting Started:
     - Installation: getting-started/installation.md
     - Quick Start: getting-started/quickstart.md
