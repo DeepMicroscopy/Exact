@@ -169,6 +169,9 @@ var TE_CONFIG = {
   urlVersions:    "{% url 'tables:versions'    dataset.id %}",
   urlVersionData: "{% url 'tables:version_data' dataset_id=dataset.id version_number=1 %}".replace('/1/data', '/{v}/data'),
   urlSettings:    "{% url 'tables:settings'    dataset.id %}",
+  urlResolve:     "{% url 'tables:resolve_url' %}",
+  urlRefSets:     "{% url 'tables:ref_imagesets' %}",
+  urlRefImages:   "{% url 'tables:ref_images' imageset_id=1 %}".replace('/1/images/', '/{id}/images/'),
   csrfToken: "{{ request.session.get|default:'' }}"
 };
 </script>
@@ -184,5 +187,17 @@ function getCsrf() {
 }
 TE_CONFIG.csrfToken = getCsrf();
 </script>
+<!-- Reference picker modal -->
+<div class="te-modal-bg" id="te-ref-modal" style="display:none;">
+  <div class="te-modal te-ref-modal">
+    <h4><i class="fa fa-link"></i> Insert reference</h4>
+    <input type="text" id="te-ref-search" class="te-modal-input" placeholder="Search imagesets and images…">
+    <div id="te-ref-tree" class="te-ref-tree"></div>
+    <div class="te-modal-actions">
+      <button class="te-btn" id="btn-ref-cancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <script src="{% static 'tables/table_editor.js' %}"></script>
 {% endblock %}

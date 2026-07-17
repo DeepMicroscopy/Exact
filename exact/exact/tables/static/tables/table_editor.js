@@ -50,12 +50,76 @@ var data     = [];       // array of array of string (all rows)
 var colWidths = {};      // {colIdx: px}
 var hiddenCols = {};     // {colIdx: true}
 var hiddenRows = {};     // {rowIdx: true}
+var colFilters = {};     // {colIdx: filterString}
+var _filteredIndices = null; // null = no active filter
 var dirty    = false;
 var currentVersion = cfg.currentVersion || 0;
 var PAGE_SIZE = 150;
 var page     = 0;
 var totalPages = 1;
 var previewingVersion = null;  // null = live, N = historical
+
+// ---------------------------------------------------------------------------
+// Internal URL / reference detection
+// ---------------------------------------------------------------------------
+var TE_PATTERNS = [
+  { re: /^\/images\/imageset\/(\d+)\/$/, type: 'imageset', label: 'Image set' },
+  { re: /^\/annotations\/(\d+)\/$/, type: 'image', label: 'Image' },
+];
+var _refCache   = {};  // path -> {type, name, detail}
+var _refPending = {};  // path -> true
+
+function isExactRef(val) {
+  if (!val || typeof val !== 'string') return null;
+  var path = val.trim();
+  try {
+    var u = new URL(path);
+    if (u.origin !== window.location.origin) return null;
+    path = u.pathname;
+  } catch(e) {
+    if (path[0] !== '/') return null;
+  }
+  for (var i = 0; i < TE_PATTERNS.length; i++) {
+    var m = path.match(TE_PATTERNS[i].re);
+    if (m) return { pattern: TE_PATTERNS[i], path: path, id: m[1] };
+  }
+  return null;
+}
+
+function renderRefChip(cell, val, refMatch) {
+  var path = refMatch.path;
+  var label = refMatch.pattern.label;
+  var cached = _refCache[path];
+  var name = cached ? cached.name : '…';
+  var title = cached ? (cached.detail ? cached.detail + ' / ' + cached.name : cached.name) : '';
+  cell.innerHTML = '<a class="te-ref-chip" href="' + esc(path) + '" target="_blank" rel="noopener"'
+    + ' data-ref-url="' + esc(path) + '" title="' + esc(title) + '">'
+    + '<i class="fa fa-link"></i>'
+    + '<span class="te-ref-type">' + esc(label) + ':</span>'
+    + '<span class="te-ref-name">' + esc(name) + '</span>'
+    + '</a>';
+  if (!cached) resolveRef(path, refMatch.pattern);
+}
+
+function resolveRef(path, pattern) {
+  if (_refCache[path] || _refPending[path]) return;
+  _refPending[path] = true;
+  fetch(cfg.urlResolve + '?path=' + encodeURIComponent(path), { credentials: 'same-origin' })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.name) {
+        _refCache[path] = d;
+        document.querySelectorAll('[data-ref-url="' + path.replace(/"/g, '%22') + '"]').forEach(function(chip) {
+          var nameEl = chip.querySelector('.te-ref-name');
+          if (nameEl) nameEl.textContent = d.name;
+          var title = d.detail ? d.detail + ' / ' + d.name : d.name;
+          chip.title = title;
+        });
+      }
+    })
+    .catch(function() {})
+    .then(function() { delete _refPending[path]; });
+}
 
 // ---------------------------------------------------------------------------
 // DOM refs
@@ -102,6 +166,8 @@ function loadCSV(csv) {
   if (rows.length === 0) { headers = []; data = []; }
   else { headers = rows[0]; data = rows.slice(1); }
   page = 0;
+  colFilters = {};
+  _filteredIndices = null;
   totalPages = Math.max(1, Math.ceil(data.length / PAGE_SIZE));
   dirty = false;
   updateDirty();
@@ -167,19 +233,108 @@ function renderHead() {
     tr.appendChild(th);
   });
 
+  // Filter row
+  var filterTr = document.createElement('tr');
+  filterTr.className = 'te-filter-row';
+
+  var clearCell = document.createElement('th');
+  clearCell.className = 'te-row-num-hd te-filter-clear-cell';
+  var clearBtn = document.createElement('button');
+  clearBtn.className = 'te-filter-clear-all';
+  clearBtn.title = 'Clear all filters';
+  clearBtn.innerHTML = '&times;';
+  var anyActive = Object.keys(colFilters).some(function(k) { return !!colFilters[k]; });
+  clearBtn.style.display = anyActive ? '' : 'none';
+  clearBtn.addEventListener('click', function() {
+    colFilters = {};
+    filterTr.querySelectorAll('.te-filter-input').forEach(function(inp) {
+      inp.value = '';
+      inp.classList.remove('te-filter-active');
+    });
+    clearBtn.style.display = 'none';
+    _applyFilters(true);
+  });
+  clearCell.appendChild(clearBtn);
+  filterTr.appendChild(clearCell);
+
+  headers.forEach(function(h, ci) {
+    var ftd = document.createElement('th');
+    ftd.className = 'te-filter-cell';
+    if (hiddenCols[ci]) ftd.style.display = 'none';
+
+    var inp = document.createElement('input');
+    inp.type = 'text';
+    inp.className = 'te-filter-input';
+    inp.placeholder = 'Filter…';
+    inp.dataset.col = ci;
+    inp.value = colFilters[ci] || '';
+    if (colFilters[ci]) inp.classList.add('te-filter-active');
+
+    inp.addEventListener('input', function() {
+      var c = parseInt(inp.dataset.col);
+      var v = inp.value;
+      if (v) { colFilters[c] = v; inp.classList.add('te-filter-active'); }
+      else   { delete colFilters[c]; inp.classList.remove('te-filter-active'); }
+      var still = Object.keys(colFilters).some(function(k) { return !!colFilters[k]; });
+      clearBtn.style.display = still ? '' : 'none';
+      _applyFilters(true);
+    });
+
+    ftd.appendChild(inp);
+    filterTr.appendChild(ftd);
+  });
+
   elThead.innerHTML = '';
   elThead.appendChild(tr);
+  elThead.appendChild(filterTr);
+}
+
+// _applyFilters: recompute _filteredIndices + totalPages; if resetPage, jump to 0 and re-render.
+function _applyFilters(resetPage) {
+  var active = Object.keys(colFilters).filter(function(k) { return !!colFilters[k]; });
+  if (active.length === 0) {
+    _filteredIndices = null;
+    totalPages = Math.max(1, Math.ceil(data.length / PAGE_SIZE));
+  } else {
+    _filteredIndices = [];
+    for (var ri = 0; ri < data.length; ri++) {
+      if (hiddenRows[ri]) continue;
+      var row = data[ri];
+      var ok = true;
+      for (var ai = 0; ai < active.length; ai++) {
+        var ci = parseInt(active[ai]);
+        var val = (row[ci] != null ? String(row[ci]) : '').toLowerCase();
+        if (val.indexOf(colFilters[active[ai]].toLowerCase()) === -1) { ok = false; break; }
+      }
+      if (ok) _filteredIndices.push(ri);
+    }
+    totalPages = Math.max(1, Math.ceil(_filteredIndices.length / PAGE_SIZE));
+  }
+  if (resetPage) page = 0;
+  page = Math.min(page, Math.max(0, totalPages - 1));
+  renderBody();
+  updateStats();
+  updatePageLabel();
 }
 
 function renderBody() {
   elTbody.innerHTML = '';
-  var start = page * PAGE_SIZE;
-  var end   = Math.min(start + PAGE_SIZE, data.length);
-  for (var ri = start; ri < end; ri++) {
+  var indices = [];
+  if (_filteredIndices !== null) {
+    var fs = page * PAGE_SIZE;
+    var fe = Math.min(fs + PAGE_SIZE, _filteredIndices.length);
+    indices = _filteredIndices.slice(fs, fe);
+  } else {
+    var start = page * PAGE_SIZE;
+    var end   = Math.min(start + PAGE_SIZE, data.length);
+    for (var i = start; i < end; i++) indices.push(i);
+  }
+  for (var idx = 0; idx < indices.length; idx++) {
+    var ri  = indices[idx];
     var row = data[ri];
     var tr  = document.createElement('tr');
     tr.dataset.row = ri;
-    if (hiddenRows[ri]) tr.style.display = 'none';
+    if (_filteredIndices === null && hiddenRows[ri]) tr.style.display = 'none';
 
     // Row number
     var rn = document.createElement('td');
@@ -197,18 +352,30 @@ function renderBody() {
       var td = document.createElement('td');
       td.dataset.row = ri;
       td.dataset.col = ci;
-      td.title = row[ci] != null ? row[ci] : '';
       if (hiddenCols[ci]) td.style.display = 'none';
 
+      var val = row[ci] != null ? row[ci] : '';
       var cell = document.createElement('div');
       cell.className = 'te-cell-inner';
-      cell.textContent = row[ci] != null ? row[ci] : '';
+      var refMatch = isExactRef(val);
+      if (refMatch) {
+        td.title = '';
+        renderRefChip(cell, val, refMatch);
+      } else {
+        td.title = val;
+        cell.textContent = val;
+      }
       td.appendChild(cell);
 
       if (cfg.canWrite && !previewingVersion) {
         td.addEventListener('dblclick', function(e) {
           var el = e.currentTarget;
           startEdit(el, parseInt(el.dataset.row), parseInt(el.dataset.col));
+        });
+        td.addEventListener('contextmenu', function(e) {
+          e.preventDefault();
+          var el = e.currentTarget;
+          showCellContextMenu(e, parseInt(el.dataset.row), parseInt(el.dataset.col));
         });
       }
       tr.appendChild(td);
@@ -369,6 +536,30 @@ function showRowContextMenu(e, ri) {
   ]);
 }
 
+function showCellContextMenu(e, ri, ci) {
+  var val = data[ri] && data[ri][ci] != null ? data[ri][ci] : '';
+  var ref = isExactRef(val);
+  var items = [];
+  if (ref) {
+    items.push({ icon: 'fa-external-link', label: 'Open in new tab', action: function() {
+      window.open(ref.path, '_blank', 'noopener');
+    }});
+    items.push({ icon: 'fa-times', label: 'Remove reference', danger: true, action: function() {
+      data[ri][ci] = '';
+      var td = elTbody.querySelector('td[data-row="' + ri + '"][data-col="' + ci + '"]');
+      if (td) {
+        var cell = td.querySelector('.te-cell-inner');
+        if (cell) { cell.innerHTML = ''; cell.textContent = ''; }
+        td.title = '';
+      }
+      markDirty();
+    }});
+    items.push('-');
+  }
+  items.push({ icon: 'fa-link', label: 'Insert reference…', action: function() { openRefPicker(ri, ci); } });
+  showContextMenu(e, items);
+}
+
 function showColContextMenu(e, ci) {
   var isHidden = !!hiddenCols[ci];
   showContextMenu(e, [
@@ -395,8 +586,8 @@ function insertRow(ri, after) {
     var idx = parseInt(k); shifted[idx < pos ? idx : idx + 1] = true;
   });
   hiddenRows = shifted;
-  totalPages = Math.max(1, Math.ceil(data.length / PAGE_SIZE));
-  renderBody(); updateStats(); markDirty();
+  _applyFilters(false);
+  markDirty();
 }
 
 function deleteRow(ri) {
@@ -407,14 +598,13 @@ function deleteRow(ri) {
     if (idx !== ri) shifted[idx > ri ? idx - 1 : idx] = true;
   });
   hiddenRows = shifted;
-  page = Math.min(page, Math.max(0, Math.ceil(data.length / PAGE_SIZE) - 1));
-  totalPages = Math.max(1, Math.ceil(data.length / PAGE_SIZE));
-  renderBody(); updateStats(); markDirty(); renderRowSettings();
+  _applyFilters(false);
+  markDirty(); renderRowSettings();
 }
 
 function toggleHideRow(ri) {
   if (hiddenRows[ri]) { delete hiddenRows[ri]; } else { hiddenRows[ri] = true; }
-  saveSettings(); renderBody(); updateStats(); renderRowSettings();
+  saveSettings(); _applyFilters(false); renderRowSettings();
 }
 
 function insertCol(ci, after) {
@@ -431,14 +621,18 @@ function insertCol(ci, after) {
   Object.keys(colWidths).forEach(function(k) {
     var idx = parseInt(k); shiftedW[idx < pos ? idx : idx + 1] = colWidths[k];
   });
-  hiddenCols = shiftedC; colWidths = shiftedW;
-  renderTable(); updateStats(); markDirty();
+  var shiftedF = {};
+  Object.keys(colFilters).forEach(function(k) {
+    var idx = parseInt(k); shiftedF[idx < pos ? idx : idx + 1] = colFilters[k];
+  });
+  hiddenCols = shiftedC; colWidths = shiftedW; colFilters = shiftedF;
+  renderTable(); _applyFilters(false); markDirty();
 }
 
 function deleteCol(ci) {
   headers.splice(ci, 1);
   data.forEach(function(row) { row.splice(ci, 1); });
-  var shiftedC = {}, shiftedW = {};
+  var shiftedC = {}, shiftedW = {}, shiftedF = {};
   Object.keys(hiddenCols).forEach(function(k) {
     var idx = parseInt(k);
     if (idx !== ci) shiftedC[idx > ci ? idx - 1 : idx] = true;
@@ -447,8 +641,12 @@ function deleteCol(ci) {
     var idx = parseInt(k);
     if (idx !== ci) shiftedW[idx > ci ? idx - 1 : idx] = colWidths[k];
   });
-  hiddenCols = shiftedC; colWidths = shiftedW;
-  renderTable(); renderColSettings(); updateStats(); markDirty();
+  Object.keys(colFilters).forEach(function(k) {
+    var idx = parseInt(k);
+    if (idx !== ci) shiftedF[idx > ci ? idx - 1 : idx] = colFilters[k];
+  });
+  hiddenCols = shiftedC; colWidths = shiftedW; colFilters = shiftedF;
+  renderTable(); renderColSettings(); _applyFilters(false); markDirty();
 }
 
 function toggleHideCol(ci) {
@@ -465,10 +663,9 @@ document.addEventListener('DOMContentLoaded', function() {
   if (btnAddRow) btnAddRow.addEventListener('click', function() {
     var row = new Array(headers.length).fill('');
     data.push(row);
-    totalPages = Math.max(1, Math.ceil(data.length / PAGE_SIZE));
+    _applyFilters(false);
     page = totalPages - 1;
     renderBody();
-    updateStats();
     markDirty();
     var rows = elTbody.querySelectorAll('tr');
     if (rows.length) {
@@ -505,8 +702,10 @@ function updateDirty() {
 // ---------------------------------------------------------------------------
 function updateStats() {
   var vis = data.length - Object.keys(hiddenRows).length;
-  elStats.textContent = data.length + ' rows · ' + headers.length + ' cols'
-    + (Object.keys(hiddenRows).length ? ' (' + vis + ' visible)' : '');
+  var text = data.length + ' rows · ' + headers.length + ' cols';
+  if (Object.keys(hiddenRows).length) text += ' (' + vis + ' visible)';
+  if (_filteredIndices !== null) text += ' — ' + _filteredIndices.length + ' match filter';
+  elStats.textContent = text;
   updatePageLabel();
 }
 
@@ -911,5 +1110,183 @@ function on(id, evt, fn) {
 function esc(s) {
   return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+// ---------------------------------------------------------------------------
+// Reference picker
+// ---------------------------------------------------------------------------
+var _refPickerRi = -1, _refPickerCi = -1;
+var _refSetsCache = null;
+var _refImagesCache = {};
+
+function openRefPicker(ri, ci) {
+  _refPickerRi = ri; _refPickerCi = ci;
+  document.getElementById('te-ref-search').value = '';
+  showModal('te-ref-modal');
+  var treeEl = document.getElementById('te-ref-tree');
+  if (!_refSetsCache) {
+    treeEl.innerHTML = '<div class="te-ref-msg"><i class="fa fa-spinner fa-spin"></i> Loading…</div>';
+    fetch(cfg.urlRefSets, { credentials: 'same-origin' })
+      .then(function(r) { return r.json(); })
+      .then(function(d) { _refSetsCache = d.results; renderRefTree(''); })
+      .catch(function() { treeEl.innerHTML = '<div class="te-ref-msg te-hint">Failed to load imagesets.</div>'; });
+  } else {
+    renderRefTree('');
+  }
+}
+
+function renderRefTree(query) {
+  var treeEl = document.getElementById('te-ref-tree');
+  var sets = _refSetsCache || [];
+  var q = query.toLowerCase();
+  treeEl.innerHTML = '';
+  var lastTeam = null;
+  var shown = 0;
+  sets.forEach(function(set) {
+    var nameMatch = set.name.toLowerCase().indexOf(q) >= 0;
+    var teamMatch = set.team && set.team.toLowerCase().indexOf(q) >= 0;
+    if (q && !nameMatch && !teamMatch) return;
+    if (set.team !== lastTeam) {
+      var hdr = document.createElement('div');
+      hdr.className = 'te-ref-team-hdr';
+      hdr.textContent = set.team || 'No team';
+      treeEl.appendChild(hdr);
+      lastTeam = set.team;
+    }
+    treeEl.appendChild(makeImagesetNode(set));
+    shown++;
+  });
+  if (!shown) treeEl.innerHTML = '<div class="te-ref-msg te-hint">No matches.</div>';
+}
+
+function makeImagesetNode(set) {
+  var node = document.createElement('div');
+  node.className = 'te-ref-node';
+
+  var row = document.createElement('div');
+  row.className = 'te-ref-row';
+
+  var expBtn = document.createElement('button');
+  expBtn.className = 'te-ref-expand';
+  expBtn.innerHTML = '<i class="fa fa-chevron-right"></i>';
+
+  var icon = document.createElement('i');
+  icon.className = 'fa fa-folder-o te-ref-folder-icon';
+
+  var nameEl = document.createElement('span');
+  nameEl.className = 'te-ref-item-name';
+  nameEl.textContent = set.name;
+
+  var insBtn = document.createElement('button');
+  insBtn.className = 'te-ref-ins-btn';
+  insBtn.title = 'Insert image set reference';
+  insBtn.innerHTML = '<i class="fa fa-link"></i>';
+
+  row.appendChild(expBtn);
+  row.appendChild(icon);
+  row.appendChild(nameEl);
+  row.appendChild(insBtn);
+  node.appendChild(row);
+
+  var children = document.createElement('div');
+  children.className = 'te-ref-children';
+  node.appendChild(children);
+
+  var expanded = false;
+  function toggle() {
+    expanded = !expanded;
+    expBtn.innerHTML = '<i class="fa fa-chevron-' + (expanded ? 'down' : 'right') + '"></i>';
+    children.style.display = expanded ? 'block' : 'none';
+    if (expanded && !children._loaded) { children._loaded = true; loadRefImages(set.id, children); }
+  }
+  expBtn.addEventListener('click', toggle);
+  icon.addEventListener('click', toggle);
+
+  var setPath = window.location.origin + '/images/imageset/' + set.id + '/';
+  nameEl.addEventListener('click', function() { insertRefValue(setPath, 'imageset', set.name); });
+  insBtn.addEventListener('click', function() { insertRefValue(setPath, 'imageset', set.name); });
+  return node;
+}
+
+function loadRefImages(imagesetId, container) {
+  if (_refImagesCache[imagesetId]) { renderRefImages(_refImagesCache[imagesetId], container); return; }
+  container.innerHTML = '<div class="te-ref-msg te-hint"><i class="fa fa-spinner fa-spin"></i></div>';
+  var url = cfg.urlRefImages.replace('{id}', imagesetId);
+  fetch(url, { credentials: 'same-origin' })
+    .then(function(r) { return r.json(); })
+    .then(function(d) { _refImagesCache[imagesetId] = d.results; renderRefImages(d.results, container); })
+    .catch(function() { container.innerHTML = '<div class="te-ref-msg te-hint">Failed to load.</div>'; });
+}
+
+function renderRefImages(images, container) {
+  container.innerHTML = '';
+  if (!images || !images.length) {
+    container.innerHTML = '<div class="te-ref-msg te-hint" style="padding-left:32px;">No images.</div>';
+    return;
+  }
+  var q = (document.getElementById('te-ref-search').value || '').toLowerCase();
+  var shown = 0;
+  images.forEach(function(img) {
+    if (q && img.name.toLowerCase().indexOf(q) < 0) return;
+    var row = document.createElement('div');
+    row.className = 'te-ref-row te-ref-image-row';
+
+    var icon = document.createElement('i');
+    icon.className = 'fa fa-file-image-o te-ref-img-icon';
+
+    var nameEl = document.createElement('span');
+    nameEl.className = 'te-ref-item-name';
+    nameEl.textContent = img.name;
+
+    var insBtn = document.createElement('button');
+    insBtn.className = 'te-ref-ins-btn';
+    insBtn.title = 'Insert image reference';
+    insBtn.innerHTML = '<i class="fa fa-link"></i>';
+
+    row.appendChild(icon);
+    row.appendChild(nameEl);
+    row.appendChild(insBtn);
+    container.appendChild(row);
+
+    var imgPath = window.location.origin + '/annotations/' + img.id + '/';
+    nameEl.addEventListener('click', function() { insertRefValue(imgPath, 'image', img.name); });
+    insBtn.addEventListener('click', function() { insertRefValue(imgPath, 'image', img.name); });
+    shown++;
+  });
+  if (!shown) container.innerHTML = '<div class="te-ref-msg te-hint" style="padding-left:32px;">No matches.</div>';
+}
+
+function insertRefValue(path, type, name) {
+  hideModal('te-ref-modal');
+  if (_refPickerRi < 0) return;
+  var ri = _refPickerRi, ci = _refPickerCi;
+  _refPickerRi = -1; _refPickerCi = -1;
+  if (!data[ri]) return;
+  data[ri][ci] = path;
+  _refCache[path] = { type: type, name: name, detail: '' };
+  // Re-render the affected cell if it's visible on the current page
+  var td = elTbody.querySelector('td[data-row="' + ri + '"][data-col="' + ci + '"]');
+  if (td) {
+    var cell = td.querySelector('.te-cell-inner');
+    if (cell) {
+      var refMatch = isExactRef(path);
+      if (refMatch) renderRefChip(cell, path, refMatch);
+    }
+    td.title = '';
+  }
+  markDirty();
+}
+
+// Ref search box
+window.addEventListener('DOMContentLoaded', function() {
+  var refSearch = document.getElementById('te-ref-search');
+  if (refSearch) {
+    var _refSearchTimer = null;
+    refSearch.addEventListener('input', function() {
+      clearTimeout(_refSearchTimer);
+      _refSearchTimer = setTimeout(function() { renderRefTree(refSearch.value.trim()); }, 200);
+    });
+  }
+  on('btn-ref-cancel', 'click', function() { hideModal('te-ref-modal'); });
+});
 
 })();

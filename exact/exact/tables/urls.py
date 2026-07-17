@@ -15,4 +15,7 @@ urlpatterns = [
     path('api/<int:dataset_id>/versions/<int:version_number>/data/', views.table_version_data_api,   name='version_data'),
     path('api/<int:dataset_id>/settings/',                           views.table_settings_api,       name='settings'),
     path('api/<int:dataset_id>/delete/',                             views.table_delete_api,         name='delete'),
+    path('api/resolve-url/',                                         views.resolve_url_api,           name='resolve_url'),
+    path('api/ref/imagesets/',                                       views.ref_picker_imagesets_api,  name='ref_imagesets'),
+    path('api/ref/imageset/<int:imageset_id>/images/',               views.ref_picker_images_api,     name='ref_images'),
 ]

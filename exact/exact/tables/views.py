@@ -1,6 +1,7 @@
 import csv
 import io
 import json
+import re as _re
 
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, JsonResponse
@@ -8,7 +9,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_GET, require_POST
 
-from exact.images.models import ImageSet
+from exact.images.models import ImageSet, Image
 
 from .models import TableDataset, TableVersion, TableViewSettings
 
@@ -241,14 +242,30 @@ def table_export_xlsx(request, dataset_id):
 
     header_fill = PatternFill('solid', fgColor='2D0A3E')
     header_font = Font(bold=True, color='FFFFFF')
+    link_font   = Font(color='8B5CF6', underline='single')
+
+    _EXACT_REF_RE = _re.compile(
+        r'^(?:https?://[^/]+)?(/(?:images/imageset|annotations)/\d+/)$'
+    )
+    base_url = request.build_absolute_uri('/').rstrip('/')
 
     for r_idx, row in enumerate(rows, start=1):
         for c_idx, val in enumerate(row, start=1):
-            cell = ws.cell(row=r_idx, column=c_idx, value=val)
+            display_val = val
+            hyperlink_url = None
+            if r_idx > 1 and val:
+                m = _EXACT_REF_RE.match(val)
+                if m:
+                    hyperlink_url = base_url + m.group(1)
+                    display_val = hyperlink_url
+            cell = ws.cell(row=r_idx, column=c_idx, value=display_val)
             if r_idx == 1:
                 cell.fill = header_fill
                 cell.font = header_font
                 cell.alignment = Alignment(horizontal='center')
+            elif hyperlink_url:
+                cell.hyperlink = hyperlink_url
+                cell.font = link_font
             # Apply column width (px → Excel char units ≈ px/7)
             px = col_widths.get(str(c_idx - 1))
             if px:
@@ -341,6 +358,58 @@ def table_settings_api(request, dataset_id):
 # ---------------------------------------------------------------------------
 # Delete dataset
 # ---------------------------------------------------------------------------
+
+@login_required
+@require_GET
+def resolve_url_api(request):
+    """Resolve an internal EXACT path to a human-readable name and type."""
+    path = request.GET.get('path', '').strip().rstrip('/')
+
+    m = _re.match(r'^/?images/imageset/(\d+)$', path)
+    if m:
+        imageset = ImageSet.objects.filter(pk=int(m.group(1))).first()
+        if not imageset or not imageset.has_perm('read', request.user):
+            return JsonResponse({'error': 'Not found'}, status=404)
+        return JsonResponse({'type': 'imageset', 'name': imageset.name,
+                             'detail': imageset.team.name if imageset.team else ''})
+
+    m = _re.match(r'^/?annotations/(\d+)$', path)
+    if m:
+        image = (Image.objects
+                 .select_related('image_set', 'image_set__team')
+                 .filter(pk=int(m.group(1))).first())
+        if not image or not image.image_set.has_perm('read', request.user):
+            return JsonResponse({'error': 'Not found'}, status=404)
+        return JsonResponse({'type': 'image', 'name': image.name,
+                             'detail': image.image_set.name})
+
+    return JsonResponse({'error': 'Not an EXACT reference'}, status=400)
+
+
+@login_required
+@require_GET
+def ref_picker_imagesets_api(request):
+    """Return all imagesets accessible to the user for the reference picker."""
+    imagesets = (ImageSet.objects
+                 .filter(team__in=request.user.team_set.all())
+                 .select_related('team')
+                 .order_by('team__name', 'name')
+                 .values('id', 'name', 'team__name')[:300])
+    return JsonResponse({'results': [
+        {'id': s['id'], 'name': s['name'], 'team': s['team__name']} for s in imagesets
+    ]})
+
+
+@login_required
+@require_GET
+def ref_picker_images_api(request, imageset_id):
+    """Return images inside an imageset for the reference picker."""
+    imageset = get_object_or_404(ImageSet, pk=imageset_id)
+    if not imageset.has_perm('read', request.user):
+        return JsonResponse({'error': 'Forbidden'}, status=403)
+    images = list(imageset.images.order_by('name').values('id', 'name')[:500])
+    return JsonResponse({'results': images})
+
 
 @login_required
 @require_POST
