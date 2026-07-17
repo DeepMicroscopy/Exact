@@ -1,261 +1,116 @@
-# Exact
-[![PyPI version fury.io](https://badge.fury.io/py/EXACT-Sync.svg)](https://pypi.python.org/pypi/EXACT-Sync/)
-[![MIT license](https://img.shields.io/badge/License-MIT-blue.svg)](https://lbesson.mit-license.org/)
+<div align="center">
 
+# EXACT
 
+**Open-source platform for collaborative annotation of medical and scientific images**
 
-This is a collaborative online tool for labeling image data.
+[![PyPI](https://badge.fury.io/py/EXACT-Sync.svg)](https://pypi.python.org/pypi/EXACT-Sync/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://lbesson.mit-license.org/)
+[![DOI](https://img.shields.io/badge/DOI-10.1038%2Fs41598--021--83827--4-green.svg)](https://doi.org/10.1038/s41598-021-83827-4)
 
-<img width="1795" height="756" alt="image" src="https://github.com/user-attachments/assets/460f852e-a20c-411f-b0ea-070a0c83d612" />
+</div>
 
+<img width="1400" alt="EXACT — collaborative medical image annotation" src="https://github.com/user-attachments/assets/460f852e-a20c-411f-b0ea-070a0c83d612" />
 
-## Reference
+EXACT (EXpert Algorithm Collaboration Tool) is a web-based platform for labeling whole slide images, 3D volumes, DICOM series, video, and standard raster images — built for multidisciplinary research teams that need version control, AI-assisted workflows, and a full REST API.
 
-This paper describes the EXACT-Server in depth. Please cite if you use this tool in your research:
+---
 
-Marzahl et al. [EXACT: A collaboration toolset for algorithm-aided annotation of almost everything](https://www.nature.com/articles/s41598-021-83827-4) 
+## What's New
 
-```
-﻿@Article{marzahl2021exact,
-title={EXACT: a collaboration toolset for algorithm-aided annotation of images with annotation version control},
-author={Marzahl, Christian and Aubreville, Marc and Bertram, Christof A. and Maier, Jennifer and Bergler, Christian and Kr{\"o}ger, Christine and Voigt, J{\"o}rn and Breininger, Katharina and Klopfleisch, Robert and Maier, Andreas},
-journal={Scientific Reports},
-year={2021},
-month={Feb},
-day={23},
-volume={11},
-number={1},
-pages={4343},
-abstract={In many research areas, scientific progress is accelerated by multidisciplinary access to image data and their interdisciplinary annotation. However, keeping track of these annotations to ensure a high-quality multi-purpose data set is a challenging and labour intensive task. We developed the open-source online platform EXACT (EXpert Algorithm Collaboration Tool) that enables the collaborative interdisciplinary analysis of images from different domains online and offline. EXACT supports multi-gigapixel medical whole slide images as well as image series with thousands of images. The software utilises a flexible plugin system that can be adapted to diverse applications such as counting mitotic figures with a screening mode, finding false annotations on a novel validation view, or using the latest deep learning image analysis technologies. This is combined with a version control system which makes it possible to keep track of changes in the data sets and, for example, to link the results of deep learning experiments to specific data set versions. EXACT is freely available and has already been successfully applied to a broad range of annotation tasks, including highly diverse applications like deep learning supported cytology scoring, interdisciplinary multi-centre whole slide image tumour annotation, and highly specialised whale sound spectroscopy clustering.},
-issn={2045-2322},
-doi={10.1038/s41598-021-83827-4},
-url={https://doi.org/10.1038/s41598-021-83827-4}
-}
+### Tabular Data *(2026)*
 
+Attach structured spreadsheet data directly to any image set — a full in-browser spreadsheet editor with version history.
 
-```
+- CSV and XLSX import / export with a dark-themed spreadsheet editor
+- Full version history with diff-based storage and one-click restore
+- Per-column filtering, column reordering, hidden rows and columns
+- Drag-and-drop CSV onto the imageset page to import as a table or attach as an auxiliary file
+- Paste any EXACT URL into a cell — it renders as a rich reference chip (*"Image set: Tumor Slides"*)
+- Right-click context menu to insert or remove references, with a tree picker for lazy-loaded imagesets and images
+- Exported XLSX files include clickable hyperlinks for all EXACT references
+
+### Admin Impersonation *(2026)*
+
+Superusers can temporarily act as any other user for support and debugging. A persistent banner makes the impersonation state clear; the original session is fully restored on exit.
+
+### Folder Upload for DICOM and MRXS *(2026)*
+
+Upload an entire DICOM series or MRXS dataset as a folder — EXACT assembles the series automatically.
+
+### Team Statistics *(2026)*
+
+A new statistics dashboard shows annotation progress per team: coverage, verification rates, and annotator breakdowns.
+
+### Search *(2026)*
+
+Full-text search within image sets (press <kbd>Ctrl+F</kbd>) and across teams from the main navigation.
+
+### Modernised UI *(2026)*
+
+- Refreshed imageset page with a new LightRoom v2 viewer and improved image list
+- Reworked annotation type management under *Products & Types*
+- Upload images directly from the image list view
+- Image creator information shown in the viewer
+- Beautified login and logout screens
+- New logo
+
+### NIfTI 3D Volume Support *(2026)*
+
+Upload `.nii` and `.nii.gz` volumetric files. The viewer renders axial slices with z-scaling from the NIfTI voxel geometry header; coronal and sagittal reconstructions use standard NIfTI coordinate remapping. Includes a z-slider for manual cross-section registration.
+
+### Passkeys *(2025)*
+
+Passwordless login via FIDO2/WebAuthn — Windows Hello, Apple Passkeys, and hardware security keys. Users register keys in their profile and sign in with a single gesture. See [Passkeys setup guide](doc/Passkeys.md).
+
+---
 
 ## Features
 
-* Browsable REST-API  https://exact.cs.fau.de/api/v1/ and [docu](#REST-API)
-> * REST-API Client  https://github.com/DeepMicroscopy/EXACT-Sync 
-> * Dynamic [OpenAPI](https://swagger.io/docs/specification/about/) client generation with [Swagger](https://editor.swagger.io/) and [EXACT-API.yml](./exact/EXACT-API.yml)
-* Sync with the offline Tool [SlideRunner](https://github.com/maubreville/SlideRunner) 
-* team creation
-* upload image sets in the multiple formats like: [whole slide image (WSI) formats](https://openslide.org/api/python/) or .png, .jpg, .jepg, .bmp etc. 
-* bounding box, circle and polygon support
-* export format creation
-* label export
-* image preloading for labeling and verification
-* label verification
-* upload of existing labels
-* WSI [viewer](https://openseadragon.github.io/) 
-* [Caching](redis/CACHING.md)
-* Registration [Registration.md](https://github.com/DeepMicroscopy/exact/blob/master/Registration.md)
+| Area | What EXACT provides |
+|------|---------------------|
+| **Image types** | WSI via OpenSlide, DICOM, NIfTI (`.nii`/`.nii.gz`), CZI, CellVizio, MRXS, Olympus VSI, PNG, JPG, MP4, AVI |
+| **Annotation** | Bounding box · circle · polygon · segmentation tiles · paint brush · scissors & glue · knife split |
+| **Collaboration** | Teams, shared image sets, concurrent editing, annotation verification workflow |
+| **Version control** | Full annotation history with diff-based storage and per-version links |
+| **Tabular data** | Spreadsheet editor per image set, CSV/XLSX import/export, cell-level references |
+| **AI integration** | Plugin system for algorithm-assisted labeling; density maps; segmentation overlays |
+| **Screening mode** | Tile-by-tile WSI review with keyboard-driven navigation |
+| **REST API** | Browsable DRF API + dynamic OpenAPI/Swagger schema; [EXACT-Sync](https://github.com/DeepMicroscopy/EXACT-Sync) Python client |
+| **Authentication** | Password, passkeys (FIDO2/WebAuthn), optional LDAP |
+| **Offline sync** | Bidirectional sync with [SlideRunner](https://github.com/maubreville/SlideRunner) desktop tool |
+| **Export** | Configurable export formats, annotation maps, density maps |
+| **Caching** | Redis-backed tile and session caching — see [Caching docs](redis/CACHING.md) |
 
+---
 
-## Recent Changes and Updates 
+## Quick Start
 
-### 2025-12-19: Passkeys
+### Docker (recommended)
 
-Since commit 8c6cc11e349806a50cbce71676647211b238b87a, EXACT can handle PassKeys (Windows Hello, Apple PassKeys, Fido-Keys), allowing for a more secure login without passwords. For this, we have a new section in the `settings.py` configuration file, please see [this readme](doc/Passkeys.md).
-
-## Documentation
-
-Issues with the [notebooks](doc/README.md) on GitHub? Please use [NBViewer](https://nbviewer.jupyter.org/github/DeepMicroscopy/Exact/tree/master/doc/)
-
-
-|   Describtion   |  Video  | 
-|---|---|
-| EXACT installation with Docker (en) |  [![Datasets](https://img.youtube.com/vi/-YH5cnWVrDg/0.jpg)](https://www.youtube.com/watch?v=-YH5cnWVrDg)  |
-| EXACT First steps (en) |  [![Datasets](https://img.youtube.com/vi/F3lV-IvT1M4/0.jpg)](https://www.youtube.com/watch?v=F3lV-IvT1M4)  |
-| EXACT Product and Annotationtype defintion (en) |  [![Datasets](https://img.youtube.com/vi/4XdWLaqy9UA/0.jpg)](https://www.youtube.com/watch?v=4XdWLaqy9UA)  |
-| Study and annotation modes (en)  |  [![AnnotationModes](https://img.youtube.com/vi/wjV-wHbrRjQ/0.jpg)](https://www.youtube.com/watch?v=wjV-wHbrRjQ) <br> [Code](doc/DownloadStudyAnnotations.ipynb) |
-| AnnotationMaps (en)  |  [![Inference](https://img.youtube.com/vi/GAjvOSkLW8Q/0.jpg)](https://www.youtube.com/watch?v=GAjvOSkLW8Q) <br> [Code](doc/AnnotationMap.ipynb)  |
-| DensityMaps  (en)  |  [![Inference](https://img.youtube.com/vi/BLdX6syS_z0/0.jpg)](https://www.youtube.com/watch?v=BLdX6syS_z0)  <br> [Code](doc/Create_DensityWSI-Equine.ipynb) |
-| Cluster annotations (en)  |  [![Inference](https://img.youtube.com/vi/Wvz-Nv4dNOE/0.jpg)](https://www.youtube.com/watch?v=Wvz-Nv4dNOE)  <br> [Code](doc/ClusterCells.ipynb)|
-| Cluster sounds (en)  |  [![Inference](https://img.youtube.com/vi/j0IlBcmJeLE/0.jpg)](https://www.youtube.com/watch?v=j0IlBcmJeLE)  |
-| AnnotationVersioning (en)  |  [![AnnotationVersioning](https://img.youtube.com/vi/WeOWxXaYc0g/0.jpg)](https://www.youtube.com/watch?v=WeOWxXaYc0g)  |
-| Inference (en)  |  [![Inference](https://img.youtube.com/vi/xP4YAp678EM/0.jpg)](https://www.youtube.com/watch?v=xP4YAp678EM) <br> [Code](doc/Inference Asthma.ipynb) |
-| Segmentation (en)  |  [![Inference](https://img.youtube.com/vi/AMwMvMVriGw/0.jpg)](https://www.youtube.com/watch?v=AMwMvMVriGw) <br> [Code](doc/Segmentation.ipynb) |
-| EXACT Media Files (en) |  [![Datasets](https://img.youtube.com/vi/ygOY-CuSQ5k/0.jpg)](https://www.youtube.com/watch?v=ygOY-CuSQ5k)  |
-| Datasets (en) |  [![Datasets](https://img.youtube.com/vi/hi23nhz0rWQ/0.jpg)](https://www.youtube.com/watch?v=hi23nhz0rWQ)  |
-| Explains how teams, products and annotation types are created (de) |  [![Datasets](https://img.youtube.com/vi/yr6h2OffThU/0.jpg)](https://www.youtube.com/watch?v=yr6h2OffThU)  |
-| Describes how to create, view and edit image sets and upload images. (en) |  [![Datasets](https://img.youtube.com/vi/VTBIyTs9lmk/0.jpg)](https://www.youtube.com/watch?v=VTBIyTs9lmk)  |
-| Describes basic viewer and plugin functions. (en) |  [![Datasets](https://img.youtube.com/vi/OJBE9JtsbIE/0.jpg)](https://www.youtube.com/watch?v=OJBE9JtsbIE)  |
-| Describes the image [registration](https://github.com/DeepMicroscopy/exact/blob/master/Registration.md) functionality |  [![Datasets](https://img.youtube.com/vi/hduXtr6EaMA/0.jpg)](https://www.youtube.com/watch?v=hduXtr6EaMA)  |
-| Explains collaboratory annotation features (de) |  [![Datasets](https://img.youtube.com/vi/qsX7MoYhDEM/0.jpg)](https://www.youtube.com/watch?v=qsX7MoYhDEM)  |
-| Shows multiple types of datasets (de)  |  [![Datasets](https://img.youtube.com/vi/yr6h2OffThU/0.jpg)](https://www.youtube.com/watch?v=yr6h2OffThU)  |
-| Explains the screening plugin for WSI (de) |  [![Datasets](https://img.youtube.com/vi/w7GHTEP2AYo/0.jpg)](https://www.youtube.com/watch?v=w7GHTEP2AYo)  |
-| Syncronisation with the offline tool SlideRunner (en)  |  [![Datasets](https://img.youtube.com/vi/ehrfC04okyE/0.jpg)](https://www.youtube.com/watch?v=ehrfC04okyE)  |
-| Advanced polygon annotation operations (de)  |  [![Datasets](https://img.youtube.com/vi/xVn9ghDQz1A/0.jpg)](https://www.youtube.com/watch?v=xVn9ghDQz1A)  |
-| REST-API Example | ```pip install EXACT-Sync``` <br> [Code](https://github.com/ChristianMarzahl/EXACT-Sync) <br> [Notebooks](https://nbviewer.jupyter.org/github/DeepMicroscopy/Exact/tree/master/doc/) <br> [Browsable-API](https://documenter.getpostman.com/view/11308910/TVYF6xZo)|
-
-
-## Install
-
-### Docker
-
-Install Docker
-
-Checkout the latest release:
-
-```
+```bash
 git clone https://github.com/DeepMicroscopy/Exact.git
+cp exact/exact/settings.py.example exact/exact/settings.py
+docker-compose -f docker-compose.yml up -d --build
 ```
+
+Navigate to **http://localhost:8000/** · Default credentials: `exact` / `exact`
 
 #### Production
 
-Additional features:
-- gunicorn
-- nginx
-
-Copy the files `env.dev` and `env.dev.db`, rename to `env.prod` and `env.prod.db` and change settings according to your preferences.
-
-Copy and rename `settings.py.example` to `settings.py` in the exact folder.
-
-Enable caching in the `settings.py` according to the [documentation](redis/CACHING.md).
-
-Build and run the container:
-```
+```bash
+cp env.dev env.prod && cp env.dev.db env.prod.db
+# Edit env.prod, env.prod.db, and settings.py for your environment
 
 docker-compose -f docker-compose.prod.yml up -d --build
-docker-compose -f docker-compose.prod.yml exec web python3 manage.py migrate --noinput 
+docker-compose -f docker-compose.prod.yml exec web python3 manage.py migrate --noinput
 docker-compose -f docker-compose.prod.yml exec web python3 manage.py createsuperuser
 docker-compose -f docker-compose.prod.yml exec web python3 manage.py collectstatic --no-input --clear
-docker-compose -f docker-compose.prod.yml logs -f
 ```
 
-Navigate to  http://localhost:1337/
+Navigate to **http://localhost:1337/**
 
-
-#### Development
-
-Copy and rename `settings.py.example` to `settings.py` in the exact folder.
-
-Modify the configuration files: `env.dev` and `env.dev.db` or use the default configuration. 
-
-Build and run the container:
-```
-docker-compose -f docker-compose.yml up -d --build
-docker-compose logs -f 
-```
-
-Navigate to http://localhost:8000/
-For default the super user login is:
-```
-User: exact
-Pw: exact
-```
-
-####  Cloud
-
-To use cloud services like [amazon fargate](https://aws.amazon.com/fargate/). The exact server has to connect to a cloud database like [amazon rds](https://aws.amazon.com/rds/).   
-
-
-Copy the files `env.dev` and `env.dev.db`, rename to `env.prod` and `env.prod.aws-db` and change settings according to your preferences.
-
-Copy and rename `settings.py.example` to `settings.py` in the exact folder.
-
-Build and run the container:
-```
-docker-compose -f docker-compose.prod.aws-db.yml up -d --build
-docker-compose -f docker-compose.prod.aws-db.yml exec web python3 manage.py migrate --noinput
-docker-compose -f docker-compose.prod.aws-db.yml exec web python3 manage.py createsuperuser
-docker-compose -f docker-compose.prod.aws-db.yml exec web python3 manage.py collectstatic --no-input --clear
-docker-compose -f docker-compose.prod.aws-db.yml logs -f
-```
-
-Send container to [AWS ECR](https://aws.amazon.com/ecr/)
-```
-Invoke-Expression -Command (aws ecr get-login --no-include-email)
-
-docker tag exact_nginx:latest **************.dkr.ecr.eu-central-1.amazonaws.com/exact_nginx:latest
-docker tag exact_web:latest **************.dkr.ecr.eu-central-1.amazonaws.com/exact:latest
-
-docker push **************.dkr.ecr.eu-central-1.amazonaws.com/exact_nginx:latest
-docker push **************.dkr.ecr.eu-central-1.amazonaws.com/exact:latest
-```
-
-### Windows
-
-The Server is also runnig on Windows but I would recommend to use docker in that case. 
-
-### MacOS or Linux 
-
-Ubuntu20.04 has a known [issue](https://github.com/libvips/libvips/issues/1401) with openslide. Fix: Build [pixman](https://gitlab.freedesktop.org/pixman/pixman/-/blob/master/INSTALL) 
-
-Install libvips and verify by executing the comand `vips`:
-```
-https://libvips.github.io/libvips/
-[Ubuntu](https://github.com/libvips/libvips/wiki/Build-for-Ubuntu)
-```
-
-Checkout the latest release:
-
-```
-git clone https://github.com/DeepMicroscopy/Exact.git
-```
-
-In our production Senty is used for error reporting (pip install raven).
-django-auth-ldap is used for login via ldap
-uwsgi is used to serve the app to nginx
-
-Install Python Dependencies:
-
-```
-pip3 install -r requirements.txt
-```
-
-Copy settings.py.example to settings.py in the exact folder:
-
-```
-cp exact/exact/settings.py.example exact/exact/settings.py
-```
-
-and customize the settings.py.
-
-The following settings should probably be changed:
-
-+ The secret key
-+ The DEBUG setting
-+ The ALLOWED\_HOSTS
-+ The database settings
-+ The UPLOAD\_FS\_GROUP to the id of the group that should access and create the uploaded images
-
-For the database, postgresql is used. Install it by running `sudo apt install postgresql`
-
-You will also need opencv3 and other packages. You can install that by running `apt-get update && apt-get install python3-pip dos2unix python3-openslide python3-opencv  libvips libvips-dev`
-
-Initialize the database cluster with `sudo -iu postgres initdb --locale en_US.UTF-8 -D '/var/lib/postgres/data'`.
-
-Note: It may be that initdb is not in your current PATH (seems to be default for postgresql >= 10), in this case, you have to specify the proper path to initdb, e.g:
-`sudo -iu postgres /usr/lib/postgresql/*/bin/initdb --locale en_US.UTF-8 -D '/var/lib/postgresql/data'` (for Ubuntu systems)
-
-To start the postgresql server, run `sudo systemctl start postgresql.service`. If the server should always be started on boot, run `sudo systemctl enable postgresql.service`.
-
-Then, create the user and the database by running
-
-`sudo -iu postgres psql`
-
-and then, in the postgres environment
-
-```
-CREATE USER exact PASSWORD 'exact';
-CREATE DATABASE exact WITH OWNER exact ENCODING UTF8;
-```
-
-where of course the password and the user should be adapted to the ones specified in the database settings in the settings.py.
-
-To initialize the database, run `python3 manage.py migrate`
-
-To create an administrator user, run `python3 manage.py createsuperuser`.
-
-`python3 manage.py runserver` starts the server with the configuration given in the settings.py file.
-
-To create annotation types, log into the application and click on Administration at the very bottom of the home page.
-
-For **production** systems it is necessary to run the following commands after each upgrade
+#### After each upgrade
 
 ```bash
 python3 manage.py migrate
@@ -263,353 +118,216 @@ python3 manage.py compilemessages
 python3 manage.py collectstatic
 ```
 
-Our production uwisgi config is
-```
-[uwsgi]
-socket = /tmp/exact.socket
-chmod-socket = 666
-chdir = /srv/exact/Exact/exact/
-master = true
-binary-path = /usr/bin/uwsgi
-virtualenv = /srv/exact/virtualenv/exact
-module = exact.wsgi
-uid = exact
-gid = exact
-processes = 6
-#async = 10
-threads = 1
-#logto = /var/log/exact.log
-plugins = python3,logfile
-logger = file:/var/log/exact.log
+See [UPGRADE.md](UPGRADE.md) for version-specific migration notes.
 
+### Native (macOS / Linux)
 
+<details>
+<summary>Expand native install instructions</summary>
+
+**Prerequisites (Ubuntu/Debian)**
+
+```bash
+apt-get update && apt-get install \
+  python3-pip dos2unix python3-openslide python3-opencv libvips libvips-dev
+sudo apt install postgresql
 ```
 
-Example Nginx Config:
+> **Ubuntu 20.04:** Known [issue](https://github.com/libvips/libvips/issues/1401) with OpenSlide — rebuild [pixman](https://gitlab.freedesktop.org/pixman/pixman/-/blob/master/INSTALL) to fix it.
 
+**Database**
+
+```bash
+sudo -iu postgres psql
 ```
-upstream exact {
-    server web:8000;
-}
-
-server {
-
-    listen 80;
-
-    client_max_body_size 10000M;
-    keepalive_timeout 65;
-
-    proxy_connect_timeout       6000s;
-    proxy_send_timeout          6000s;
-    proxy_read_timeout          6000s;
-    send_timeout                6000s;
-    client_body_timeout     6000s;
-
-    location / {
-        proxy_pass http://exact;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header Host $host;
-        proxy_redirect off;
-    }
-	
-	location /static/ {
-        expires 1h;
-        alias /home/app/web/static/;
-    }
-	
-	
-    location /media/ {
-        expires 1h;
-        alias /home/app/web/media/;
-    }
-
-}
+```sql
+CREATE USER exact PASSWORD 'exact';
+CREATE DATABASE exact WITH OWNER exact ENCODING UTF8;
 ```
 
-### Verification E-Mails
+**Application**
 
-Please add credentials to the settings.py
+```bash
+pip3 install -r requirements.txt
+cp exact/exact/settings.py.example exact/exact/settings.py
+# Edit: SECRET_KEY · DEBUG · ALLOWED_HOSTS · database · UPLOAD_FS_GROUP
+
+python3 manage.py migrate
+python3 manage.py createsuperuser
+python3 manage.py runserver
+```
+
+**Email verification** — add to `settings.py`:
 
 ```python
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.googlemail.com' # for example gmail
-EMAIL_PORT = '587'
-EMAIL_HOST_USER = 'example@gmail.com'
-EMAIL_HOST_PASSWORD = 'example'
-EMAIL_USE_TLS = True
-EMAIL_USE_SSL = False
+EMAIL_HOST     = 'smtp.googlemail.com'
+EMAIL_PORT     = '587'
+EMAIL_HOST_USER     = 'you@gmail.com'
+EMAIL_HOST_PASSWORD = 'your-password'
+EMAIL_USE_TLS  = True
 ```
 
-### Upgrade
+</details>
 
-```
-pip install -U -r requirements.txt
-python3 manage.py migrate
-```
+---
 
-for additional steps on some releases see instructions
-in [UPGRADE.md](https://github.com/DeepMicroscopy/exact/blob/master/UPGRADE.md)
+## Keyboard Shortcuts
 
+### Annotation Viewer
 
+| Key | Action |
+|-----|--------|
+| <kbd>Del</kbd> <kbd>x</kbd> | Delete selected annotation |
+| <kbd>Escape</kbd> | Cancel editing |
+| <kbd>Enter</kbd> | Confirm / save |
+| <kbd>Ctrl</kbd>+<kbd>Z</kbd> | Undo |
+| <kbd>c</kbd> | Toggle annotation mode |
+| <kbd>y</kbd> | Toggle annotation visibility |
+| <kbd>b</kbd> | Push annotation type to background |
+| <kbd>Ctrl</kbd>+<kbd>A</kbd> | Draw on top of existing annotation |
+| <kbd>0</kbd>–<kbd>4</kbd> | Change local annotation label |
+| <kbd>Shift</kbd>+<kbd>0</kbd>–<kbd>4</kbd> | Change global annotation label |
+| <kbd>q</kbd> / <kbd>e</kbd> | Previous / next image |
+| <kbd>Shift</kbd>+<kbd>q</kbd> / <kbd>e</kbd> | Previous / next frame |
+| <kbd>r</kbd> | Rotate image |
+| <kbd>f</kbd> | Flip image |
+| <kbd>s</kbd> | Scissors — delete from selection |
+| <kbd>g</kbd> | Glue — add to selection |
+| <kbd>d</kbd> | Knife — split object |
+| <kbd>Shift</kbd>+scroll | Resize paint brush |
+| Arrow keys | Pan viewing window |
+| <kbd>Ctrl</kbd>+<kbd>F</kbd> | Search images |
 
-### Key shortcuts
+### Screening Viewer
 
-#### Viewer
+| Key | Action |
+|-----|--------|
+| <kbd>a</kbd> / <kbd>d</kbd> | Screen left / right tile |
+| <kbd>w</kbd> / <kbd>s</kbd> | Screen up / down tile |
+| <kbd>j</kbd> / <kbd>l</kbd> | Navigate left / right tile |
+| <kbd>i</kbd> / <kbd>k</kbd> | Navigate up / down tile |
 
-| Key       | Modifier     | Function      |
-|-----------|:------------:|:------------------:| 
-| Del,x       |              | Delete annotation  |
-| Escape    |              | Cancel editing     |
-| Enter     |              | Confirm / Save     |
-| Ctrl + z  |              | Undo |
-| c         |              | Toggle annotation mode |
-| y         |              | Toggle annotation visibility |
-| b         |              | Push currently selected annotation type into the background |
-| Ctrl,a    |              | Draw annotation on top of existing one |
-| 0,1,2,3,4 |              | Change label of local annotations |
-| 0,1,2,3,4 |  Shift       | Change label of global annotations |
-| q         |              | Previous image     |
-| q         |  Shift       | Previous frame     |
-| e         |              | Next image         |
-| e         |  Shift       | Next frame         |
-| r         |              | Rotate image (Warning: annotations are not affected)        |
-| f         |              | Flip image   (Warning: annotations are not affected)        |
-| s         |              | Scissor (Delete from selected object)        |
-| g         |              | Glue (Add to selected object)        |
-| d         |              | Knife (Draw a line to split objects)         |
-| Mouse wheel|   Shift      | Paint brush         |
-| Arrow keys |              | Move viewing window |
+---
 
-##### Screening Viewer 
+## REST API
 
-| Key       | Modifier     | Function      |
-|-----------|:------------:|:------------------:| 
-| a         |              | screen left tile  |
-| w         |              | screen up tile     |
-| s         |              | screen down tile     |
-| d         |              | screen right tile     |
-| j         |              | navigate to left tile   |
-| i         |              | navigate to up   tile   |
-| k         |              | navigate to down tile     |
-| l         |              | navigate to right tile     |
+- **Browsable API:** https://exact.cs.fau.de/api/v1/
+- **Python client:** `pip install EXACT-Sync` — [GitHub](https://github.com/DeepMicroscopy/EXACT-Sync) · [Notebooks](https://nbviewer.jupyter.org/github/DeepMicroscopy/Exact/tree/master/doc/)
+- **OpenAPI schema:** `GET /api/v1/openapi` — import [EXACT-API.yml](./exact/EXACT-API.yml) into [Swagger Editor](https://editor.swagger.io)
 
-##### Sync Plugin 
+**Authentication**
 
-| Key       | Modifier     | Function      |
-|-----------|:------------:|:------------------:| 
-| o         |              | toggle visibility |
-
-## REST-API
-
-### OpenAPI-Schema
-
-```Skript
-GET /api/v1/openapi
-
+```bash
+curl -X POST -H 'Content-Type: application/json' \
+  -d '{"username":"exact","password":"top_secret"}' \
+  http://127.0.0.1:8000/api/auth/token/login/
 ```
 
-### Examples
+**Query examples**
 
 ```
-https://github.com/rsinger86/drf-flex-fields
-https://django-filter.readthedocs.io/en/master/
+# Filter by name, expand related objects
+GET /api/v1/images/image_sets/?name__contains=Tumor&expand=product_set,main_annotation_type
+
+# Select specific fields
+GET /api/v1/images/image_sets/?fields=id,name
+
+# Exclude fields
+GET /api/v1/images/image_sets/?omit=images,product_set
 ```
 
-### Token
-
-
-```Skript
-$ curl -X POST -d '{"username": "exact","password": "top_secret"}' -H
-'Content-Type: application/json'  http://127.0.0.1:8000/api/auth/token/login/
+<details>
+<summary>All available endpoints</summary>
 
 ```
+users/users               /api/v1/users/users/
+users/teams               /api/v1/users/teams/
+users/team_membership     /api/v1/users/team_membership/
+images/images             /api/v1/images/images/
+images/image_sets         /api/v1/images/image_sets/
+images/set_tags           /api/v1/images/set_tags/
+images/screening_modes    /api/v1/images/screening_modes/
+annotations/annotations        /api/v1/annotations/annotations/
+annotations/annotation_types   /api/v1/annotations/annotation_types/
+annotations/verifications      /api/v1/annotations/verifications/
+annotations/log_image_actions  /api/v1/annotations/log_image_actions/
+administration/products        /api/v1/administration/products/
+```
 
-#### All suported classes
+</details>
 
-```JSON
-GET /api/v1/
+---
 
-{
-    "users/users": "http://127.0.0.1:8000/api/v1/users/users/",
-    "users/teams": "http://127.0.0.1:8000/api/v1/users/teams/",
-    "users/team_membership": "http://127.0.0.1:8000/api/v1/users/team_membership/",
-    "images/images": "http://127.0.0.1:8000/api/v1/images/images/",
-    "images/image_sets": "http://127.0.0.1:8000/api/v1/images/image_sets/",
-    "images/set_tags": "http://127.0.0.1:8000/api/v1/images/set_tags/",
-    "images/screening_modes": "http://127.0.0.1:8000/api/v1/images/screening_modes/",
-    "annotations/annotations": "http://127.0.0.1:8000/api/v1/annotations/annotations/",
-    "annotations/annotation_types": "http://127.0.0.1:8000/api/v1/annotations/annotation_types/",
-    "annotations/annotation_media_files": "http://127.0.0.1:8000/api/v1/annotations/annotation_media_files/",
-    "annotations/verifications": "http://127.0.0.1:8000/api/v1/annotations/verifications/",
-    "annotations/log_image_actions": "http://127.0.0.1:8000/api/v1/annotations/log_image_actions/",
-    "administration/products": "http://127.0.0.1:8000/api/v1/administration/products/"
+## Citation
+
+If you use EXACT in your research, please cite:
+
+> Marzahl et al. **EXACT: A collaboration toolset for algorithm-aided annotation of almost everything.** *Scientific Reports* 11, 4343 (2021). https://doi.org/10.1038/s41598-021-83827-4
+
+```bibtex
+@Article{marzahl2021exact,
+  title   = {EXACT: a collaboration toolset for algorithm-aided annotation of images with annotation version control},
+  author  = {Marzahl, Christian and Aubreville, Marc and Bertram, Christof A. and Maier, Jennifer
+             and Bergler, Christian and Kr{\"o}ger, Christine and Voigt, J{\"o}rn
+             and Breininger, Katharina and Klopfleisch, Robert and Maier, Andreas},
+  journal = {Scientific Reports},
+  year    = {2021},
+  volume  = {11},
+  pages   = {4343},
+  doi     = {10.1038/s41598-021-83827-4}
 }
 ```
 
-#### Filter all image_sets with "Katze" in name and expand products and main_annotation_type
+Built on [imagetagger](https://robocup.informatik.uni-hamburg.de/wp-content/uploads/2018/11/imagetagger_paper.pdf) by Fiedler et al. (RoboCup 2018).
 
-```JSON
-GET /api/v1/images/image_sets/?name__contains=Katze&expand=product_set,main_annotation_type
+---
 
-{
-    "count": 1,
-    "next": null,
-    "previous": null,
-    "results": [
-        {
-            "id": 3,
-            "name": "EIPH-Katze",
-            "path": "exact_1_3",
-            "location": null,
-            "description": "",
-            "images": [
-                17,
-                20,
-                22,
-                23,
-                26,
-                27,
-                30
-            ],
-            "product_set": [
-                {
-                    "id": 2,
-                    "name": "EIPH",
-                    "description": "",
-                    "team": 1,
-                    "creator": 1,
-                    "imagesets": [
-                        2,
-                        3,
-                        16
-                    ],
-                    "annotationtype_set": [
-                        10,
-                        11,
-                        12,
-                        13,
-                        14
-                    ]
-                }
-            ],
-            "main_annotation_type": {
-                "id": 10,
-                "name": "0",
-                "vector_type": 1,
-                "node_count": 0,
-                "enable_concealed": false,
-                "enable_blurred": false,
-                "color_code": "#0000FF",
-                "default_width": 120,
-                "default_height": 120,
-                "sort_order": 0,
-                "closed": true,
-                "area_hit_test": true,
-                "product": 2
-            },
-            "set_tags": [],
-            "team": 1,
-            "creator": 1
-        }
-    ]
-}
+## Documentation
 
-```
+Notebooks for API usage, inference, segmentation, density maps, cluster workflows, and more live in [`doc/`](doc/) and can be viewed at [NBViewer](https://nbviewer.jupyter.org/github/DeepMicroscopy/Exact/tree/master/doc/).
 
-#### Include(fields) or Exclude(omit) fields
+<details>
+<summary>Video tutorials (older, cover core features)</summary>
 
-```JSON
-GET /api/v1/images/image_sets/?name__contains=Katze&fields=name
+| Topic | Video |
+|-------|-------|
+| Installation with Docker | [![](https://img.youtube.com/vi/-YH5cnWVrDg/0.jpg)](https://www.youtube.com/watch?v=-YH5cnWVrDg) |
+| First steps | [![](https://img.youtube.com/vi/F3lV-IvT1M4/0.jpg)](https://www.youtube.com/watch?v=F3lV-IvT1M4) |
+| Products & annotation type setup | [![](https://img.youtube.com/vi/4XdWLaqy9UA/0.jpg)](https://www.youtube.com/watch?v=4XdWLaqy9UA) |
+| Study and annotation modes | [![](https://img.youtube.com/vi/wjV-wHbrRjQ/0.jpg)](https://www.youtube.com/watch?v=wjV-wHbrRjQ) |
+| Annotation maps | [![](https://img.youtube.com/vi/GAjvOSkLW8Q/0.jpg)](https://www.youtube.com/watch?v=GAjvOSkLW8Q) |
+| Density maps | [![](https://img.youtube.com/vi/BLdX6syS_z0/0.jpg)](https://www.youtube.com/watch?v=BLdX6syS_z0) |
+| Cluster annotations | [![](https://img.youtube.com/vi/Wvz-Nv4dNOE/0.jpg)](https://www.youtube.com/watch?v=Wvz-Nv4dNOE) |
+| Annotation versioning | [![](https://img.youtube.com/vi/WeOWxXaYc0g/0.jpg)](https://www.youtube.com/watch?v=WeOWxXaYc0g) |
+| Inference | [![](https://img.youtube.com/vi/xP4YAp678EM/0.jpg)](https://www.youtube.com/watch?v=xP4YAp678EM) |
+| Segmentation | [![](https://img.youtube.com/vi/AMwMvMVriGw/0.jpg)](https://www.youtube.com/watch?v=AMwMvMVriGw) |
+| Image registration | [![](https://img.youtube.com/vi/hduXtr6EaMA/0.jpg)](https://www.youtube.com/watch?v=hduXtr6EaMA) |
+| SlideRunner sync | [![](https://img.youtube.com/vi/ehrfC04okyE/0.jpg)](https://www.youtube.com/watch?v=ehrfC04okyE) |
 
-{
-    "count": 1,
-    "next": null,
-    "previous": null,
-    "results": [
-        {
-            "name": "EIPH-Katze"
-        }
-    ]
-}
+</details>
 
-```
+<details>
+<summary>Dependencies</summary>
 
-```JSON
-GET /api/v1/images/image_sets/?name__contains=Katze&omit=images,product_set
+| Library | License |
+|---------|---------|
+| [Django](https://www.djangoproject.com/) | BSD |
+| [djangorestframework](https://www.django-rest-framework.org/) | BSD |
+| [OpenSlide Python](http://openslide.org/) | LGPL 2.1 |
+| [OpenSeadragon](https://openseadragon.github.io/) | BSD-3 |
+| [numpy](https://www.numpy.org/) | BSD |
+| [opencv-python](https://github.com/skvark/opencv-python) | MIT |
+| [Pillow](http://python-pillow.org) | PIL License |
+| [openpyxl](https://openpyxl.readthedocs.io/) | MIT |
+| [Bootstrap](https://getbootstrap.com/) | BSD |
+| [jQuery](https://jquery.com/) | MIT |
+| [nibabel](https://nipy.org/nibabel/) | MIT |
+| [psycopg2](http://initd.org/psycopg/) | LGPL |
+| [gunicorn](http://gunicorn.org/) | MIT |
 
-{
-    "count": 1,
-    "next": null,
-    "previous": null,
-    "results": [
-        {
-            "id": 3,
-            "name": "EIPH-Katze",
-            "path": "exact_1_3",
-            "location": null,
-            "description": "",
-            "main_annotation_type": 10,
-            "set_tags": [],
-            "team": 1,
-            "creator": 1
-        }
-    ]
-}
+</details>
 
-```
+---
 
-
-## Used dependencies
-
-The exact relies on the following plugins, libraries and frameworks:
-
-| Name                       | Version     | License                                        |
-|----------------------------|-------------|------------------------------------------------|
-| [Django](https://www.djangoproject.com/)                     | 3.0         | BSD         |                    
-| [Pillow](http://python-pillow.org)                     | 5.4.1       | Standard PIL License |                         
-| [asgiref](http://github.com/django/asgiref/)                  | 3.2.3       | BSD     |                  
-| [confusable-homoglyphs](https://github.com/vhf/confusable_homoglyphs )    | 3.2.0       | MIT |        
-| [django-friendly-tag-loader](https://github.com/ataylor32/django-friendly-tag-loader) | 1.3.1   | MIT |  
-| [django-registration](https://github.com/ubernostrum/django-registration/ )       | 3.0.1       | MIT |     
-| [django-widget-tweaks](https://github.com/jazzband/django-widget-tweaks  )       | 1.4.3       | MIT license |       
-| [djangorestframework](https://www.django-rest-framework.org/  )       | 3.11.0      | BSD     |                 
-| [fasteners](https://github.com/harlowja/fasteners  )                  | 0.14.1      | ASL 2.0 |                  
-| [gunicorn](http://gunicorn.org   )                   | 19.9.0      | MIT |                                   
-| [imagecodecs-lite](https://www.lfd.uci.edu/~gohlke/  )           | 2019.12.3   | BSD  |                       
-| [monotonic](https://github.com/atdt/monotonic   )                  | 1.5         | Apache   |                     
-| [numpy](https://www.numpy.org   )                      | 1.17.4      | BSD   |                                 
-| [opencv-python](https://github.com/skvark/opencv-python  )             | 4.1.2.30    | MIT  |                
-| [openslide-python](http://openslide.org/)           | 1.1.1       | GNU Lesser General Public License, version 2.1 |   
-| [psycopg2-binary](http://initd.org/psycopg/ )           | 2.7.7       | LGPL with exceptions or ZPL  |                               
-| [pytz](http://pythonhosted.org/pytz  )                       | 2018.9      | MIT    |                           
-| [six](https://github.com/benjaminp/six   )                        | 1.12.0      | MIT   |                      
-| [sqlparse](https://github.com/andialbrecht/sqlparse)                   | 0.3.0       | BSD  |                 
-| [tifffile](https://www.lfd.uci.edu/~gohlke/ )                   | 2019.7.26.2 | BSD   |                        
-| [Bootstrap](https://getbootstrap.com/)                   | 4.4 | BSD   |        
-| [jQuery](https://jquery.com/)                   | 3.4.1 |  MIT    |     
-| [jQuery-Autocomplete](https://github.com/devbridge/jquery-Autocomplete)    | 1.4.1 |   |   
-| [jQuery-File-Upload](https://github.com/blueimp/jQuery-File-Upload)     | 10.7.0 |   MIT    |          
-| [OpenSeadragon](https://openseadragon.github.io//)                 | 2.4.1 |     BSD-3  |           
-
-
-We are grateful to the maintainers and contributors of the respective projects.
-
-
-## ImageTagger Reference
-
-This paper describes the Bit-Bots imagetagger we build on in depth. Please cite if you use this tool in your research:
-
-FIEDLER, Niklas, et al. [imagetagger: An Open Source Online Platform for Collaborative Image Labeling.](https://robocup.informatik.uni-hamburg.de/wp-content/uploads/2018/11/imagetagger_paper.pdf) In: RoboCup 2018: Robot World Cup XXII. Springer, 2018.
-
-```
-@inproceedings{imagetagger2018,
-   author={Fiedler, Niklas and Bestmann, Marc and Hendrich, Norman},
-   year={2018},
-   title={Imagetagger: An Open Source Online Platform for Collaborative Image Labeling},
-   booktitle={RoboCup 2018: Robot World Cup XXII},
-   organization={Springer}
-}
-```
-
-
-
+<sub>MIT License · © DeepMicroscopy · <a href="https://exact.cs.fau.de">exact.cs.fau.de</a></sub>
