@@ -52,6 +52,9 @@ var hiddenCols = {};     // {colIdx: true}
 var hiddenRows = {};     // {rowIdx: true}
 var colFilters = {};     // {colIdx: filterString}
 var _filteredIndices = null; // null = no active filter
+var selAnchor = null;    // {ri, ci} — mousedown origin
+var selFocus  = null;    // {ri, ci} — current drag extent
+var _selDragging = false;
 var dirty    = false;
 var currentVersion = cfg.currentVersion || 0;
 var PAGE_SIZE = 150;
@@ -168,6 +171,7 @@ function loadCSV(csv) {
   page = 0;
   colFilters = {};
   _filteredIndices = null;
+  selAnchor = null; selFocus = null;
   totalPages = Math.max(1, Math.ceil(data.length / PAGE_SIZE));
   dirty = false;
   updateDirty();
@@ -179,11 +183,46 @@ function loadCSV(csv) {
 // ---------------------------------------------------------------------------
 // Rendering
 // ---------------------------------------------------------------------------
+var elEmpty = null; // lazy-created empty-state element
+
 function renderTable() {
   renderHead();
   renderBody();
-  elTable.style.display = '';
-  elFooter.style.display = '';
+  var isEmpty = headers.length === 0 && data.length === 0;
+  elTable.style.display  = isEmpty ? 'none' : '';
+  elFooter.style.display = isEmpty ? 'none' : '';
+  _renderEmptyState(isEmpty);
+}
+
+function _renderEmptyState(show) {
+  var wrap = document.getElementById('te-table-wrap');
+  if (!elEmpty) {
+    elEmpty = document.createElement('div');
+    elEmpty.className = 'te-empty-state';
+    elEmpty.innerHTML =
+      '<div class="te-empty-icon"><i class="fa fa-table"></i></div>' +
+      '<div class="te-empty-title">Empty table</div>' +
+      '<div class="te-empty-sub">Add a column to start editing, or paste data from a spreadsheet.</div>' +
+      '<div class="te-empty-actions">' +
+        (cfg.canWrite && !previewingVersion
+          ? '<button class="te-btn te-btn-add-col" id="te-empty-add-col"><i class="fa fa-plus"></i> Add column</button>'
+          : '') +
+        (cfg.canWrite && !previewingVersion
+          ? '<button class="te-btn" id="te-empty-paste"><i class="fa fa-clipboard"></i> Paste from clipboard</button>'
+          : '') +
+      '</div>';
+    wrap.appendChild(elEmpty);
+    var addColBtn = elEmpty.querySelector('#te-empty-add-col');
+    if (addColBtn) addColBtn.addEventListener('click', function() {
+      document.getElementById('btn-add-col').click();
+    });
+    var pasteBtn = elEmpty.querySelector('#te-empty-paste');
+    if (pasteBtn) pasteBtn.addEventListener('click', function() {
+      selAnchor = {ri: 0, ci: 0};
+      pasteAtAnchor();
+    });
+  }
+  elEmpty.style.display = show ? '' : 'none';
 }
 
 function renderHead() {
@@ -367,6 +406,28 @@ function renderBody() {
       }
       td.appendChild(cell);
 
+      // Selection: mousedown sets anchor; shift+click extends; drag updates focus
+      td.addEventListener('mousedown', function(e) {
+        if (e.button !== 0) return;
+        e.preventDefault(); // prevent native text selection during drag
+        var el = e.currentTarget;
+        var r = parseInt(el.dataset.row), c = parseInt(el.dataset.col);
+        if (e.shiftKey && selAnchor) {
+          selFocus = {ri: r, ci: c};
+        } else {
+          selAnchor = {ri: r, ci: c};
+          selFocus  = {ri: r, ci: c};
+        }
+        _selDragging = true;
+        applySelectionHighlight();
+      });
+      td.addEventListener('mouseover', function(e) {
+        if (!_selDragging) return;
+        var el = e.currentTarget;
+        selFocus = {ri: parseInt(el.dataset.row), ci: parseInt(el.dataset.col)};
+        applySelectionHighlight();
+      });
+
       if (cfg.canWrite && !previewingVersion) {
         td.addEventListener('dblclick', function(e) {
           var el = e.currentTarget;
@@ -375,13 +436,25 @@ function renderBody() {
         td.addEventListener('contextmenu', function(e) {
           e.preventDefault();
           var el = e.currentTarget;
-          showCellContextMenu(e, parseInt(el.dataset.row), parseInt(el.dataset.col));
+          var r = parseInt(el.dataset.row), c = parseInt(el.dataset.col);
+          // If right-click is outside current selection, reset to that cell
+          if (!_cellInSel(r, c)) { selAnchor = {ri:r,ci:c}; selFocus = {ri:r,ci:c}; applySelectionHighlight(); }
+          showCellContextMenu(e, r, c);
+        });
+      } else {
+        td.addEventListener('contextmenu', function(e) {
+          e.preventDefault();
+          var el = e.currentTarget;
+          var r = parseInt(el.dataset.row), c = parseInt(el.dataset.col);
+          if (!_cellInSel(r, c)) { selAnchor = {ri:r,ci:c}; selFocus = {ri:r,ci:c}; applySelectionHighlight(); }
+          showCellContextMenu(e, r, c);
         });
       }
       tr.appendChild(td);
     });
     elTbody.appendChild(tr);
   }
+  applySelectionHighlight();
 }
 
 // ---------------------------------------------------------------------------
@@ -521,6 +594,148 @@ function hideContextMenu() { if (ctxMenu) { ctxMenu.remove(); ctxMenu = null; } 
 document.addEventListener('click', hideContextMenu);
 document.addEventListener('keydown', function(e) { if (e.key === 'Escape') hideContextMenu(); });
 
+// ---------------------------------------------------------------------------
+// Selection helpers
+// ---------------------------------------------------------------------------
+document.addEventListener('mouseup', function() { _selDragging = false; });
+
+function getSelRange() {
+  if (!selAnchor || !selFocus) return null;
+  return {
+    r1: Math.min(selAnchor.ri, selFocus.ri),
+    c1: Math.min(selAnchor.ci, selFocus.ci),
+    r2: Math.max(selAnchor.ri, selFocus.ri),
+    c2: Math.max(selAnchor.ci, selFocus.ci),
+  };
+}
+
+function _cellInSel(r, c) {
+  var rng = getSelRange();
+  return rng && r >= rng.r1 && r <= rng.r2 && c >= rng.c1 && c <= rng.c2;
+}
+
+function applySelectionHighlight() {
+  var rng = getSelRange();
+  elTbody.querySelectorAll('td[data-row]').forEach(function(td) {
+    var r = parseInt(td.dataset.row), c = parseInt(td.dataset.col);
+    if (rng && r >= rng.r1 && r <= rng.r2 && c >= rng.c1 && c <= rng.c2) {
+      td.classList.add('te-selected');
+    } else {
+      td.classList.remove('te-selected');
+    }
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Clipboard: copy / cut / paste
+// ---------------------------------------------------------------------------
+function _selToTSV() {
+  var rng = getSelRange();
+  if (!rng) return '';
+  var lines = [];
+  for (var r = rng.r1; r <= rng.r2; r++) {
+    var cells = [];
+    for (var c = rng.c1; c <= rng.c2; c++) {
+      cells.push(data[r] && data[r][c] != null ? String(data[r][c]) : '');
+    }
+    lines.push(cells.join('\t'));
+  }
+  return lines.join('\n');
+}
+
+function copySelection() {
+  var rng = getSelRange();
+  if (!rng) return;
+  var text = _selToTSV();
+  navigator.clipboard.writeText(text).then(function() {
+    var rows = rng.r2 - rng.r1 + 1, cols = rng.c2 - rng.c1 + 1;
+    notify('Copied ' + rows + ' × ' + cols + ' cell' + (rows * cols > 1 ? 's' : ''), 'info');
+  }).catch(function() { notify('Copy failed — clipboard permission denied', 'error'); });
+}
+
+function cutSelection() {
+  if (!cfg.canWrite || previewingVersion) return;
+  var rng = getSelRange();
+  if (!rng) return;
+  copySelection();
+  for (var r = rng.r1; r <= rng.r2; r++) {
+    for (var c = rng.c1; c <= rng.c2; c++) {
+      if (data[r]) data[r][c] = '';
+    }
+  }
+  renderBody();
+  markDirty();
+}
+
+function pasteAtAnchor() {
+  if (!cfg.canWrite || previewingVersion) return;
+  var activeEl = document.activeElement;
+  if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) return;
+  navigator.clipboard.readText().then(function(text) {
+    if (!text) return;
+    var lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+    if (lines[lines.length - 1] === '') lines.pop();
+    if (!lines.length) return;
+
+    // Bootstrap: if the table has no structure, build it from the pasted data.
+    if (headers.length === 0) {
+      var colCount = lines.reduce(function(m, l) { return Math.max(m, l.split('\t').length); }, 0);
+      for (var k = 0; k < colCount; k++) headers.push('Col ' + (k + 1));
+      data = [];
+      lines.forEach(function(l) {
+        var cells = l.split('\t');
+        while (cells.length < colCount) cells.push('');
+        data.push(cells);
+      });
+      selAnchor = {ri: 0, ci: 0};
+      selFocus  = {ri: data.length - 1, ci: headers.length - 1};
+      renderTable();
+      renderColSettings();
+      markDirty();
+      notify('Pasted ' + data.length + ' × ' + headers.length + ' cell' + (data.length * headers.length > 1 ? 's' : ''), 'info');
+      return;
+    }
+
+    if (!selAnchor) return;
+    var ar = selAnchor.ri, ac = selAnchor.ci;
+    var pastedRows = 0, pastedCols = 0;
+    for (var dr = 0; dr < lines.length; dr++) {
+      var ri = ar + dr;
+      if (ri >= data.length) break;
+      var cols = lines[dr].split('\t');
+      pastedCols = Math.max(pastedCols, cols.length);
+      for (var dc = 0; dc < cols.length; dc++) {
+        var ci = ac + dc;
+        if (ci >= headers.length) break;
+        if (data[ri]) { data[ri][ci] = cols[dc]; pastedRows = dr + 1; }
+      }
+    }
+    if (!pastedRows) return;
+    selFocus = {ri: ar + pastedRows - 1, ci: Math.min(ac + pastedCols - 1, headers.length - 1)};
+    renderBody();
+    markDirty();
+    notify('Pasted ' + pastedRows + ' × ' + pastedCols + ' cell' + (pastedRows * pastedCols > 1 ? 's' : ''), 'info');
+  }).catch(function() { notify('Paste failed — clipboard permission denied', 'error'); });
+}
+
+// Keyboard shortcuts for clipboard
+document.addEventListener('keydown', function(e) {
+  var ctrl = e.ctrlKey || e.metaKey;
+  if (!ctrl) return;
+  var active = document.activeElement;
+  var inInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA');
+  if (e.key === 'c' && !inInput && getSelRange()) { e.preventDefault(); copySelection(); }
+  if (e.key === 'x' && !inInput && getSelRange()) { e.preventDefault(); cutSelection(); }
+  if (e.key === 'v' && !inInput && (selAnchor || headers.length === 0)) { e.preventDefault(); pasteAtAnchor(); }
+});
+
+// Escape clears selection
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && !ctxMenu && !activeInput) {
+    selAnchor = null; selFocus = null; applySelectionHighlight();
+  }
+});
+
 function showRowContextMenu(e, ri) {
   var isHidden = !!hiddenRows[ri];
   showContextMenu(e, [
@@ -556,7 +771,19 @@ function showCellContextMenu(e, ri, ci) {
     }});
     items.push('-');
   }
-  items.push({ icon: 'fa-link', label: 'Insert reference…', action: function() { openRefPicker(ri, ci); } });
+  // Clipboard items — only when something is selected
+  var rng = getSelRange();
+  if (rng) {
+    items.push('-');
+    items.push({ icon: 'fa-copy',  label: 'Copy',  action: function() { copySelection(); } });
+    if (cfg.canWrite && !previewingVersion) {
+      items.push({ icon: 'fa-cut', label: 'Cut', action: function() { cutSelection(); } });
+    }
+  }
+  if (cfg.canWrite && !previewingVersion) {
+    items.push('-');
+    items.push({ icon: 'fa-link', label: 'Insert reference…', action: function() { openRefPicker(ri, ci); } });
+  }
   showContextMenu(e, items);
 }
 
@@ -661,6 +888,13 @@ document.addEventListener('DOMContentLoaded', function() {
   var btnAddRow = document.getElementById('btn-add-row');
   var btnAddCol = document.getElementById('btn-add-col');
   if (btnAddRow) btnAddRow.addEventListener('click', function() {
+    if (headers.length === 0) {
+      // No columns yet — create a first column then add a row
+      var name = prompt('Column name:');
+      if (!name) return;
+      headers.push(name.trim() || 'Col 1');
+      renderTable(); renderColSettings();
+    }
     var row = new Array(headers.length).fill('');
     data.push(row);
     _applyFilters(false);
