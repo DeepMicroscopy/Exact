@@ -749,6 +749,18 @@ class EXACTViewer {
             .off('click.mpr')
             .on('click.mpr', () => this.toggle3AxisMode());
         this.updatePlaneButtons();
+
+        // Wire up MPR coordinate navigation form (once)
+        if (!this._mprNavBound) {
+            this._mprNavBound = true;
+            document.getElementById('mpr_nav_form')?.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this._mprNavigate();
+            });
+            document.getElementById('mpr_nav_mm')?.addEventListener('change', () => {
+                this._updateMPRInfo();
+            });
+        }
     }
 
     updatePlaneButtons() {
@@ -1106,11 +1118,61 @@ class EXACTViewer {
 
     _updateMPRInfo() {
         const { x, y, z } = this.mprPos;
+        const { nx } = this.mprShape;
         const s = this.mprSpacing;
-        const fmt = (v, sp) => sp > 0 ? `${v}&nbsp;(${(v * sp).toFixed(1)}&nbsp;mm)` : `${v}`;
-        $('#mpr_info').html(
-            `<span>x&nbsp;=&nbsp;${fmt(x, s?.x)}</span><span>y&nbsp;=&nbsp;${fmt(y, s?.y)}</span><span>z&nbsp;=&nbsp;${fmt(z, s?.z)}</span>`
-        );
+        const displayX = nx > 0 ? nx - 1 - x : x;   // flip x axis to match radiological convention
+        const fmt = (v, sp) => sp > 0
+            ? `${v}<span style="opacity:.55">&thinsp;(${(v * sp).toFixed(1)}&thinsp;mm)</span>`
+            : `${v}`;
+        document.getElementById('mpr_info_coords').innerHTML =
+            `<span>X&thinsp;=&thinsp;${fmt(displayX, s?.x)}</span>` +
+            `<span>Y&thinsp;=&thinsp;${fmt(y, s?.y)}</span>` +
+            `<span>Z&thinsp;=&thinsp;${fmt(z, s?.z)}</span>`;
+
+        // Keep nav inputs in sync with current position (skip the focused one)
+        const inMM = document.getElementById('mpr_nav_mm')?.checked;
+        const inputs = {
+            mpr_nav_x: inMM && s?.x > 0 ? (displayX * s.x).toFixed(1) : displayX,
+            mpr_nav_y: inMM && s?.y > 0 ? (y        * s.y).toFixed(1) : y,
+            mpr_nav_z: inMM && s?.z > 0 ? (z        * s.z).toFixed(1) : z,
+        };
+        Object.entries(inputs).forEach(([id, val]) => {
+            const el = document.getElementById(id);
+            if (el && document.activeElement !== el) el.value = val;
+        });
+    }
+
+    _mprNavigate() {
+        const { nx, ny, nz } = this.mprShape;
+        const s = this.mprSpacing;
+        const inMM = document.getElementById('mpr_nav_mm')?.checked;
+
+        const rawX = parseFloat(document.getElementById('mpr_nav_x')?.value);
+        const rawY = parseFloat(document.getElementById('mpr_nav_y')?.value);
+        const rawZ = parseFloat(document.getElementById('mpr_nav_z')?.value);
+        if ([rawX, rawY, rawZ].some(isNaN)) return;
+
+        let displayX, vy, vz;
+        if (inMM && s?.x > 0 && s?.y > 0 && s?.z > 0) {
+            displayX = Math.round(rawX / s.x);
+            vy       = Math.round(rawY / s.y);
+            vz       = Math.round(rawZ / s.z);
+        } else {
+            displayX = Math.round(rawX);  vy = Math.round(rawY);  vz = Math.round(rawZ);
+        }
+
+        const vx = nx - 1 - displayX;   // un-flip x back to voxel index
+
+        this.mprPos.x = Math.max(0, Math.min(nx - 1, vx));
+        this.mprPos.y = Math.max(0, Math.min(ny - 1, vy));
+        this.mprPos.z = Math.max(0, Math.min(nz - 1, vz));
+
+        this.mprViewers[0]?.osd.goToPage(this.mprPos.z);
+        this.mprViewers[1]?.osd.goToPage(this.mprPos.y);
+        this.mprViewers[2]?.osd.goToPage(this.mprPos.x);
+
+        this._updateMPRInfo();
+        this.redrawAllCrosshairs();
     }
 
     // ── end 3-Axis MPR ────────────────────────────────────────────────────────
