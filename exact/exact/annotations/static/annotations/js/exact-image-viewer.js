@@ -1054,7 +1054,7 @@ class EXACTViewer {
             this.mprViewers[0]?.osd.goToPage(this.mprPos.z);
             this.mprViewers[2]?.osd.goToPage(this.mprPos.x);
         } else {                    // sagittal → update y, z; navigate axial & coronal
-            this.mprPos.y = Math.round((1 - colFrac) * (ny - 1));
+            this.mprPos.y = Math.round(colFrac * (ny - 1));
             this.mprPos.z = Math.round((1 - rowFrac) * (nz - 1));
             this.mprViewers[0]?.osd.goToPage(this.mprPos.z);
             this.mprViewers[1]?.osd.goToPage(this.mprPos.y);
@@ -1092,8 +1092,8 @@ class EXACTViewer {
         } else if (planeIdx === 1) { // coronal XZ: col=x, row=z
             colFrac = nx > 1 ? (nx - 1 - x0) / (nx - 1) : 0.5;
             rowFrac = nz > 1 ? (nz - 1 - z0) / (nz - 1) : 0.5;
-        } else {                     // sagittal YZ: col=y, row=z
-            colFrac = ny > 1 ? (ny - 1 - y0) / (ny - 1) : 0.5;
+        } else {                     // sagittal YZ: col=y (un-flipped), row=z
+            colFrac = ny > 1 ? y0 / (ny - 1) : 0.5;
             rowFrac = nz > 1 ? (nz - 1 - z0) / (nz - 1) : 0.5;
         }
 
@@ -1113,7 +1113,7 @@ class EXACTViewer {
         ctx.setLineDash([]);
         ctx.font = 'bold 11px sans-serif';
         ctx.fillStyle = 'rgba(255, 220, 0, 0.9)';
-        ctx.fillText(['Axial', 'Coronal', 'Sagittal'][planeIdx], 6, 16);
+        ctx.fillText(['Axial', 'Coronal', 'Sagittal'][planeIdx], 6, canvas.height - 6);
     }
 
     _updateMPRInfo() {

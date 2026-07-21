@@ -198,7 +198,7 @@ class NIfTISlide:
             x = max(0, min(frame, nx - 1))
             # data[x, :, :] → (ny, nz); .T → (nz, ny) = (height, width)
             slc = self._data[x, :, :].astype(np.float32).T
-            slc = slc[::-1, ::-1]   # Superior at top, Anterior on left (view from patient's right)
+            slc = slc[::-1, :]      # Superior at top, Anterior on right (view from patient's left)
             pw, ph = self._sag_dims
 
         else:  # AXIAL
