@@ -12,6 +12,18 @@ from util.slide_server import getSlideHandler
 def remove_natively_handled_files_auxfiles(apps, schema_editor):
     db_alias = schema_editor.connection.alias
 
+    # Skip entirely on a fresh/empty database: this is a one-time data
+    # cleanup for pre-existing images and is meaningless with no rows.
+    # Use a raw COUNT(*) here rather than Image.objects.all(), since the
+    # live Image model (imported above) includes fields such as `creator`
+    # that are only added by later migrations (e.g. 0038) — selecting
+    # through the ORM would fail with "column ... does not exist" when
+    # this migration runs before those later migrations have applied.
+    with schema_editor.connection.cursor() as cursor:
+        cursor.execute("SELECT COUNT(*) FROM images_image")
+        if cursor.fetchone()[0] == 0:
+            return
+
     for image in Image.objects.all():
         try:
             path = os.path.join(settings.IMAGE_PATH, image.image_set.path, image.name)
