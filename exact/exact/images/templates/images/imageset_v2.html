@@ -1594,13 +1594,15 @@ function deleteAuxfile(btn) {
         url: "{% url 'images:upload_image' imageset.id %}",
         formData: [
             {name:'csrfmiddlewaretoken', value: gCsrfToken},
-            {name:'imageset', value: parseInt(_tablesUrl.match(/\/(\d+)\/$/)[1])}],
+            {name:'imageset', value: {{ imageset.id }} }],
         add: function(e, data) {
           var file = data.files[0];
           if (file && /\.(csv|tsv)$/i.test(file.name)) {
             _csvModalShow(file, data);
           } else {
-            data.process().done(function() { data.submit(); });
+            // Delegate to the jQuery-File-Upload UI default, which renders the
+            // placeholder card (progress bar, cancel) and sets data.context.
+            $.blueimp.fileupload.prototype.options.add.call(this, e, data);
           }
         },
       });
