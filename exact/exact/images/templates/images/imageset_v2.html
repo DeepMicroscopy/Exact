@@ -91,7 +91,8 @@
     flex-direction: column;
   }
   .imagecard:hover {
-    transform: translateY(-3px);
+    /* no transform here: moving/scaling the card on hover makes the browser re-composite the card
+       (and its thumbnail, which has a transition and backface-visibility) and causes flickering */
     border-color: rgba(170,15,234,.40) !important;
     box-shadow: 0 8px 24px rgba(0,0,0,.4), 0 0 0 1px rgba(170,15,234,.16);
   }
@@ -106,6 +107,19 @@
     border-bottom: 1px solid rgba(255,255,255,.07);
   }
   .img-wrapper img { object-fit: contain; max-height: 100%; max-width: 100%; }
+  /* size indicator, shown while hovering a card */
+  /* The badge is a sibling of the thumbnail link (not inside it): the link and its image carry a
+     transition and backface-visibility (styles_v2.css), which made the badge flicker.
+     It is shown/hidden without a transition. */
+  .imagecard .card_container { position: relative; display: block; }
+  .img-size-badge {
+    position: absolute; left: 0; right: 0; bottom: 0; padding: 4px 6px; box-sizing: border-box;
+    background: rgb(22,22,30); color: #e8e8f2; font-size: .68rem; line-height: 1.35;
+    text-align: center; pointer-events: none; display: none;
+  }
+  .imagecard:hover .img-size-badge { display: block; }
+  .img-size-badge .sz-phys { font-weight: 600; color: #e6b3ff; }
+  .img-size-badge .sz-extra { color: rgba(255,255,255,.55); }
   .imagecard .card-body { padding: 8px 10px !important; }
   .card-title {
     margin: 0;
@@ -187,8 +201,6 @@
   .col-md-2 li b { color: #e0e0ea; }
 
   /* ── Download link ────────────────────────────────────────── */
-  a.image2 { color: rgba(170,15,234,.75) !important; font-size: .7rem; display: block; text-align: center; padding: 4px 0; }
-  a.image2:hover { color: #d580f8 !important; }
 
   /* ── Tables ───────────────────────────────────────────────── */
   .table { color: #e0e0ea !important; }
@@ -544,7 +556,6 @@ function deleteAuxfile(btn) {
     }
     
 </script>
-{% if 'delete_images' in imageset_perms and not imageset.image_lock %}
 <style>
   #imageContextMenu {
     position: fixed; z-index: 2000; display: none; min-width: 190px; padding: 4px 0;
@@ -569,7 +580,47 @@ function deleteAuxfile(btn) {
   #moveImageError { color: #ff8a8a; margin-top: 10px; display: none; }
   #moveImageName { font-weight: bold; word-break: break-all; }
 </style>
-<div id="imageContextMenu"><div class="ctx-item" id="ctxMoveImage">&#10140; Move to another image set&hellip;</div></div>
+<script>
+// size indicator for the image cards: physical size (mm or µm, if the resolution is known) and pixels
+(function () {
+    function fmtNumber(v) {
+        var d = v >= 100 ? 0 : (v >= 10 ? 1 : 2);
+        return v.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: d});
+    }
+    function physicalSize(widthPx, heightPx, mpp) {
+        var w = widthPx * mpp, h = heightPx * mpp;   // microns
+        if (Math.max(w, h) >= 1000)
+            return fmtNumber(w / 1000) + ' × ' + fmtNumber(h / 1000) + ' mm';
+        return fmtNumber(w) + ' × ' + fmtNumber(h) + ' µm';
+    }
+    function addBadge(card) {
+        var container = card.querySelector('.card_container');
+        var w = parseInt(card.dataset.width), h = parseInt(card.dataset.height);
+        if (!container || !(w > 0) || !(h > 0)) return;
+        var mpp = parseFloat(card.dataset.mpp) || 0;
+        var depth = parseInt(card.dataset.depth) || 1, frames = parseInt(card.dataset.frames) || 1;
+
+        var badge = document.createElement('div');
+        badge.className = 'img-size-badge';
+        var lines = [];
+        if (mpp > 0) lines.push('<div class="sz-phys">' + physicalSize(w, h, mpp) + '</div>');
+        lines.push('<div>' + w.toLocaleString('en-US') + ' × ' + h.toLocaleString('en-US') + ' px</div>');
+        var extra = [];
+        if (depth > 1) extra.push(depth + ' z-planes');
+        if (frames > 1) extra.push(frames + ' frames');
+        if (extra.length) lines.push('<div class="sz-extra">' + extra.join(' · ') + '</div>');
+        badge.innerHTML = lines.join('');
+        container.appendChild(badge);
+    }
+    function addBadges() { document.querySelectorAll('#files .imagecard[data-width]').forEach(addBadge); }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', addBadges);
+    else addBadges();
+})();
+</script>
+<div id="imageContextMenu">
+  <div class="ctx-item" id="ctxDownloadImage">&#11015; Download</div>
+  {% if 'delete_images' in imageset_perms and not imageset.image_lock %}<div class="ctx-item" id="ctxMoveImage">&#10140; Move to another image set&hellip;</div>{% endif %}
+</div>
 <div id="moveImageBackdrop">
   <div id="moveImageDialog" role="dialog" aria-modal="true" aria-labelledby="moveImageTitle">
     <div class="mv-head" id="moveImageTitle">Move image to another image set</div>
@@ -655,7 +706,18 @@ function deleteAuxfile(btn) {
 
     function closeDialog() { backdrop.style.display = 'none'; }
 
-    document.getElementById('ctxMoveImage').addEventListener('click', function () {
+    document.getElementById('ctxDownloadImage').addEventListener('click', function () {
+        hideMenu();
+        var a = document.createElement('a');
+        a.href = '/images/api/image/download/' + menuImageId + '/';
+        a.download = '';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+    });
+
+    var moveEntry = document.getElementById('ctxMoveImage');
+    if (moveEntry) moveEntry.addEventListener('click', function () {
         hideMenu();
         document.getElementById('moveImageName').textContent = nameOf(menuCard);
         filter.value = ''; showError(''); confirmBtn.disabled = true;
@@ -708,7 +770,6 @@ function deleteAuxfile(btn) {
     });
 })();
 </script>
-{% endif %}
 <div class="container-fluid">
     <div id="feedback_version_added" class="js_feedback alert alert-success invisible">
         {% trans 'The version was added successfully. Please press F5' %}
@@ -778,11 +839,10 @@ function deleteAuxfile(btn) {
                 <div class="row" id="files">
                     {% for image in imageset.images.all|dictsort:"name" %}
                     {% if image.image_type != 1 %}
-                        <div class="card imagecard">
+                        <div class="card imagecard" data-width="{{ image.width }}" data-height="{{ image.height }}" data-mpp="{{ image.mpp|stringformat:'f' }}" data-depth="{{ image.depth }}" data-frames="{{ image.frames }}">
                             <div class="card_container"><center>
                                 <a href="{% url 'annotations:annotate' image.id %}{% if image.defaultFrame > 0%}?frame={{image.defaultFrame}}{% endif %}" class="image"><div class="img-wrapper"><img class="card-img-top image" src="{{ api }}v1/images/images/{{image.id}}/thumbnail/"
                                     alt="Thumbnail {{image.name}} not found!" data-imageid="{{ image.id }}"></div></a>
-                            <a href="{% url 'images:download_api' image.id %}" download class="image2">&#11015; Download</a>
                         </center></div>
 
                             <div class="card-body">
