@@ -29,7 +29,8 @@ from rest_framework.response import Response
 from rest_framework.authentication import BasicAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.status import HTTP_403_FORBIDDEN, HTTP_200_OK, \
-    HTTP_201_CREATED, HTTP_202_ACCEPTED, HTTP_204_NO_CONTENT, HTTP_404_NOT_FOUND
+    HTTP_201_CREATED, HTTP_202_ACCEPTED, HTTP_204_NO_CONTENT, HTTP_404_NOT_FOUND, HTTP_500_INTERNAL_SERVER_ERROR
+from .move import move_image, MoveNotAllowed
 from PIL import Image as PIL_Image
 from django.views.decorators.cache import cache_page
 
@@ -2085,6 +2086,40 @@ def copy_image(request, image_id, imageset_id):
     return Response({
         "Image": ImageSerializer(image).data
     }, status=HTTP_201_CREATED)
+
+
+@api_view(['GET'])
+def move_image_targets(request) -> Response:
+    """Image sets the user can move images to."""
+    from exact.users.scope import scope_queryset
+    image_sets = ImageSet.objects.filter(team__in=request.user.team_set.all(), image_lock=False) \
+        .select_related('team').order_by('team__name', 'name')
+    image_sets = scope_queryset(request, image_sets, 'team')
+    return Response([{'id': i.id, 'name': i.name, 'team': i.team.name} for i in image_sets])
+
+
+@api_view(['POST'])
+def move_image_api(request, image_id, imageset_id) -> Response:
+    """Moves an image (including files and annotations) to another image set."""
+    from exact.users.scope import check_team
+    image = get_object_or_404(Image, id=image_id)
+    target = get_object_or_404(ImageSet, id=imageset_id)
+    check_team(request, image.image_set.team_id)
+    check_team(request, target.team_id)
+    # users can only see image sets of their teams
+    if image.image_set.team not in request.user.team_set.all() or target.team not in request.user.team_set.all():
+        return Response({'detail': 'Image set not found.'}, status=HTTP_404_NOT_FOUND)
+
+    try:
+        move_image(image, target, request.user)
+    except MoveNotAllowed as e:
+        return Response({'detail': str(e)}, status=e.status)
+    except Exception:
+        logging.exception('Moving image %s to image set %s failed', image_id, imageset_id)
+        return Response({'detail': 'Moving the image failed. Nothing was changed.'},
+                        status=HTTP_500_INTERNAL_SERVER_ERROR)
+
+    return Response({'id': image.id, 'image_set': target.id}, status=HTTP_200_OK)
 
 
 @login_required

@@ -544,6 +544,171 @@ function deleteAuxfile(btn) {
     }
     
 </script>
+{% if 'delete_images' in imageset_perms and not imageset.image_lock %}
+<style>
+  #imageContextMenu {
+    position: fixed; z-index: 2000; display: none; min-width: 190px; padding: 4px 0;
+    background: #14141c; border: 1px solid rgba(255,255,255,.14); border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.5); color: #e0e0ea; font-size: .88rem;
+  }
+  #imageContextMenu .ctx-item { padding: 7px 16px; cursor: pointer; white-space: nowrap; }
+  #imageContextMenu .ctx-item:hover { background: rgba(200,128,248,.18); }
+  #moveImageBackdrop {
+    position: fixed; inset: 0; z-index: 2100; display: none; align-items: center; justify-content: center;
+    background: rgba(0,0,0,.6);
+  }
+  #moveImageDialog {
+    width: min(480px, 92vw); background: #14141c; color: #e0e0ea; border-radius: 12px;
+    border: 1px solid rgba(255,255,255,.10); box-shadow: 0 12px 40px rgba(0,0,0,.6);
+  }
+  #moveImageDialog .mv-head { padding: 14px 20px; border-bottom: 1px solid rgba(255,255,255,.09); font-size: 1.05rem; }
+  #moveImageDialog .mv-body { padding: 16px 20px; }
+  #moveImageDialog .mv-foot { padding: 12px 20px; border-top: 1px solid rgba(255,255,255,.09); text-align: right; }
+  #moveImageDialog .mv-foot .btn { margin-left: 8px; }
+  #moveImageList { width: 100%; margin-top: 10px; }
+  #moveImageError { color: #ff8a8a; margin-top: 10px; display: none; }
+  #moveImageName { font-weight: bold; word-break: break-all; }
+</style>
+<div id="imageContextMenu"><div class="ctx-item" id="ctxMoveImage">&#10140; Move to another image set&hellip;</div></div>
+<div id="moveImageBackdrop">
+  <div id="moveImageDialog" role="dialog" aria-modal="true" aria-labelledby="moveImageTitle">
+    <div class="mv-head" id="moveImageTitle">Move image to another image set</div>
+    <div class="mv-body">
+      <div>Image: <span id="moveImageName"></span></div>
+      <input type="text" id="moveImageFilter" class="form-control mt-2" placeholder="Search image sets&hellip;" autocomplete="off">
+      <select id="moveImageList" class="form-control" size="9"></select>
+      <div id="moveImageError"></div>
+    </div>
+    <div class="mv-foot">
+      <button type="button" class="btn btn-secondary" id="moveImageCancel">Cancel</button>
+      <button type="button" class="btn btn-primary" id="moveImageConfirm" disabled>Move</button>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+    var currentSetId = {{ imageset.id }};
+    var menu = document.getElementById('imageContextMenu');
+    var backdrop = document.getElementById('moveImageBackdrop');
+    var list = document.getElementById('moveImageList');
+    var filter = document.getElementById('moveImageFilter');
+    var confirmBtn = document.getElementById('moveImageConfirm');
+    var errorBox = document.getElementById('moveImageError');
+    var targets = null;
+    var menuCard = null, menuImageId = null;
+
+    function csrf() { return (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || ''; }
+
+    function imageIdOf(card) {
+        var img = card.querySelector('img[data-imageid]');
+        if (img) return img.dataset.imageid;
+        // cards that were added by the uploader have no data attribute
+        var m = (card.innerHTML.match(/images\/images\/(\d+)\/thumbnail/) || []);
+        return m[1] || null;
+    }
+
+    function nameOf(card) {
+        var t = card.querySelector('.card-title a, .name');
+        return t ? t.textContent.trim() : '';
+    }
+
+    function hideMenu() { menu.style.display = 'none'; }
+
+    function notify(text, cls) {
+        if (window.$ && $.notify) $.notify(text, {position: 'top center', className: cls || 'success'});
+    }
+
+    document.addEventListener('contextmenu', function (e) {
+        var card = e.target.closest ? e.target.closest('#files .imagecard') : null;
+        if (!card || card.id === 'uploadcard') { hideMenu(); return; }
+        var id = imageIdOf(card);
+        if (!id) { hideMenu(); return; }
+        e.preventDefault();
+        menuCard = card; menuImageId = id;
+        menu.style.display = 'block';
+        menu.style.left = Math.min(e.clientX, window.innerWidth - menu.offsetWidth - 8) + 'px';
+        menu.style.top = Math.min(e.clientY, window.innerHeight - menu.offsetHeight - 8) + 'px';
+    });
+    document.addEventListener('click', hideMenu);
+    document.addEventListener('scroll', hideMenu, true);
+
+    function renderList() {
+        var q = filter.value.trim().toLowerCase();
+        var previous = list.value;
+        list.innerHTML = '';
+        (targets || []).forEach(function (t) {
+            if (t.id === currentSetId) return;
+            if (q && (t.name + ' ' + t.team).toLowerCase().indexOf(q) < 0) return;
+            var o = document.createElement('option');
+            o.value = t.id; o.textContent = t.name + '  (' + t.team + ')';
+            list.appendChild(o);
+        });
+        if (previous) list.value = previous;
+        if (!list.value && list.options.length === 1) list.selectedIndex = 0;
+        confirmBtn.disabled = !list.value;
+    }
+
+    function showError(text) {
+        errorBox.textContent = text || '';
+        errorBox.style.display = text ? 'block' : 'none';
+    }
+
+    function closeDialog() { backdrop.style.display = 'none'; }
+
+    document.getElementById('ctxMoveImage').addEventListener('click', function () {
+        hideMenu();
+        document.getElementById('moveImageName').textContent = nameOf(menuCard);
+        filter.value = ''; showError(''); confirmBtn.disabled = true;
+        backdrop.style.display = 'flex';
+        filter.focus();
+        if (targets === null) {
+            list.innerHTML = '<option disabled>Loading&hellip;</option>';
+            fetch('{% url "images:move_image_targets" %}', {credentials: 'same-origin'})
+                .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
+                .then(function (data) { targets = data; renderList(); })
+                .catch(function () { list.innerHTML = ''; showError('Could not load the image sets.'); });
+        } else {
+            renderList();
+        }
+    });
+
+    filter.addEventListener('input', renderList);
+    list.addEventListener('change', function () { confirmBtn.disabled = !list.value; });
+    list.addEventListener('dblclick', function () { if (list.value) confirmBtn.click(); });
+    document.getElementById('moveImageCancel').addEventListener('click', closeDialog);
+    backdrop.addEventListener('mousedown', function (e) { if (e.target === backdrop) closeDialog(); });
+    document.addEventListener('keydown', function (e) {
+        if (backdrop.style.display !== 'flex') return;
+        if (e.key === 'Escape') closeDialog();
+        if (e.key === 'Enter' && list.value && !confirmBtn.disabled) confirmBtn.click();
+    });
+
+    confirmBtn.addEventListener('click', function () {
+        var targetId = list.value;
+        if (!targetId) return;
+        confirmBtn.disabled = true; showError('');
+        fetch('/images/api/image/move/' + menuImageId + '/' + targetId + '/', {
+            method: 'POST', credentials: 'same-origin', headers: {'X-CSRFToken': csrf()}
+        }).then(function (r) {
+            return r.json().catch(function () { return {}; }).then(function (body) { return {ok: r.ok, body: body}; });
+        }).then(function (res) {
+            if (res.ok) {
+                var label = list.options[list.selectedIndex].textContent;
+                menuCard.remove();
+                closeDialog();
+                notify('Image moved to ' + label, 'success');
+            } else {
+                showError(res.body.detail || 'Moving the image failed.');
+                confirmBtn.disabled = false;
+            }
+        }).catch(function () {
+            showError('Moving the image failed.');
+            confirmBtn.disabled = false;
+        });
+    });
+})();
+</script>
+{% endif %}
 <div class="container-fluid">
     <div id="feedback_version_added" class="js_feedback alert alert-success invisible">
         {% trans 'The version was added successfully. Please press F5' %}

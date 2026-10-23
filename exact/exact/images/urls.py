@@ -18,6 +18,8 @@ urlpatterns = [
     re_path(r'^api/auxfile/download/(\d+)/$', views.download_auxfile_api, name='download_auxfile'),
     re_path(r'^api/auxfile/delete/(\d+)/$', views.delete_auxfile_api, name='delete_auxfile'),
     re_path(r'^image/copy/(\d+)/(\d+)/$', views.copy_image, name='copy_image'),
+    re_path(r'^api/image/move/(\d+)/(\d+)/$', views.move_image_api, name='move_image'),
+    re_path(r'^api/image/move-targets/$', views.move_image_targets, name='move_image_targets'),
 
     re_path(r'^api/image/opened/(\d+)/$', views.image_opened, name='image_opened'),
     re_path(r'^api/image/closed/(\d+)/$', views.image_closed, name='image_closed'),
