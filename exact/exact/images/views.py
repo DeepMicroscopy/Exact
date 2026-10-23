@@ -24,6 +24,7 @@ import pyvips
 
 from exact.processing.models import Plugin, PluginJob, PluginResult
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.negotiation import BaseContentNegotiation
 from rest_framework.exceptions import ParseError
 from rest_framework.response import Response
 from rest_framework.authentication import BasicAuthentication
@@ -31,6 +32,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.status import HTTP_403_FORBIDDEN, HTTP_200_OK, \
     HTTP_201_CREATED, HTTP_202_ACCEPTED, HTTP_204_NO_CONTENT, HTTP_404_NOT_FOUND, HTTP_500_INTERNAL_SERVER_ERROR
 from .move import move_image, MoveNotAllowed
+from exact.users.scope import forbid_read_only_tokens
 from PIL import Image as PIL_Image
 from django.views.decorators.cache import cache_page
 
@@ -978,6 +980,7 @@ def delete_auxfile_api(request, auxfile_id) -> Response:
 
 
 @api_view(['GET'])
+@forbid_read_only_tokens
 def delete_images_api(request, image_id) -> Response:
     image = get_object_or_404(Image, id=image_id)
     if image.image_set.has_perm('delete_images', request.user) and not image.image_set.image_lock:
@@ -1292,6 +1295,7 @@ def create_imageset(request):
     })
 
 @api_view(['GET'])
+@forbid_read_only_tokens
 @login_required
 def create_annotation_map(request, imageset_id):
     imageset = get_object_or_404(ImageSet, id=imageset_id)
@@ -1464,6 +1468,7 @@ def create_annotation_map(request, imageset_id):
 
 
 @api_view(['GET'])
+@forbid_read_only_tokens
 @login_required
 def sync_annotation_map(request, imageset_id):
     imageset = get_object_or_404(ImageSet, id=imageset_id)
@@ -1579,9 +1584,24 @@ def build_affine_from_scale_translation(scale, t_vec):
     ])
     return affine_matrix
 
-@login_required
+class IgnoreClientContentNegotiation(BaseContentNegotiation):
+    """Always use the first renderer: views that return a plain HttpResponse (e.g. an image) must not fail
+    with 406 because the client asks for image/png in the Accept header."""
+
+    def select_parser(self, request, parsers):
+        return parsers[0]
+
+    def select_renderer(self, request, renderers, format_suffix):
+        return renderers[0], renderers[0].media_type
+
+
+@api_view(['GET'])  # also accessible with a personal access token
 def image_snapshots(request, image_source, x_coord, y_coord, size_x,size_y):
     image_source_obj = get_object_or_404(Image, id=image_source)
+
+    if not image_source_obj.image_set.has_perm('read', request.user):
+        return HttpResponseForbidden()
+
 #    source_image = getSlideHandler(image_source_obj.path())
     slide = image_cache.get(image_source_obj.path())._osr
 
@@ -1591,9 +1611,6 @@ def image_snapshots(request, image_source, x_coord, y_coord, size_x,size_y):
     size_y = int(size_y)
     x_coord = int(x_coord)
     y_coord = int(y_coord)
-
-    if not image_source_obj.image_set.has_perm('read', request.user):
-        return HttpResponseForbidden()
 
     if (slide.nFrames>0):
         tile = slide.read_region(location=(int(x_coord-size_x/2), int(y_coord-size_y/2)), frame=image_source_obj.defaultFrame, level=0, size=(size_x, size_y))
@@ -1606,6 +1623,10 @@ def image_snapshots(request, image_source, x_coord, y_coord, size_x,size_y):
     buffer = buf.getvalue()
 
     return HttpResponse(buffer, content_type='image/%s' % format)
+
+
+image_snapshots.cls.content_negotiation_class = IgnoreClientContentNegotiation
+
 
 @login_required
 def manual_registration_view(request, registration_id):

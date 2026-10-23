@@ -1,5 +1,8 @@
 """Helpers to apply the scope restrictions of a PersonalAccessToken (see users.models)."""
+from functools import wraps
+
 from django.http import Http404
+from rest_framework.response import Response
 
 from .models import PersonalAccessToken
 
@@ -23,6 +26,20 @@ def scope_queryset(request, queryset, lookup):
     if ids is None:
         return queryset
     return queryset.filter(**{f"{lookup}__in": ids}).distinct()
+
+
+def forbid_read_only_tokens(view):
+    """
+    For API views that change data although they are reached by GET requests: read-only tokens are refused.
+    Has to be applied below @api_view so that the request is a rest framework request.
+    """
+    @wraps(view)
+    def wrapper(request, *args, **kwargs):
+        pat = getattr(request, "auth", None)
+        if isinstance(pat, PersonalAccessToken) and pat.read_only:
+            return Response({"detail": "This token is read-only."}, status=403)
+        return view(request, *args, **kwargs)
+    return wrapper
 
 
 def check_team(request, team_id):

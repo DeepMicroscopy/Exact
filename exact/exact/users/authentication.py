@@ -60,4 +60,9 @@ class PersonalAccessTokenAuthentication(BaseAuthentication):
         # Optional: update last_used_at
         PersonalAccessToken.objects.filter(pk=pat.pk).update(last_used_at=timezone.now())
 
-        return (pat.user, pat)
+        # let team based permission checks (Team.is_member, ImageSet.get_perms, user.team_set) honour the
+        # teams the token is restricted to
+        user = pat.user
+        user.token_team_ids = set(pat.teams.values_list("id", flat=True)) or None
+
+        return (user, pat)

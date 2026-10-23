@@ -120,13 +120,18 @@ class Team(models.Model):
         """Check whether user has specified permission."""
         return permission in self.get_perms(user)
 
+    def token_allows(self, user: User) -> bool:
+        """False if the user authenticated with a token that is restricted to other teams."""
+        team_ids = getattr(user, 'token_team_ids', None)
+        return team_ids is None or self.id in team_ids
+
     def is_admin(self, user: User) -> bool:
         """Check whether user is admin of this group."""
-        return user in self.admins
+        return self.token_allows(user) and user in self.admins
 
     def is_member(self, user: User) -> bool:
         """Check whether user is member of this group."""
-        return self.members.filter(pk=user.pk).exists()
+        return self.token_allows(user) and self.members.filter(pk=user.pk).exists()
 
 
 class TeamMembership(models.Model):

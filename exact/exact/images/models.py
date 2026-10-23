@@ -470,6 +470,8 @@ class ImageSet(models.Model):
     def get_perms(self, user: get_user_model()) -> Set[str]:
         """Get all permissions of the user."""
         perms = set()
+        if not (self.team is None or self.team.token_allows(user)):
+            return perms  # token restricted to other teams
         if self.team is not None:
             if self.team.is_admin(user):
                 perms.update({
