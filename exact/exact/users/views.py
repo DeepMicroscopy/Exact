@@ -9,7 +9,7 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_POST
 from rest_framework.decorators import api_view
-from rest_framework.exceptions import ParseError
+from rest_framework.exceptions import ParseError, PermissionDenied
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
 from exact.annotations.models import ExportFormat, AnnotationType
@@ -82,7 +82,7 @@ class PersonalAccessTokenViewSet(
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return PersonalAccessToken.objects.filter(user=self.request.user).order_by("-created_at")
+        return PersonalAccessToken.objects.filter(user=self.request.user).prefetch_related("image_sets").order_by("-created_at")
 
     def get_serializer_class(self):
         if self.action == "create":
@@ -90,6 +90,10 @@ class PersonalAccessTokenViewSet(
         return PersonalAccessTokenListSerializer
 
     def create(self, request, *args, **kwargs):
+        # Tokens must not be able to mint (possibly less restricted) tokens
+        if isinstance(request.auth, PersonalAccessToken):
+            raise PermissionDenied("Tokens cannot be created using a personal access token.")
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -100,7 +104,11 @@ class PersonalAccessTokenViewSet(
             prefix=prefix,
             token_hash=hash_token(token),
             expires_at=serializer.validated_data.get("expires_at"),
+            read_only=serializer.validated_data.get("read_only", False),
         )
+        image_set_ids = serializer.validated_data.get("image_sets") or []
+        if image_set_ids:
+            pat.image_sets.set(image_set_ids)
 
         # Return the token ONCE
         return Response(
@@ -110,6 +118,8 @@ class PersonalAccessTokenViewSet(
                 "prefix": pat.prefix,
                 "created_at": pat.created_at,
                 "expires_at": pat.expires_at,
+                "read_only": pat.read_only,
+                "image_sets": image_set_ids,
                 "token": token,
             },
             status=status.HTTP_201_CREATED,
@@ -117,6 +127,8 @@ class PersonalAccessTokenViewSet(
 
     @action(detail=True, methods=["post"])
     def revoke(self, request, pk=None):
+        if isinstance(request.auth, PersonalAccessToken):
+            raise PermissionDenied("Tokens cannot be revoked using a personal access token.")
         pat = self.get_queryset().filter(pk=pk).first()
         if not pat:
             return Response(status=404)
@@ -374,6 +386,7 @@ def user(request, user_id):
         'info': info,
         'passwordmatching' : passwordmatching,
         'teams': teams,
+        'token_image_sets': ImageSet.objects.filter(team__in=request.user.team_set.all()).order_by('name') if request.user == user else [],
     })
 
 

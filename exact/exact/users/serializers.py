@@ -10,11 +10,24 @@ from .models import PersonalAccessToken
 class PersonalAccessTokenListSerializer(serializers.ModelSerializer):
     class Meta:
         model = PersonalAccessToken
-        fields = ["id", "name", "prefix", "created_at", "last_used_at", "expires_at", "revoked_at"]
+        fields = ["id", "name", "prefix", "created_at", "last_used_at", "expires_at", "revoked_at",
+                  "read_only", "image_sets"]
 
 class PersonalAccessTokenCreateSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=100)
     expires_at = serializers.DateTimeField(required=False, allow_null=True)
+    read_only = serializers.BooleanField(required=False, default=False)
+    # Restrict the token to these image sets; omit or leave empty for access to all image sets.
+    image_sets = serializers.ListField(child=serializers.IntegerField(), required=False, allow_empty=True)
+
+    def validate_image_sets(self, ids):
+        from exact.images.models import ImageSet
+        user = self.context["request"].user
+        allowed = set(ImageSet.objects.filter(id__in=ids, team__in=user.team_set.all()).values_list("id", flat=True))
+        missing = set(ids) - allowed
+        if missing:
+            raise serializers.ValidationError(f"Unknown or inaccessible image sets: {sorted(missing)}")
+        return sorted(allowed)
 
     
 class TeamSerializer(FlexFieldsModelSerializer):

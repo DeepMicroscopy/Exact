@@ -143,6 +143,7 @@
                       <thead>
                         <tr>
                           <th>Name</th>
+                          <th>Scope</th>
                           <th>Prefix</th>
                           <th>Created</th>
                           <th>Last used</th>
@@ -152,7 +153,7 @@
                         </tr>
                       </thead>
                       <tbody id="token-table">
-                        <tr><td colspan="7" class="text-muted">Loading tokens…</td></tr>
+                        <tr><td colspan="8" class="text-muted">Loading tokens…</td></tr>
                       </tbody>
                     </table>
                   </div>
@@ -177,6 +178,23 @@
 
                     <div class="col-12 col-md-3">
                         <button class="btn btn-primary btn-block" id="create-token-btn" type="button">Create token</button>
+                    </div>
+                    </div>
+
+                    <div class="form-row mb-3">
+                    <div class="col-12 col-md-4 mb-2 mb-md-0">
+                        <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input" id="token-read-only">
+                        <label class="custom-control-label" for="token-read-only">Read-only</label>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-8">
+                        <select multiple class="form-control" id="token-image-sets" size="4" title="Restrict to image sets">
+                        {% for image_set in token_image_sets %}
+                        <option value="{{ image_set.id }}">{{ image_set.name }} ({{ image_set.team.name }})</option>
+                        {% endfor %}
+                        </select>
+                        <small class="form-text text-muted">Restrict the token to the selected image sets (none selected = all image sets).</small>
                     </div>
                     </div>
 
@@ -279,7 +297,7 @@ function computeExpiresAt(selection) {
     $tbody.empty();
 
     if (!tokens || tokens.length === 0 || tokens.count === 0) {
-      $tbody.append('<tr><td colspan="7" class="text-muted">No tokens yet.</td></tr>');
+      $tbody.append('<tr><td colspan="8" class="text-muted">No tokens yet.</td></tr>');
       return;
     }
 
@@ -291,7 +309,9 @@ function computeExpiresAt(selection) {
 
       $tbody.append(
         '<tr>' +
-          '<td>' + (t.name || '') + '</td>' +
+          '<td>' + $('<div>').text(t.name || '').html() + '</td>' +
+          '<td>' + (t.read_only ? 'Read-only' : 'Read/write') + ', ' +
+              ((t.image_sets && t.image_sets.length) ? t.image_sets.length + ' image set(s)' : 'all image sets') + '</td>' +
           '<td><code>' + (t.prefix || '') + '</code></td>' +
           '<td>' + (t.created_at || '') + '</td>' +
           '<td>' + (t.last_used_at || '') + '</td>' +
@@ -309,7 +329,7 @@ function computeExpiresAt(selection) {
       method: 'GET',
       success: function(data) { renderTokens(data); },
       error: function() {
-        $('#token-table').html('<tr><td colspan="7" class="text-danger">Could not load tokens.</td></tr>');
+        $('#token-table').html('<tr><td colspan="8" class="text-danger">Could not load tokens.</td></tr>');
       }
     });
   }
@@ -344,11 +364,15 @@ function computeExpiresAt(selection) {
     contentType: 'application/json',
     data: JSON.stringify({
       name: name,
-      expires_at: expiresAt  // null means “never”
+      expires_at: expiresAt,  // null means “never”
+      read_only: $('#token-read-only').is(':checked'),
+      image_sets: ($('#token-image-sets').val() || []).map(Number)
     }),
     headers: { 'X-CSRFToken': csrftoken },
     success: function(resp) {
       $('#token-name').val('');
+      $('#token-read-only').prop('checked', false);
+      $('#token-image-sets').val([]);
       if (resp && resp.token) {
         showCreatedToken(resp.token);
       }

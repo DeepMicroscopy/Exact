@@ -5,6 +5,7 @@ from django.conf import settings
 from timeit import default_timer as timer
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404
+from exact.users.scope import scope_queryset, check_image_set, token_image_set_ids
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_202_ACCEPTED, HTTP_201_CREATED
 from django.http import HttpResponseBadRequest, HttpResponse, HttpResponseNotFound
 from django.template.response import TemplateResponse
@@ -14,7 +15,7 @@ from rest_framework.settings import api_settings
 from rest_framework.decorators import action
 from django.db.models import Q, Count
 from django.db import transaction, connection
-from django.http import JsonResponse
+from django.http import JsonResponse, Http404
 
 from django.core.cache import caches
 from django.utils.decorators import method_decorator
@@ -125,7 +126,7 @@ class ImageViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return  models.Image.objects.filter(image_set__team__in=user.team_set.all()).select_related('image_set')
+        return scope_queryset(self.request, models.Image.objects.filter(image_set__team__in=user.team_set.all()), 'image_set').select_related('image_set')
 
     @action(detail=True, methods=['GET'], name='get image tiles for open seadragon', 
                 url_path= r'(?P<z_dimension>\d+)/(?P<frame>\d+)/tile_files/(?P<level>\d+)/(?P<tile_path>\d+_\d+.(?:png|jpeg))')
@@ -138,11 +139,16 @@ class ImageViewSet(viewsets.ModelViewSet):
         format = results.group(3)
         cache_key = f"{image_id}/{z_dimension}/{frame}/{level}/{col}/{row}"
 
+        if token_image_set_ids(request) is not None:
+            # cached tiles are served without a lookup, so check the scope first
+            check_image_set(request, get_object_or_404(models.Image, id=image_id).image_set_id)
+
         buffer = tiles_cache.get(cache_key)
         if buffer is not None:
             return HttpResponse(buffer, content_type='image/%s' % format)
 
         image = get_object_or_404(models.Image, id=image_id)            
+        check_image_set(request, image.image_set_id)
         file_path = os.path.join(settings.IMAGE_PATH, image.path(z_dimension, frame))
 
         try:
@@ -167,6 +173,7 @@ class ImageViewSet(viewsets.ModelViewSet):
     def view_image(self, request, pk, z_dimension, frame):
         z_dimension, frame = int(z_dimension), int(frame)
         image = get_object_or_404(models.Image, id=pk)
+        check_image_set(request, image.image_set_id)
 
         cache_key = f"{pk}_{z_dimension}_{frame}_get_dzi"
         value = cache.get(cache_key)
@@ -185,6 +192,7 @@ class ImageViewSet(viewsets.ModelViewSet):
     def update_image_cache(self, request, pk=None):
 
         image = get_object_or_404(models.Image, id=pk)
+        check_image_set(request, image.image_set_id)
 
         mem_size = int(request.data.get("mem_size_mb", 5))
         z_dimension = int(request.data.get("z_dimension", 1))
@@ -247,6 +255,7 @@ class ImageViewSet(viewsets.ModelViewSet):
             return HttpResponse(buffer, content_type='image/png')
 
         image = get_object_or_404(models.Image, id=pk)
+        check_image_set(request, image.image_set_id)
         file_path = image.path()
 
         if Path(image.thumbnail_path()).exists():
@@ -273,6 +282,7 @@ class ImageViewSet(viewsets.ModelViewSet):
             return Response(buffer)
 
         image = get_object_or_404(models.Image, id=pk)
+        check_image_set(request, image.image_set_id)
 
         file_path = image.path()
 
@@ -295,6 +305,7 @@ class ImageViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['GET'], name='Get patch for image PK')
     def get_patch(self, request, pk=None):
         image = get_object_or_404(models.Image, id=pk)
+        check_image_set(request, image.image_set_id)
 
         max_width = 2048
         max_height = 2048
@@ -334,7 +345,9 @@ class ImageViewSet(viewsets.ModelViewSet):
     def register_images(self, request, pk=None):
 
         source_image = get_object_or_404(models.Image, id=pk)
+        check_image_set(request, source_image.image_set_id)
         target_image = get_object_or_404(models.Image, id=int(request.data.get("target_image", 0)))
+        check_image_set(request, target_image.image_set_id)
 
         image_registration = models.ImageRegistration.objects.filter(source_image=source_image, target_image=target_image).first()
 
@@ -357,6 +370,7 @@ class ImageViewSet(viewsets.ModelViewSet):
         image_set_id = int(request.POST.get('image_set', 0))
 
         imageset = get_object_or_404(models.ImageSet, id=image_set_id)
+        check_image_set(request, imageset.id)
         if request.FILES is None:
             return HttpResponseBadRequest('Must have files attached!')
 
@@ -494,6 +508,7 @@ class ImageViewSet(viewsets.ModelViewSet):
 
     def destroy(self, request, pk=None):
         image = get_object_or_404(models.Image, id=pk)
+        check_image_set(request, image.image_set_id)
         # remove image from file system
         if Path(image.path()).exists() and Path(image.path()).is_dir(): os.remove(image.path())
         if Path(image.original_path()).exists(): os.remove(image.original_path())
@@ -591,7 +606,7 @@ class ImageSetViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return  models.ImageSet.objects.filter(team__in=user.team_set.all()).select_related('team', 'creator', 'main_annotation_type').order_by('id')
+        return scope_queryset(self.request, models.ImageSet.objects.filter(team__in=user.team_set.all()), 'id').select_related('team', 'creator', 'main_annotation_type').order_by('id')
 
 
     def create(self, request):
@@ -675,7 +690,7 @@ class SetTagViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return  models.SetTag.objects.filter(imagesets__team__in=user.team_set.all()).distinct().order_by('id')
+        return scope_queryset(self.request, models.SetTag.objects.filter(imagesets__team__in=user.team_set.all()), 'imagesets').distinct().order_by('id')
 
 class SetVersionViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
@@ -689,7 +704,7 @@ class SetVersionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return  models.SetVersion.objects.filter(imagesets__team__in=user.team_set.all()).order_by('id')
+        return scope_queryset(self.request, models.SetVersion.objects.filter(imagesets__team__in=user.team_set.all()), 'imagesets').order_by('id')
 
     def create(self, request):
         response = super().create(request)
@@ -721,6 +736,8 @@ class SetVersionViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['POST'], name='Upload version meta file')
     def add(self, request, pk=None, *args, **kwargs):
         set_version = get_object_or_404(models.SetVersion, id=pk)
+        if token_image_set_ids(request) is not None and not set_version.imagesets.filter(id__in=token_image_set_ids(request)).exists():
+            raise Http404
 
         if "file" in request.FILES:
             set_version.file = request.FILES["file"]
@@ -782,7 +799,7 @@ class ScreeningModeViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return  models.ScreeningMode.objects.filter(image__image_set__team__in=user.team_set.all()).select_related('image', 'user').order_by('id')
+        return scope_queryset(self.request, models.ScreeningMode.objects.filter(image__image_set__team__in=user.team_set.all()), 'image__image_set').select_related('image', 'user').order_by('id')
 
     def partial_update(self, request, *args, **kwargs):
         user = self.request.user
@@ -809,12 +826,13 @@ class ImageRegistrationViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return  models.ImageRegistration.objects.filter(source_image__image_set__team__in=user.team_set.all()).select_related('source_image', 'target_image').order_by('id')
+        return scope_queryset(self.request, models.ImageRegistration.objects.filter(source_image__image_set__team__in=user.team_set.all()), 'source_image__image_set').select_related('source_image', 'target_image').order_by('id')
 
 
     @action(detail=True, methods=['GET'], name='Convert coordinates form the source to the target domain')
     def convert_coodinates(self, request, pk=None):
         image_registration = get_object_or_404(models.ImageRegistration, id=pk)   
+        check_image_set(request, image_registration.source_image.image_set_id)
 
         vector = request.query_params.get("vector", None) 
         if vector is None:
@@ -830,6 +848,7 @@ class ImageRegistrationViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['GET'], name='Convert coordinates form the source to the target domain')
     def create_inverse_registration(self, request, pk=None):
         image_registration = get_object_or_404(models.ImageRegistration, id=pk)   
+        check_image_set(request, image_registration.source_image.image_set_id)
 
         new_registration = image_registration.create_inverse_registration()
 

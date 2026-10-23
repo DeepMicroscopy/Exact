@@ -2,6 +2,7 @@
 from django.utils import timezone
 from rest_framework.authentication import BaseAuthentication, get_authorization_header
 from rest_framework import exceptions
+from rest_framework.permissions import SAFE_METHODS
 import secrets
 
 from .models import PersonalAccessToken
@@ -52,6 +53,9 @@ class PersonalAccessTokenAuthentication(BaseAuthentication):
 
         if not pat.is_active:
             raise exceptions.AuthenticationFailed("Token expired or revoked.")
+
+        if pat.read_only and request.method not in SAFE_METHODS:
+            raise exceptions.PermissionDenied("This token is read-only.")
 
         # Optional: update last_used_at
         PersonalAccessToken.objects.filter(pk=pat.pk).update(last_used_at=timezone.now())
