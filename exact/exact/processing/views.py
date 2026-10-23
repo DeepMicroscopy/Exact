@@ -42,6 +42,9 @@ def create_job(request) -> Response:
     image = get_object_or_404(Image, pk=image_id)
     plugin = get_object_or_404(Plugin, pk=plugin_id)
 
+    if 'read' not in image.image_set.get_perms(request.user):
+        return Response([], status=HTTP_403_FORBIDDEN)
+
     if (PluginJob.objects.filter(image=image).filter(plugin=plugin).count()==0):
         pluginJob = PluginJob.objects.create(
                 image=image,
