@@ -1,1 +1,8 @@
 /images/*
+# not needed in the image
+/media/*
+**/__pycache__
+**/*.pyc
+*.ipynb
+.DS_Store
+.git

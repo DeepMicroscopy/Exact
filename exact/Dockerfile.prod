@@ -22,15 +22,10 @@ RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 
-# lint
 RUN pip3 install --upgrade pip
-RUN pip3 install flake8
-COPY . /usr/src/app/
 
-# Just build if code is valid!!!
-#RUN flake8 --ignore=E501,F401 .
-
-# install dependencies
+# install dependencies; only requirements.txt is copied here so that code changes
+# do not invalidate the (slow) wheel build layer
 COPY ./requirements.txt .
 RUN pip3 install wheel
 RUN pip3 wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requirements.txt
