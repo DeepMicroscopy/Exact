@@ -10,8 +10,10 @@ class TokenScopeTest(TestCase):
         self.user = User.objects.create_superuser("tokuser", "t@example.com", "pw")
         self.team = Team.objects.create(name="t")
         self.team.members.add(self.user)
+        self.team_b = Team.objects.create(name="b")
+        self.team_b.members.add(self.user)
         self.set_a = ImageSet.objects.create(name="a", team=self.team, creator=self.user)
-        self.set_b = ImageSet.objects.create(name="b", team=self.team, creator=self.user)
+        self.set_b = ImageSet.objects.create(name="b", team=self.team_b, creator=self.user)
         self.session = APIClient()
         self.session.force_authenticate(self.user)
 
@@ -35,14 +37,14 @@ class TokenScopeTest(TestCase):
         self.assertEqual(c.post("/users/api/tokens/", {"name": "n"}, format="json").status_code, 403)
         self.assertTrue(ImageSet.objects.filter(id=self.set_a.id).exists())
 
-    def test_image_set_restriction(self):
-        c = self.make_token(name="rs", image_sets=[self.set_a.id])
+    def test_team_restriction(self):
+        c = self.make_token(name="rs", teams=[self.team.id])
         r = c.get("/api/v1/images/image_sets/")
         self.assertEqual([i["id"] for i in r.data["results"]], [self.set_a.id])
         self.assertEqual(c.get(f"/api/v1/images/image_sets/{self.set_a.id}/").status_code, 200)
         self.assertEqual(c.get(f"/api/v1/images/image_sets/{self.set_b.id}/").status_code, 404)
 
-    def test_cannot_scope_to_foreign_set(self):
-        other = ImageSet.objects.create(name="o", team=Team.objects.create(name="o"), creator=self.user)
-        r = self.session.post("/users/api/tokens/", {"name": "n", "image_sets": [other.id]}, format="json")
+    def test_cannot_scope_to_foreign_team(self):
+        other = Team.objects.create(name="o")
+        r = self.session.post("/users/api/tokens/", {"name": "n", "teams": [other.id]}, format="json")
         self.assertEqual(r.status_code, 400)

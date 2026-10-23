@@ -26,9 +26,9 @@ class PersonalAccessToken(models.Model):
     revoked_at = models.DateTimeField(null=True, blank=True)
 
     # Scope restrictions: a read-only token may only use safe HTTP methods, and a token with
-    # image sets assigned can only access those image sets (empty = all image sets of the user).
+    # teams assigned can only access data of those teams (empty = all teams of the user).
     read_only = models.BooleanField(default=False)
-    image_sets = models.ManyToManyField("images.ImageSet", blank=True, related_name="personal_tokens")
+    teams = models.ManyToManyField("users.Team", blank=True, related_name="personal_tokens")
 
     class Meta:
         indexes = [models.Index(fields=["user", "revoked_at", "expires_at"])]

@@ -82,7 +82,7 @@ class PersonalAccessTokenViewSet(
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return PersonalAccessToken.objects.filter(user=self.request.user).prefetch_related("image_sets").order_by("-created_at")
+        return PersonalAccessToken.objects.filter(user=self.request.user).prefetch_related("teams").order_by("-created_at")
 
     def get_serializer_class(self):
         if self.action == "create":
@@ -106,9 +106,9 @@ class PersonalAccessTokenViewSet(
             expires_at=serializer.validated_data.get("expires_at"),
             read_only=serializer.validated_data.get("read_only", False),
         )
-        image_set_ids = serializer.validated_data.get("image_sets") or []
-        if image_set_ids:
-            pat.image_sets.set(image_set_ids)
+        team_ids = serializer.validated_data.get("teams") or []
+        if team_ids:
+            pat.teams.set(team_ids)
 
         # Return the token ONCE
         return Response(
@@ -119,7 +119,7 @@ class PersonalAccessTokenViewSet(
                 "created_at": pat.created_at,
                 "expires_at": pat.expires_at,
                 "read_only": pat.read_only,
-                "image_sets": image_set_ids,
+                "teams": team_ids,
                 "token": token,
             },
             status=status.HTTP_201_CREATED,
@@ -386,7 +386,7 @@ def user(request, user_id):
         'info': info,
         'passwordmatching' : passwordmatching,
         'teams': teams,
-        'token_image_sets': ImageSet.objects.filter(team__in=request.user.team_set.all()).order_by('name') if request.user == user else [],
+        'token_teams': request.user.team_set.order_by('name') if request.user == user else [],
     })
 
 

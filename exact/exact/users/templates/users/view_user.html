@@ -189,12 +189,12 @@
                         </div>
                     </div>
                     <div class="col-12 col-md-8">
-                        <select multiple class="form-control" id="token-image-sets" size="4" title="Restrict to image sets">
-                        {% for image_set in token_image_sets %}
-                        <option value="{{ image_set.id }}">{{ image_set.name }} ({{ image_set.team.name }})</option>
+                        <select multiple class="form-control" id="token-teams" size="4" title="Restrict to teams">
+                        {% for team in token_teams %}
+                        <option value="{{ team.id }}">{{ team.name }}</option>
                         {% endfor %}
                         </select>
-                        <small class="form-text text-muted">Restrict the token to the selected image sets (none selected = all image sets).</small>
+                        <small class="form-text text-muted">Restrict the token to the selected teams (none selected = all your teams).</small>
                     </div>
                     </div>
 
@@ -311,7 +311,7 @@ function computeExpiresAt(selection) {
         '<tr>' +
           '<td>' + $('<div>').text(t.name || '').html() + '</td>' +
           '<td>' + (t.read_only ? 'Read-only' : 'Read/write') + ', ' +
-              ((t.image_sets && t.image_sets.length) ? t.image_sets.length + ' image set(s)' : 'all image sets') + '</td>' +
+              ((t.teams && t.teams.length) ? t.teams.length + ' team(s)' : 'all teams') + '</td>' +
           '<td><code>' + (t.prefix || '') + '</code></td>' +
           '<td>' + (t.created_at || '') + '</td>' +
           '<td>' + (t.last_used_at || '') + '</td>' +
@@ -366,13 +366,13 @@ function computeExpiresAt(selection) {
       name: name,
       expires_at: expiresAt,  // null means “never”
       read_only: $('#token-read-only').is(':checked'),
-      image_sets: ($('#token-image-sets').val() || []).map(Number)
+      teams: ($('#token-teams').val() || []).map(Number)
     }),
     headers: { 'X-CSRFToken': csrftoken },
     success: function(resp) {
       $('#token-name').val('');
       $('#token-read-only').prop('checked', false);
-      $('#token-image-sets').val([]);
+      $('#token-teams').val([]);
       if (resp && resp.token) {
         showCreatedToken(resp.token);
       }

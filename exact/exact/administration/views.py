@@ -377,7 +377,7 @@ def user_detail_api(request, user_id: int):
                 "name": t.name,
                 "prefix": t.prefix,
                 "read_only": t.read_only,
-                "image_set_count": t.image_sets.count(),
+                "team_count": t.teams.count(),
                 "created_at": t.created_at.isoformat() if t.created_at else None,
                 "last_used_at": t.last_used_at.isoformat() if t.last_used_at else None,
                 "expires_at": t.expires_at.isoformat() if t.expires_at else None,

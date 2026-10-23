@@ -391,7 +391,7 @@ function loadTeamsCatalog() {
       $tbody.append(
         '<tr>' +
           '<td>' + (t.name || '') + '</td>' +
-          '<td>' + (t.read_only ? 'Read-only' : 'Read/write') + ', ' + (t.image_set_count ? t.image_set_count + ' image set(s)' : 'all image sets') + '</td>' +
+          '<td>' + (t.read_only ? 'Read-only' : 'Read/write') + ', ' + (t.team_count ? t.team_count + ' team(s)' : 'all teams') + '</td>' +
           '<td><code>' + (t.prefix || '') + '</code></td>' +
           '<td>' + fmt(t.created_at) + '</td>' +
           '<td>' + fmt(t.last_used_at) + '</td>' +

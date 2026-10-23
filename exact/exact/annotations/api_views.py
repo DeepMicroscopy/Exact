@@ -6,7 +6,7 @@ from rest_framework import viewsets, permissions
 from rest_framework import status
 from rest_framework.decorators import action
 from django.shortcuts import get_object_or_404
-from exact.users.scope import scope_queryset, check_image_set
+from exact.users.scope import scope_queryset, check_team
 from rest_framework.response import Response
 from django.db.models import Q, F
 from . import models
@@ -87,9 +87,9 @@ class AnnotationViewSet(viewsets.ModelViewSet):
         user = self.request.user
         deleted = self.request.query_params.get('deleted')
         if deleted is not None:
-            return scope_queryset(self.request, models.Annotation.objects.filter(image__image_set__team__in=user.team_set.all()), 'image__image_set').select_related('annotation_type', 'image', 'user', 'last_editor').filter(deleted=deleted).order_by('id')
+            return scope_queryset(self.request, models.Annotation.objects.filter(image__image_set__team__in=user.team_set.all()), 'image__image_set__team').select_related('annotation_type', 'image', 'user', 'last_editor').filter(deleted=deleted).order_by('id')
         else:
-            return  scope_queryset(self.request, models.Annotation.objects.filter(image__image_set__team__in=user.team_set.all()), 'image__image_set').select_related('annotation_type', 'image', 'user', 'last_editor').order_by('id')
+            return  scope_queryset(self.request, models.Annotation.objects.filter(image__image_set__team__in=user.team_set.all()), 'image__image_set__team').select_related('annotation_type', 'image', 'user', 'last_editor').order_by('id')
 
 
     @action(methods=['get'], detail=False)
@@ -103,7 +103,7 @@ class AnnotationViewSet(viewsets.ModelViewSet):
 
         image_set = request.query_params.get("image_set", None)
         image_set = get_object_or_404(ImageSet, id=image_set)
-        check_image_set(request, image_set.id)
+        check_team(request, image_set.team_id)
 
         filter_set = self.get_queryset().filter(image__image_set=image_set, deleted=False, annotation_type=annotation_type).filter(~Q(image__image_type=Image.ImageSourceTypes.SERVER_GENERATED)) 
         if image_set.collaboration_type == ImageSet.CollaborationTypes.COMPETITIVE:
@@ -289,7 +289,7 @@ class AnnotationVersionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return  scope_queryset(self.request, models.AnnotationVersion.objects.filter(image__image_set__team__in=user.team_set.all()), 'image__image_set').select_related('annotation', 'image', 'annotation_type', 'version').order_by('id')
+        return  scope_queryset(self.request, models.AnnotationVersion.objects.filter(image__image_set__team__in=user.team_set.all()), 'image__image_set__team').select_related('annotation', 'image', 'annotation_type', 'version').order_by('id')
 
     def list(self, request, *args, **kwargs):
         if "api" in request.META['PATH_INFO']:
@@ -410,13 +410,13 @@ class AnnotationMediaFileViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return  scope_queryset(self.request, models.AnnotationMediaFile.objects.filter(annotation__image__image_set__team__in=user.team_set.all()), 'annotation__image__image_set').select_related('annotation').order_by('id')
+        return  scope_queryset(self.request, models.AnnotationMediaFile.objects.filter(annotation__image__image_set__team__in=user.team_set.all()), 'annotation__image__image_set__team').select_related('annotation').order_by('id')
 
     def create(self, request):
         media_file_type = int(request.POST.get('media_file_type', 0))
         annotation_id = int(request.POST.get('annotation', 0))        
         annotation = get_object_or_404(models.Annotation, id=annotation_id)
-        check_image_set(request, annotation.image.image_set_id)
+        check_team(request, annotation.image.image_set.team_id)
 
         media_files = []
         for f in list(request.FILES.values()):
@@ -497,7 +497,7 @@ class VerificationViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return  scope_queryset(self.request, models.Verification.objects.filter(annotation__image__image_set__team__in=user.team_set.all()), 'annotation__image__image_set').select_related('annotation', 'user').order_by('id')
+        return  scope_queryset(self.request, models.Verification.objects.filter(annotation__image__image_set__team__in=user.team_set.all()), 'annotation__image__image_set__team').select_related('annotation', 'user').order_by('id')
 
 
 class LogImageActionFilterSet(django_filters.FilterSet):
@@ -527,4 +527,4 @@ class LogImageActionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return  scope_queryset(self.request, models.LogImageAction.objects.filter(image__image_set__team__in=user.team_set.all()), 'image__image_set').select_related('image', 'user')  
+        return  scope_queryset(self.request, models.LogImageAction.objects.filter(image__image_set__team__in=user.team_set.all()), 'image__image_set__team').select_related('image', 'user')  
