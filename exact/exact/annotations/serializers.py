@@ -45,6 +45,7 @@ class AnnotationTypeSerializer(FlexFieldsModelSerializer):
             'multi_frame',
             'default_width',
             'default_height',
+            'size_unit',
             'sort_order',
             'closed',
             'area_hit_test',
@@ -58,6 +59,16 @@ class AnnotationTypeSerializer(FlexFieldsModelSerializer):
 class AnnotationSerializer(FlexFieldsModelSerializer):
     verified_by_user = SerializerMethodField('is_verified_by_user')
     is_verified = SerializerMethodField('is_verified')
+
+    def validate(self, attrs):
+        new_type = attrs.get('annotation_type')
+        if self.instance is not None and new_type is not None \
+                and new_type.id != self.instance.annotation_type_id:
+            if not AnnotationType.can_convert(self.instance.annotation_type.vector_type, new_type.vector_type):
+                raise serializers.ValidationError(
+                    {'annotation_type': 'Annotations can only be changed to an annotation type with the same '
+                                        'vector type (or between bounding box and fixed size bounding box).'})
+        return super().validate(attrs)
 
     def is_verified(self, annotation):
 

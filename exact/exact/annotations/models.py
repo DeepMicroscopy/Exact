@@ -455,6 +455,17 @@ class AnnotationType(models.Model):
         GLOBAL = 7 #Annotations without a shape that are valid for the whole image
         SEGMENTATION = 8  # Pixel-level mask stored as compressed tiles
 
+    class SIZE_UNIT():
+        PIXELS = 'px'
+        MILLIMETERS = 'mm'
+        MICRONS = 'um'
+
+    SIZE_UNIT_CHOICES = (
+        (SIZE_UNIT.PIXELS, 'px'),
+        (SIZE_UNIT.MILLIMETERS, 'mm'),
+        (SIZE_UNIT.MICRONS, 'µm'),
+    )
+
     name = models.CharField(max_length=50)
     active = models.BooleanField(default=True)
     vector_type = models.IntegerField(default=VECTOR_TYPE.BOUNDING_BOX)
@@ -463,8 +474,12 @@ class AnnotationType(models.Model):
     enable_concealed = models.BooleanField(default=True)
     enable_blurred = models.BooleanField(default=True)
     color_code = models.CharField(default="#CC4444", max_length=7, unique=False)
-    default_width = models.IntegerField(default=50, unique=False)
-    default_height = models.IntegerField(default=50, unique=False)
+    # Default size of new objects (bounding box / fixed size bounding box / point), in `size_unit`.
+    # Annotation vectors are always stored in pixels; for mm/um the pixel size is derived from the
+    # image resolution (Image.mpp) when the image is opened, see size_in_pixels().
+    default_width = models.FloatField(default=50, unique=False)
+    default_height = models.FloatField(default=50, unique=False)
+    size_unit = models.CharField(max_length=2, choices=SIZE_UNIT_CHOICES, default=SIZE_UNIT.PIXELS)
     sort_order = models.IntegerField(default=0, unique=False)
     multi_frame = models.BooleanField(default=False)
 
@@ -497,6 +512,43 @@ class AnnotationType(models.Model):
             return 'Fixed Size Bounding Box'
         if vector_type is AnnotationType.VECTOR_TYPE.SEGMENTATION:
             return 'Segmentation'
+
+    def unit_to_pixel_factor(self, mpp):
+        """
+        Pixels per `size_unit` for an image with the given resolution (microns per pixel).
+        Returns None if the factor can not be determined (non-pixel unit and unknown mpp).
+        """
+        if self.size_unit == AnnotationType.SIZE_UNIT.PIXELS:
+            return 1.0
+        if not mpp or mpp <= 0:
+            return None
+        if self.size_unit == AnnotationType.SIZE_UNIT.MICRONS:
+            return 1.0 / mpp
+        if self.size_unit == AnnotationType.SIZE_UNIT.MILLIMETERS:
+            return 1000.0 / mpp
+        return None
+
+    def size_in_pixels(self, mpp):
+        """
+        Default (width, height) in pixels for an image with the given mpp.
+        Falls back to interpreting the values as pixels if the unit can not be resolved.
+        """
+        factor = self.unit_to_pixel_factor(mpp)
+        if factor is None:
+            factor = 1.0
+        return self.default_width * factor, self.default_height * factor
+
+    @staticmethod
+    def can_convert(source_vector_type, target_vector_type):
+        """
+        Annotations can only be changed to an annotation type with the same vector type,
+        or between bounding box and fixed size bounding box.
+        """
+        box_types = (AnnotationType.VECTOR_TYPE.BOUNDING_BOX,
+                     AnnotationType.VECTOR_TYPE.FIXED_SIZE_BOUNDING_BOX)
+        if source_vector_type == target_vector_type:
+            return True
+        return source_vector_type in box_types and target_vector_type in box_types
 
     @property
     def vector_type_display(self):

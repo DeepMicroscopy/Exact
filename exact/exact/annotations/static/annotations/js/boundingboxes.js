@@ -7,6 +7,9 @@ class BoundingBoxes {
 
         this.overlay = this.viewer.paperjsOverlay();
         this.group = new paper.Group();
+        // overlay with the size of the selected bounding box, kept apart from the annotations
+        // (this.group) so it never takes part in hit tests
+        this.labelGroup = new paper.Group();
 
         this.hitOptionsObject = {
             segments: false,
@@ -61,6 +64,9 @@ class BoundingBoxes {
         this.imageid = imageid;
         this.image_width = imageSize["width"];
         this.image_hight = imageSize["height"];
+        // image resolution in microns per pixel (0 if unknown); used to resolve mm/um based default sizes
+        this.mpp = parseFloat(imageSize["mpp"]) || 0;
+        this.unresolvedSizeWarned = {};
         this.strokeWidth = 3;
         this.polyStrokeWidth = 1;
 
@@ -121,6 +127,63 @@ class BoundingBoxes {
         } else if (this.current_item.item !== item.item) {
             this.current_item.item = item.item;
         }
+
+        this.updateSizeLabel();
+    }
+
+    /**
+     * Formats an area given in square microns, using mm² for larger and µm² for much smaller areas.
+     */
+    static formatArea(area_um2) {
+        if (area_um2 < 0.01 * 1e6)  // below 0.01 mm² (100 µm x 100 µm)
+            return Math.round(area_um2).toLocaleString('en-US') + " µm²";
+
+        var mm2 = area_um2 / 1e6;
+        var digits = mm2 < 1 ? 3 : (mm2 < 100 ? 2 : 1);
+        return mm2.toFixed(digits) + " mm²";
+    }
+
+    /**
+     * Shows the area of the selected bounding box below it, in a constant on-screen size.
+     * Without a known image resolution the area is shown in pixels.
+     */
+    updateSizeLabel() {
+        if (this.labelGroup === undefined)
+            return;
+        this.labelGroup.removeChildren();
+
+        var item = this.current_item !== undefined ? this.current_item.item : undefined;
+        if (item === undefined || !["rect", "fixed_rect"].includes(item.data.type))
+            return;
+
+        var bounds = item.bounds;
+        var text;
+        if (this.mpp > 0)
+            text = BoundingBoxes.formatArea(bounds.width * bounds.height * this.mpp * this.mpp);
+        else
+            text = Math.round(bounds.width * bounds.height).toLocaleString('en-US') + " px²";
+
+        // screen pixels per image pixel -> keep the label at a constant size on screen
+        var screenPerImagePx = this.viewer.viewport.viewportToImageZoom(this.viewer.viewport.getZoom(true));
+        var unit = 1 / (screenPerImagePx > 0 ? screenPerImagePx : 1);
+
+        var label = new paper.PointText({
+            point: [bounds.center.x, bounds.bottom + 18 * unit],
+            content: text,
+            justification: 'center',
+            fillColor: 'white',
+            fontSize: 13 * unit,
+            fontWeight: 'bold'
+        });
+        var padding = 4 * unit;
+        var background = new paper.Path.Rectangle({
+            rectangle: label.bounds.expand(2 * padding, padding),
+            radius: 3 * unit,
+            fillColor: new paper.Color(0, 0, 0, 0.7)
+        });
+        label.bringToFront();
+        this.labelGroup.addChildren([background, label]);
+        this.labelGroup.bringToFront();
     }
 
     clickPolyOperation(event) {
@@ -719,6 +782,69 @@ class BoundingBoxes {
         return vector;
     }
 
+    /**
+     * Pixels per size unit of the annotation type for the opened image.
+     * Returns undefined if the unit can not be resolved (mm/um without a known image resolution).
+     */
+    getUnitToPixelFactor(annotation_type) {
+        switch (annotation_type.size_unit) {
+            case 'um':
+                return this.mpp > 0 ? 1 / this.mpp : undefined;
+            case 'mm':
+                return this.mpp > 0 ? 1000 / this.mpp : undefined;
+            default:
+                return 1;
+        }
+    }
+
+    /**
+     * Default size of new objects of this annotation type in image pixels. Annotation vectors are always
+     * stored in pixels, so mm/um sizes are converted using the resolution (mpp) of the opened image.
+     */
+    getDefaultSizePx(annotation_type) {
+        var factor = this.getUnitToPixelFactor(annotation_type);
+        if (factor === undefined) {
+            // fall back to interpreting the values as pixels and tell the user once
+            if (!this.unresolvedSizeWarned[annotation_type.id]) {
+                this.unresolvedSizeWarned[annotation_type.id] = true;
+                $.notify("The image has no resolution (mpp). The default size of '" + annotation_type.name +
+                    "' is interpreted as pixels.", { position: "top center", className: "warn" });
+            }
+            factor = 1;
+        }
+        return new paper.Size(Math.max(1, Math.round(annotation_type.default_width * factor)),
+            Math.max(1, Math.round(annotation_type.default_height * factor)));
+    }
+
+    /**
+     * Checks whether changing the annotation to the given type changes its size (only the case when
+     * converting to a fixed size bounding box of a different size). Returns undefined if the size is not
+     * affected, otherwise the old and new bounds (the center of the object is kept).
+     */
+    getConversionPreview(unique_identifier, annotation_type) {
+        var item = this.getItemFromUUID(unique_identifier);
+        if (item === undefined || annotation_type.vector_type !== 6)
+            return undefined;
+
+        var old_bounds = item.bounds.clone();
+        var size = this.getDefaultSizePx(annotation_type);
+        if (Math.abs(old_bounds.width - size.width) < 1 && Math.abs(old_bounds.height - size.height) < 1)
+            return undefined;
+
+        var center = old_bounds.center;
+        var x = Math.round(center.x - size.width / 2);
+        var y = Math.round(center.y - size.height / 2);
+        // keep the object inside the image
+        x = Math.min(Math.max(0, x), Math.max(0, this.image_width - size.width));
+        y = Math.min(Math.max(0, y), Math.max(0, this.image_hight - size.height));
+
+        return {
+            old_bounds: old_bounds,
+            new_bounds: new paper.Rectangle(new paper.Point(x, y), size),
+            mpp: this.mpp
+        };
+    }
+
     initNewAnnotation(event, selected_annotation_type) {
 
         // Convert pixel to viewport coordinates
@@ -732,7 +858,7 @@ class BoundingBoxes {
         switch (selected_annotation_type.vector_type) {
             case 2:  // POINT or Elipse
                 var rectangle = new paper.Rectangle(imagePoint,
-                    new paper.Size(selected_annotation_type.default_width, selected_annotation_type.default_height));
+                    this.getDefaultSizePx(selected_annotation_type));
                 canvasObject = new paper.Shape.Ellipse(rectangle);
                 canvasObject.position = imagePoint;
                 canvasObject.data.type = "circle";
@@ -760,7 +886,7 @@ class BoundingBoxes {
 
             case 1:  // Rect
                 canvasObject = new paper.Path.Rectangle(imagePoint,
-                    new paper.Size(selected_annotation_type.default_width, selected_annotation_type.default_height));
+                    this.getDefaultSizePx(selected_annotation_type));
                 canvasObject.position = imagePoint;
                 canvasObject.data.type = "rect";
 
@@ -768,7 +894,7 @@ class BoundingBoxes {
             case 6:
             default:
                 canvasObject = new paper.Path.Rectangle(imagePoint,
-                    new paper.Size(selected_annotation_type.default_width, selected_annotation_type.default_height));
+                    this.getDefaultSizePx(selected_annotation_type));
                 canvasObject.position = imagePoint;
                 canvasObject.data.type = "fixed_rect";
 
@@ -1289,6 +1415,7 @@ class BoundingBoxes {
         }
 
         this.group.children.forEach(x => { x.strokeWidth = this.strokeWidth });
+        this.updateSizeLabel();
     }
 
     updateOpacity(opacity) {
@@ -1449,22 +1576,26 @@ class BoundingBoxes {
         return undefined
     }
 
-    updateAnnotationType(unique_identifier, annotation_type, set_as_selected = true) {
+    // bounds: optional geometry of the new object (e.g. the resized box of a fixed size annotation type
+    // or the original geometry when undoing); defaults to the bounds of the current object.
+    updateAnnotationType(unique_identifier, annotation_type, set_as_selected = true, bounds = undefined) {
         var item = this.getItemFromUUID(unique_identifier);
+        if (bounds === undefined && item !== undefined)
+            bounds = item.bounds;
 
         if (item !== undefined) {
 
             // TODO: Zeiche annotation mit neuem vector typ
             switch (annotation_type.vector_type) {
                 case 2:  // POINT or Elipse
-                    canvasObject = new paper.Shape.Ellipse(item.bounds);
+                    canvasObject = new paper.Shape.Ellipse(bounds);
                     canvasObject.data.type = "circle";
 
                     break;
 
                 case 3:  // Line
-                    canvasObject = new paper.Path(item.bounds.topLeft);
-                    canvasObject.add(item.bounds.bottomRight);
+                    canvasObject = new paper.Path(bounds.topLeft);
+                    canvasObject.add(bounds.bottomRight);
                     canvasObject.data.type = "line";
 
                     break;
@@ -1481,12 +1612,12 @@ class BoundingBoxes {
                     break;
 
                 case 1:  // Rect
-                    canvasObject = new paper.Path.Rectangle(item.bounds);
+                    canvasObject = new paper.Path.Rectangle(bounds);
                     canvasObject.data.type = "rect";
 
                     break;
                 case 6:
-                    canvasObject = new paper.Path.Rectangle(item.bounds);
+                    canvasObject = new paper.Path.Rectangle(bounds);
                     canvasObject.data.type = "fixed_rect";
 
                     break;
@@ -1529,6 +1660,14 @@ class BoundingBoxes {
     }
 
     handleMouseDrag(event) {
+        try {
+            this._handleMouseDrag(event);
+        } finally {
+            this.updateSizeLabel();
+        }
+    }
+
+    _handleMouseDrag(event) {
         if (this.polyBrush !== undefined)
             this.polyBrush.remove()
 

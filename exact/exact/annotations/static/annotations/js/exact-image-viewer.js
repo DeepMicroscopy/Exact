@@ -15,6 +15,18 @@ function value_formatter(labels, value)
 }
 
 class EXACTViewer {
+    static formatPhysicalSize(width_px, height_px, mpp) {
+        if (!(mpp > 0))
+            return "";
+        var w = width_px * mpp, h = height_px * mpp;
+        var fmt = (v) => v >= 1000 ? (v / 1000).toFixed(2) + " mm" : v.toFixed(1) + " µm";
+        return " (" + fmt(w) + " × " + fmt(h) + ")";
+    }
+
+    static isResizeDialogOpen() {
+        return $('#exact-resize-modal').length > 0;
+    }
+
     constructor(server_url, options, imageInformation, gHeaders, user_id) {
 
         this.imageId = imageInformation['id'];
@@ -648,6 +660,10 @@ class EXACTViewer {
     handleKeyUp(event) {
 
         if (["textarea", "text", "number"].includes(event.target.type))
+            return;
+
+        // no shortcuts while the user has to confirm a resize
+        if (EXACTViewer.isResizeDialogOpen())
             return;
 
         
@@ -1731,7 +1747,13 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
 
                     if (annotation.annotation_type.id !== newType.id) {
                         // check if annotation type can be converted and save
-                        if (tool.checkIfAnnotationTypeChangeIsValid(annotation.annotation_type.vector_type,
+                        if (tool.getConversionPreview(unique_identifier, newType) !== undefined) {
+                            // the type change would resize the object, which needs a confirmation by the user
+                            $.notify("Objects that would be resized by the new annotation type were not changed. " +
+                                "Change their type individually to confirm the new size.",
+                                { position: "top center", className: "warn" });
+                        }
+                        else if (tool.checkIfAnnotationTypeChangeIsValid(annotation.annotation_type.vector_type,
                             newType.vector_type)) 
                         {
                             annotation.annotation_type = newType;
@@ -1767,6 +1789,9 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
         super.handleKeyUp(event);
 
         if (["textarea", "text", "number"].includes(event.target.type))
+            return;
+
+        if (EXACTViewer.isResizeDialogOpen())
             return;
 
         switch (event.keyCode) {
@@ -2489,19 +2514,17 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 if (this.tool.checkIfAnnotationTypeChangeIsValid(
                     annotation.annotation_type.vector_type, newType.vector_type)) 
                 {
-                    var action = {
-                        type: "Label Changed",
-                        uuid: annotation.unique_identifier,
-                        old_type: annotation.annotation_type
+                    // converting to a fixed size annotation type changes the object size:
+                    // only do that after the user has seen and confirmed the new size
+                    var preview = this.tool.getConversionPreview(annotation.unique_identifier, newType);
+                    if (preview === undefined) {
+                        this.applyAnnotationTypeChange(annotation, newType, undefined);
+                    } else {
+                        this.confirmResizeOnTypeChange(annotation, newType, preview).then((confirmed) => {
+                            if (confirmed)
+                                this.applyAnnotationTypeChange(annotation, newType, preview);
+                        });
                     }
-                    this.appendAction([action])
-
-                    annotation.annotation_type = newType;
-                    this.tool.resetSelection();
-                    this.tool.updateAnnotationType(annotation.unique_identifier, newType, false);
-                    this.exact_sync.saveAnnotation(annotation);
-
-                    this.setCurrentAnnotationType(newType);
                 } 
                 else 
                 {
@@ -2515,6 +2538,79 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
             let annotation_type = this.annotationTypes[new_annoation_type_id];
             this.setCurrentAnnotationType(annotation_type);
         }
+    }
+
+    applyAnnotationTypeChange(annotation, newType, preview) {
+        var action = {
+            type: "Label Changed",
+            uuid: annotation.unique_identifier,
+            old_type: annotation.annotation_type
+        }
+        if (preview !== undefined)
+            action.old_bounds = preview.old_bounds;
+        this.appendAction([action])
+
+        annotation.annotation_type = newType;
+        this.tool.resetSelection();
+        this.tool.updateAnnotationType(annotation.unique_identifier, newType, false,
+            preview !== undefined ? preview.new_bounds : undefined);
+        annotation.vector = this.getAnnotationVector(annotation.unique_identifier);
+        this.exact_sync.saveAnnotation(annotation);
+
+        this.setCurrentAnnotationType(newType);
+    }
+
+    /**
+     * Shows the old and new size of an object to the user and resolves to true only if the user
+     * explicitly confirms the resize.
+     */
+    confirmResizeOnTypeChange(annotation, newType, preview) {
+        const ob = preview.old_bounds, nb = preview.new_bounds;
+
+        // draw both boxes to scale around their common center
+        const W = 320, H = 180, pad = 14;
+        const scale = Math.min((W - 2 * pad) / Math.max(ob.width, nb.width),
+            (H - 2 * pad) / Math.max(ob.height, nb.height));
+        const rect = (b, attrs) => '<rect x="' + (W / 2 - b.width * scale / 2) + '" y="' + (H / 2 - b.height * scale / 2) +
+            '" width="' + (b.width * scale) + '" height="' + (b.height * scale) + '" fill="none" ' + attrs + '/>';
+        const svg = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" style="max-width:100%;background:#f4f4f4;border:1px solid #ddd">' +
+            rect(ob, 'stroke="#666" stroke-width="2" stroke-dasharray="6 4"') +
+            rect(nb, 'stroke="' + $('<div>').text(newType.color_code).html() + '" stroke-width="3"') + '</svg>';
+
+        const fmt = (b) => Math.round(b.width) + ' × ' + Math.round(b.height) + ' px' +
+            EXACTViewer.formatPhysicalSize(b.width, b.height, preview.mpp);
+        const esc = (t) => $('<div>').text(t).html();
+
+        $('#exact-resize-modal').remove();
+        $('body').append(
+            '<div class="modal fade" id="exact-resize-modal" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">' +
+            '<div class="modal-dialog" role="document"><div class="modal-content">' +
+            '<div class="modal-header"><h5 class="modal-title">Changing the type will resize the object</h5></div>' +
+            '<div class="modal-body">' +
+            '<p>"' + esc(newType.name) + '" is a fixed size annotation type. Changing the type of this object resizes it ' +
+            '(its center is kept):</p>' +
+            '<p><span style="color:#666">- - -</span> current: <b>' + fmt(ob) + '</b><br>' +
+            '<span style="color:' + esc(newType.color_code) + '">▬▬▬</span> new: <b>' + fmt(nb) + '</b></p>' +
+            '<div class="text-center">' + svg + '</div>' +
+            '</div>' +
+            '<div class="modal-footer">' +
+            '<button type="button" class="btn btn-secondary" data-action="cancel">Cancel</button>' +
+            '<button type="button" class="btn btn-primary" data-action="ok">Resize and change type</button>' +
+            '</div></div></div></div>');
+
+        return new Promise((resolve) => {
+            const $modal = $('#exact-resize-modal');
+            let result = false;
+            $modal.on('click', 'button[data-action]', function () {
+                result = $(this).data('action') === 'ok';
+                $modal.modal('hide');
+            });
+            $modal.on('hidden.bs.modal', function () {
+                $modal.remove();
+                resolve(result);
+            });
+            $modal.modal('show');
+        });
     }
 
     updateStrokeWidth(event) {
@@ -2580,10 +2676,13 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 }
                 else if(action.type == "Label Changed")
                 {
-                    this.tool.updateAnnotationType(action.uuid, action.old_type, false)
+                    // old_bounds is only set if the type change resized the object
+                    this.tool.updateAnnotationType(action.uuid, action.old_type, false, action.old_bounds)
 
                     var anno = this.exact_sync.getAnnotation(action.uuid)
                     anno.annotation_type = action.old_type
+                    if (action.old_bounds !== undefined)
+                        anno.vector = this.getAnnotationVector(action.uuid)
                     this.exact_sync.saveAnnotation(anno)
                 }
             })
@@ -2636,6 +2735,9 @@ class EXACTViewerLocalAnnotationsFrames extends EXACTViewerLocalAnnotations {
         super.handleKeyUp(event);
 
         if (["textarea", "text", "number"].includes(event.target.type))
+            return;
+
+        if (EXACTViewer.isResizeDialogOpen())
             return;
 
         switch (event.keyCode) {
@@ -2814,6 +2916,9 @@ class EXACTViewerGlobalAnnotationsFrame extends EXACTViewer {
         super.handleKeyUp(event);
 
         if (["textarea", "text", "number"].includes(event.target.type))
+            return;
+
+        if (EXACTViewer.isResizeDialogOpen())
             return;
 
         switch (event.keyCode) {
@@ -3002,6 +3107,9 @@ class EXACTViewerGlobalAnnotations extends EXACTViewer {
         if (["textarea", "text", "number"].includes(event.target.type))
             return;
 
+        if (EXACTViewer.isResizeDialogOpen())
+            return;
+
         switch (event.keyCode) {
 
             case 49: //1
@@ -3158,6 +3266,9 @@ class EXACTViewerGlobalLocalAnnotations extends EXACTViewerLocalAnnotations {
         if (["textarea", "text", "number"].includes(event.target.type))
             return;
 
+        if (EXACTViewer.isResizeDialogOpen())
+            return;
+
         switch (event.keyCode) {
 
             case 49: //1
@@ -3281,6 +3392,9 @@ class EXACTViewerGlobalLocalAnnotationsFrames extends EXACTViewerLocalAnnotation
         super.handleKeyUp(event);
 
         if (["textarea", "text", "number"].includes(event.target.type))
+            return;
+
+        if (EXACTViewer.isResizeDialogOpen())
             return;
 
         switch (event.keyCode) {

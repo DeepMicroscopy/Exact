@@ -404,6 +404,10 @@
               <label>{{ at_create_form.default_height.label }}</label>
               {% render_field at_create_form.default_height class+='form-control' %}
             </div>
+            <div class="col form-group">
+              <label>{{ at_create_form.size_unit.label }}</label>
+              {% render_field at_create_form.size_unit class+='form-control' %}
+            </div>
           </div>
           <div class="form-row">
             <div class="col form-group form-check ml-2">
@@ -485,6 +489,10 @@
             <div class="col form-group">
               <label>{{ at_edit_form.default_height.label }}</label>
               {% render_field at_edit_form.default_height class+='form-control' %}
+            </div>
+            <div class="col form-group">
+              <label>{{ at_edit_form.size_unit.label }}</label>
+              {% render_field at_edit_form.size_unit class+='form-control' %}
             </div>
           </div>
           <div class="form-row">

@@ -178,9 +178,14 @@ class AnnotationViewSet(viewsets.ModelViewSet):
             existing_anno = models.Annotation.objects.filter(image=request.data['image'], unique_identifier=request.data['unique_identifier']).first()
             if existing_anno is not None:
                 # update values
+                new_annotation_type = AnnotationType.objects.get(pk=request.data["annotation_type"])
+                if new_annotation_type.id != existing_anno.annotation_type_id and not AnnotationType.can_convert(
+                        existing_anno.annotation_type.vector_type, new_annotation_type.vector_type):
+                    return Response({'annotation_type': 'Annotation type change not allowed for this vector type.'},
+                                    status=status.HTTP_400_BAD_REQUEST)
                 existing_anno.vector = request.data['vector']
                 existing_anno.annotation_type_id = request.data['annotation_type']
-                existing_anno.annotation_type = AnnotationType.objects.get(pk=request.data["annotation_type"])
+                existing_anno.annotation_type = new_annotation_type
                 existing_anno.deleted = request.data['deleted']
 
                 if "time" in request.data:

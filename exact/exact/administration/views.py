@@ -498,6 +498,7 @@ def create_product(request):
                             multi_frame=annoType.multi_frame,
                             default_height=annoType.default_height,
                             default_width=annoType.default_width,
+                            size_unit=annoType.size_unit,
                             closed=annoType.closed,
                             area_hit_test=annoType.area_hit_test,
                             product=product,
@@ -773,6 +774,7 @@ def api_create_annotation_type(request) -> Response:
          enable_blurred = request.data.get('enable_blurred', False)
          default_width = request.data.get('default_width', 50)
          default_height = request.data.get('default_height', 50)
+         size_unit = request.data.get('size_unit', 'px')
          product_id = int(request.data.get('product_id',1))
          closed = request.data.get('closed', False)
          area_hit_test = request.data.get('area_hit_test', True)
@@ -796,6 +798,7 @@ def api_create_annotation_type(request) -> Response:
             enable_blurred=enable_blurred,
             default_height=default_height,
             default_width=default_width,
+            size_unit=size_unit,
             closed=closed,
             multi_frame=multi_frame,
             area_hit_test=area_hit_test,
@@ -858,6 +861,8 @@ def edit_annotation_type(request, annotation_type_id):
             selected_annotation_type.active = 'active' in request.POST
             selected_annotation_type.default_width = request.POST['default_width']
             selected_annotation_type.default_height = request.POST['default_height']
+            if request.POST.get('size_unit') in dict(AnnotationType.SIZE_UNIT_CHOICES):
+                selected_annotation_type.size_unit = request.POST['size_unit']
             selected_annotation_type.color_code = request.POST['color_code']
             selected_annotation_type.sort_order = request.POST['sort_order']
             selected_annotation_type.closed = 'closed' in request.POST

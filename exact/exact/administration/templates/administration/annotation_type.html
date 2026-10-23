@@ -157,6 +157,18 @@
                                 </tr>
                                 <tr>
                                     <td>
+                                        <label for="id_size_unit">{{ edit_form.size_unit.label }}
+                                            <span data-toggle="tooltip" data-placement="right"
+                                                title="Unit of the default width/height. For mm and µm the size in pixels is derived from the image resolution (mpp) when an image is opened."
+                                                class="fa fa-question"></span>
+                                        </label>
+                                    </td>
+                                    <td>
+                                        {% render_field edit_form.size_unit class+='form-control' %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
                                         <label for="id_name">{{ edit_form.sort_order.label }}
                                             <span data-toggle="tooltip" data-placement="right"
                                             title="Specifies the order in which the annotations are displayed to the user starting from zero. "
@@ -352,6 +364,18 @@
                             </td>
                             <td>
                                 {% render_field create_form.default_height class+='form-control' %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <label for="id_size_unit">{{ create_form.size_unit.label }}
+                                    <span data-toggle="tooltip" data-placement="right"
+                                        title="Unit of the default width/height. For mm and µm the size in pixels is derived from the image resolution (mpp) when an image is opened."
+                                        class="fa fa-question"></span>
+                                </label>
+                            </td>
+                            <td>
+                                {% render_field create_form.size_unit class+='form-control' %}
                             </td>
                         </tr>
                         <tr>

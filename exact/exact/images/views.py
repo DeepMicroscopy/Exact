@@ -1334,8 +1334,12 @@ def create_annotation_map(request, imageset_id):
         x_images = math.ceil(math.sqrt(annotation_count))
         y_images = math.ceil(math.sqrt(annotation_count))
 
-        patch_width = int(annotation_type.default_width + annotation_type.default_width * context_offset)
-        patch_height = int(annotation_type.default_height + annotation_type.default_height * context_offset)
+        # default size is given in annotation_type.size_unit; use the resolution of the first image
+        # with a known mpp to get the patch size in pixels
+        first_mpp = next((mpp for mpp in annotations.values_list('image__mpp', flat=True).distinct() if mpp), 0)
+        default_width_px, default_height_px = annotation_type.size_in_pixels(first_mpp)
+        patch_width = max(1, int(default_width_px + default_width_px * context_offset))
+        patch_height = max(1, int(default_height_px + default_height_px * context_offset))
 
         x_total_size = int(x_images * patch_width)
         y_total_size = int(y_images * patch_height)
