@@ -1592,7 +1592,8 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                     {
                         // an object or segment was moved
                         var anno = exact_sync.getAnnotation(tool.selection.item.name)
-                        anno.vector = tool.getAnnotationVector(tool.selection.item.name)
+                        // use the vector of the viewer, not of the tool: the viewers for z-stacks/frames add the frame
+                        anno.vector = event.userData.getAnnotationVector(tool.selection.item.name)
                         exact_sync.saveAnnotation(anno)
 
                         event.userData.appendAction([event.userData.currentAction])
@@ -1726,6 +1727,8 @@ class EXACTViewerLocalAnnotations extends EXACTViewer {
                 if (Number.isInteger(newAnno.annotation_type)) {
                     newAnno.annotation_type = exact_sync.annotationTypes[newAnno.annotation_type]
                 }
+                // the tool does not know the frame, the viewer adds it for z-stacks/frames
+                newAnno.vector = event.userData.getAnnotationVector(newAnno.unique_identifier)
                 exact_sync.addAnnotationToCache(newAnno)
                 exact_sync.saveAnnotation(newAnno)
 
