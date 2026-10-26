@@ -1959,6 +1959,7 @@ def sanitize_filename(filename):
 @authentication_classes([BasicAuthentication])
 @permission_classes([IsAuthenticated])
 @api_view(['GET'])
+@forbid_read_only_tokens  # creates a new image although it is a GET request
 def crop_from_image(request, image_id,x,y,z, w,h, target_imageset_id):
     image = get_object_or_404(Image, id=image_id)
     imageset = get_object_or_404(ImageSet, id=target_imageset_id)
@@ -1991,7 +1992,7 @@ def crop_from_image(request, image_id,x,y,z, w,h, target_imageset_id):
     if vi.bands == 4:
         vi = vi[:3]  # drop alpha channel
 
-    res = 1000 / image.mpp
+    res = 1000 / image.mpp if image.mpp > 0 else 1
 
 #    print('MPP was:',image.mpp)
     vi.tiffsave(str(path), tile=True, xres=res, yres=res, resunit='inch', compression='jpeg', Q=90, bigtiff=True, pyramid=True, tile_width=256, tile_height=256, properties=True)
@@ -2009,7 +2010,12 @@ def crop_from_image(request, image_id,x,y,z, w,h, target_imageset_id):
         mpp=image.mpp,
         objectivePower=image.objectivePower,
         image_set=imageset,
-        checksum=fchecksum)
+        checksum=fchecksum,
+        # remember where the crop comes from
+        crop_source=image,
+        crop_x=x,
+        crop_y=y,
+        crop_frame=z)
     
     newimage.save()
 

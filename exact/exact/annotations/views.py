@@ -2,6 +2,7 @@ import datetime
 import io
 import time
 import pytz
+from urllib.parse import urlencode
 from timeit import default_timer as timer
 
 from django.conf import settings
@@ -84,6 +85,23 @@ def annotate(request, image_id):
             if hasattr(cache, "delete_pattern"):
                 cache.set(f"{selected_image.image_set.id}_contains_asthma", asthma, 5*60)
 
+        # crops link to the image they were taken from (top right of the page), zooming to the cropped region
+        source_link = None
+        source_image = selected_image.crop_source
+        if source_image is not None and source_image.image_set.has_perm('read', request.user):
+            parameters = {}
+            if selected_image.crop_frame is not None:
+                parameters['frame'] = selected_image.crop_frame
+            region = selected_image.crop_region
+            if region is not None:
+                parameters.update(zip(('xmin', 'ymin', 'xmax', 'ymax'), region))
+            source_link = {
+                'url': reverse('annotations:annotate', args=(source_image.id,))
+                       + ('?' + urlencode(parameters) if parameters else ''),
+                'name': source_image.name,
+                'image_set': source_image.image_set.name,
+            }
+
         _fe = request.user.prefs.frontend if hasattr(request.user, 'prefs') and hasattr(request.user.prefs, 'frontend') else 1
         if _fe == 3:
             template = 'annotations/annotate_v3.html'
@@ -95,6 +113,7 @@ def annotate(request, image_id):
         response = render(request, template, {
             'team': selected_image.image_set.team,
             'selected_image': selected_image,
+            'source_link': source_link,
             'imageset_perms': imageset_perms,
             'imageset_lock': imageset_lock,
             'set_images': set_images,

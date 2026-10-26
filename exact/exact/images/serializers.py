@@ -1,3 +1,4 @@
+from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 
 from exact.administration.serializers import ProductSerializer
@@ -26,6 +27,10 @@ class ImageSerializer(FlexFieldsModelSerializer):
             'defaultFrame',
             'image_type',
             'image_set',
+            'crop_source',
+            'crop_x',
+            'crop_y',
+            'crop_frame',
             'annotations'
         )
 
@@ -33,7 +38,19 @@ class ImageSerializer(FlexFieldsModelSerializer):
             "image_set": ('exact.images.serializers.ImageSetSerializer', {'read_only': True}),
             "annotations": ('exact.annotations.serializers.AnnotationSerializer', {'read_only': True}),
             "FrameDescriptions" : ('exact.images.serializers.FrameDescriptionSerializer', {'read_only': True, 'many':True}),
+            "crop_source": ('exact.images.serializers.ImageSerializer', {'read_only': True}),
         }
+
+    def validate_crop_source(self, crop_source):
+        """A crop can only be linked to an image the user may read (and not to itself)."""
+        if crop_source is None:
+            return crop_source
+        if self.instance is not None and crop_source.id == self.instance.id:
+            raise serializers.ValidationError('An image can not be the source of itself.')
+        request = self.context.get('request')
+        if request is not None and not crop_source.image_set.has_perm('read', request.user):
+            raise serializers.ValidationError('You do not have the permission to read the source image.')
+        return crop_source
 
 class AuxiliaryFileSerializer(FlexFieldsModelSerializer):
     class Meta:

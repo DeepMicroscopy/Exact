@@ -17,6 +17,14 @@
 
 {% endblock %}
 {% block navblock %} 
+{% if source_link %}
+<li class="nav-item">
+   <a id="source-image-link" href="{{ source_link.url }}" class="nav-link"
+      title="This image is a crop of &quot;{{ source_link.name }}&quot; ({{ source_link.image_set }}). Open the original and zoom to the cropped region.">
+      <i class="fa fa-external-link"></i> Show in original
+   </a>
+</li>
+{% endif %}
 <!--
 <li class="nav-item">
    <a href="{% url 'images:view_imageset' selected_image.image_set_id %}" class="nav-link">{{ selected_image.image_set.name }}</a>

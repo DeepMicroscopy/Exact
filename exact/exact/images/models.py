@@ -89,12 +89,29 @@ class Image(models.Model):
     
 
     image_type = models.IntegerField(choices=SOURCE_TYPES, default=ImageSourceTypes.DEFAULT)
+
+    # Set if the image is a crop of another image: the image it was taken from and the position of the crop in it,
+    # i.e. the top left corner (in pixels of the source image) and the frame the crop was taken from.
+    # The size of the crop in the source image is the size of the crop itself (width/height).
+    crop_source = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL,
+                                     related_name='crops')
+    crop_x = models.IntegerField(null=True, blank=True)
+    crop_y = models.IntegerField(null=True, blank=True)
+    crop_frame = models.IntegerField(null=True, blank=True)
+
     creator = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True, blank=True,
         on_delete=models.SET_NULL,
         related_name='uploaded_images',
     )
+
+    @property
+    def crop_region(self):
+        """Region (x1, y1, x2, y2) of the crop in its source image or None if it is unknown."""
+        if self.crop_source_id is None or self.crop_x is None or self.crop_y is None:
+            return None
+        return self.crop_x, self.crop_y, self.crop_x + self.width, self.crop_y + self.height
 
     def get_file_name(self, depth=1, frame=1): 
         if depth > 1 or self.depth > 1:
