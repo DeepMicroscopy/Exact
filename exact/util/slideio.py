@@ -65,9 +65,29 @@ class SlideIOSlide():
     def seriesInstanceUID(self) -> str:
         return ''
 
+    @staticmethod
+    def _exact_downsample(downsample):
+        """
+        The integer downsample if ``downsample`` is within 1 % of one, otherwise None.
+
+        slideio reports ``1 / scale`` for a level, and the scale is derived from the (rounded) level size, so a 16:1
+        level is reported as 16.0007. The levels themselves are exact decimation grids: a level pixel covers exactly
+        ``round(downsample)`` pixels of level 0 (reading a level at positions that are multiples of it matches level 0
+        reduced by exactly that factor to 0.00 px; any other position is displaced by up to a level pixel).
+        """
+        exact = round(downsample)
+        if exact >= 1 and abs(downsample - exact) <= 0.01 * exact:
+            return float(exact)
+        return None
+
     @property
     def level_downsamples(self):
-        return [1/self.scene.get_zoom_level_info(k).scale for k in range(self.scene.num_zoom_levels)]
+        downsamples = [1/self.scene.get_zoom_level_info(k).scale for k in range(self.scene.num_zoom_levels)]
+        return [self._exact_downsample(d) or d for d in downsamples]
+
+    # Zeiss CZI pyramids store levels that are displaced against each other by a fraction of a pixel; the offsets
+    # are measured once per image (util.registration) and applied when tiles are generated
+    needs_registration = True
 
     @property 
     def level_dimensions(self):
@@ -211,8 +231,16 @@ class SlideIOSlide():
 
 
     def read_region(self, location: tuple, level:int, size:tuple, frame:int=0):
-        ds = self.scene.get_zoom_level_info(level).scale
-        img = self.scene.read_block(rect=[*location, int(size[0]/ds), int(size[1]/ds)], size=size, slices=(frame, frame+1))
+        downsample = self._exact_downsample(1/self.scene.get_zoom_level_info(level).scale)
+        if downsample:
+            # slideio snaps a region to its level grid: reading at a position that is not a multiple of the downsample
+            # displaces the result by up to a level pixel. Snap the position and request exactly size * downsample.
+            location = tuple(int(round(v / downsample) * downsample) for v in location)
+            rect = [*location, int(round(size[0] * downsample)), int(round(size[1] * downsample))]
+        else:
+            ds = self.scene.get_zoom_level_info(level).scale
+            rect = [*location, int(size[0]/ds), int(size[1]/ds)]
+        img = self.scene.read_block(rect=rect, size=size, slices=(frame, frame+1))
         img_4ch = np.zeros([size[1], size[0],4], dtype=np.uint8)
         img_4ch[:,:,3] = 255
         if img.ndim == 2:
