@@ -55,7 +55,7 @@ from exact.annotations.models import Annotation, Export, ExportFormat, \
     AnnotationType, Verification, LogImageAction
 from exact.tagger_messages.models import Message, TeamMessage, GlobalMessage
 
-from util.slide_server import SlideCache, SlideFile, PILBytesIO, image_cache
+from util.slide_server import SlideCache, SlideFile, PILBytesIO, image_cache, slide_for_image
 from util.cellvizio import ReadableCellVizioMKTDataset # just until data access is pip installable
 
 from plugins.pluginFinder import PluginFinder
@@ -604,7 +604,7 @@ def view_image(request, image_id, z_dimension:int=1, frame:int=1):
         return HttpResponse(value, content_type='application/xml')
 
     file_path = os.path.join(settings.IMAGE_PATH, image.path(effective_z, frame))
-    slide = image_cache.get(file_path, plane=plane)
+    slide = slide_for_image(image, file_path, plane=plane)
     value = slide.get_dzi("jpeg")
 
     if hasattr(cache, "delete_pattern"):
@@ -818,7 +818,7 @@ def view_image_tile(request, image_id, z_dimension, frame, level, tile_path):
     file_path = os.path.join(settings.IMAGE_PATH, image.path(effective_z, frame))
 
     try:
-        slide = image_cache.get(file_path, plane=plane)
+        slide = slide_for_image(image, file_path, plane=plane)
 
         n_frames = slide.nFrames if slide.nFrames is not None else image.frames
         tile = slide.get_tile(level, (col, row), frame=min(frame, n_frames - 1), plane=plane)

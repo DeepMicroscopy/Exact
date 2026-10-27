@@ -44,7 +44,7 @@ from czifile import czi2tif
 from util.cellvizio import ReadableCellVizioMKTDataset # just until data access is pip installable
 
 from PIL import Image as PIL_Image
-from util.slide_server import SlideCache, SlideFile, PILBytesIO, image_cache
+from util.slide_server import SlideCache, SlideFile, PILBytesIO, image_cache, slide_for_image
 
 logger = logging.getLogger('django')
 cache = caches['default']
@@ -157,7 +157,7 @@ class ImageViewSet(viewsets.ModelViewSet):
         file_path = os.path.join(settings.IMAGE_PATH, image.path(z_dimension, frame))
 
         try:
-            slide = image_cache.get(file_path)
+            slide = slide_for_image(image, file_path)
 
             tile = slide.get_tile(level, (col, row), frame=frame)
 
@@ -186,7 +186,7 @@ class ImageViewSet(viewsets.ModelViewSet):
             return HttpResponse(value, content_type='application/xml')
         
         file_path = os.path.join(settings.IMAGE_PATH, image.path(z_dimension, frame))
-        slide = image_cache.get(file_path)
+        slide = slide_for_image(image, file_path)
         value = slide.get_dzi("jpeg")
 
         if hasattr(cache, "delete_pattern"):
@@ -203,7 +203,7 @@ class ImageViewSet(viewsets.ModelViewSet):
         z_dimension = int(request.data.get("z_dimension", 1))
         frame = int(request.data.get("frame", 1))
 
-        slide = image_cache.get(image.path())
+        slide = slide_for_image(image, image.path())
 
         keys = {}
         results = {}
