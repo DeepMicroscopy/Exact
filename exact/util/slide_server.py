@@ -1,5 +1,6 @@
 from collections import OrderedDict
 from io import BytesIO
+import math
 from typing import Tuple
 import openslide
 from openslide import OpenSlide, OpenSlideError, open_slide
@@ -40,8 +41,40 @@ class zDeepZoomGenerator(DeepZoomGenerator):
         plane:     PlaneType constant (AXIAL=0, CORONAL=1, SAGITTAL=2).
         """
 
+        # Geometry of the tile. openslide-python reads an integer region and ``Image.thumbnail`` shrinks it to the
+        # tile size while keeping the region's aspect ratio. Both steps round, so the scale of the last tile row /
+        # column of a level differs slightly from the other tiles (by up to a pixel), the tile can come out one pixel
+        # smaller than the Deep Zoom grid expects and the viewer stretches it. Neighbouring levels are then displaced
+        # against each other, which shows as wobbling while tiles of two levels are blended. Instead the tile is
+        # sampled from a fractional source box with the true scale between the Deep Zoom level and the slide level.
+        _, z_size = self._get_tile_info(level, address)  # validates level and address
+        slide_level = self._slide_from_dz_level[level]
+        z_w, z_h = self._z_dimensions[level]
+        # A slide level covers ``level 0 size / downsample`` pixels of the image, which is not necessarily its stored size
+        # (levels made by decimation with rounding down cover slightly less): the scale from the slide level to the
+        # Deep Zoom level is derived from the downsample, not from the stored size.
+        downsample = self._l0_l_downsamples[slide_level]
+        l_w, l_h = self._l_dimensions[slide_level]
+        scale_x = z_w / (self._l_dimensions[0][0] / downsample)  # slide level pixels -> Deep Zoom pixels
+        scale_y = z_h / (self._l_dimensions[0][1] / downsample)
+        # registration offsets of the pyramid levels (util.registration); level 0 is the reference and never shifted
+        offsets = getattr(self, 'level_offsets', None)
+        off_x, off_y = offsets[slide_level] if offsets and 0 < slide_level < len(offsets) else (0.0, 0.0)
+        col, row = address
+        overlap = self._z_overlap
+        # tile rectangle in Deep Zoom pixels, converted to (fractional) slide level pixels
+        box_x = max(0.0, (self._z_t_downsample * col - (overlap if col else 0)) / scale_x + off_x)
+        box_y = max(0.0, (self._z_t_downsample * row - (overlap if row else 0)) / scale_y + off_y)
+        box_w, box_h = z_size[0] / scale_x, z_size[1] / scale_y
+        # integer region that covers the box
+        x0, y0 = max(0, math.floor(box_x)), max(0, math.floor(box_y))
+        x1, y1 = min(l_w, math.ceil(box_x + box_w)), min(l_h, math.ceil(box_y + box_h))
+        r_w, r_h = max(1, x1 - x0), max(1, y1 - y0)
+        l0_location = (int(downsample * x0) + self._l0_offset[0],
+                       int(downsample * y0) + self._l0_offset[1])
+        args = (l0_location, slide_level, (r_w, r_h))
+
         # Read tile — pass plane only to handlers that declare MPR support
-        args, z_size = self._get_tile_info(level, address)
         if hasattr(self._osr, 'dimensions_for_plane'):
             tile = self._osr.read_region(*args, frame=frame, plane=plane)
         else:
@@ -52,11 +85,12 @@ class zDeepZoomGenerator(DeepZoomGenerator):
         bg = Image.new('RGB', tile.size, self._bg_color)
         tile = Image.composite(tile, bg, tile)
 
-        # Scale to the correct size
-        if tile.size != z_size:
+        # Resample the fractional box to exactly the tile size (nothing to do if it already fits)
+        box = (box_x - x0, box_y - y0, min(box_x - x0 + box_w, r_w), min(box_y - y0 + box_h, r_h))
+        if tile.size != z_size or any(abs(v) > 1e-6 for v in box[:2]) or box[2] != z_size[0] or box[3] != z_size[1]:
             # Image.Resampling added in Pillow 9.1.0
             # Image.LANCZOS removed in Pillow 10
-            tile.thumbnail(z_size, getattr(Image, 'Resampling', Image).LANCZOS)
+            tile = tile.resize(z_size, getattr(Image, 'Resampling', Image).LANCZOS, box=box)
 
         # Reference ICC profile
         if profile is not None:
@@ -779,6 +813,12 @@ class SlideCache(object):
             }
 
 image_cache = SlideCache(cache_size=20)
+
+
+def slide_for_image(image, path, plane=PlaneType.AXIAL):
+    """``image_cache.get`` plus the pyramid registration offsets of the image (see util.registration)."""
+    from util.registration import attach_level_offsets
+    return attach_level_offsets(image_cache.get(path, plane=plane), image, path)
 
 
 class SlideFile(object):

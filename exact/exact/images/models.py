@@ -887,3 +887,18 @@ class ImageRegistration(models.Model):
                 result_vector[f"y{id+1}"] = self.transformation_matrix["t_10"] * x + self.transformation_matrix["t_11"] * y + self.transformation_matrix["t_12"]
 
         return result_vector
+
+class PyramidRegistration(models.Model):
+    """
+    Displacement of the levels of an image pyramid against each other (util.registration), measured once per image.
+
+    ``offsets`` holds one ``[dx, dy]`` per pyramid level in pixels of that level; level 0 is always ``[0, 0]``.
+    Rows are only used for the file they were measured on (``file_size``, ``file_mtime`` in seconds) and for the
+    current ``algorithm`` version. The table is shared with the Rust port of the server.
+    """
+    image = models.OneToOneField(Image, on_delete=models.CASCADE, related_name='pyramid_registration')
+    offsets = models.JSONField()
+    algorithm = models.SmallIntegerField()
+    file_size = models.BigIntegerField()
+    file_mtime = models.BigIntegerField()
+    updated = models.DateTimeField(auto_now=True)
