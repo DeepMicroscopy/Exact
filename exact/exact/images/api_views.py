@@ -13,7 +13,8 @@ from rest_framework.response import Response
 from rest_framework import viewsets, permissions, renderers
 from rest_framework.settings import api_settings
 from rest_framework.decorators import action
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Prefetch
+from exact.base.flex_fields import serializes_field, expands_field, omits_nested
 from django.db import transaction, connection
 from django.http import JsonResponse, Http404
 
@@ -126,7 +127,10 @@ class ImageViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return scope_queryset(self.request, models.Image.objects.filter(image_set__team__in=user.team_set.all()), 'image_set__team').select_related('image_set__team')
+        queryset = scope_queryset(self.request, models.Image.objects.filter(image_set__team__in=user.team_set.all()), 'image_set__team').select_related('image_set__team')
+        if getattr(self, 'action', None) in ('list', 'retrieve'):
+            queryset = prefetch_image_relations(queryset, self.request)
+        return queryset
 
     @action(detail=True, methods=['GET'], name='get image tiles for open seadragon', 
                 url_path= r'(?P<z_dimension>\d+)/(?P<frame>\d+)/tile_files/(?P<level>\d+)/(?P<tile_path>\d+_\d+.(?:png|jpeg))')
@@ -597,6 +601,27 @@ class ImageSetFilterSet(django_filters.FilterSet):
                 return queryset.filter(images__id=value.id)
         return queryset
 
+def prefetch_image_relations(queryset, request, prefix=''):
+    """
+    Prefetch the relations of images that are part of the response (frame descriptions and the ids of the annotations),
+    so that they are loaded with one query for all images instead of one query per image.
+    `prefix` is the path to the images if they are nested in another response (e.g. 'images.' for image sets).
+    """
+    lookup = prefix.replace('.', '__')
+    if serializes_field(request, 'FrameDescriptions') or prefix:
+        if not omits_nested(request, prefix + 'FrameDescriptions'):
+            queryset = queryset.prefetch_related(lookup + 'FrameDescriptions')
+    if (serializes_field(request, 'annotations') or prefix) and not omits_nested(request, prefix + 'annotations'):
+        if expands_field(request, 'annotations') and not prefix:
+            queryset = queryset.prefetch_related('annotations')
+        else:
+            # only the ids of the annotations are part of the response
+            from exact.annotations.models import Annotation
+            queryset = queryset.prefetch_related(Prefetch(lookup + 'annotations',
+                                                          queryset=Annotation.objects.only('id', 'image_id')))
+    return queryset
+
+
 class ImageSetViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
     #queryset = models.ImageSet.objects.all().select_related('team', 'creator', 'main_annotation_type')
@@ -606,7 +631,16 @@ class ImageSetViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return scope_queryset(self.request, models.ImageSet.objects.filter(team__in=user.team_set.all()), 'team').select_related('team', 'creator', 'main_annotation_type').order_by('id')
+        queryset = scope_queryset(self.request, models.ImageSet.objects.filter(team__in=user.team_set.all()), 'team').select_related('team', 'creator', 'main_annotation_type').order_by('id')
+        if getattr(self, 'action', None) in ('list', 'retrieve'):
+            request = self.request
+            if expands_field(request, 'images'):
+                # the images (with their relations) are part of the response
+                queryset = prefetch_image_relations(queryset.prefetch_related('images'), request, prefix='images.')
+            elif serializes_field(request, 'images'):
+                # only the ids of the images are part of the response
+                queryset = queryset.prefetch_related(Prefetch('images', queryset=models.Image.objects.only('id', 'image_set_id')))
+        return queryset
 
 
     def create(self, request):

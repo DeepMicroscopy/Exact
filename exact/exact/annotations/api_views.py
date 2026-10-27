@@ -8,7 +8,8 @@ from rest_framework.decorators import action
 from django.shortcuts import get_object_or_404
 from exact.users.scope import scope_queryset, check_team
 from rest_framework.response import Response
-from django.db.models import Q, F
+from django.db.models import Q, F, Prefetch
+from exact.base.flex_fields import serializes_field, expands_field
 from . import models
 from . import serializers
 import django_filters
@@ -86,10 +87,31 @@ class AnnotationViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         deleted = self.request.query_params.get('deleted')
+        queryset = scope_queryset(self.request, models.Annotation.objects.filter(image__image_set__team__in=user.team_set.all()), 'image__image_set__team').select_related('annotation_type', 'image', 'user', 'last_editor')
         if deleted is not None:
-            return scope_queryset(self.request, models.Annotation.objects.filter(image__image_set__team__in=user.team_set.all()), 'image__image_set__team').select_related('annotation_type', 'image', 'user', 'last_editor').filter(deleted=deleted).order_by('id')
-        else:
-            return  scope_queryset(self.request, models.Annotation.objects.filter(image__image_set__team__in=user.team_set.all()), 'image__image_set__team').select_related('annotation_type', 'image', 'user', 'last_editor').order_by('id')
+            queryset = queryset.filter(deleted=deleted)
+        queryset = queryset.order_by('id')
+
+        if getattr(self, 'action', None) in ('list', 'retrieve'):
+            queryset = self.prefetch_related_fields(queryset)
+        return queryset
+
+    def prefetch_related_fields(self, queryset):
+        """Load the relations that are part of the response with one query each instead of one per annotation."""
+        request = self.request
+        if serializes_field(request, 'verified_by_user'):
+            queryset = queryset.prefetch_related(Prefetch(
+                'verifications', queryset=models.Verification.objects.filter(user=request.user, verified=True),
+                to_attr='verifications_of_user'))
+        if serializes_field(request, 'uploaded_media_files'):
+            queryset = queryset.prefetch_related('uploaded_media_files')
+        if serializes_field(request, 'annotationversion_set'):
+            if expands_field(request, 'annotationversion_set'):
+                queryset = queryset.prefetch_related('annotationversion_set')
+            else:
+                queryset = queryset.prefetch_related(Prefetch(
+                    'annotationversion_set', queryset=models.AnnotationVersion.objects.only('id', 'annotation_id')))
+        return queryset
 
 
     @action(methods=['get'], detail=False)

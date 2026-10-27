@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db import connection
-from django.db.models import Count, Q, Sum, Subquery, OuterRef
+from django.db.models import Count, Q, Sum, Subquery, OuterRef, Prefetch, prefetch_related_objects
 from django.db.models.expressions import F
 from django.views.decorators.http import require_http_methods
 from django.urls import reverse
@@ -1032,6 +1032,9 @@ def view_imageset(request, image_set_id):
         messages.warning(request, 'you do not have the permission to access this imageset')
         return redirect(reverse('images:index'))
 
+    # the template lists the images with their uploaders: load them together instead of one query per image
+    prefetch_related_objects([imageset], Prefetch('images', queryset=Image.objects.select_related('creator')))
+
     # the saved exports of the imageset
     exports = Export.objects.filter(image_set=image_set_id).order_by('-id')[:5]
     filtered = False
@@ -1046,21 +1049,21 @@ def view_imageset(request, image_set_id):
             annotations__annotation_type_id=request.POST.get("selected_annotation_type"))
 
 
-    annotation_types = AnnotationType.objects.filter(product__in=imageset.product_set.all(), active=True)
+    annotation_types = AnnotationType.objects.filter(product__in=imageset.product_set.all(), active=True).select_related('product')
     
     user_teams = Team.objects.filter(members=request.user)
 
-    image_sets = ImageSet.objects.filter(team__in=user_teams)
+    image_sets = ImageSet.objects.filter(team__in=user_teams).select_related('team')
 
 
 
     imageset_edit_form = ImageSetEditForm(instance=imageset)
     imageset_edit_form.fields['main_annotation_type'].queryset = AnnotationType.objects\
-        .filter(active=True, product__in=imageset.product_set.all()).order_by('product', 'sort_order')
+        .filter(active=True, product__in=imageset.product_set.all()).select_related('product').order_by('product', 'sort_order')
 
     copyImageSetForm = CopyImageSetForm()
     copyImageSetForm.fields['imagesets'].queryset = ImageSet.objects\
-        .filter(Q(team__in=request.user.team_set.all())|Q(public=True))
+        .filter(Q(team__in=request.user.team_set.all())|Q(public=True)).select_related('team')
 
     availablePlugins = Plugin.objects.filter(products__in=imageset.product_set.all())
     for i,plugin in enumerate(availablePlugins):
@@ -1111,10 +1114,11 @@ def view_imageset(request, image_set_id):
                                                 scale=scale) # use default parameters for now
         showRegTab=True
 
-    image_registration_src = ImageRegistration.objects.filter(source_image_id__in=imageset.images.all())  
+    # the registrations are listed with the names of both images
+    image_registration_src = ImageRegistration.objects.filter(source_image_id__in=imageset.images.all()).select_related('source_image', 'target_image')
     src_ids = image_registration_src.values_list('pk', flat=True)
          
-    image_registration_trg = ImageRegistration.objects.filter(target_image_id__in=imageset.images.all()).exclude(pk__in=src_ids)     
+    image_registration_trg = ImageRegistration.objects.filter(target_image_id__in=imageset.images.all()).exclude(pk__in=src_ids).select_related('source_image', 'target_image')
 
 
     if ('target_imageset_id' in request.GET):

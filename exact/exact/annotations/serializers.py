@@ -75,6 +75,10 @@ class AnnotationSerializer(FlexFieldsModelSerializer):
         return Verification.objects.filter(annotation=annotation, verified=True).exists()
 
     def is_verified_by_user(self, annotation):
+        # the viewset prefetches the verifications of the user (one query for all annotations of a page)
+        prefetched = getattr(annotation, 'verifications_of_user', None)
+        if prefetched is not None:
+            return len(prefetched) > 0
 
         user = self.context['request'].user
         return Verification.objects.filter(user=user, annotation=annotation, verified=True).exists()
