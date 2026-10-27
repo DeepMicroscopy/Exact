@@ -32,6 +32,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.status import HTTP_403_FORBIDDEN, HTTP_200_OK, \
     HTTP_201_CREATED, HTTP_202_ACCEPTED, HTTP_204_NO_CONTENT, HTTP_404_NOT_FOUND, HTTP_500_INTERNAL_SERVER_ERROR
 from .move import move_image, MoveNotAllowed
+from exact.base.http_cache import cache_in_browser
 from exact.users.scope import forbid_read_only_tokens
 from PIL import Image as PIL_Image
 from django.views.decorators.cache import cache_page
@@ -801,7 +802,7 @@ def view_image_tile(request, image_id, z_dimension, frame, level, tile_path):
     if buffer is not None:
         load_from_drive_time = timer() - start
         #logger.info(f"{load_from_drive_time:.4f};{request.path};C")
-        return HttpResponse(buffer, content_type='image/%s' % format)
+        return cache_in_browser(HttpResponse(buffer, content_type='image/%s' % format))
 
     image = get_object_or_404(Image, id=image_id)
     if not image.image_set.has_perm('read', request.user):
@@ -834,7 +835,7 @@ def view_image_tile(request, image_id, z_dimension, frame, level, tile_path):
             tiles_cache.set(cache_key, buffer, 7*24*60*60)
         #print('tile:', image_id, frame, time.time()-t)
 
-        return HttpResponse(buffer, content_type='image/%s' % format)
+        return cache_in_browser(HttpResponse(buffer, content_type='image/%s' % format))
     except Exception as e:
         print('Error: ',e)
         return HttpResponseBadRequest()

@@ -30,7 +30,14 @@ CACHES = {
         "KEY_PREFIX": os.environ.get("SQL_DATABASE", default='exact')
     },
 }
+
+# Read the sessions from the (shared) cache instead of the database for every request. Only use this with a cache
+# that is shared by all server processes (like Redis), not with the default local memory cache.
+SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
 ```
+
+If the cache is configured with the environment variables (`CACHE_BACKEND`, `CACHE_LOCATION`, ...) instead of `settings.py`,
+the sessions are read from the cache automatically as soon as the backend is not the local memory cache.
 
 ## Passiv caching
 

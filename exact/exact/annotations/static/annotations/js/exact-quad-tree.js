@@ -7,6 +7,9 @@ class EXACTRegistrationHandler {
         this.viewer = viewer;
         this.background_viewer = undefined;
 
+        // the registration needs OpenCv js: load it now (it is not part of the annotation page)
+        EXACTOpenCV.load();
+
         // Check if the OpenCv js is loaded
         this.check_opencv = undefined;
         this.check_opencv = setInterval(this.initUiEvents.bind(this), 1000);

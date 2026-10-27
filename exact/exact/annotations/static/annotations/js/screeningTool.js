@@ -167,6 +167,12 @@ class ScreeningTool {
 
     updateThumbnail(event) {
 
+        // OpenCv js is not part of the annotation page: load it the first time it is needed
+        if (!EXACTOpenCV.isReady()) {
+            EXACTOpenCV.load().then(() => this.updateThumbnail(event));
+            return;
+        }
+
         // Check if the OpenCv js is loaded
         if (typeof cv === "object" && typeof cv.Mat === "function") {
 

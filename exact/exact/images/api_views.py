@@ -15,6 +15,7 @@ from rest_framework.settings import api_settings
 from rest_framework.decorators import action
 from django.db.models import Q, Count, Prefetch
 from exact.base.flex_fields import serializes_field, expands_field, omits_nested
+from exact.base.http_cache import cache_in_browser
 from django.db import transaction, connection
 from django.http import JsonResponse, Http404
 
@@ -143,13 +144,13 @@ class ImageViewSet(viewsets.ModelViewSet):
         format = results.group(3)
         cache_key = f"{image_id}/{z_dimension}/{frame}/{level}/{col}/{row}"
 
-        if token_image_set_ids(request) is not None:
+        if token_team_ids(request) is not None:
             # cached tiles are served without a lookup, so check the scope first
             check_team(request, get_object_or_404(models.Image, id=image_id).image_set.team_id)
 
         buffer = tiles_cache.get(cache_key)
         if buffer is not None:
-            return HttpResponse(buffer, content_type='image/%s' % format)
+            return cache_in_browser(HttpResponse(buffer, content_type='image/%s' % format))
 
         image = get_object_or_404(models.Image, id=image_id)            
         check_team(request, image.image_set.team_id)
@@ -167,7 +168,7 @@ class ImageViewSet(viewsets.ModelViewSet):
 
             if hasattr(cache, "delete_pattern"):
                 tiles_cache.set(cache_key, buffer, 7*24*60*60)
-            return HttpResponse(buffer, content_type='image/%s' % format)
+            return cache_in_browser(HttpResponse(buffer, content_type='image/%s' % format))
         except:
             return HttpResponseBadRequest()
 
@@ -256,7 +257,7 @@ class ImageViewSet(viewsets.ModelViewSet):
 
         buffer = cache.get(f"{pk}_thumbnail")
         if buffer is not None:
-            return HttpResponse(buffer, content_type='image/png')
+            return cache_in_browser(HttpResponse(buffer, content_type='image/png'))
 
         image = get_object_or_404(models.Image, id=pk)
         check_team(request, image.image_set.team_id)
@@ -276,7 +277,7 @@ class ImageViewSet(viewsets.ModelViewSet):
         if hasattr(cache, "delete_pattern"):
             cache.set(f"{pk}_thumbnail", buffer, None)
 
-        return HttpResponse(buffer, content_type='image/png')
+        return cache_in_browser(HttpResponse(buffer, content_type='image/png'))
 
     @action(detail=True, methods=['GET'], name='Get slide information from image PK')
     def slide_information(self, request, pk=None):

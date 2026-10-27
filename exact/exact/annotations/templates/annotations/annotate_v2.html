@@ -5,7 +5,9 @@
 {% block additional_annotation_js %}
 <link rel="stylesheet" type="text/css" href="{% static 'annotations/css/bootstrap-slider.min.css' %}">
 
-<script async type="text/javascript" src="{% static 'annotations/js/opencv.js' %}"></script>
+<!-- opencv.js (7.7 MB) is loaded when it is needed, see exact-opencv.js -->
+<script>window.EXACT_OPENCV_URL = "{% static 'annotations/js/opencv.js' %}";</script>
+<script type="text/javascript" src="{% static 'annotations/js/exact-opencv.js' %}"></script>
 
 <script type="text/javascript" src="{% static 'scripts/jquery-3.2.1.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'scripts/bootstrap.min.js' %}"></script>

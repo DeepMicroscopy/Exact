@@ -30,7 +30,6 @@ INTERNAL_IPS = ['127.0.0.1']
 
 # Caching
 DJANGO_REDIS_IGNORE_EXCEPTIONS = True
-SESSIONS_ENGINE='django.contrib.sessions.backends.cache'
 
 
 # Use CDN caching for WSI by uploading to S3
@@ -54,6 +53,13 @@ CACHES = {
         "KEY_PREFIX": os.environ.get("SQL_DATABASE", default='exact')
     }
 }
+
+# With a cache that is shared by all server processes (e.g. Redis, see redis/CACHING.md), sessions are read from
+# the cache and kept in the database as well: this saves a database query for every request (for every tile).
+# The local memory cache is not shared: every process would have its own copy of the sessions and not notice a
+# logout in another process, so the sessions are only read from the database in that case.
+if 'locmem' not in CACHES['default']['BACKEND'].lower():  # noqa F405
+    SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 
 # Application definition
 
@@ -247,6 +253,9 @@ EXPORT_SEPARATOR = '|'
 DATA_PATH = os.path.join(BASE_DIR, 'data')
 
 IMAGE_PATH = os.path.join(BASE_DIR, 'images')  # the absolute path to the folder with the imagesets
+
+# seconds the browser may keep tiles and thumbnails (they do not change); 0 disables the cache headers
+IMAGE_CACHE_MAX_AGE = int(os.environ.get("IMAGE_CACHE_MAX_AGE", default=24 * 60 * 60))
 
 MEDIA_ROOT= os.path.join(BASE_DIR, 'media')
 MEDIA_URL= "/media/"
