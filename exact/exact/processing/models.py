@@ -31,6 +31,16 @@ class Plugin(models.Model):
         permissions = [
                     ("use_server_side_plugins", "User can use server-side plugins"),
                 ]        
+
+    class PluginType:
+        IMAGE_ANALYSIS = 1  # a job analyses one image and produces a PluginResult (heatmaps, annotations)
+        REGISTRATION = 2    # a job registers `image` onto `target_image` and produces an ImageRegistration
+
+    PLUGIN_TYPE_CHOICES = (
+        (PluginType.IMAGE_ANALYSIS, 'Image analysis'),
+        (PluginType.REGISTRATION, 'Registration'),
+    )
+
     id = models.AutoField(primary_key=True)
     # Class for external plugins (run on server or whereever else)
     name = models.CharField(max_length=200)
@@ -40,6 +50,11 @@ class Plugin(models.Model):
     abouturl = models.URLField(max_length=80)
     icon = models.ImageField(upload_to=plugins_directory)
     products = models.ManyToManyField(Product, related_name="plugins", blank=True)
+    plugin_type = models.SmallIntegerField(choices=PLUGIN_TYPE_CHOICES, default=PluginType.IMAGE_ANALYSIS)
+    # The parameters a job of this plugin accepts, so that a UI can offer a form for them:
+    # [{"name": "maxFeatures", "type": "int"|"float"|"bool"|"text"|"choice", "label": ..., "default": ..., "min": ..., "max": ...,
+    #   "step": ..., "choices": [...], "help": ...}, ...]
+    parameters_schema = models.JSONField(null=True, blank=True)
 
     def __str__(self):
         return u'Plugin: {0}'.format(self.name)
@@ -69,6 +84,11 @@ class PluginJob(models.Model):
     error_detail = models.TextField(null=True, blank=True)
     attached_worker = models.CharField(max_length=200, null=True, blank=True)
     image = models.ForeignKey(Image, on_delete=models.CASCADE, related_name="pluginJobs")
+    # Registration plugins: `image` is registered onto `target_image`, the outcome is `registration`.
+    target_image = models.ForeignKey(Image, on_delete=models.CASCADE, null=True, blank=True, related_name="pluginJobsAsTarget")
+    # The values of the plugin's `parameters_schema` for this job.
+    parameters = models.JSONField(null=True, blank=True)
+    registration = models.ForeignKey('images.ImageRegistration', on_delete=models.SET_NULL, null=True, blank=True, related_name="pluginJobs")
 
     def __str__(self):
         return u'Process {0} with {1} ({2:02} %)'.format(self.image.__str__(),self.plugin.name, self.processing_complete)
