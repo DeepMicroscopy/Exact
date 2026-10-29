@@ -1066,7 +1066,7 @@ def view_imageset(request, image_set_id):
     copyImageSetForm.fields['imagesets'].queryset = ImageSet.objects\
         .filter(Q(team__in=request.user.team_set.all())|Q(public=True)).select_related('team')
 
-    availablePlugins = Plugin.objects.filter(products__in=imageset.product_set.all())
+    availablePlugins = Plugin.objects.filter(plugin_type=Plugin.PluginType.IMAGE_ANALYSIS, products__in=imageset.product_set.all())
     for i,plugin in enumerate(availablePlugins):
         pgn=PluginJob.objects.filter(image__in=imageset.images.all()).filter(plugin=plugin)
         availablePlugins[i].alljobs = pgn

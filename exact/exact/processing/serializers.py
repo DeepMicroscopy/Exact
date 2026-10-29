@@ -18,9 +18,7 @@ class PluginSerializer(FlexFieldsModelSerializer):
             'abouturl',
             'icon',
             'products',
-            'results',
-            'plugin_type',
-            'parameters_schema'
+            'results'
         ]
 
         expandable_fields = {
@@ -45,8 +43,7 @@ class PluginJobSerializer(FlexFieldsModelSerializer):
             'attached_worker',
             'processing_complete',
             'updated_time',
-            'result',
-            'parameters'
+            'result'
         )
         expandable_fields = {
             "creator": (UserSerializer, {'read_only': True}),

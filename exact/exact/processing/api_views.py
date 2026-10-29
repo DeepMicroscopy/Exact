@@ -25,7 +25,8 @@ class PluginJobViewSet(viewsets.ModelViewSet):
         image_id = self.request.query_params.get('image_id')
         user_id = self.request.query_params.get('user_id')
         filter_ids = self.request.query_params.get('filter_ids')
-        o = models.PluginJob.objects
+        # the v1 API knows image analyses only; registration jobs are part of the new API
+        o = models.PluginJob.objects.filter(plugin__plugin_type=models.Plugin.PluginType.IMAGE_ANALYSIS)
         if image_id is not None:
             o = o.filter(image__id=image_id)
         if user_id is not None:
@@ -40,7 +41,7 @@ class PluginViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows Plugins to be viewed or edited.
     """
-    queryset = models.Plugin.objects.all().order_by('-name')
+    queryset = models.Plugin.objects.filter(plugin_type=models.Plugin.PluginType.IMAGE_ANALYSIS).order_by('-name')
     serializer_class = serializers.PluginSerializer
     permission_classes = [permissions.DjangoModelPermissions]
 
@@ -52,13 +53,13 @@ class PluginViewSet(viewsets.ModelViewSet):
         imageset_from_image_id = self.request.query_params.get('imageset_from_image_id')
 
         if imageset_from_image_id is None:
-            return models.Plugin.objects.all().order_by('-name')
+            return self.queryset
         
         image = models.Image.objects.filter(id=imageset_from_image_id)
 
         #imageset = get_object_or_404(ImageSet, id=imageset_id)
         if (image.count()>0):
-            return models.Plugin.objects.filter(products__in=image.first().image_set.product_set.all())
+            return self.queryset.filter(products__in=image.first().image_set.product_set.all())
         else:
             return models.Plugin.objects.none()
 
