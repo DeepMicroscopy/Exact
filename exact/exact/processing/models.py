@@ -34,7 +34,7 @@ class Plugin(models.Model):
 
     class PluginType:
         IMAGE_ANALYSIS = 1  # a job analyses one image and produces a PluginResult (heatmaps, annotations)
-        REGISTRATION = 2    # a job registers `image` onto `target_image` and produces an ImageRegistration
+        REGISTRATION = 2    # a job registers `images[0]` onto `images[1]` and produces an ImageRegistration
 
     PLUGIN_TYPE_CHOICES = (
         (PluginType.IMAGE_ANALYSIS, 'Image analysis'),
@@ -91,9 +91,11 @@ class PluginJob(models.Model):
     error_detail = models.TextField(null=True, blank=True)
     attached_worker = models.CharField(max_length=200, null=True, blank=True)
     image = models.ForeignKey(Image, on_delete=models.CASCADE, related_name="pluginJobs")
-    # Registration plugins: `image` is registered onto `target_image`. The outcome is an ImageRegistration of the pair
-    # (created, or overwriting the existing one), not stored on the job.
-    target_image = models.ForeignKey(Image, on_delete=models.CASCADE, null=True, blank=True, related_name="pluginJobsAsTarget")
+    # All images the job concerns, in order (see PluginJobImage). `image` stays the first / main one (what existing clients,
+    # permissions and the job lists use); a job of a single image has no rows here and concerns [image]. A registration job
+    # has two: the image that is registered and the image it is registered onto. The outcome of a registration is an
+    # ImageRegistration of the pair (created, or overwriting the existing one), not stored on the job.
+    images = models.ManyToManyField(Image, through='PluginJobImage', related_name="pluginJobsInvolved", blank=True)
     # The values of the plugin's `parameters_schema` for this job, {name: value}. Any algorithm (analysis or registration) can
     # take parameters; missing ones fall back to the default of the schema.
     parameters = models.JSONField(null=True, blank=True, help_text=PARAMETERS_HELP)
@@ -101,6 +103,17 @@ class PluginJob(models.Model):
     def __str__(self):
         return u'Process {0} with {1} ({2:02} %)'.format(self.image.__str__(),self.plugin.name, self.processing_complete)
 
+
+
+class PluginJobImage(models.Model):
+    """One image of a job, at `position` (0 is the main image, i.e. `PluginJob.image`)."""
+    class Meta:
+        unique_together = (('job', 'position'),)
+        ordering = ['job_id', 'position']
+
+    job = models.ForeignKey(PluginJob, on_delete=models.CASCADE, related_name="job_images")
+    image = models.ForeignKey(Image, on_delete=models.CASCADE, related_name="+")
+    position = models.SmallIntegerField(default=0)
 
 
 class PluginResult(models.Model):

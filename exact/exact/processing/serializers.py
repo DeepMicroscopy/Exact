@@ -46,7 +46,6 @@ class PluginJobSerializer(FlexFieldsModelSerializer):
             'processing_complete',
             'updated_time',
             'result',
-            'target_image',
             'parameters'
         )
         expandable_fields = {
