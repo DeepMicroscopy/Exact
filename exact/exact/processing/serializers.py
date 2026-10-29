@@ -47,8 +47,7 @@ class PluginJobSerializer(FlexFieldsModelSerializer):
             'updated_time',
             'result',
             'target_image',
-            'parameters',
-            'registration'
+            'parameters'
         )
         expandable_fields = {
             "creator": (UserSerializer, {'read_only': True}),

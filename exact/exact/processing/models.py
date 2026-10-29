@@ -66,6 +66,13 @@ def plugin_bitmap_directory(inst:"PluginResultBitmap", filename):
                                             inst.pluginresultentry.pluginresult.image.id,  filename)
 
 
+PARAMETERS_HELP = (
+    "The values of the parameters of the plugin (see Plugin.parameters_schema) for this job, as {name: value}. Any algorithm "
+    "(image analysis or registration) can take parameters; names that are not in the schema are ignored by the plugin, "
+    "missing ones fall back to the default of the schema."
+)
+
+
 class PluginJob(models.Model):
     id = models.AutoField(primary_key=True)
     processing_complete = models.FloatField(default=0.0)
@@ -84,11 +91,12 @@ class PluginJob(models.Model):
     error_detail = models.TextField(null=True, blank=True)
     attached_worker = models.CharField(max_length=200, null=True, blank=True)
     image = models.ForeignKey(Image, on_delete=models.CASCADE, related_name="pluginJobs")
-    # Registration plugins: `image` is registered onto `target_image`, the outcome is `registration`.
+    # Registration plugins: `image` is registered onto `target_image`. The outcome is an ImageRegistration of the pair
+    # (created, or overwriting the existing one), not stored on the job.
     target_image = models.ForeignKey(Image, on_delete=models.CASCADE, null=True, blank=True, related_name="pluginJobsAsTarget")
-    # The values of the plugin's `parameters_schema` for this job.
-    parameters = models.JSONField(null=True, blank=True)
-    registration = models.ForeignKey('images.ImageRegistration', on_delete=models.SET_NULL, null=True, blank=True, related_name="pluginJobs")
+    # The values of the plugin's `parameters_schema` for this job, {name: value}. Any algorithm (analysis or registration) can
+    # take parameters; missing ones fall back to the default of the schema.
+    parameters = models.JSONField(null=True, blank=True, help_text=PARAMETERS_HELP)
 
     def __str__(self):
         return u'Process {0} with {1} ({2:02} %)'.format(self.image.__str__(),self.plugin.name, self.processing_complete)
