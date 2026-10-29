@@ -20,7 +20,7 @@ from django.views.generic import ListView
 
 def submit(request, plugin_id, image_id):
     image = get_object_or_404(Image, id=image_id)
-    plugin = get_object_or_404(Plugin, id=plugin_id)
+    plugin = get_object_or_404(Plugin, id=plugin_id, plugin_type=Plugin.PluginType.IMAGE_ANALYSIS)
 
     if (PluginJob.objects.filter(image=image).filter(plugin=plugin).count()==0):
         pluginJob = PluginJob.objects.create(
@@ -40,7 +40,7 @@ def create_job(request) -> Response:
         raise ParseError
 
     image = get_object_or_404(Image, pk=image_id)
-    plugin = get_object_or_404(Plugin, pk=plugin_id)
+    plugin = get_object_or_404(Plugin, pk=plugin_id, plugin_type=Plugin.PluginType.IMAGE_ANALYSIS)
 
     if 'read' not in image.image_set.get_perms(request.user):
         return Response([], status=HTTP_403_FORBIDDEN)
@@ -56,7 +56,7 @@ def create_job(request) -> Response:
 
 def submit_imageset(request, plugin_id, imageset_id):
     imageset = get_object_or_404(ImageSet, id=imageset_id)
-    plugin = get_object_or_404(Plugin, id=plugin_id)
+    plugin = get_object_or_404(Plugin, id=plugin_id, plugin_type=Plugin.PluginType.IMAGE_ANALYSIS)
 
     for image in imageset.images.all():
         if (PluginJob.objects.filter(image=image).filter(plugin=plugin).count()==0):
@@ -117,8 +117,9 @@ from django.core.paginator import Paginator
 
 def index(request):
 
-    current_jobs_user = PluginJob.objects.filter(Q(creator=request.user)).order_by('-created_time')
-    current_jobs = PluginJob.objects.order_by('-updated_time')
+    analyses = PluginJob.objects.filter(plugin__plugin_type=Plugin.PluginType.IMAGE_ANALYSIS)
+    current_jobs_user = analyses.filter(Q(creator=request.user)).order_by('-created_time')
+    current_jobs = analyses.order_by('-updated_time')
 
     if ('completed' not in request.GET) or (int(request.GET['completed'])==0):
         current_jobs_user = current_jobs_user.filter(~Q(processing_complete=100))

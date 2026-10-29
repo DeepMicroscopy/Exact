@@ -52,7 +52,7 @@ def annotate(request, image_id):
     jobsQueue=[]
 
     if show_processing:
-        availablePlugins = Plugin.objects.filter(products__in=selected_image.image_set.product_set.all())
+        availablePlugins = Plugin.objects.filter(plugin_type=Plugin.PluginType.IMAGE_ANALYSIS, products__in=selected_image.image_set.product_set.all())
         for i,plugin in enumerate(availablePlugins):
             pgn=PluginJob.objects.filter(image=image_id).filter(plugin=plugin)
             availablePlugins[i].processing_complete=-1

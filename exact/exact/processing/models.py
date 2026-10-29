@@ -31,6 +31,16 @@ class Plugin(models.Model):
         permissions = [
                     ("use_server_side_plugins", "User can use server-side plugins"),
                 ]        
+
+    class PluginType:
+        IMAGE_ANALYSIS = 1  # a job analyses one image and produces a PluginResult (heatmaps, annotations)
+        REGISTRATION = 2    # a job registers `images[0]` onto `images[1]` and produces an ImageRegistration
+
+    PLUGIN_TYPE_CHOICES = (
+        (PluginType.IMAGE_ANALYSIS, 'Image analysis'),
+        (PluginType.REGISTRATION, 'Registration'),
+    )
+
     id = models.AutoField(primary_key=True)
     # Class for external plugins (run on server or whereever else)
     name = models.CharField(max_length=200)
@@ -40,6 +50,11 @@ class Plugin(models.Model):
     abouturl = models.URLField(max_length=80)
     icon = models.ImageField(upload_to=plugins_directory)
     products = models.ManyToManyField(Product, related_name="plugins", blank=True)
+    plugin_type = models.SmallIntegerField(choices=PLUGIN_TYPE_CHOICES, default=PluginType.IMAGE_ANALYSIS)
+    # The parameters a job of this plugin accepts, so that a UI can offer a form for them:
+    # [{"name": "maxFeatures", "type": "int"|"float"|"bool"|"text"|"choice", "label": ..., "default": ..., "min": ..., "max": ...,
+    #   "step": ..., "choices": [...], "help": ...}, ...]
+    parameters_schema = models.JSONField(null=True, blank=True)
 
     def __str__(self):
         return u'Plugin: {0}'.format(self.name)
@@ -49,6 +64,13 @@ class Plugin(models.Model):
 def plugin_bitmap_directory(inst:"PluginResultBitmap", filename):
     return 'plugins/{0}_{1}/{2}/{3}'.format(inst.pluginresultentry.pluginresult.plugin.name, inst.pluginresultentry.pluginresult.plugin.id, 
                                             inst.pluginresultentry.pluginresult.image.id,  filename)
+
+
+PARAMETERS_HELP = (
+    "The values of the parameters of the plugin (see Plugin.parameters_schema) for this job, as {name: value}. Any algorithm "
+    "(image analysis or registration) can take parameters; names that are not in the schema are ignored by the plugin, "
+    "missing ones fall back to the default of the schema."
+)
 
 
 class PluginJob(models.Model):
@@ -69,10 +91,29 @@ class PluginJob(models.Model):
     error_detail = models.TextField(null=True, blank=True)
     attached_worker = models.CharField(max_length=200, null=True, blank=True)
     image = models.ForeignKey(Image, on_delete=models.CASCADE, related_name="pluginJobs")
+    # All images the job concerns, in order (see PluginJobImage). `image` stays the first / main one (what existing clients,
+    # permissions and the job lists use); a job of a single image has no rows here and concerns [image]. A registration job
+    # has two: the image that is registered and the image it is registered onto. The outcome of a registration is an
+    # ImageRegistration of the pair (created, or overwriting the existing one), not stored on the job.
+    images = models.ManyToManyField(Image, through='PluginJobImage', related_name="pluginJobsInvolved", blank=True)
+    # The values of the plugin's `parameters_schema` for this job, {name: value}. Any algorithm (analysis or registration) can
+    # take parameters; missing ones fall back to the default of the schema.
+    parameters = models.JSONField(null=True, blank=True, help_text=PARAMETERS_HELP)
 
     def __str__(self):
         return u'Process {0} with {1} ({2:02} %)'.format(self.image.__str__(),self.plugin.name, self.processing_complete)
 
+
+
+class PluginJobImage(models.Model):
+    """One image of a job, at `position` (0 is the main image, i.e. `PluginJob.image`)."""
+    class Meta:
+        unique_together = (('job', 'position'),)
+        ordering = ['job_id', 'position']
+
+    job = models.ForeignKey(PluginJob, on_delete=models.CASCADE, related_name="job_images")
+    image = models.ForeignKey(Image, on_delete=models.CASCADE, related_name="+")
+    position = models.SmallIntegerField(default=0)
 
 
 class PluginResult(models.Model):
