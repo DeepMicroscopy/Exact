@@ -19,6 +19,7 @@ from django.core.cache import caches
 from json import JSONDecodeError
 from io import BytesIO
 from util.slide_server import getSlideHandler
+from util.slideio import vsi_data_folder
 
 import pyvips
 
@@ -923,6 +924,11 @@ def download_image_api(request, image_id) -> Response:
         # strip the suffix and add underscores around the stem. This is weird, but thats how Olympus do it.
         folder_path = file_path.with_suffix('')
         folder_path = folder_path.parent / f"_{folder_path.stem}_"
+        if not folder_path.is_dir():
+            # the scanner turns everything but letters and digits in the name into an underscore (slide-1.vsi -> _slide_1_)
+            found = vsi_data_folder(str(file_path))
+            if found is not None:
+                folder_path = Path(found)
 
         content = BytesIO()
         with zipfile.ZipFile(content, 'w') as f:
