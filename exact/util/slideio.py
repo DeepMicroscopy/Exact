@@ -4,10 +4,50 @@
 
 import numpy as np
 from PIL import Image
+import hashlib
 import os
+import re
+import tempfile
 import openslide
 import slideio
 from util.enums import FrameType
+
+
+def _flat(name):
+    return re.sub(r'[^0-9A-Za-z]', '_', name)
+
+
+def vsi_data_folder(filename):
+    """The folder with the pixel data of an Olympus VSI file, or None. The scanner writes ``slide-1.vsi`` with the data in
+    ``_slide_1_``: everything but letters and digits becomes an underscore in the folder name."""
+    here, name = os.path.split(filename)
+    stem = os.path.splitext(name)[0]
+    exact = os.path.join(here, f'_{stem}_')
+    if os.path.isdir(exact):
+        return exact
+    for entry in os.listdir(here or '.'):
+        if (len(entry) > 2 and entry.startswith('_') and entry.endswith('_') and _flat(entry[1:-1]) == _flat(stem)
+                and os.path.isdir(os.path.join(here, entry))):
+            return os.path.join(here, entry)
+    return None
+
+
+def vsi_path(filename):
+    """The path slideio has to be given for a VSI file: it looks for the folder ``_<name of the file>_``, so when the scanner's
+    spelling of the folder differs, the file is opened through links in a folder of its own that carry the folder's name."""
+    if not filename.lower().endswith('.vsi'):
+        return filename
+    folder = vsi_data_folder(filename)
+    here, name = os.path.split(filename)
+    if folder is None or os.path.basename(folder) == f'_{os.path.splitext(name)[0]}_':
+        return filename
+    stem = os.path.basename(folder)[1:-1]
+    alias = os.path.join(tempfile.gettempdir(), 'exact-vsi', hashlib.sha1(os.path.abspath(filename).encode()).hexdigest()[:16])
+    os.makedirs(alias, exist_ok=True)
+    for link, target in ((f'{stem}.vsi', os.path.abspath(filename)), (os.path.basename(folder), os.path.abspath(folder))):
+        if not os.path.lexists(os.path.join(alias, link)):
+            os.symlink(target, os.path.join(alias, link))
+    return os.path.join(alias, f'{stem}.vsi')
 
 
 
@@ -23,7 +63,7 @@ class SlideIOSlide():
 
     def __init__(self,filename):
         self.fileName = filename
-        self.fh = slideio.open_slide(filename)
+        self.fh = slideio.open_slide(vsi_path(filename))
         self.scene = self.fh.get_scene(0)
 
 
