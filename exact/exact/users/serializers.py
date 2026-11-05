@@ -40,6 +40,14 @@ class TeamSerializer(FlexFieldsModelSerializer):
             'product_set',
             'memberships'
         ]
+        # Relations are only returned. Writing them here would detach image sets/products on update
+        # and move memberships between teams; use the image set, product and team_membership APIs.
+        read_only_fields = [
+            'members',
+            'image_sets',
+            'product_set',
+            'memberships'
+        ]
 
         expandable_fields = {
             "members": ('exact.users.serializers.UserSerializer', {'read_only': True, 'many': True}),
